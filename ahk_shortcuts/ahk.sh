@@ -14,7 +14,7 @@ elif [ "$1" = "open_secrets" ]; then
     code $ahk_secrets_path
 else
     win_drive_path=$(wslpath -w -a "$ahk_file_path")
-    powershell.exe /c start "${win_drive_path}"
+    powershell.exe -Command "Start-Process '${win_drive_path}'" 2> /dev/null
     win_drive_path=$(wslpath -w -a "$ahk_secrets_path")
-    powershell.exe /c start "${win_drive_path}"
+    powershell.exe -Command "Start-Process '${win_drive_path}'" 2> /dev/null
 fi
