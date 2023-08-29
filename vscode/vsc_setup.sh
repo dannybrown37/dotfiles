@@ -3,6 +3,7 @@
 script=$(readlink -f "$BASH_SOURCE")
 script_path=$(dirname "$script")
 default_settings_path=$script_path/default_settings.json
+default_extensions_path=$script_path/default_extensions.txt
 
 # Path to settings.json in WSL
 vscode_settings_path="/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/settings.json"
@@ -19,9 +20,18 @@ else
   echo "Created an empty settings.json"
 fi
 
+# merge existing and default settings
 merged_settings=$(jq -s '.[0] * .[1]' "$vscode_settings_path" "$default_settings_path")
 
 echo $merged_settings | jq '.' > "$vscode_settings_path"
 
 echo "New VSCode settings:"
 cat $vscode_settings_path
+
+
+# Now handle extensions
+
+while IFS= read -r extension_id; do
+  echo "Installing extension: $extension_id"
+  code --install-extension "$extension_id"
+done < "$default_extensions_path"
