@@ -32,12 +32,15 @@ cat $vscode_settings_path
 
 # Now handle extensions
 installed_extensions=$(code --list-extensions)
+not_installed=()
 
 while IFS= read -r extension_id; do
   if [[ ! "$installed_extensions" == *"$extension_id"* ]]; then
     echo "Installing extension: $extension_id"
     code --install-extension "$extension_id"
   else
-    echo "$extension_id is already installed"
+    not_installed+=("$extension_id")
   fi
 done < "$default_extensions_path"
+
+echo "VSCode extensions already installed: ${not_installed[@]}"
