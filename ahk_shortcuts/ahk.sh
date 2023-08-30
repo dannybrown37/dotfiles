@@ -6,6 +6,7 @@ script=$(readlink -f "$BASH_SOURCE")
 script_path=$(dirname "$script")
 ahk_file_path=$script_path/dev_shortcuts.ahk
 ahk_secrets_path=$script_path/secrets.ahk
+touch $ahk_secrets_path
 
 # use "open" CLI arg to open the file for edits
 if [ "$1" = "open" ]; then
