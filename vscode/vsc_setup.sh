@@ -11,8 +11,8 @@ fi
 
 script=$(readlink -f "$BASH_SOURCE")
 script_path=$(dirname "$script")
-default_settings_path=$script_path/default_settings.json
-default_extensions_path=$script_path/default_extensions.txt
+default_settings_path=$script_path/.default_settings.json
+default_extensions_path=$script_path/.extensions
 
 # Path to settings.json in WSL
 vscode_settings_path="/mnt/c/Users/$WINDOWS_USERNAME/AppData/Roaming/Code/User/settings.json"
