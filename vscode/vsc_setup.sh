@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
+source ~/.bashrc
 script=$(readlink -f "$BASH_SOURCE")
 script_path=$(dirname "$script")
 default_settings_path=$script_path/default_settings.json
 default_extensions_path=$script_path/default_extensions.txt
 
 # Path to settings.json in WSL
-vscode_settings_path="/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/settings.json"
+vscode_settings_path="/mnt/c/Users/$WINDOWS_USERNAME/AppData/Roaming/Code/User/settings.json"
 
 echo $vscode_settings_path
 
@@ -30,8 +31,13 @@ cat $vscode_settings_path
 
 
 # Now handle extensions
+installed_extensions=$(code --list-extensions)
 
 while IFS= read -r extension_id; do
-  echo "Installing extension: $extension_id"
-  code --install-extension "$extension_id"
+  if [[ ! "$installed_extensions" == *"$extension_id"* ]]; then
+    echo "Installing extension: $extension_id"
+    code --install-extension "$extension_id"
+  else
+    echo "$extension_id is already installed"
+  fi
 done < "$default_extensions_path"
