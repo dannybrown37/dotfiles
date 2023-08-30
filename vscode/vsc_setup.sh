@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 
 source ~/.bashrc
+
+if [ -z "$WINDOWS_USERNAME" ]; then
+  ls /mnt/c/Users
+  read -p "What is your Windows username? " windows_username
+  echo "export WINDOWS_USERNAME=$windows_username" >> ~/.bashrc
+  source ~/.bashrc
+fi
+
 script=$(readlink -f "$BASH_SOURCE")
 script_path=$(dirname "$script")
 default_settings_path=$script_path/default_settings.json

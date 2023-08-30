@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Get Windows username to pull/write vscode
+# Get Windows username (once) to pull/write vscode
 if ! grep -q "^export WINDOWS_USERNAME=" "${HOME}/.bashrc"; then
     ls /mnt/c/Users
     read -p "What is your Windows username? " windows_username
@@ -25,9 +25,7 @@ sudo apt install -y "${apt_packages[@]}"
 
 # install pip packages
 pip install --upgrade pip
-pip_packages=(
-    ansible-core
-)
+pip_packages=()
 pip install "${pip_packages[@]}"
 
 # autoenv automatically runs .env file when you cd in
@@ -35,7 +33,6 @@ curl -#fLo- 'https://raw.githubusercontent.com/hyperupcall/autoenv/master/script
 
 
 # "install" internal utilities by using alias >> .bashrc
-
 bashrc_commands=(
     "alias cht=$script_dir/cht/cht.sh"
     "alias ahk=$script_dir/ahk_shortcuts/ahk.sh"
