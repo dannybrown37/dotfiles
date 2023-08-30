@@ -2,6 +2,8 @@
 
 ; bash stuff
 ::,,brc::~/.bashrc
+::,,sbr::source ~/.bashrc
+::,,cbr::code ~/.bashrc
 
 
 ; venv stuff
