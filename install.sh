@@ -40,9 +40,10 @@ for command in "${bashrc_commands[@]}"; do
     fi
 done
 
+source bashrc/setup_bashrc.sh
+
 source ~/.bashrc
 echo Internal commands and environment variables installed
-
 
 # setup VSCode with default settings and extensions
 source $script_dir/vscode/vsc_setup.sh
