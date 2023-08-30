@@ -24,5 +24,11 @@ apt_packages=(
     xz-utils
     zlib1g-dev
 )
+
+for package in "${apt_packages[@]}"; do
+    if ! dpkg -s "$package" >/dev/null 2>&1; then
+        sudo apt install -y "$package"
+    fi
+done
+
 sudo apt update
-sudo apt install -y "${apt_packages[@]}" --fix-missing
