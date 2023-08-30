@@ -2,10 +2,16 @@
 
 apt_packages=(
     bash-completion
-    build-essential
     curl
     fzf
     jq
+    man-db
+    nodejs
+    rename
+)
+
+pyenv_depencies=(
+    build-essential
     libbz2-dev
     libffi-dev
     liblzma-dev
@@ -17,8 +23,6 @@ apt_packages=(
     llvm
     lzma-dev
     make
-    man-db
-    nodejs
     tk-dev
     wget
     xz-utils
@@ -26,6 +30,12 @@ apt_packages=(
 )
 
 for package in "${apt_packages[@]}"; do
+    if ! dpkg -s "$package" >/dev/null 2>&1; then
+        sudo apt install -y "$package"
+    fi
+done
+
+for package in "${pyenv_depencies[@]}"; do
     if ! dpkg -s "$package" >/dev/null 2>&1; then
         sudo apt install -y "$package"
     fi
