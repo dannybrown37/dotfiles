@@ -1,0 +1,10 @@
+apt_packages=(
+    bash-completion
+    fzf
+    jq
+    man-db
+    nodejs
+    python3
+    python3-distutils
+)
+sudo apt install -y "${apt_packages[@]}"
