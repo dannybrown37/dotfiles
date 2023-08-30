@@ -1,5 +1,9 @@
 #SingleInstance Force
 
+; bash stuff
+::,,brc::~/.bashrc
+
+
 ; venv stuff
 ::,,pmv::python -m venv .venv
 ::,,vba::source .venv/bin/activate
