@@ -1,4 +1,4 @@
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/projects/dev_utils/path_scripts:$HOME/.local/bin:$PATH"
 
 # show the git branch and other useful info on command prompt
 parse_git_branch() { git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'; }
