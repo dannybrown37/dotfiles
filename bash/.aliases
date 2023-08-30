@@ -1,3 +1,5 @@
+#!/bin/bash
+
 parent_dir=$(dirname $(dirname $(readlink -f "${BASH_SOURCE}")))
 
 alias python=python3

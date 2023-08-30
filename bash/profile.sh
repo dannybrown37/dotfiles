@@ -11,6 +11,7 @@ installation_order=(
     .envvars
     .aliases
     .scripts
+    .pyenv
 )
 
 for dotfile in "${installation_order[@]}"; do
