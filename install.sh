@@ -10,30 +10,31 @@ fi
 script_path=$(readlink -f "${BASH_SOURCE[0]}")
 script_dir=$(dirname "$script_path")
 
-# install third-party utils
+# install apt packages
 apt_packages=(
     bash-completion
     fzf
     jq
     man-db
     nodejs
+    npm
     python3
     python3-distutils
 )
 sudo apt install -y "${apt_packages[@]}"
 
+# install pip packages
+pip install --upgrade pip
 pip_packages=(
     ansible-core
 )
 pip install "${pip_packages[@]}"
 
 # autoenv automatically runs .env file when you cd in
-#TODO: get this install working
-#curl -#fLo- 'https://raw.githubusercontent.com/hyperupcall/autoenv/master/scripts/install.sh' | sh
+curl -#fLo- 'https://raw.githubusercontent.com/hyperupcall/autoenv/master/scripts/install.sh' | sh
 
 
 # "install" internal utilities by using alias >> .bashrc
-# also set environment variables needed
 
 bashrc_commands=(
     "alias cht=$script_dir/cht/cht.sh"
@@ -46,6 +47,7 @@ for command in "${bashrc_commands[@]}"; do
     fi
 done
 
+# add default bash config to ~/.bashrc
 source bashrc/setup_bashrc.sh
 
 source ~/.bashrc
