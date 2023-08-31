@@ -14,6 +14,16 @@ installation_order=(
     .pyenv
 )
 
+if [ $1 = "--no_installs" ]; then
+    installation_order=(
+        .functions
+        .envvars
+        .aliases
+        .scripts
+    )
+fi
+
+
 for dotfile in "${installation_order[@]}"; do
     source $script_path/$dotfile
 done
@@ -22,10 +32,10 @@ done
 # Add this script to .bashrc (if it's not already there)
 lines_for_bash_rc=(
     "# Set up bash profile from dotfiles repo"
-    "source $script"
+    "source $script --no_installs"
 )
 for line in "${lines_for_bash_rc[@]}"; do
-    if ! grep -qF "$line" "$user_bashrc_file"; then
+    if ! grep -qF "$line" "${HOME}/.bashrc"; then
         echo $line >> "${HOME}/.bashrc"
     fi
 done
