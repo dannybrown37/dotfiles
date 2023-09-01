@@ -23,5 +23,6 @@ ssh
 tail
 tar
 tr
+trap
 typescript
 xargs
