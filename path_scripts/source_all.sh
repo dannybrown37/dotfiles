@@ -12,6 +12,5 @@ script_name=$(basename $script_path)
 for script_file in "$script_dir"/*.sh; do
     if [[ -f "$script_file" && ! "$script_file" =~ .*"$script_name".* ]]; then
         source "$script_file"
-        echo "Sourced: $script_file"
     fi
 done
