@@ -19,6 +19,7 @@ source install.sh
 * cdp: move immediately to any directory in ~/projects (with autocomplete)
 * cht: curl cht.sh for commonly used tools/languages. (Add new ones as needed in cht/.cht_sh_index)
 * gg/google: google something from the terminal, no quotes needed, pops open a web browser
+* pr: open pull request from current branch into default branch. (Currently works with GitHub only.)
 
 ## Other Config Options
 
