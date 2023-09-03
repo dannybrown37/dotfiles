@@ -1,7 +1,7 @@
 #!/bin/bash
 
 script=$(readlink -f "$BASH_SOURCE")
-script_path=$(dirname "$script")
+profile_path=$(dirname "$script")
 
 
 # Run all dotfiles
@@ -10,6 +10,7 @@ installation_order=(
     .functions
     .envvars
     .aliases
+    .secrets
     .scripts
     .pyenv
 )
@@ -20,16 +21,17 @@ if [ $1 = "--no_installs" ]; then
         .envvars
         .aliases
         .scripts
+        .secrets
     )
 fi
 
 
 for dotfile in "${installation_order[@]}"; do
-    source $script_path/$dotfile
+    touch $profile_path/$dotfile
+    source $profile_path/$dotfile
 done
 
-
-# Add this script to .bashrc (if it's not already there)
+# Add this script to .bashrc with --no_installs flag (if it's not already there)
 lines_for_bash_rc=(
     "# Set up bash profile from dotfiles repo"
     "source $script --no_installs"
