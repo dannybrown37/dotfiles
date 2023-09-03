@@ -1,35 +1,36 @@
 #! bin/bash/
 
-# Opens a pull request from current branch to specified branch
+# Opens a pull request from current branch to default branch in repo
 
 pr() {
 
-    default_branch=develop
+    default_branch=$(git remote show origin | grep 'HEAD branch' | awk '{print $NF}')
 
-    read -p "Target branch [$default_branch]: " target_branch
-    if [ -z $target_branch ]; then
-        target_branch=$default_branch
-    fi
     current_branch=$(parse_git_branch)
     pull_request_title="$current_branch -> $target_branch"
 
     non_current_branches=$(git for-each-ref --format='%(refname)' refs/heads/ | grep -v "refs/heads/$current_branch")
     commit_messages=$(git log $current_branch --oneline --not $non_current_branches)
-
-    read -p "Enter your pull request description [each commit message in branch, one per line]: " pr_description
+    commit_message="Commits in pull request:\n"
+    for message in "${commit_messages[@]}"; do
+        commit_message+="\n* $message"
+    done
 
     json_content="{
         \"title\": \"$pull_request_title\",
-        \"body\": \"$commit_messages\",
+        \"body\": \"$commit_message\",
         \"head\": \"$current_branch\",
         \"base\": \"$target_branch\"
     }"
-
-    echo "PR content: $json_content"
+    echo "$json_content" > temp_pr.json
 
     repo_name=$(basename "$(git rev-parse --show-toplevel)")
+    url="https://api.github.com/repos/$GITHUB_USERNAME/$repo_name/pulls"
 
-    curl -X POST -H "Authorization: token $GIT_HUB_TOKEN" \
+    curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
          -H "Accept: application/vnd.github.v3+json" \
-         -d "$json_content" "https://api.github.com/repos/$GITHUB_USERNAME/$repo_name/pulls"
+         -d @temp_pr.json \
+         "$url"
+
+    rm -f temp_pr.json
 }
