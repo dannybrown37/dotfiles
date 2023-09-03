@@ -11,7 +11,7 @@ pr() {
 
     # Get current branch
     current_branch=$(parse_git_branch)
-    pull_request_title="$current_branch -> $target_branch"
+    pull_request_title="$current_branch -> $default_branch"
 
     # Get commit messages for each line in branch
     non_current_branches=$(git for-each-ref --format='%(refname)' refs/heads/ | grep -v "refs/heads/$current_branch")
