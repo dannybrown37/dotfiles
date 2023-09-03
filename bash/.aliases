@@ -4,4 +4,4 @@ parent_dir=$(dirname $(dirname $(readlink -f "${BASH_SOURCE}")))
 
 alias python=python3
 alias cht="$parent_dir/cht/cht.sh"
-alias ahk="$parent_dir/ahk_shortcuts/ahk.sh"
+alias ahk="$parent_dir/ahk/ahk.sh"
