@@ -10,6 +10,7 @@ installation_order=(
     .functions
     .envvars
     .aliases
+    .secrets
     .scripts
     .pyenv
 )
@@ -20,9 +21,11 @@ if [ $1 = "--no_installs" ]; then
         .envvars
         .aliases
         .scripts
+        .secrets
     )
 fi
 
+touch $script_path/.secrets
 
 for dotfile in "${installation_order[@]}"; do
     source $script_path/$dotfile
