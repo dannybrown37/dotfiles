@@ -23,17 +23,17 @@
 ; pip stuff
 ::,,pir::pip install -r requirements.txt
 ::,,pirdev::pip install -r requirements.dev.txt
-::,,pi.::pip install .
 ::,,pie::pip install -e .
 ::,,puf::pip freeze | xargs pip uninstall -y   ; "pip uninstall freeze", removes all packages installed
 
 
 ; git stuff
 ::,,gap::git add -p
-::,,gcm::git commit -m "
+::,,gc::git commit -m "
 ::,,gcc::git commit -m "chore:
 ::,,gcfix::git commit -m "fix:
 ::,,gcfeat::git commit -m "feat:
+::,,gcmajor::git commit -m "BREAKING CHANGE:
 ::,,gcr::git commit --amend --no-edit  ; "git commit rebase", updates last commit
 ::,,grh::git rebase -i HEAD~
 ::,,grd::git rebase develop
@@ -46,7 +46,7 @@
 ::,,gp::git push
 ::,,gpf::git push -f
 ::,,gpo::git push -u origin
-::,,gitpurge::git branch | grep -v -e "main" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main
+::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main
 
 
 ; serverless stuff
@@ -65,10 +65,10 @@
 ; Control + Shift + C will automatically search Google for the copied text
 ^+c::
 {
- Send, ^c
- Sleep 50
- Run, https://www.google.com/search?q=%clipboard%
- Return
+  Send, ^c
+  Sleep 50
+  Run, https://www.google.com/search?q=%clipboard%
+  Return
 }
 
 ; Control + Shift + Z toggles Windows terminal
@@ -104,7 +104,7 @@ SwitchToWindowsTerminal()
 ^+z::SwitchToWindowsTerminal()
 
 
-; Define a hotkey to open or focus Visual Studio Code
+; Control + Shift + X toggles Visual Studio Code
 ^+x::
   SwitchToVSCode()sett
 return
