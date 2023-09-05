@@ -74,6 +74,7 @@ pr() {
              "$url"
 
     elif [ $repo_home = "github" ]; then
+
         json_content="{
             \"title\": \"$pull_request_title\",
             \"body\": \"$commit_message\",
@@ -84,7 +85,8 @@ pr() {
 
         url="https://api.github.com/repos/$GITHUB_USERNAME/$repo_name/pulls"
 
-        curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+        curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             -d @temp_pr.json \
             "$url"

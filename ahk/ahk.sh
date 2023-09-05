@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
+
+
 # Get autohotkey file from this repo in WSL2, start in Windows environment
 # May need to Powershell Admin run: `Set-ExecutionPolicy RemoteSigned`
+
 
 script=$(readlink -f "$BASH_SOURCE")
 script_path=$(dirname "$script")
@@ -13,6 +16,11 @@ if [ "$1" = "open" ]; then
     code $ahk_file_path
 elif [ "$1" = "open_secrets" ]; then
     code $ahk_secrets_path
+elif [ "$1" = "kill" ]; then
+    ahk_pids=$(powershell.exe "Get-Process AutoHotkey | Select-Object -ExpandProperty Id")
+    for pid in $ahk_pids; do
+        powershell.exe "Stop-Process -Id $pid '-Force'"
+    done
 else
     win_drive_path=$(wslpath -w -a "$ahk_file_path")
     powershell.exe -Command "Start-Process '${win_drive_path}'" 2> /dev/null
