@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-# source all files in path_scripts except this one itself
+# source all files in scripts except this one itself
 
 
 script_path=$(readlink -f "${BASH_SOURCE[0]}")
