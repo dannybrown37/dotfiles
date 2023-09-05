@@ -8,8 +8,9 @@ pr() {
 
     if git remote -v | grep -q "bitbucket"; then
         repo_home="bitbucket"
-        if [[ -z $BITBUCKET_TOKEN ]]; then
-            echo "Error: You must set your BITBUCKET_TOKEN in the environment"
+        if [[ -z $BITBUCKET_TOKEN || $BITBUCKET_BASE_URL ]]; then
+            echo "Error: You must set your BITBUCKET_TOKEN and BITBUCKET_BASE_URL in the environment"
+            echo "Hint: The URL should end with \"projects\", the rest will be constructed in script"
             return
         fi
     elif git remote -v | grep -q "github"; then
@@ -44,23 +45,27 @@ pr() {
     # Create PR content
 
     if [ $repo_home = "bitbucket" ]; then
+
+        bitbucket_project=$(git remote -v | grep push | cut -d'/' -f4 | tr '[a-z]' '[A-Z]')
+
         json_content="{
             \"title\": \"$pull_request_title\",
             \"description\": \"$commit_message\",
-            \"source\": {
-                \"branch\": {
-                    \"name\": \"$current_branch\"
-                }
+            \"fromRef\": {
+                \"id\": \"refs/heads/$current_branch\",
+                \"repository\": \"$repo_name\",
+                \"project\": {\"key\": \"$bitbucket_project\"}
             },
-            \"destination\": {
-                \"branch\": {
-                    \"name\": \"$default_branch\"
-                }
+            \"toRef\": {
+                \"id\": \"refs/heads/$default_branch\",
+                \"repository\": \"$repo_name\",
+                \"project\": {\"key\": \"$bitbucket_project\"}
             }
         }"
         echo "$json_content" > temp_pr.json
+        echo $json_content | jq
 
-        url="$BITBUCKET_BASE_URL/$repo_name/pull-requests"
+        url="$BITBUCKET_BASE_URL/$bitbucket_project/repos/$repo_name/pull-requests"
 
         curl -X POST \
              -H "Authorization: Bearer $BITBUCKET_TOKEN" \
