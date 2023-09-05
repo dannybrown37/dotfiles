@@ -2,6 +2,7 @@
 
 
 # Opens a pull request from current branch to default branch in repo
+# Works with GitHub and enterprise Bitbucket
 
 
 pr() {
@@ -15,8 +16,8 @@ pr() {
         fi
     elif git remote -v | grep -q "github"; then
         repo_home="github"
-        if [[ -z $GITHUB_USERNAME || -z $GITHUB_TOKEN ]]; then
-            echo "Error: You must set your GITHUB_USERNAME and GITHUB_TOKEN in the environment"
+        if [[ -z $GITHUB_TOKEN ]]; then
+            echo "Error: You must set your GITHUB_TOKEN in the environment"
             return
         fi
     else
@@ -41,12 +42,13 @@ pr() {
         commit_message+="\n$message"
     done
     repo_name=$(basename "$(git rev-parse --show-toplevel)")
+    repo_parent=$(git remote -v | grep push | cut -d'/' -f4)
 
     # Create PR content
 
     if [ $repo_home = "bitbucket" ]; then
 
-        bitbucket_project=$(git remote -v | grep push | cut -d'/' -f4 | tr '[a-z]' '[A-Z]')
+        bitbucket_project=$($repo_parent | tr '[a-z]' '[A-Z]')
 
         json_content="{
             \"title\": \"$pull_request_title\",
@@ -83,7 +85,7 @@ pr() {
         }"
         echo "$json_content" > temp_pr.json
 
-        url="https://api.github.com/repos/$GITHUB_USERNAME/$repo_name/pulls"
+        url="https://api.github.com/repos/$repo_parent/$repo_name/pulls"
 
         curl -X POST \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
