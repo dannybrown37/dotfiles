@@ -4,6 +4,9 @@
 # Opens a pull request from current branch to default branch in repo
 # Works with GitHub and enterprise Bitbucket
 
+# To install, update your PATH in your .bashrc file:
+# export PATH="$HOME/path/to/script_dir:$PATH"
+
 
 pr() {
 
