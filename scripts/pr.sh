@@ -11,7 +11,7 @@ pr() {
         repo_home="bitbucket"
         if [[ -z $BITBUCKET_TOKEN || $BITBUCKET_BASE_URL ]]; then
             echo "Error: You must set your BITBUCKET_TOKEN and BITBUCKET_BASE_URL in the environment"
-            echo "Hint: The URL should end with \"projects\", the rest will be constructed in script"
+            echo "Hint: The base URL should end with \".com\", the rest will be constructed in-script"
             return
         fi
     elif git remote -v | grep -q "github"; then
@@ -67,7 +67,7 @@ pr() {
         echo "$json_content" > temp_pr.json
         echo $json_content | jq
 
-        url="$BITBUCKET_BASE_URL/$bitbucket_project/repos/$repo_name/pull-requests"
+        url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$bitbucket_project/repos/$repo_name/pull-requests"
 
         curl -X POST \
              -H "Authorization: Bearer $BITBUCKET_TOKEN" \
