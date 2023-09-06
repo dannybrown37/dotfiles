@@ -13,6 +13,7 @@ installation_order=(
     .secrets
     .scripts
     .pyenv
+    .npm
 )
 
 if [ $1 = "--no_installs" ]; then
