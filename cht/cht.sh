@@ -12,8 +12,8 @@
 
 
 # Select a language or core utility from list in file
-dir=$(dirname $0)
-selected=$(cat $dir/.cht_sh_index | fzf)
+cht_dir=$(dirname $(readlink -f "$BASH_SOURCE"))
+selected=$(cat $cht_dir/.cht_sh_index | fzf)
 if [[ -z $selected ]]; then
     return
 fi
