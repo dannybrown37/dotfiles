@@ -1,7 +1,7 @@
 #SingleInstance Force
 
 ; bash stuff
-::,,brc::~/.bashrc
+::,,br::~/.bashrc
 ::,,sbr::source ~/.bashrc
 ::,,cbr::code ~/.bashrc
 
