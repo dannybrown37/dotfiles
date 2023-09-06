@@ -32,7 +32,8 @@ for dotfile in "${profile_files[@]}"; do
     source $profile_path/$dotfile
 done
 
-# Add this script to .bashrc (without --intsall flag)
+
+# Add this script to ~/.bashrc (without --install flag)
 lines_for_bash_rc=(
     "# Set up bash profile from dotfiles repo"
     "source $script"
