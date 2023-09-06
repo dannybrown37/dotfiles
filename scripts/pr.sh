@@ -2,6 +2,10 @@
 
 
 # Opens a pull request from current branch to default branch in repo
+# Works with GitHub and enterprise Bitbucket
+
+# To install, update your PATH in your .bashrc file:
+# export PATH="$HOME/path/to/script_dir:$PATH"
 
 
 pr() {
@@ -10,13 +14,13 @@ pr() {
         repo_home="bitbucket"
         if [[ -z $BITBUCKET_TOKEN || $BITBUCKET_BASE_URL ]]; then
             echo "Error: You must set your BITBUCKET_TOKEN and BITBUCKET_BASE_URL in the environment"
-            echo "Hint: The URL should end with \"projects\", the rest will be constructed in script"
+            echo "Hint: The base URL should end with \".com\", the rest will be constructed in-script"
             return
         fi
     elif git remote -v | grep -q "github"; then
         repo_home="github"
-        if [[ -z $GITHUB_USERNAME || -z $GITHUB_TOKEN ]]; then
-            echo "Error: You must set your GITHUB_USERNAME and GITHUB_TOKEN in the environment"
+        if [[ -z $GITHUB_TOKEN ]]; then
+            echo "Error: You must set your GITHUB_TOKEN in the environment"
             return
         fi
     else
@@ -41,12 +45,13 @@ pr() {
         commit_message+="\n$message"
     done
     repo_name=$(basename "$(git rev-parse --show-toplevel)")
+    repo_parent=$(git remote -v | grep push | cut -d'/' -f4)
 
     # Create PR content
 
     if [ $repo_home = "bitbucket" ]; then
 
-        bitbucket_project=$(git remote -v | grep push | cut -d'/' -f4 | tr '[a-z]' '[A-Z]')
+        bitbucket_project=$($repo_parent | tr '[a-z]' '[A-Z]')
 
         json_content="{
             \"title\": \"$pull_request_title\",
@@ -65,7 +70,7 @@ pr() {
         echo "$json_content" > temp_pr.json
         echo $json_content | jq
 
-        url="$BITBUCKET_BASE_URL/$bitbucket_project/repos/$repo_name/pull-requests"
+        url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$bitbucket_project/repos/$repo_name/pull-requests"
 
         curl -X POST \
              -H "Authorization: Bearer $BITBUCKET_TOKEN" \
@@ -74,6 +79,7 @@ pr() {
              "$url"
 
     elif [ $repo_home = "github" ]; then
+
         json_content="{
             \"title\": \"$pull_request_title\",
             \"body\": \"$commit_message\",
@@ -82,9 +88,10 @@ pr() {
         }"
         echo "$json_content" > temp_pr.json
 
-        url="https://api.github.com/repos/$GITHUB_USERNAME/$repo_name/pulls"
+        url="https://api.github.com/repos/$repo_parent/$repo_name/pulls"
 
-        curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+        curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             -d @temp_pr.json \
             "$url"
