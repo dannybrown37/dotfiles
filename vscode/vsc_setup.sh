@@ -2,17 +2,9 @@
 
 source ~/.bashrc
 
-if [ -z "$WINDOWS_USERNAME" ]; then
-  ls /mnt/c/Users
-  read -p "What is your Windows username? " windows_username
-  echo "export WINDOWS_USERNAME=$windows_username" >> ~/.bashrc
-  source ~/.bashrc
-fi
-
-script=$(readlink -f "$BASH_SOURCE")
-script_path=$(dirname "$script")
-default_settings_path=$script_path/.default_settings.json
-default_extensions_path=$script_path/.extensions
+vscode_setup_script_path=$(dirname $(readlink -f "$BASH_SOURCE"))
+default_settings_path=$vscode_setup_script_path/.default_settings.json
+default_extensions_path=$vscode_setup_script_path/.extensions
 
 # Path to settings.json in WSL
 vscode_settings_path="/mnt/c/Users/$WINDOWS_USERNAME/AppData/Roaming/Code/User/settings.json"
