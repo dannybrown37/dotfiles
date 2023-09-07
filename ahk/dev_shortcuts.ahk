@@ -48,6 +48,7 @@
 ::,,gp::git push
 ::,,gpf::git push -f
 ::,,gpo::git push -u origin
+::,,glo::git log -1 --pretty=%B
 ::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
 
 
