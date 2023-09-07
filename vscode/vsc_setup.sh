@@ -37,18 +37,19 @@ echo $merged_settings | jq '.' > "$vscode_settings_path"
 echo "New VSCode settings:"
 cat $vscode_settings_path
 
-
 # Now handle extensions
 installed_extensions=$(code --list-extensions)
-not_installed=()
+extensions_to_install=()
 
 while IFS= read -r extension_id; do
   if [[ ! "$installed_extensions" == *"$extension_id"* ]]; then
-    echo "Installing extension: $extension_id"
-    code --install-extension "$extension_id"
-  else
-    not_installed+=("$extension_id")
+    extensions_to_install+=("$extension_id")
   fi
 done < "$default_extensions_path"
 
-echo "VSCode extensions already installed: ${not_installed[@]}"
+for extension_id in "${extensions_to_install[@]}"; do
+  echo "Installing extension: $extension_id"
+  code --install-extension "$extension_id"
+done
+
+echo "All extensions have been installed."
