@@ -1,2 +1,2 @@
-npm install --global git-open
-npm install --global serverless
+sudo npm install --global git-open
+sudo npm install --global serverless
