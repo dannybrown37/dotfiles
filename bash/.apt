@@ -29,7 +29,7 @@ pyenv_depencies=(
     zlib1g-dev
 )
 
-sudo apt-get update
+sudo apt update
 
 for package in "${apt_packages[@]}"; do
     if ! dpkg -s "$package" >/dev/null 2>&1; then
