@@ -1,11 +1,10 @@
-## Overview
+# Overview
 
 dotfiles for a WSL2-based Debian setup.
 
-
 ## Clone and Run
 
-```
+``` bash
 git clone https://www.github.com/dannybrown37/dotfiles
 cd dotfiles
 source install.sh
@@ -30,28 +29,29 @@ source install.sh
 
 ## Initial Windows Setup Notes
 
-### Downloads:
+### Downloads
 
 * [Google Chrome](https://www.google.com/search?q=google+chrome+download)
 * [Windows Terminal](https://www.google.com/search?q=windows+terminal+download)
 * [Visual Studio Code](https://www.google.com/search?q=vs+code+download)
 * [AutoHotKey](https://www.autohotkey.com/download/)
+* [Git for Windows](https://www.google.com/search?q=git+for+windows+download)
 
-### Set Up a WSL Debian Distro in PowerShell:
+### Set Up a WSL Debian Distro in PowerShell
 
-```
+``` powershell
     wsl --set-default-version 2
     wsl --install -d Debian
 ```
 
-### Set up git, clone this project, and install:
+### Set Up Git, Clone Dotfiles, Install
 
-```
-	sudo apt-get update
-	sudo apt install git -y
-	mkdir projects
-	cd projects
-	git clone https://www.github.com/dannybrown37/dotfiles
-	cd dotfiles
-	source install.sh
+``` bash
+ sudo apt-get update
+ sudo apt install git -y
+ mkdir projects
+ cd projects
+ git clone https://www.github.com/dannybrown37/dotfiles
+ cd dotfiles
+ source install.sh
 ```
