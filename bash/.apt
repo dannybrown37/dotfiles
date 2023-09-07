@@ -29,6 +29,8 @@ pyenv_depencies=(
     zlib1g-dev
 )
 
+sudo apt update
+
 for package in "${apt_packages[@]}"; do
     if ! dpkg -s "$package" >/dev/null 2>&1; then
         sudo apt install -y "$package"
@@ -40,5 +42,3 @@ for package in "${pyenv_depencies[@]}"; do
         sudo apt install -y "$package"
     fi
 done
-
-sudo apt update
