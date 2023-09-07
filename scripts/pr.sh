@@ -4,8 +4,12 @@
 # Opens a pull request from current branch to default branch in repo
 # Works with GitHub and enterprise Bitbucket
 
-# To install, update your PATH in your .bashrc file:
-# export PATH="$HOME/path/to/script_dir:$PATH"
+# To install, update your PATH in your .bashrc file, then source it:
+#   export PATH="$HOME/path/to/script_dir:$PATH"
+#   source ~/.bashrc
+
+# To use, enter your BITBUCKET_TOKEN and BITBUCKET_BASE_URL in your
+# environment, then just enter `pr` after pushing a branch up.
 
 
 pr() {
@@ -66,15 +70,9 @@ pr() {
             }
         }"
         echo "$json_content" > temp_pr.json
-        echo $json_content | jq
 
         url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$repo_parent/repos/$repo_name/pull-requests"
-
-        curl -X POST \
-             -H "Authorization: Bearer $BITBUCKET_TOKEN" \
-             -H "Content-Type: application/json" \
-             -d @temp_pr.json \
-             "$url"
+        data_type_header="Content-Type: application/json"
 
     elif [ $repo_home = "github" ]; then
 
@@ -87,14 +85,15 @@ pr() {
         echo "$json_content" > temp_pr.json
 
         url="https://api.github.com/repos/$repo_parent/$repo_name/pulls"
-
-        curl -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d @temp_pr.json \
-            "$url"
+        data_type_header="Accept: application/vnd.github.v3+json"
 
     fi
+
+    curl -X POST \
+         -H "Authorization: Bearer $GITHUB_TOKEN" \
+         -H $data_type_header \
+         -d @temp_pr.json \
+         "$url"
 
     rm -f temp_pr.json
 }
