@@ -37,7 +37,7 @@ pr() {
     default_branch=$(git remote show origin | grep 'HEAD branch' | awk '{print $NF}')
 
     # Get current branch
-    current_branch=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+    current_branch=$(parse_git_branch)
     pull_request_title="$current_branch -> $default_branch"
 
     # Get commit messages for each line in branch
