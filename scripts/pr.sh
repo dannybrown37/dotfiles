@@ -74,7 +74,6 @@ pr() {
         url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$repo_parent/repos/$repo_name/pull-requests"
         data_type_header="Content-Type: application/json"
         token=$(echo $BITBUCKET_TOKEN)
-        echo $token
 
     elif [ $repo_home = "github" ]; then
 
