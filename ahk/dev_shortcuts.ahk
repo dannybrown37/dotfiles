@@ -1,7 +1,7 @@
 #SingleInstance Force
 
 ; bash stuff
-::,,brc::~/.bashrc
+::,,br::~/.bashrc
 ::,,sbr::source ~/.bashrc
 ::,,cbr::code ~/.bashrc
 
@@ -23,6 +23,7 @@
 ; pip stuff
 ::,,pir::pip install -r requirements.txt
 ::,,pirdev::pip install -r requirements.dev.txt
+::,,pirdocs::pip install -r requirements.docs.txt
 ::,,pie::pip install -e .
 ::,,puf::pip freeze | xargs pip uninstall -y   ; "pip uninstall freeze", removes all packages installed
 
@@ -30,6 +31,7 @@
 ; git stuff
 ::,,gap::git add -p
 ::,,gc::git commit -m "
+::,,gca::git commit --amend -m "
 ::,,gcc::git commit -m "chore:
 ::,,gcfix::git commit -m "fix:
 ::,,gcfeat::git commit -m "feat:

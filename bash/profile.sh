@@ -4,37 +4,39 @@ script=$(readlink -f "$BASH_SOURCE")
 profile_path=$(dirname "$script")
 
 
-# Run all dotfiles
-installation_order=(
-    .apt
-    .functions
-    .envvars
-    .aliases
-    .secrets
-    .scripts
-    .pyenv
-)
-
-if [ $1 = "--no_installs" ]; then
+# Use --install argument to install apt, pyenv, and npm dependencies
+if [[ $1 == "--install" ]]; then
     installation_order=(
-        .functions
-        .envvars
-        .aliases
-        .scripts
-        .secrets
+        .apt
+        .pyenv
+        .npm
     )
+
+    for dotfile in "${installation_order[@]}"; do
+        source $profile_path/$dotfile
+    done
 fi
 
 
-for dotfile in "${installation_order[@]}"; do
+# Source these files every time this file is run regardless of flag
+profile_files=(
+    .functions
+    .envvars
+    .aliases
+    .scripts
+    .secrets
+)
+
+for dotfile in "${profile_files[@]}"; do
     touch $profile_path/$dotfile
     source $profile_path/$dotfile
 done
 
-# Add this script to .bashrc with --no_installs flag (if it's not already there)
+
+# Add this script to ~/.bashrc (without --install flag)
 lines_for_bash_rc=(
     "# Set up bash profile from dotfiles repo"
-    "source $script --no_installs"
+    "source $script"
 )
 for line in "${lines_for_bash_rc[@]}"; do
     if ! grep -qF "$line" "${HOME}/.bashrc"; then

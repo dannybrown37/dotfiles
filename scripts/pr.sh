@@ -4,15 +4,19 @@
 # Opens a pull request from current branch to default branch in repo
 # Works with GitHub and enterprise Bitbucket
 
-# To install, update your PATH in your .bashrc file:
-# export PATH="$HOME/path/to/script_dir:$PATH"
+# To install, update your PATH in your .bashrc file, then source it:
+#   export PATH="$HOME/path/to/script_dir:$PATH"
+#   source ~/.bashrc
+
+# To use, enter your BITBUCKET_TOKEN and BITBUCKET_BASE_URL in your
+# environment, then just enter `pr` after pushing a branch up.
 
 
 pr() {
 
     if git remote -v | grep -q "bitbucket"; then
         repo_home="bitbucket"
-        if [[ -z $BITBUCKET_TOKEN || $BITBUCKET_BASE_URL ]]; then
+        if [[ -z $BITBUCKET_TOKEN || -z $BITBUCKET_BASE_URL ]]; then
             echo "Error: You must set your BITBUCKET_TOKEN and BITBUCKET_BASE_URL in the environment"
             echo "Hint: The base URL should end with \".com\", the rest will be constructed in-script"
             return
@@ -51,32 +55,24 @@ pr() {
 
     if [ $repo_home = "bitbucket" ]; then
 
-        bitbucket_project=$($repo_parent | tr '[a-z]' '[A-Z]')
-
         json_content="{
             \"title\": \"$pull_request_title\",
             \"description\": \"$commit_message\",
             \"fromRef\": {
                 \"id\": \"refs/heads/$current_branch\",
                 \"repository\": \"$repo_name\",
-                \"project\": {\"key\": \"$bitbucket_project\"}
+                \"project\": {\"key\": \"$repo_parent\"}
             },
             \"toRef\": {
                 \"id\": \"refs/heads/$default_branch\",
                 \"repository\": \"$repo_name\",
-                \"project\": {\"key\": \"$bitbucket_project\"}
+                \"project\": {\"key\": \"$repo_parent\"}
             }
         }"
         echo "$json_content" > temp_pr.json
-        echo $json_content | jq
 
-        url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$bitbucket_project/repos/$repo_name/pull-requests"
-
-        curl -X POST \
-             -H "Authorization: Bearer $BITBUCKET_TOKEN" \
-             -H "Content-Type: application/json" \
-             -d @temp_pr.json \
-             "$url"
+        url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$repo_parent/repos/$repo_name/pull-requests"
+        data_type_header="Content-Type: application/json"
 
     elif [ $repo_home = "github" ]; then
 
@@ -89,14 +85,15 @@ pr() {
         echo "$json_content" > temp_pr.json
 
         url="https://api.github.com/repos/$repo_parent/$repo_name/pulls"
-
-        curl -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d @temp_pr.json \
-            "$url"
+        data_type_header="Accept: application/vnd.github.v3+json"
 
     fi
+
+    curl -X POST \
+         -H "Authorization: Bearer $GITHUB_TOKEN" \
+         -H $data_type_header \
+         -d @temp_pr.json \
+         "$url"
 
     rm -f temp_pr.json
 }
