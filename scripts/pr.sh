@@ -12,7 +12,7 @@ pr() {
 
     if git remote -v | grep -q "bitbucket"; then
         repo_home="bitbucket"
-        if [[ -z $BITBUCKET_TOKEN || $BITBUCKET_BASE_URL ]]; then
+        if [[ -z $BITBUCKET_TOKEN || -z $BITBUCKET_BASE_URL ]]; then
             echo "Error: You must set your BITBUCKET_TOKEN and BITBUCKET_BASE_URL in the environment"
             echo "Hint: The base URL should end with \".com\", the rest will be constructed in-script"
             return
