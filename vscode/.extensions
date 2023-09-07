@@ -1,4 +1,4 @@
-bungcip.better-toml
+DavidAnson.vscode-markdownlint
 eamodio.gitlens
 esbenp.prettier-vscode
 leonhard-s.python-sphinx-highlight
@@ -14,6 +14,7 @@ nomi9995.intellij-merge-tool
 recode4dev.jenkinsfile
 rvest.vs-code-prettier-eslint
 shd101wyy.markdown-preview-enhanced
+tamasfe.even-better-toml
 VisualStudioExptTeam.intellicode-api-usage-examples
 VisualStudioExptTeam.vscodeintellicode
 VisualStudioExptTeam.vscodeintellicode-completions
