@@ -51,26 +51,24 @@ pr() {
 
     if [ $repo_home = "bitbucket" ]; then
 
-        bitbucket_project=$($repo_parent | tr '[a-z]' '[A-Z]')
-
         json_content="{
             \"title\": \"$pull_request_title\",
             \"description\": \"$commit_message\",
             \"fromRef\": {
                 \"id\": \"refs/heads/$current_branch\",
                 \"repository\": \"$repo_name\",
-                \"project\": {\"key\": \"$bitbucket_project\"}
+                \"project\": {\"key\": \"$repo_parent\"}
             },
             \"toRef\": {
                 \"id\": \"refs/heads/$default_branch\",
                 \"repository\": \"$repo_name\",
-                \"project\": {\"key\": \"$bitbucket_project\"}
+                \"project\": {\"key\": \"$repo_parent\"}
             }
         }"
         echo "$json_content" > temp_pr.json
         echo $json_content | jq
 
-        url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$bitbucket_project/repos/$repo_name/pull-requests"
+        url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$repo_parent/repos/$repo_name/pull-requests"
 
         curl -X POST \
              -H "Authorization: Bearer $BITBUCKET_TOKEN" \
