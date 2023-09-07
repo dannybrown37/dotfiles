@@ -73,8 +73,7 @@ pr() {
 
         url="$BITBUCKET_BASE_URL/rest/api/1.0/projects/$repo_parent/repos/$repo_name/pull-requests"
         data_type_header="Content-Type: application/json"
-        token=$(echo $BITBUCKET_TOKEN)
-        echo $token
+        token=$BITBUCKET_TOKEN
 
     elif [ $repo_home = "github" ]; then
 
@@ -88,13 +87,13 @@ pr() {
 
         url="https://api.github.com/repos/$repo_parent/$repo_name/pulls"
         data_type_header="Accept: application/vnd.github.v3+json"
-        token=$(echo $GITHUB_TOKEN)
+        token=$GITHUB_TOKEN
 
     fi
 
     curl -X POST \
          -H "Authorization: Bearer $token" \
-         -H $data_type_header \
+         -H "$data_type_header" \
          -d @temp_pr.json \
          "$url"
 
