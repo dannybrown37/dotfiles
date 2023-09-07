@@ -1,15 +1,7 @@
 #!/bin/bash
 
 
-# installs and PATHs pyenv: make sure dependencies in .apt are installed first
-
-
-# install pyenv if it's not already installed
-if ! command -v pyenv 1>/dev/null 2>&1; then
-    curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
-fi
-
-# add pyenv to path
+# add pyenv configuration to path
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 if command -v pyenv 1>/dev/null 2>&1; then

@@ -8,7 +8,6 @@ profile_path=$(dirname "$script")
 if [[ $1 == "--install" ]]; then
     installation_order=(
         .apt
-        .pyenv
         .npm
     )
 
@@ -20,8 +19,9 @@ fi
 
 # Source these files every time this file is run regardless of flag
 profile_files=(
-    .functions
     .envvars
+    .functions
+    .pyenv
     .aliases
     .scripts
     .secrets
