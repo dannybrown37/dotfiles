@@ -1,5 +1,5 @@
 #!/bin/bash
 
 export PATH="$HOME/projects/dotfiles/scripts:$HOME/.local/bin:$PATH"
-export PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\[\033[33m\]($(current_git_branch))\[\033[00m\]\$ '
+export PS1='\[\033[01;34m\]\w\[\033[00m\]\[\033[33m\]($(current_git_branch))\[\033[00m\]\$ '
 export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
