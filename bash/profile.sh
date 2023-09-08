@@ -9,6 +9,7 @@ if [[ $1 == "--install" ]]; then
     installation_order=(
         .apt
         .npm
+        .golang
     )
 
     for dotfile in "${installation_order[@]}"; do
@@ -21,7 +22,7 @@ fi
 profile_files=(
     .envvars
     .functions
-    .pyenv
+    .language_config
     .aliases
     .scripts
     .secrets
