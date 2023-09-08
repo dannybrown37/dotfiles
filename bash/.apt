@@ -6,6 +6,7 @@ apt_packages=(
     fzf
     jq
     man-db
+    neofetch
     nodejs
     npm
     rename
