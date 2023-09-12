@@ -6,6 +6,12 @@
 ::,,cbr::code ~/.bashrc
 
 
+; python stuff
+::,,ifn::if __name__ == '__main__':
+::,,log::logger = logging.getLogger(__name__)
+::,,rst::ruff src tests
+
+
 ; venv stuff
 ::,,pmv::python -m venv .venv
 ::,,vba::source .venv/bin/activate
@@ -48,7 +54,7 @@
 ::,,gp::git push
 ::,,gpf::git push -f
 ::,,gpo::git push -u origin
-::,,glo::git log -1 --pretty=%B
+::,,glo::git log -1 --pretty=%B ; shows last commit message
 ::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
 ::,,nv::--no-verify
 
@@ -56,6 +62,7 @@
 ; serverless stuff
 ::,,sdd::sls deploy --stage=danny
 ::,,sid::sls info --stage=danny
+::,,srd::sls remove --stage=danny
 
 
 ; feedback stuff
