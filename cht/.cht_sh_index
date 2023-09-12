@@ -3,6 +3,7 @@ bash
 cat
 chmod
 cp
+curl
 find
 git
 golang
