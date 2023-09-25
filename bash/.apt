@@ -5,6 +5,7 @@ apt_packages=(
     curl
     fzf
     httpie
+    ijq
     jq
     man-db
     neofetch
