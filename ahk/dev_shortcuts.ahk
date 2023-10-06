@@ -14,9 +14,13 @@
 
 
 ; venv stuff
-::,,pmv::python -m venv .venv
+::,,pmv::python -m venv .venv && source .venv/bin/activate
 ::,,vba::source .venv/bin/activate
 ::,,nuke::deactivate && rm -r .venv && python -m venv .venv && source .venv/bin/activate
+
+
+; autoenv setup to auto activate an environment and let you know by echoing the folder
+::,,setupautoenv::echo "source .venv/bin/activate" >> .env && echo "echo '$(basename $(pwd)) env activated'" >> .env && source .env
 
 
 ; pytest stuff
@@ -28,10 +32,10 @@
 
 
 ; pip stuff
-::,,pir::pip install -r requirements.txt
-::,,pirdev::pip install -r requirements.dev.txt
-::,,pirdocs::pip install -r requirements.docs.txt
-::,,pie::pip install -e .
+::,,pir::pip install -r requirements.txt --require-virtualenv
+::,,pirdev::pip install -r requirements.dev.txt --require-virtualenv
+::,,pirdocs::pip install -r requirements.docs.txt --require-virtualenv
+::,,pie::pip install -e . --require-virtualenv
 ::,,puf::pip freeze | xargs pip uninstall -y   ; "pip uninstall freeze", removes all packages installed
 ::,,pup::python -m pip install --upgrade pip
 
@@ -60,6 +64,8 @@
 ::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
 ::,,gred::git reset --hard origin/develop  ; fix a diverged develop branch
 ::,,nv::--no-verify
+::,,gsu::git submodule update
+::,,gsi::git submodule update --init --recursive
 
 
 ; serverless stuff
