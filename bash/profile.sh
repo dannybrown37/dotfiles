@@ -33,6 +33,7 @@ for dotfile in "${profile_files[@]}"; do
     source $profile_path/$dotfile
 done
 
+ahk
 
 # One time, add this script to ~/.bashrc (without --install flag)
 lines_for_bash_rc=(
