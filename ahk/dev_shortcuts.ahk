@@ -1,29 +1,32 @@
 #SingleInstance Force
 
-; bash stuff
+
+; bash
 ::,,br::~/.bashrc
 ::,,sbr::source ~/.bashrc
 ::,,cbr::code ~/.bashrc
+::,,devnull::2>/dev/null
+::,,bashlist::"${list_name[@]}"
 
 
-; python stuff
+; python
 ::,,ifn::if __name__ == '__main__':
 ::,,ipp::from pprint import pprint {;} print() {;} pprint(
 ::,,log::logger = logging.getLogger(__name__)
 ::,,rst::ruff src tests
 
 
-; venv stuff
+; venv
 ::,,pmv::python -m venv .venv && source .venv/bin/activate
 ::,,vba::source .venv/bin/activate
-::,,nuke::deactivate && rm -r .venv && python -m venv .venv && source .venv/bin/activate
+::,,nuke::deactivate {;} rm -r .venv && python -m venv .venv && source .venv/bin/activate
 
 
 ; autoenv setup to auto activate an environment and let you know by echoing the folder
-::,,setupautoenv::echo "source .venv/bin/activate" >> .env && echo "echo '$(basename $(pwd)) env activated'" >> .env && source .env
+::,,newdotenv::echo "source .venv/bin/activate" >> .env && echo "echo '$(basename $(pwd)) env activated'" >> .env && source .env
 
 
-; pytest stuff
+; pytest
 ::,,ptt::pytest tests
 ::,,ptu::pytest tests/unit
 ::,,pte::pytest tests/e2e
@@ -31,16 +34,17 @@
 ::,,ptl::pytest tests/e2e/local
 
 
-; pip stuff
+; pip
 ::,,pir::pip install -r requirements.txt --require-virtualenv
 ::,,pirdev::pip install -r requirements.dev.txt --require-virtualenv
 ::,,pirdocs::pip install -r requirements.docs.txt --require-virtualenv
 ::,,pie::pip install -e . --require-virtualenv
+::,,pf::pip freeze
 ::,,puf::pip freeze | xargs pip uninstall -y   ; "pip uninstall freeze", removes all packages installed
 ::,,pup::python -m pip install --upgrade pip
 
 
-; git stuff
+; git
 ::,,gap::git add -p
 ::,,gc::git commit -m "
 ::,,gca::git commit --amend -m "
@@ -68,13 +72,19 @@
 ::,,gsi::git submodule update --init --recursive
 
 
-; serverless stuff
+; serverless
 ::,,sdd::sls deploy --stage=danny
 ::,,sid::sls info --stage=danny
 ::,,srd::sls remove --stage=danny
 
 
-; feedback stuff
+; sphinx
+::,,.cb::.. code-block:
+::,,.n::.. note::
+::,,sphinxlink::`Link text <link URL>`_
+
+
+; feedback
 ::,,dust::[[dust]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,sand::[[sand]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,pebble::[[pebble]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
