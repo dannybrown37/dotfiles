@@ -29,6 +29,7 @@
 ; pytest
 ::,,ptt::pytest tests
 ::,,ptu::pytest tests/unit
+::,,ptufb::firebase emulators:exec "pytest tests/unit -v"
 ::,,pte::pytest tests/e2e
 ::,,ptc::pytest tests/e2e/cloud
 ::,,ptl::pytest tests/e2e/local
@@ -78,10 +79,15 @@
 ::,,srd::sls remove --stage=danny
 
 
-; sphinx
-::,,.cb::.. code-block:
-::,,.n::.. note::
-::,,sphinxlink::`Link text <link URL>`_
+; sphinx/rst
+::,,rstcb::.. code-block:
+::,,rstn::.. note::
+::,,rstlink::`Link text <link URL>`_
+
+
+; markdown
+::,,mdlink::[]()
+::,,mdheaderlink::[``](#)
 
 
 ; feedback
@@ -90,6 +96,12 @@
 ::,,pebble::[[pebble]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,boulder::[[boulder]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,mountain::[[mountain]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
+
+
+; fixes for weird situations
+
+; when a `sudo apt-get update` was failing due to a missing public key, this was the needle in the haystack among a lot of suggestions that didn't work
+::,,fixhashicorppublickey::wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
 
 ; Control + Shift + C will automatically search Google for the copied text
