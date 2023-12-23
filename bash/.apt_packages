@@ -4,6 +4,7 @@ apt_packages=(
     bash-completion
     curl
     fzf
+    git
     httpie
     jq
     man-db
