@@ -31,7 +31,6 @@ function node_project_init {
     mkdir src
     touch src/index.ts
 
-
     tsconfig_content=$(cat <<EOF
 {
     "compilerOptions": {
