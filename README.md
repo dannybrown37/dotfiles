@@ -21,6 +21,7 @@ source install.sh
 * cht: curl cht.sh for commonly used tools/languages. Add new ones as needed in cht/.cht_sh_index
 * gg/google: google something from the terminal, no quotes needed, pops open a web browser
 * mk: mkdir and cd into it
+* node_project_init: spin up a git repo, gitignore file, and package.json for a Node project
 * pr: open pull request from current branch into default branch. GitHub and Bitbucket supported
 
 ## Other Config Options
