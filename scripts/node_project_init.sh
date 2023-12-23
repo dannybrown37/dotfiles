@@ -26,6 +26,7 @@ function node_project_init {
     fi
     yes | npx gitignore node
     npm init -y
-    touch index.js
+    npm i --save-dev typescript
+    touch index.ts
     git init
 }
