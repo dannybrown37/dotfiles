@@ -18,6 +18,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 # git configuration
 git config --global user.email "dannybrown37@gmail.com"
 git config --global user.name "Danny Brown"
+git config --global init.defaultBranch "main"
 
 source ~/.bashrc
 
