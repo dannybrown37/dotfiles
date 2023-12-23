@@ -15,6 +15,10 @@ curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv
 # install rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
+# git configuration
+git config --global user.email "dannybrown37@gmail.com"
+git config --global user.name "Danny Brown"
+
 source ~/.bashrc
 
 echo dotfiles setup complete!

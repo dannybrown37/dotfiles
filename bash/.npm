@@ -1,2 +1,8 @@
 sudo npm install --global git-open
 sudo npm install --global serverless
+
+npm config set init-author-name "Danny Brown"
+npm config set init-author-email "dannybrown37@gmail.com"
+npm config set init-author-url "https://github.com/dannybrown37"
+npm config set init-license "MIT"
+npm config set init-version "0.0.1"
