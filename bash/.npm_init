@@ -1,3 +1,7 @@
+#! /bin/bash
+
+# install global NPM packages and set global NPM congifurations
+
 sudo npm install --global git-open
 sudo npm install --global serverless
 sudo npm install --global ts-node
