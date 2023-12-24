@@ -8,9 +8,9 @@ profile_path=$(dirname "$script")
 # should only need to use this for initial setup
 if [[ $1 == "--install" ]]; then
     installation_order=(
-        .apt
-        .npm
-        .golang
+        .apt_packages
+        .npm_init
+        .golang_install
     )
 
     for dotfile in "${installation_order[@]}"; do
