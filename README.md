@@ -14,7 +14,7 @@ source install.sh
 
 * Installs programming languages/packages:
   * Python (all versions available via `pyenv`)
-  * NodeJS/NPM (gets latest available in Linux distribution, not always the most recent)
+  * NodeJS/NPM/TypeScript (gets latest available in Linux distribution, not always the most recent)
   * Golang (overwrites existing install with latest version)
   * Rust (latest stable version)
   * An assortment of preferred `apt` packages (defined in `./bash/.apt`)
@@ -39,7 +39,7 @@ source install.sh
 
 ### Config Options
 
-* In the `bash/` directory, configure bash profile in various files intuitevly sorted
+* In the `bash/` directory, configure bash profile in various files intuitively sorted
 * In the `vscode/` directory, configure VSCode settings and extensions
 * Set up any number of AutoHotKey scripts in the `./ahk` directory
 * Initial `git` config is done in `./install.sh`
