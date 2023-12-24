@@ -5,6 +5,7 @@ profile_path=$(dirname "$script")
 
 
 # Use --install argument to install apt, pyenv, and npm dependencies
+# should only need to use this for initial setup
 if [[ $1 == "--install" ]]; then
     installation_order=(
         .apt
@@ -24,7 +25,6 @@ profile_files=(
     .functions
     .language_config
     .aliases
-    .scripts
     .secrets
 )
 
@@ -33,12 +33,14 @@ for dotfile in "${profile_files[@]}"; do
     source $profile_path/$dotfile
 done
 
+# all scripts in scripts/ directory must be sourced to pick up changes
+source $profile_path/../scripts/source_all.sh
+
 ahk
 
 # One time, add this script to ~/.bashrc (without --install flag)
 lines_for_bash_rc=(
-    "# Set up bash profile from dotfiles repo"
-    "source $script"
+    "source $script # Set up bash profile from dotfiles repo"
 )
 for line in "${lines_for_bash_rc[@]}"; do
     if ! grep -qF "$line" "${HOME}/.bashrc"; then
