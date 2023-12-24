@@ -18,7 +18,7 @@ source install.sh
   * Golang (overwrites existing install with latest version)
   * Rust (latest stable version)
   * An assortment of preferred `apt` packages (defined in `./bash/.apt`)
-* [Makes global CLI commands available](#commands-available)
+* [Makes custom CLI commands globally available](#commands-available)
 * [Provides various configuration options](#config-options)
 * Installs the `autoenv` package to execute local `.env` files on each `cd` command
 * Adds to `~/.bashrc` an invocation of the `./bash/profile.sh` script
@@ -39,9 +39,17 @@ source install.sh
 
 ### Config Options
 
-* In the `bash/` directory, configure bash profile in various files intuitively sorted
-* In the `vscode/` directory, configure VSCode settings and extensions
-* Set up any number of AutoHotKey scripts in the `./ahk` directory
+* In the `bash/` directory, configure a Bash profile based on the types of settings:
+  * `.aliases` for any aliases we want to use
+  * `.apt_packages` to track `apt` packages to install in the distro
+  * `.envvars` to set environment variables we want permanently set
+  * `.functions` to store Bash functions meant to be invoked from other Bash scripts (not CLI commands)
+  * `.language_config` stores any programming language-specific settings
+  * `.npm_init` holds global NPM packages to install and configurations to set
+  * `.secrets` holds secret data such as tokens and keys that aren't committed to Git
+* In the `./ahk` directory, set up any number of AutoHotKey scripts
+* In the `./scripts` directory, define functions meant to be invoked as CLI commands
+* In the `./vscode` directory, configure VSCode settings and extensions
 * Initial `git` config is done in `./install.sh`
 
 ## Initial Windows Setup Notes
