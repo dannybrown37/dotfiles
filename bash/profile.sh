@@ -9,6 +9,7 @@ profile_path=$(dirname "$script")
 if [[ $1 == "--install" ]]; then
     installation_order=(
         .apt_packages
+        .git_init
         .npm_init
         .golang_install
     )

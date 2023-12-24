@@ -1,6 +1,13 @@
 #SingleInstance Force
 
 
+; personal
+::,,me::Danny Brown
+::@@::dannybrown37@gmail.com
+::,,linkedin::https://www.linkedin.com/in/dannybrown37
+::,,github::https:://www.github.com/dannybrown37
+
+
 ; bash
 ::,,br::~/.bashrc
 ::,,sbr::source ~/.bashrc
