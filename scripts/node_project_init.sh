@@ -26,6 +26,23 @@ function node_project_init {
     fi
     yes | npx gitignore node
     npm init -y
-    touch index.js
+    npm i --save-dev typescript
     git init
+    mkdir src
+    touch src/index.ts
+
+
+    tsconfig_content=$(cat <<EOF
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "strict": true
+    }
+}
+EOF
+)
+    echo "$tsconfig_content" > tsconfig.json
 }
