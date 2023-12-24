@@ -17,7 +17,7 @@ source install.sh
   * NodeJS/NPM/TypeScript (gets latest available in Linux distribution, not always the most recent)
   * Golang (overwrites existing install with latest version)
   * Rust (latest stable version)
-  * An assortment of preferred `apt` packages (defined in `./bash/.apt`)
+  * An assortment of preferred `apt` packages
 * [Makes custom CLI commands globally available](#commands-available)
 * [Provides various configuration options](#config-options)
 * Installs the `autoenv` package to execute local `.env` files on each `cd` command
