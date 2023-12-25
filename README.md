@@ -25,17 +25,17 @@ source install.sh
 
 ### Commands Available
 
-* ahk: run all AutoHotKey scripts in the `./ahk` directory from WSL in Windows
-* ahk kill: kill all running autohotkey processes
-* ahk open: open ahk/dev_shortcuts.ahk in VSCode
-* ahk open_secrets: open ahk/secrets.ahk in VSCode
-* cdp: move directly to any directory in ~/projects (with tab autocomplete)
-* cht: curl cht.sh for commonly used tools/languages. Add new ones as needed in cht/.cht_sh_index
-* cpw: copy files from WSL to Windows easily, defaults to Downloads folder (with tab autocomplete)
-* gg/google: google something from the terminal, no quotes needed, pops open a web browser
-* mk: mkdir and cd into it
-* node_project_init: spin up a git repo, gitignore file, and package.json for a Node project
-* pr: open pull request from current branch into default branch. GitHub and Bitbucket supported
+* `ahk`: run all AutoHotKey scripts in the `./ahk` directory from WSL in Windows
+* `ahk kill`: kill all running autohotkey processes
+* `ahk open`: open ahk/dev_shortcuts.ahk in VSCode
+* `ahk open_secrets`: open ahk/secrets.ahk in VSCode
+* `cdp`: move directly to any directory in ~/projects (with tab autocomplete)
+* `cht`: curl cht.sh for commonly used tools/languages. Add new ones as needed in cht/.cht_sh_index
+* `cpw`: copy files from WSL to Windows easily, defaults to Downloads folder (with tab autocomplete)
+* `gg/google`: google something from the terminal, no quotes needed, pops open a web browser
+* `mk`: mkdir and cd into it
+* `node_project_init`: spin up a git repo, gitignore file, and package.json for a Node project
+* `pr`: open pull request from current branch into default branch. GitHub and Bitbucket supported
 
 ### Config Options
 
@@ -44,13 +44,13 @@ source install.sh
   * `.apt_packages` to track `apt` packages to install in the distro
   * `.envvars` to set environment variables we want permanently set
   * `.functions` to store Bash functions meant to be invoked from other Bash scripts (not CLI commands)
+  * `.git_init` to store Git configuration for first-time setup
   * `.language_config` stores any programming language-specific settings
   * `.npm_init` holds global NPM packages to install and configurations to set
   * `.secrets` holds secret data such as tokens and keys that aren't committed to Git
 * In the `./ahk` directory, set up any number of AutoHotKey scripts
 * In the `./scripts` directory, define functions meant to be invoked as CLI commands
 * In the `./vscode` directory, configure VSCode settings and extensions
-* Initial `git` config is done in `./install.sh`
 
 ## Initial Windows Setup Notes
 
