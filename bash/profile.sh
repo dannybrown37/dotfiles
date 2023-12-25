@@ -41,7 +41,8 @@ ahk
 
 # One time, add this script to ~/.bashrc (without --install flag)
 lines_for_bash_rc=(
-    "source $script # Set up bash profile from dotfiles repo"
+    "# Set up bash profile from dotfiles repo"
+    "source $script"
 )
 for line in "${lines_for_bash_rc[@]}"; do
     if ! grep -qF "$line" "${HOME}/.bashrc"; then
