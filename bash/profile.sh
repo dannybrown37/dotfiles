@@ -15,6 +15,8 @@ if [[ $1 == "--install" ]]; then
     for dotfile in "${installation_order[@]}"; do
         source $profile_path/$dotfile
     done
+
+    pipx install poetry
 fi
 
 
