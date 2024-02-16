@@ -1,6 +1,11 @@
 #SingleInstance Force
 
 
+
+; LLM tools
+::,,llmprep::For future responses in this chat: never apologize; be as brief as possible unless I ask you to expand on a point; when I ask for code snippets, only provide the code unless I ask for follow-up explanation. Pithily, funnily, and briefly confirm you've understood these instructions.
+
+
 ; personal
 ::,,me::Danny Brown
 ::@@::dannybrown37@gmail.com
@@ -36,7 +41,6 @@
 ; pytest
 ::,,ptt::pytest tests
 ::,,ptu::pytest tests/unit
-::,,ptufb::firebase emulators:exec "pytest tests/unit -v"
 ::,,pte::pytest tests/e2e
 ::,,ptc::pytest tests/e2e/cloud
 ::,,ptl::pytest tests/e2e/local
@@ -50,6 +54,12 @@
 ::,,pf::pip freeze
 ::,,puf::pip freeze | xargs pip uninstall -y   ; "pip uninstall freeze", removes all packages installed
 ::,,pup::python -m pip install --upgrade pip
+
+
+; poetry
+::,,pr::poetry run
+::,,prp::poetry run python
+::,,ptufb::firebase emulators:exec "poetry run pytest tests/unit -v"
 
 
 ; git
@@ -69,11 +79,13 @@
 ::,,gcd::git checkout develop
 ::,,gcm::git checkout main
 ::,,gcl::git checkout -
+::,,gcg::git checkout gcp
+::,,grg::git rebase gcp
 ::,,gp::git push
 ::,,gpf::git push -f
 ::,,gpo::git push -u origin
 ::,,glo::git log -1 --pretty=%B ; shows last commit message
-::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
+::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "gcp" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
 ::,,gred::git reset --hard origin/develop  ; fix a diverged develop branch
 ::,,nv::--no-verify
 ::,,gsu::git submodule update
@@ -109,7 +121,6 @@
 
 ; when a `sudo apt-get update` was failing due to a missing public key, this was the needle in the haystack among a lot of suggestions that didn't work
 ::,,fixhashicorppublickey::wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
-
 
 ; Control + Shift + C will automatically search Google for the copied text
 ^+c::
