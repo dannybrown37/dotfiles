@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 
-# Get autohotkey file from this repo in WSL2, start in Windows environment
+# Get autohotkey files from this repo in WSL2, start in Windows environment
 # May need to Powershell Admin run: `Set-ExecutionPolicy RemoteSigned`
 
 
