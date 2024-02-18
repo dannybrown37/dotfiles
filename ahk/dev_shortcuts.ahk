@@ -57,7 +57,10 @@
 
 
 ; poetry
+::,,pl::poetry lock
 ::,,pr::poetry run
+::,,piae::poetry install --all-extras
+::,,piwd::poetry install --with docs
 ::,,prp::poetry run python
 ::,,ptufb::firebase emulators:exec "poetry run pytest tests/unit -v"
 
