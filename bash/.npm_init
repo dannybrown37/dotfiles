@@ -5,6 +5,7 @@
 sudo npm install --global git-open
 sudo npm install --global serverless
 sudo npm install --global ts-node
+sudo npm install --global fast-pr
 
 npm config set init-author-name "$MY_NAME"
 npm config set init-author-email "$MY_EMAIL"
