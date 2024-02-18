@@ -11,6 +11,7 @@ apt_packages=(
     neofetch
     nodejs
     npm
+    pipx
     rename
 )
 
