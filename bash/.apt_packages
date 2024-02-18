@@ -4,8 +4,8 @@ apt_packages=(
     bash-completion
     curl
     fzf
+    git
     httpie
-    ijq
     jq
     man-db
     neofetch

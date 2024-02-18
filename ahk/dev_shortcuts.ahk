@@ -1,8 +1,16 @@
 #SingleInstance Force
 
 
+
 ; LLM tools
 ::,,llmprep::For future responses in this chat: never apologize; be as brief as possible unless I ask you to expand on a point; when I ask for code snippets, only provide the code unless I ask for follow-up explanation. Pithily, funnily, and briefly confirm you've understood these instructions.
+
+
+; personal
+::,,me::Danny Brown
+::@@::dannybrown37@gmail.com
+::,,linkedin::https://www.linkedin.com/in/dannybrown37
+::,,github::https:://www.github.com/dannybrown37
 
 
 ; bash
