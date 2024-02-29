@@ -1,16 +1,14 @@
 #SingleInstance Force
 
-
-; temp / short-term
-
-::,,import::from canoo.pke_manager.db import FirestorePKE
-::,,arg::pke_db=pke_db,
-::,,typehint::pke_db: FirestorePKE,
-::,,instance::PKE_DB = FirestorePKE()
-
-
 ; LLM tools
 ::,,llmprep::For future responses in this chat: never apologize; don't re-state my question before you answer it; be as brief as possible unless I ask you to expand on a point; when I ask for code snippets, only provide the code unless I ask for follow-up explanation. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks! :)
+
+
+; personal
+::,,me::Danny Brown
+::@@::dannybrown37@gmail.com
+::,,linkedin::https://www.linkedin.com/in/dannybrown37
+::,,github::https:://www.github.com/dannybrown37
 
 
 ; bash
