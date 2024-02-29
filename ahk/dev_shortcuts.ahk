@@ -1,8 +1,16 @@
 #SingleInstance Force
 
 
+; temp / short-term
+
+::,,import::from canoo.pke_manager.db import FirestorePKE
+::,,arg::pke_db=pke_db,
+::,,typehint::pke_db: FirestorePKE,
+::,,instance::PKE_DB = FirestorePKE()
+
+
 ; LLM tools
-::,,llmprep::For future responses in this chat: never apologize; be as brief as possible unless I ask you to expand on a point; when I ask for code snippets, only provide the code unless I ask for follow-up explanation. Pithily, funnily, and briefly confirm you've understood these instructions.
+::,,llmprep::For future responses in this chat: never apologize; don't re-state my question before you answer it; be as brief as possible unless I ask you to expand on a point; when I ask for code snippets, only provide the code unless I ask for follow-up explanation. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks! :)
 
 
 ; bash
@@ -24,8 +32,6 @@
 ::,,pmv::python -m venv .venv && source .venv/bin/activate
 ::,,vba::source .venv/bin/activate
 ::,,nuke::deactivate {;} rm -r .venv && python -m venv .venv && source .venv/bin/activate
-
-
 ; autoenv setup to auto activate an environment and let you know by echoing the folder
 ::,,newdotenv::echo "source .venv/bin/activate" >> .env && echo "echo '$(basename $(pwd)) env activated'" >> .env && source .env
 
@@ -52,9 +58,11 @@
 ::,,pl::poetry lock
 ::,,pr::poetry run
 ::,,piae::poetry install --all-extras
-::,,piwd::poetry install --with docs
+::,,pidocs::poetry install --with docs
+::,,pidev::poetry install --with dev
 ::,,prp::poetry run python
 ::,,ptufb::firebase emulators:exec "poetry run pytest tests/unit -v"
+::,,poetrynuke::poetry env remove --all
 
 
 ; git
@@ -93,15 +101,26 @@
 ::,,srd::sls remove --stage=danny
 
 
-; sphinx/rst
-::,,rstcb::.. code-block:
-::,,rstn::.. note::
-::,,rstlink::`Link text <link URL>`_
-
-
-; markdown
-::,,mdlink::[]()
-::,,mdheaderlink::[``](#)
+; terraform
+::,,tf::terraform
+::,,tfi::terraform init
+::,,tfv::terraform validate
+::,,tff::terraform fmt           ; format config files to canonical formatting
+::,,tfp::terraform plan
+::,,tfpro::terraform providers   ; see list of all providers in the configuration directory
+::,,tfa::terraform apply
+::,,tfs::terraform show          ; show current state
+::,,tfsj::terraform show -json
+::,,tfo::terraform output        ; show defined output variables
+::,,tfd::terraform destroy
+::,,tfr::terraform refresh       ; sync local terraform to any changes made to resources outside its control
+::,,tfg::terraform graph | dot -Tsvg > graph.svg
+; TF var definition order:
+; 1. env vars -> 2. terraform.tfvars -> 3. *.auto.tfvars (alphabetical) -> 4. -var or -var-file flag
+; It will load the above in the order listed, using the last one if multiple are defined.
+::,,tfav::terraform apply -var "   ; example == -var "filename=/example/filename.txt"
+::,,tfavf::terraform apply -var-file *.tfvars      ;  or just name *.auto.tfvars to not have to pass
+::,,etfv::export TF_VAR_           ; example == TF_VAR_filename="/example/filename.txt"
 
 
 ; feedback
