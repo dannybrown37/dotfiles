@@ -1,8 +1,0 @@
-#!/bin/bash
-
-
-# source all scripts in the scripts directory
-# they are in the PATH but need to be sourced to pick up script updates
-
-parent_dir=$(dirname $(dirname $(readlink -f "${BASH_SOURCE}")))
-source $parent_dir/scripts/source_all.sh
