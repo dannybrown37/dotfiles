@@ -21,9 +21,12 @@
 
 ; python
 ::,,ifn::if __name__ == '__main__':
+::,,ftit::from typing import TYPE_CHECKING
+::,,ift::if TYPE_CHECKING:
 ::,,ipp::from pprint import pprint {;} print() {;} pprint(
 ::,,log::logger = logging.getLogger(__name__)
 ::,,rst::ruff src tests
+::,,pv::python --version
 
 
 ; venv
@@ -121,6 +124,13 @@
 ::,,etfv::export TF_VAR_           ; example == TF_VAR_filename="/example/filename.txt"
 
 
+; docker
+::,,dockerbuild::docker build -t image_name .     ; build a Dockerfile from cwd with specified name
+::,,dockerrun::docker run -d image_name           ; run in detached mode (background)
+::,,dockershell::docker exec -it image_name bash  ; open a Bash terminal inside the running container
+::,,dockerlist::docker container last             ; show list of currently running containers
+
+
 ; feedback
 ::,,dust::[[dust]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,sand::[[sand]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
@@ -178,7 +188,7 @@ SwitchToWindowsTerminal()
 
 ; Control + Shift + X toggles Visual Studio Code
 ^+x::
-  SwitchToVSCode()sett
+  SwitchToVSCode()
 return
 
 SwitchToVSCode() {
