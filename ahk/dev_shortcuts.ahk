@@ -131,6 +131,11 @@
 ::,,dockerlist::docker container last             ; show list of currently running containers
 
 
+; kubernetes
+::,,knp::kubectl -n namespace get pods
+::,,klp::kubectl logs -n namespace pod_name
+
+
 ; feedback
 ::,,dust::[[dust]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,sand::[[sand]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)

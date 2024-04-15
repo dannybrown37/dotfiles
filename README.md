@@ -21,6 +21,7 @@ source install.sh
 * [Makes custom CLI commands globally available](#commands-available)
 * [Provides various configuration options](#config-options)
 * Installs the `autoenv` package to execute local `.env` files on each `cd` command
+* Installs my [fast-pr](https://www.github.com/dannybrown37/fast-pr) package that shortcuts opening pull requests
 * Adds to `~/.bashrc` an invocation of the `./bash/profile.sh` script
 
 ### Commands Available
@@ -35,8 +36,7 @@ source install.sh
 * `gg/google`: google something from the terminal, no quotes needed, pops open a web browser
 * `mk`: mkdir and cd into it
 * `node_project_init`: spin up a git repo, gitignore file, and package.json for a Node project
-* `pip_project_init`: spin up a Python package starter set of files via `cookiecutter` and my separate project using it
-* `pr`: open pull request from current branch into default branch. GitHub and Bitbucket supported
+* `pip_project_init`: spin up a Python package starter set of files via `cookiecutter` and [my configuration for it](https://github.com/dannybrown37/pip_package_cookiecutter)
 
 ### Config Options
 
