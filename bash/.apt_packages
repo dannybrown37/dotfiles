@@ -9,10 +9,9 @@ apt_packages=(
     jq
     man-db
     neofetch
-    nodejs
-    npm
     pipx
     rename
+    unzip
 )
 
 pyenv_depencies=(
