@@ -11,12 +11,21 @@
 ::,,github::https:://www.github.com/dannybrown37
 
 
+; npm
+::,,nt::npm test
+::,,nts::npm test path/to/test/file -t "test name"
+::,,nr::npm run
+::,,ns::npm start
+::,,ns-::npm start -- --
+
+
 ; bash
 ::,,br::~/.bashrc
 ::,,sbr::source ~/.bashrc
 ::,,cbr::code ~/.bashrc
 ::,,devnull::2>/dev/null
 ::,,bashlist::"${list_name[@]}"
+::,,sshkey::ssh-keygen -t rsa -b 4096 "email@email.email"
 
 
 ; python
