@@ -12,11 +12,14 @@
 
 
 ; npm
+::,,ni::npm install
+::,,nci::npm ci
 ::,,nt::npm test
 ::,,nts::npm test path/to/test/file -t "test name"
 ::,,nr::npm run
 ::,,ns::npm start
-::,,ns-::npm start -- --
+::,,nsa::npm start -- --
+::,,nb::npm run build
 
 
 ; bash
