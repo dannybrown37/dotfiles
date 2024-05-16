@@ -5,25 +5,35 @@
 # May need to Powershell Admin run: `Set-ExecutionPolicy RemoteSigned`
 
 
-script=$(readlink -f "$BASH_SOURCE")
-script_path=$(dirname "$script")
-ahk_file_path=$script_path/dev_shortcuts.ahk
-ahk_secrets_path=$script_path/secrets.ahk
-touch $ahk_secrets_path
+SCRIPT=$(readlink -f "$BASH_SOURCE")
+SCRIPT_PATH=$(dirname "$SCRIPT")
+AHK_FILE_PATH=$SCRIPT_PATH/dev_shortcuts.ahk
+AHK_SECRETS_PATH=$SCRIPT_PATH/secrets.ahk
+touch $AHK_SECRETS_PATH
 
 # use "open" CLI arg to open the file for edits
 if [ "$1" = "open" ]; then
-    code $ahk_file_path
+    code $AHK_FILE_PATH
 elif [ "$1" = "open_secrets" ]; then
-    code $ahk_secrets_path
+    code $AHK_SECRETS_PATH
 elif [ "$1" = "kill" ]; then
-    ahk_pids=$(powershell.exe "Get-Process AutoHotkey | Select-Object -ExpandProperty Id")
-    for pid in $ahk_pids; do
-        powershell.exe "Stop-Process -Id $pid '-Force'"
-    done
+    if [ -n "$WSL_DISTRO_NAME" ]; then  # handle WSL
+        AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey | Select-Object -ExpandProperty Id")
+        for PID in $AHK_PIDS; do
+            powershell.exe "Stop-Process -Id $PID '-Force'"
+        done
+    else  # handle Git Bash
+        # TODO, a way to do this!
+        echo "'ahk kill' command not implemented in Git Bash yet; try from WSL"
+    fi
 else
-    win_drive_path=$(wslpath -w -a "$ahk_file_path")
-    powershell.exe -Command "Start-Process '${win_drive_path}'" 2> /dev/null
-    win_drive_path=$(wslpath -w -a "$ahk_secrets_path")
-    powershell.exe -Command "Start-Process '${win_drive_path}'" 2> /dev/null
+    if [ -n "$WSL_DISTRO_NAME" ]; then  # handle WSL
+        WIN_DRIVE_PATH=$(wslpath -w -a "$AHK_FILE_PATH")
+        WIN_DRIVE_PATH_2=$(wslpath -w -a "$AHK_SECRETS_PATH")
+    else  # handle Git Bash
+        WIN_DRIVE_PATH=$(cygpath -w -a "$AHK_FILE_PATH")
+        WIN_DRIVE_PATH_2=$(cygpath -w -a "$AHK_SECRETS_PATH")
+    fi
+    powershell.exe -Command "Start-Process '${WIN_DRIVE_PATH}'" 2> /dev/null
+    powershell.exe -Command "Start-Process '${WIN_DRIVE_PATH_2}'" 2> /dev/null
 fi
