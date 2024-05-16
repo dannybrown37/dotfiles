@@ -17,15 +17,14 @@ if [ "$1" = "open" ]; then
 elif [ "$1" = "open_secrets" ]; then
     code $AHK_SECRETS_PATH
 elif [ "$1" = "kill" ]; then
-    if [ -n "$WSL_DISTRO_NAME" ]; then  # handle WSL
-        AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey | Select-Object -ExpandProperty Id")
-        for PID in $AHK_PIDS; do
+    AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey | Select-Object -ExpandProperty Id")
+    for PID in $AHK_PIDS; do
+        if [ -n "$WSL_DISTRO_NAME" ]; then  # handle WSL
             powershell.exe "Stop-Process -Id $PID '-Force'"
-        done
-    else  # handle Git Bash
-        # TODO, a way to do this!
-        echo "'ahk kill' command not implemented in Git Bash yet; try from WSL"
-    fi
+        else  # handle Git Bash
+            powershell.exe "Stop-Process -Id $PID -Force"
+        fi
+    done
 else
     if [ -n "$WSL_DISTRO_NAME" ]; then  # handle WSL
         WIN_DRIVE_PATH=$(wslpath -w -a "$AHK_FILE_PATH")
