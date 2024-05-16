@@ -11,12 +11,19 @@
 ::,,github::https:://www.github.com/dannybrown37
 
 
+; ts/js
+::,,cl::console.log(
+::,,arrow::const funcname = () => {}
+::,,ifs::import fs from "fs";
+::,,jsonout::fs.writeFileSync('trash.json', JSON.stringify(object, null, 2));
+
+
 ; npm
 ::,,nt::npm test
-::,,nts::npm test path/to/test/file -t "test name"
+::,,nts::npm test -- path/to/test/file -t "test name" --verbose
 ::,,nr::npm run
 ::,,ns::npm start
-::,,ns-::npm start -- --
+::,,nsa::npm start -- --
 
 
 ; bash
@@ -76,13 +83,11 @@
 
 
 ; git
+::,,gs::git status
+::,,gpr::git pull rebase
 ::,,gap::git add -p
 ::,,gc::git commit -m "
 ::,,gca::git commit --amend -m "
-::,,gcc::git commit -m "chore:
-::,,gcfix::git commit -m "fix:
-::,,gcfeat::git commit -m "feat:
-::,,gcmajor::git commit -m "BREAKING CHANGE:
 ::,,gcr::git commit --amend --no-edit  ; "git commit rebase", updates last commit
 ::,,grh::git rebase -i HEAD~
 ::,,grd::git rebase develop
@@ -92,13 +97,11 @@
 ::,,gcd::git checkout develop
 ::,,gcm::git checkout main
 ::,,gcl::git checkout -
-::,,gcg::git checkout gcp
-::,,grg::git rebase gcp
 ::,,gp::git push
 ::,,gpf::git push -f
 ::,,gpo::git push -u origin
 ::,,glo::git log -1 --pretty=%B ; shows last commit message
-::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "gcp" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
+::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "magic" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
 ::,,gred::git reset --hard origin/develop  ; fix a diverged develop branch
 ::,,nv::--no-verify
 ::,,gsu::git submodule update
