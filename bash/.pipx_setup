@@ -1,0 +1,12 @@
+
+if [ -n "$WSL_DISTRO_NAME" ]; then
+    sudo apt install pipx
+    pipx ensurepath
+else
+    python3 -m pip install --user pipx
+    python3 -m pipx ensurepath
+fi
+
+pipx install poetry
+pipx install pre-commit
+pipx install cookiecutter

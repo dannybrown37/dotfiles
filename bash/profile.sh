@@ -8,26 +8,22 @@ profile_path=$(dirname "$script")
 # should only need to use this for initial setup
 if [[ $1 == "--install" ]]; then
 
-    if [ -n "$WSL_DISTRO_NAME" ]; then
+    if [ -n "$WSL_DISTRO_NAME" ]; then  # WSL-only luxuries
         installation_order=(
             .apt_packages
-            .git_init
-            .npm_init
             .golang_install
-        )
-    else  # Git Bash has fewer luxuries
-        installation_order=(
-            .git_init
-            .npm_init
         )
     fi
 
+    installation_order+=(
+        .git_init
+        .npm_init
+        .pipx_setup
+    )
 
     for dotfile in "${installation_order[@]}"; do
         source $profile_path/$dotfile
     done
-
-    pipx install poetry
 fi
 
 # Source these files every time this file is run regardless of flag
