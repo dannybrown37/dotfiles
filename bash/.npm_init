@@ -2,13 +2,22 @@
 
 # install global NPM packages and set global NPM congifurations
 
-sudo npm install --global git-open
-sudo npm install --global serverless
-sudo npm install --global ts-node
-sudo npm install --global fast-pr
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+nvm install 18
+nvm use 18
 
-npm config set init-author-name "$MY_NAME"
-npm config set init-author-email "$MY_EMAIL"
-npm config set init-author-url "$MY_GITHUB"
-npm config set init-license "MIT"
-npm config set init-version "0.0.1"
+npm install --global git-open
+npm install --global typescript
+npm install --global ts-node
+npm install --global fast-pr
+
+# store currently unwanted npm commands here for reference/later use
+not_current_but_past=(
+    npm install --global serverless
+
+    npm config set init-author-name "$MY_NAME"
+    npm config set init-author-email "$MY_EMAIL"
+    npm config set init-author-url "$MY_GITHUB"
+    npm config set init-license "MIT"
+    npm config set init-version "0.0.1"
+)

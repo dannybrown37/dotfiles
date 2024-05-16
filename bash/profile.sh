@@ -7,12 +7,21 @@ profile_path=$(dirname "$script")
 # Use --install argument to install apt, pyenv, and npm dependencies
 # should only need to use this for initial setup
 if [[ $1 == "--install" ]]; then
-    installation_order=(
-        .apt_packages
-        .git_init
-        .npm_init
-        .golang_install
-    )
+
+    if [ -n "$WSL_DISTRO_NAME" ]; then
+        installation_order=(
+            .apt_packages
+            .git_init
+            .npm_init
+            .golang_install
+        )
+    else  # Git Bash has fewer luxuries
+        installation_order=(
+            .git_init
+            .npm_init
+        )
+    fi
+
 
     for dotfile in "${installation_order[@]}"; do
         source $profile_path/$dotfile
@@ -21,15 +30,20 @@ if [[ $1 == "--install" ]]; then
     pipx install poetry
 fi
 
-
 # Source these files every time this file is run regardless of flag
 profile_files=(
-    .envvars
-    .functions
-    .language_config
-    .aliases
-    .secrets
-)
+        .envvars
+        .functions
+        .aliases
+        .secrets
+    )
+
+# Add WSL-specific luxuries like pyenv and Go
+if [ -n "$WSL_DISTRO_NAME" ]; then
+    profile_files+=(
+        .language_config
+    )
+fi
 
 for dotfile in "${profile_files[@]}"; do
     touch $profile_path/$dotfile
@@ -51,3 +65,7 @@ for line in "${lines_for_bash_rc[@]}"; do
         echo $line >> "${HOME}/.bashrc"
     fi
 done
+
+if [ -z "$WSL_DISTRO_NAME" ]; then
+    cd  # on GitBash, start in ~
+fi
