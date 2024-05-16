@@ -11,6 +11,7 @@ apt_packages=(
     neofetch
     pipx
     rename
+    shellcheck
     unzip
 )
 

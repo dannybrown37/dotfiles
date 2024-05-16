@@ -13,6 +13,8 @@ if [[ $1 == "--install" ]]; then
             .apt_packages
             .golang_install
         )
+    else  # Git Bash installs
+        winget install --id koalaman.shellcheck
     fi
 
     installation_order+=(
