@@ -6,10 +6,16 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install 18
 nvm use 18
 
-npm install --global git-open
-npm install --global typescript
-npm install --global ts-node
-npm install --global fast-pr
+packages=(
+    git-open
+    typescript
+    ts-node
+    fast-pr
+)
+
+for package in "${packages[@]}"; do
+    npm install --global $package
+done
 
 # store currently unwanted npm commands here for reference/later use
 not_current_but_past=(

@@ -1,3 +1,8 @@
+#! /bin/bash
+
+### This script installs pipx on WSL or Git Bash, then installs
+### pipx packages that I like
+
 
 if [ -n "$WSL_DISTRO_NAME" ]; then
     sudo apt install pipx
@@ -7,6 +12,12 @@ else
     python3 -m pipx ensurepath
 fi
 
-pipx install poetry
-pipx install pre-commit
-pipx install cookiecutter
+packages=(
+    poetry
+    pre-commit
+    cookiecutter
+)
+
+for package in "${packages[@]}"; do
+    pipx install $package
+done
