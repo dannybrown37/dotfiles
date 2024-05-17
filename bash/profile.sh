@@ -51,8 +51,6 @@ done
 # all scripts in scripts/ directory must be sourced to pick up changes
 source $profile_path/../scripts/source_all.sh
 
-ahk
-
 # One time, add this script to ~/.bashrc (without --install flag)
 lines_for_bash_rc=(
     "# Set up bash profile from dotfiles repo"
