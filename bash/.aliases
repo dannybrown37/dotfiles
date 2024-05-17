@@ -4,3 +4,4 @@ parent_dir=$(dirname $(dirname $(readlink -f "${BASH_SOURCE}")))
 
 alias python=python3
 alias ahk="$parent_dir/ahk/ahk.sh"
+alias beep="powershell -c \"[console]::beep(500, 300)\""
