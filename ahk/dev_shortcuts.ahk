@@ -1,7 +1,7 @@
 #SingleInstance Force
 
 ; LLM tools
-::,,llmprep::For future responses in this chat: never apologize; don't re-state my question before you answer it; be as brief as possible unless I ask you to expand on a point; when I ask for code snippets, only provide the code unless I ask for follow-up explanation. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks! :)
+::,,llm::For future responses in this chat: never apologize; don't re-state my question before you answer it; be as brief as possible unless I ask you to expand on a point; when I ask for code snippets, only provide the code unless I ask for follow-up explanation. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks! :)
 
 
 ; personal
@@ -16,6 +16,9 @@
 ::,,arrow::const funcname = () => {}
 ::,,ifs::import fs from "fs";
 ::,,jsonout::fs.writeFileSync('trash.json', JSON.stringify(object, null, 2));
+::,,jstest::test("Test ", () => {});
+::,,region::// {#}region
+::,,er::// {#}endregion
 
 
 ; npm
@@ -24,6 +27,7 @@
 ::,,nr::npm run
 ::,,ns::npm start
 ::,,nsa::npm start -- --
+::,,nrp::npm run pytest
 
 
 ; bash
@@ -107,6 +111,8 @@
 ::,,nv::--no-verify
 ::,,gsu::git submodule update
 ::,,gsi::git submodule update --init --recursive
+::,,grc::git rebase --continue
+::,,gra::git rebase --abort
 
 
 ; serverless
