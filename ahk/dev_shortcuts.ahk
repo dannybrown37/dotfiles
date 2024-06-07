@@ -1,7 +1,7 @@
 #SingleInstance Force
 
 ; LLM tools
-::,,llm::For future responses in this chat: never apologize; don't re-state my question before you answer it; be as brief as possible unless I ask you to expand on a point; when I ask for code snippets, only provide the code unless I ask for follow-up explanation. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks! :)
+::,,llmprep::For future responses in this chat: never apologize. Don't re-state my question before you answer it. Be as brief as possible unless I ask you to expand on a point. When I ask for code snippets, only provide the code unless I ask for follow-up explanation. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks! :)
 
 
 ; personal
@@ -48,6 +48,7 @@
 ::,,log::logger = logging.getLogger(__name__)
 ::,,rst::ruff src tests
 ::,,pv::python --version
+::,,aok::assert response.status_code == HTTPStatus.OK, response.json()
 
 
 ; venv
@@ -168,8 +169,8 @@
 ; when a `sudo apt-get update` was failing due to a missing public key, this was the needle in the haystack among a lot of suggestions that didn't work
 ::,,fixhashicorppublickey::wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-; Control + Shift + C will automatically search Google for the copied text
-^+c::
+; Control+Shift+G will automatically search Google for text in clipboard
+^+g::
 {
   Send, ^c
   Sleep 50
@@ -236,3 +237,38 @@ SwitchToVSCode() {
     Run, % exeName
   }
 }
+
+; Ctrl+Shift+C to focus on open Chrome window
+^+c::
+{
+     ; Attempt to activate Chrome by its window title
+    SetTitleMatchMode, 2  ; Allows partial match for window titles
+    if WinExist("Google Chrome")
+    {
+        WinActivate
+    }
+    else
+    {
+        MsgBox, Chrome is not running.
+    }
+}
+return
+
+; Ctrl+Shift+D to open Microsoft T(D)eams
+^+d::
+{
+    ; Attempt to activate Microsoft Teams by its window title
+    SetTitleMatchMode, 2  ; Allows partial match for window titles
+    if WinExist("Microsoft Teams")
+    {
+        WinActivate
+        ; Wait for the window to be active
+        WinWaitActive, Microsoft Teams
+
+    }
+    else
+    {
+        MsgBox, Microsoft Teams is not running.
+    }
+}
+return
