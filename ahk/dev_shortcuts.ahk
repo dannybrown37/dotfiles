@@ -38,7 +38,7 @@
 ::,,bashlist::"${list_name[@]}"
 ::,,sshkey::ssh-keygen -t rsa -b 4096 "email@email.email"
 ::,,pathlines::echo $PATH | tr ':' '\n'
-::,,noargs::[ $# -eq 0 ] && echo "Error: No args passed" && return
+::,,noargs::[ ${#} -eq 0 ] && echo "Error: No args passed" && return
 
 
 ; python
