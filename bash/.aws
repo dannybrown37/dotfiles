@@ -1,0 +1,8 @@
+#!/bin/bash
+
+
+bl() {  # build logs
+    [ $# -eq 0 ] && echo "Error: No args passed" && return
+    aws-azure-login -f --profile $AWS_PROFILE --mode=debug
+    aws s3 cp "s3://$BUILD_ARTIFACTS_BUCKET/$1-back-end-build-logs/$(aws s3 ls "s3://$BUILD_ARTIFACTS_BUCKET/${1}-back-end-build-logs/" | sort -n | tail -1 | awk '{ print $4 }' )" - | zcat -
+}

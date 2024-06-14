@@ -34,6 +34,7 @@ profile_files=(
         .functions
         .aliases
         .secrets
+        .aws
     )
 
 # Add WSL-specific luxuries like pyenv and Go
