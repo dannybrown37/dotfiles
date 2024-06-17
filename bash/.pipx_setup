@@ -1,8 +1,7 @@
 #! /bin/bash
 
 ### This script installs pipx on WSL or Git Bash, then installs
-### pipx packages that I like
-
+### pip packages that I prefer to have global installations of
 
 if [ -n "$WSL_DISTRO_NAME" ]; then
     sudo apt install pipx
@@ -16,8 +15,16 @@ packages=(
     poetry
     pre-commit
     cookiecutter
+    ruff
 )
 
 for package in "${packages[@]}"; do
     pipx install $package
 done
+
+ruff_toml_dir=$(dirname "$(readlink -f "$BASH_SOURCE")")
+ruff_toml_file="$ruff_toml_dir/.ruff.toml"
+
+ln -s "$ruff_toml_file" "$HOME/.ruff.toml"
+
+echo "Symlink created between $ruff_toml_file and $HOME/.ruff.toml"
