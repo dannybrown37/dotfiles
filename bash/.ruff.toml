@@ -61,5 +61,4 @@ inline-quotes = "single"
 
 [format]
 quote-style = "single"
-target-version = "py311"
 docstring-code-format = true
