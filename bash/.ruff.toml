@@ -61,6 +61,5 @@ inline-quotes = "single"
 
 [format]
 quote-style = "single"
-line-length = 79
-use-parentheses = true
 target-version = "py311"
+docstring-code-format = true
