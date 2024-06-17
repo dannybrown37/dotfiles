@@ -1,11 +1,10 @@
-# Sym 
+# Sym-linked to ~/.ruff.toml via .pipx_setup
 
-[tool.ruff]
 line-length = 79
 show-fixes = true
 target-version = "py311"
 
-[tool.ruff.lint]
+[lint]
 select = [
     "A",  # https://beta.ruff.rs/docs/rules/#flake8-builtins-a
     "ANN",  # https://beta.ruff.rs/docs/rules/#flake8-annotations-ann
@@ -57,5 +56,11 @@ ignore = [
   "PLR0913",  # sometimes tests need 6+ fixtures
 ]
 
-[tool.ruff.lint.flake8-quotes]
+[lint.flake8-quotes]
 inline-quotes = "single"
+
+[format]
+quote-style = "single"
+line-length = 79
+use-parentheses = true
+target-version = py311
