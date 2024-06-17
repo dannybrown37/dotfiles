@@ -63,4 +63,4 @@ inline-quotes = "single"
 quote-style = "single"
 line-length = 79
 use-parentheses = true
-target-version = py311
+target-version = "py311"
