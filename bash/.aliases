@@ -13,3 +13,8 @@ alias cd=z
 alias ls="exa"
 alias ll="exa -alh"
 alias tree="exa --tree"
+
+alias cat="batcat"
+alias bat="batcat"
+alias catp="batcat -p"
+alias batp="batcat -p"

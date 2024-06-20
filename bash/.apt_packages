@@ -2,6 +2,7 @@
 
 apt_packages=(
     bash-completion
+    bat
     curl
     exa
     fzf
