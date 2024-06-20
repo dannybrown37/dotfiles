@@ -8,10 +8,23 @@ bl() {  # latest build logs in CLI; required arg is AWS stage
 }
 
 open_lambda() {  # pop open browser to particular Lambda; first arg Lambda name; second arg (optional) AWS region
-    [ $# -eq 0 ] && echo "Error: No args passed" && return
-    [ $# -eq 1 ] && export AWS_REGION="us-east-1"
-    [ $# -eq 2 ] && export AWS_REGION=$2
-    URL="https://${AWS_REGION}.console.aws.amazon.com/lambda/home?region=${AWS_REGION}#/functions/$1?tab=monitoring"
+    if [ $# -eq 0 ]; then
+        # If no arguments are passed, use fzf to select a Lambda folder
+        lambda_folder=$(find ~/projects/wcp-aws/lambdas -type d -not -path '*/node_modules*' -not -path '*/node_modules' | fzf)
+        [ -z "$lambda_folder" ] && echo "Error: No Lambda folder selected" && return
+        lambda_name=$(basename "$lambda_folder")
+        AWS_REGION="us-east-1"
+    elif [ $# -eq 1 ]; then
+        lambda_name=$1
+        AWS_REGION="us-east-1"
+    elif [ $# -eq 2 ]; then
+        lambda_name=$1
+        AWS_REGION=$2
+    else
+        echo "Error: Invalid number of arguments"
+        return
+    fi
+    URL="https://${AWS_REGION}.console.aws.amazon.com/lambda/home?region=${AWS_REGION}#/functions/$lambda_name?tab=monitoring"
     echo "Opening: $URL"
     cmd.exe /c start "$URL" 2>/dev/null
 }
