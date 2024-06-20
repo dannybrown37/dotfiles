@@ -95,7 +95,7 @@ lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2
 
     stage_title_case=$(echo "$stage" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}')
 
-    if [[ ! "$lambda_name" == *"Demo"* && ! "$lambda_name" == *"demo" ]]; then
+    if [[ ! "${lambda_name,,}" == *"demo"* ]]; then
         lambda_name="$lambda_name$stage_title_case"
     fi
 
