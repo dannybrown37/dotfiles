@@ -1,30 +1,62 @@
 #!/bin/bash
 
 
-bl() {  # latest build logs in CLI; required arg is AWS stage
-    [ $# -eq 0 ] && echo "Error: No args passed" && return
+buildlogs() {  # latest build logs in CLI; required arg is AWS stage
+    [ $# -eq 0 ] && dev_stage=$DEV_STAGE && echo "Using default stage $DEV_STAGE; pass an arg to override"
+    [ $# -eq 1 ] && dev_stage=$1
     aws-azure-login -f --profile $AWS_PROFILE --mode=debug
-    aws s3 cp "s3://$BUILD_ARTIFACTS_BUCKET/$1-back-end-build-logs/$(aws s3 ls "s3://$BUILD_ARTIFACTS_BUCKET/${1}-back-end-build-logs/" | sort -n | tail -1 | awk '{ print $4 }' )" - | zcat -
+    aws s3 cp "s3://$BUILD_ARTIFACTS_BUCKET/$dev_stage-back-end-build-logs/$(aws s3 ls "s3://$BUILD_ARTIFACTS_BUCKET/$dev_stage-back-end-build-logs/" | sort -n | tail -1 | awk '{ print $4 }' )" - | zcat -
 }
 
-open_lambda() {  # pop open browser to particular Lambda; first arg Lambda name; second arg (optional) AWS region
+cwlogs() {  # latest cloudwatch logs; arg1 (optional): Lambda name; arg2 (optional): stage name
     if [ $# -eq 0 ]; then
-        # If no arguments are passed, use fzf to select a Lambda folder
-        lambda_folder=$(find ~/projects/wcp-aws/lambdas -type d -not -path '*/node_modules*' -not -path '*/node_modules' | fzf)
-        [ -z "$lambda_folder" ] && echo "Error: No Lambda folder selected" && return
-        lambda_name=$(basename "$lambda_folder")
-        AWS_REGION="us-east-1"
+        lambda_name=$(aws lambda list-functions --query 'Functions[*].FunctionName' --output text | fzf)
+        [ -z "$lambda_name" ] && echo "Error: No Lambda function selected" && return
     elif [ $# -eq 1 ]; then
         lambda_name=$1
-        AWS_REGION="us-east-1"
     elif [ $# -eq 2 ]; then
         lambda_name=$1
-        AWS_REGION=$2
+        stage=$DEV_STAGE && echo "Using default stage $DEV_STAGE; pass an arg to override"
+    else
+        lambda_name=$1
+        stage=$2
+    fi
+    aws logs get-log-events --log-group-name "/aws/lambda/${lambda_name}" --log-stream-name "$(aws logs describe-log-streams --log-group-name "/aws/lambda/${lambda_name}" --order-by LastEventTime --descending true --limit 1 --query 'logStreams[0].logStreamName' --output text)" --limit 10
+}
+
+lambdaopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2 (optional) stage; arg3 (optional) AWS region
+    if [ $# -eq 0 ]; then
+        # If no arguments are passed, use fzf to select a Lambda folder
+        lambda_folder=$(find "${LAMBDA_PATHS[@]}" \  # LAMBDA_PATHS = an array of dirs
+                        -mindepth 1 -maxdepth 1 \
+                        -type d \
+                        -not -path '*/node_modules*' | fzf)
+        [ -z "$lambda_folder" ] && echo "Error: No Lambda folder selected" && return
+        lambda_name=$(basename "$lambda_folder")
+        stage=$DEV_STAGE && echo "Using default stage $DEV_STAGE; pass an arg to override"
+        aws_region="us-east-1"
+    elif [ $# -eq 1 ]; then
+        lambda_name=$1
+        stage=$DEV_STAGE && echo "Using default stage $DEV_STAGE; pass an arg to override"
+        aws_region="us-east-1"
+    elif [ $# -eq 2 ]; then
+        lambda_name=$1
+        stage=$2
+        aws_region="us-east-1"
+    elif [ $# -eq 3 ]; then
+        lambda_name=$1
+        stage=$2
+        aws_region=$3
     else
         echo "Error: Invalid number of arguments"
         return
     fi
-    URL="https://${AWS_REGION}.console.aws.amazon.com/lambda/home?region=${AWS_REGION}#/functions/$lambda_name?tab=monitoring"
-    echo "Opening: $URL"
-    cmd.exe /c start "$URL" 2>/dev/null
+
+    url="https://$aws_region.console.aws.amazon.com/lambda/home?region=$aws_region#/functions/$lambda_name?tab=monitoring"
+    url=${url/demo/$stage}
+    echo $url
+    stage_title_case=$(echo "$stage" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}')
+    url=${url/Demo/$stage_title_case}
+    echo "Opening: $url"
+    cmd.exe /c start "$url" 2>/dev/null
 }
