@@ -9,6 +9,7 @@ buildlogs() {  # latest build logs in CLI; required arg is AWS stage
 }
 
 cwlogs() {  # latest cloudwatch logs; arg1 (optional): Lambda name; arg2 (optional): stage name
+    # TODO: THIS FUNCTION DOES NOT YET WORK, IT IS IN PROGRESS
     if [ $# -eq 0 ]; then
         lambda_folder=$(find "${LAMBDA_PATHS[@]}" \
                         -mindepth 1 -maxdepth 1 \
@@ -26,16 +27,23 @@ cwlogs() {  # latest cloudwatch logs; arg1 (optional): Lambda name; arg2 (option
         stage=$2
     fi
 
-    lambda_name=${lambda_name/demo/$stage}
     stage_title_case=$(echo "$stage" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}')
-    lambda_name=${lambda_name/Demo/$stage_title_case}
 
-    echo $lambda_name
+    if [[ ! "${lambda_name,,}" == *"demo"* ]]; then  # old style Lambda names are a pain
+        echo "Appending title-cased stage to lambda name"
+        lambda_name="$lambda_name$stage_title_case"
+        lambda_name=${lambda_name/demo/$stage}
+        lambda_name=${lambda_name/Demo/$stage_title_case}
+        log_group_name="/wcp-$stage/wcp-$stage-$lambda_name"
+    else  # wcp-demo-* are a bit easier
+        lambda_name=${lambda_name/demo/$stage}
+        lambda_name=${lambda_name/Demo/$stage_title_case}
+        log_group_name="/wcp-$stage/$lambda_name"
+    fi
 
     log_stream_name=$(aws logs describe-log-streams \
-                        --log-group-name "/aws/lambda/${lambda_name}" \
+                        --log-group-name "$log_group_name" \
                         --order-by LastEventTime \
-                        --descending true \
                         --limit 1 \
                         --query 'logStreams[0].logStreamName' \
                         --output text)
@@ -87,7 +95,7 @@ lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2
 
     stage_title_case=$(echo "$stage" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}')
 
-    if [[ ! "$my_string" == *"Demo"* && ! "$my_string" == *"demo" ]]; then
+    if [[ ! "$lambda_name" == *"Demo"* && ! "$lambda_name" == *"demo" ]]; then
         lambda_name="$lambda_name$stage_title_case"
     fi
 
