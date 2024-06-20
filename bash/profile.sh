@@ -21,6 +21,7 @@ if [[ $1 == "--install" ]]; then
         .git_init
         .npm_init
         .pipx_setup
+        .curl_installs
     )
 
     for dotfile in "${installation_order[@]}"; do

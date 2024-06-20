@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-# # Configuration for programming languages
+## Additional configuration required for certain tools
 
 # add pyenv configuration to path
 export PYENV_ROOT="$HOME/.pyenv"

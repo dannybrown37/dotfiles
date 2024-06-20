@@ -3,6 +3,7 @@
 apt_packages=(
     bash-completion
     curl
+    exa
     fzf
     git
     httpie

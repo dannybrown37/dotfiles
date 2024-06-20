@@ -10,7 +10,7 @@ bl() {  # latest build logs in CLI; required arg is AWS stage
 open_lambda() {  # pop open browser to particular Lambda; first arg Lambda name; second arg (optional) AWS region
     [ $# -eq 0 ] && echo "Error: No args passed" && return
     [ $# -eq 1 ] && export AWS_REGION="us-east-1"
-    aws-azure-login -f --profile $AWS_PROFILE --mode=debug
+    [ $# -eq 2 ] && export AWS_REGION=$2
     URL="https://${AWS_REGION}.console.aws.amazon.com/lambda/home?region=${AWS_REGION}#/functions/$1?tab=monitoring"
     echo "Opening: $URL"
     cmd.exe /c start "$URL" 2>/dev/null

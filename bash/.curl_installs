@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+
+# Installs that don't come from apt, pip, cargo, etc.
+
+
+# autoenv automatically runs .env file when you cd in
+curl -#fLo- 'https://raw.githubusercontent.com/hyperupcall/autoenv/master/scripts/install.sh' | sh
+
+# install pyenv
+curl pyenv.run | bash
+
+# install rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+# install zoxide
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
