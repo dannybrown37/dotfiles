@@ -117,6 +117,7 @@
 ::,,gra::git rebase --abort
 ::,,gcue::git config --global user.email "dannybrown37@gmail.com"
 ::,,gcun::git config --global user.name "Danny Brown"
+::,,gcdf::git clone https://www.github.com/dannybrown37/dotfiles
 
 
 ; serverless
