@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 ##
-## Install pyenv dependencies
+## Install dependencies pyenv needs to build individual python versions
 ##
 
 sudo apt update
 
-pyenv_depencies=(
+pyenv_build_depencies=(
     build-essential
     libbz2-dev
     libffi-dev
@@ -22,13 +22,12 @@ pyenv_depencies=(
     xz-utils
     zlib1g-dev
 )
-if [ "$WSL_DISTRO_NAME" = "Debian" ]; then  # Ubuntu doesn't seem to need
-    for package in "${pyenv_depencies[@]}"; do
-        if ! dpkg -s "$package" >/dev/null 2>&1; then
-            sudo apt install -y "$package"
-        fi
-    done
-fi
+for package in "${pyenv_build_depencies[@]}"; do
+    if ! dpkg -s "$package" >/dev/null 2>&1; then
+        sudo apt install -y "$package"
+    fi
+done
+
 
 ##
 ## Install Pyenv
@@ -63,6 +62,8 @@ if [ "$needs_update" = true ]; then
 else
     echo "pyenv config variables already exist in .bashrc"
 fi
+
+source ~/.bashrc
 
 ##
 ## Install 3.12, set it as global Python version
