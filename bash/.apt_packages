@@ -9,6 +9,7 @@ apt_packages=(
     git
     httpie
     jq
+    make
     man-db
     neofetch
     pipx
@@ -16,36 +17,13 @@ apt_packages=(
     ripgrep
     shellcheck
     unzip
-)
-
-pyenv_depencies=(
-    build-essential
-    libbz2-dev
-    libffi-dev
-    liblzma-dev
-    libncurses5-dev
-    libncursesw5-dev
-    libreadline-dev
-    libssl-dev
-    libsqlite3-dev
-    llvm
-    lzma-dev
-    make
-    tk-dev
     wget
-    xz-utils
-    zlib1g-dev
+    zip
 )
 
 sudo apt update
 
 for package in "${apt_packages[@]}"; do
-    if ! dpkg -s "$package" >/dev/null 2>&1; then
-        sudo apt install -y "$package"
-    fi
-done
-
-for package in "${pyenv_depencies[@]}"; do
     if ! dpkg -s "$package" >/dev/null 2>&1; then
         sudo apt install -y "$package"
     fi
