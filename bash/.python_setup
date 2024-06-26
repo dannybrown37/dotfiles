@@ -63,7 +63,9 @@ else
     echo "pyenv config variables already exist in .bashrc"
 fi
 
-source ~/.bashrc
+. ~/.bashrc
+. ~/.bashrc
+. ~/.bashrc
 
 ##
 ## Install 3.12, set it as global Python version
