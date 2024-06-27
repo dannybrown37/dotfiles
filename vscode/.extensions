@@ -1,16 +1,11 @@
 DavidAnson.vscode-markdownlint
 eamodio.gitlens
 esbenp.prettier-vscode
-leonhard-s.python-sphinx-highlight
-lextudio.restructuredtext
-mgesbert.indent-nested-dictionary
-ms-python.black-formatter
 ms-python.isort
 ms-python.python
 ms-python.vscode-pylance
 ms-toolsai.jupyter
 nomi9995.intellij-merge-tool
-recode4dev.jenkinsfile
 rvest.vs-code-prettier-eslint
 shd101wyy.markdown-preview-enhanced
 tamasfe.even-better-toml
