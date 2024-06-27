@@ -5,6 +5,8 @@ parent_dir=$(dirname $(dirname $(readlink -f "${BASH_SOURCE}")))
 alias ahk="$parent_dir/ahk/ahk.sh"
 alias beep="powershell.exe -c \"[console]::beep(500, 300)\""
 
+alias rc="~/.bashrc"
+
 eval "$(zoxide init bash)"
 alias cd=z
 
