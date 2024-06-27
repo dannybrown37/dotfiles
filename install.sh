@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash -i
 
 usage() {
     echo "Usage: $0 [--install <arg>]"
@@ -13,23 +13,24 @@ usage() {
     exit 1
 }
 
-root_dir=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
-
 if [[ "$1" = "--help" ]]; then
     usage
-fi
-
-if [ "$1" = "--install" ]; then
+elif [[ "$1" = "--install" ]]; then
     if [ $# -gt 1 ]; then
         INSTALL_ARG="$2"
     else
         echo "Error: --install requires an argument"
         usage
     fi
+elif [[ -z "$1" ]]; then
+    echo "Installing basic bash profile..."
+    echo "Use --help to see all installation options"
 else
     echo "Error: Unknown option: $1"
     usage
 fi
+
+root_dir=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
 
 source $root_dir/install/.bash
 
@@ -53,7 +54,7 @@ if [[ "$INSTALL_ARG" = "all" || "$INSTALL_ARG" = "vscode" ]]; then
     source $root_dir/vscode/vsc_setup.sh
 fi
 
-source $root_dir/bash/profile.sh
+source $root_dir/config/profile.sh
 
 source ~/.bashrc
 
