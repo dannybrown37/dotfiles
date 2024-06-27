@@ -33,7 +33,7 @@ done
 ## Install Pyenv
 ##
 
-curl pyenv.run | bash || true
+curl pyenv.run | bash
 
 ##
 ## Copy pyenv configuration to .bashrc file
