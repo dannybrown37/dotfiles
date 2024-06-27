@@ -3,8 +3,8 @@
 source ~/.bashrc
 
 vscode_setup_script_path=$(dirname $(readlink -f "$BASH_SOURCE"))
-default_settings_path=$vscode_setup_script_path/.default_settings.json
-default_extensions_path=$vscode_setup_script_path/.extensions
+default_settings_path=$vscode_setup_script_path/default_settings.json
+default_extensions_path=$vscode_setup_script_path/extensions.txt
 
 # Path to settings.json in WSL
 vscode_settings_path="/mnt/c/Users/$WINDOWS_USERNAME/AppData/Roaming/Code/User/settings.json"

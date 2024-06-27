@@ -48,7 +48,7 @@ cwlogs() {  # latest cloudwatch logs; arg1 (optional): Lambda name; arg2 (option
                         --query 'logStreams[0].logStreamName' \
                         --output text)
 
-    if [ -z "$log_stream_name" ]; then
+    if [[ -z "${log_stream_name}" ]]; then
         echo "Error: Failed to retrieve log stream name"
         return 1
     fi
@@ -65,7 +65,7 @@ cwlogs() {  # latest cloudwatch logs; arg1 (optional): Lambda name; arg2 (option
 }
 
 lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2 (optional) stage; arg3 (optional) AWS region
-    if [ $# -eq 0 ]; then
+    if [[ $# -eq 0 ]]; then
         # If no arguments are passed, use fzf to select a Lambda folder
         # LAMBDA_PATHS = an array of dirs
         lambda_folder=$(find "${LAMBDA_PATHS[@]}" \

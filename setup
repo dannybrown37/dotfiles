@@ -32,25 +32,25 @@ fi
 
 root_dir=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
 
-source $root_dir/install/.bash
+source $root_dir/install/bash.sh
 
-if [[ "$INSTALL_ARG" = "all" || "$INSTALL_ARG" = "python" ]]; then
-    source $root_dir/install/.python
+if [[ "${INSTALL_ARG}" = "all" || "${INSTALL_ARG}" = "python" ]]; then
+    source $root_dir/install/python.sh
 fi
 
-if [[ "$INSTALL_ARG" = "all" || "$INSTALL_ARG" = "node" ]]; then
-    source $root_dir/install/.node
+if [[ "${INSTALL_ARG}" = "all" || "${INSTALL_ARG}" = "node" ]]; then
+    source $root_dir/install/node.sh
 fi
 
-if [[ "$INSTALL_ARG" = "all" || "$INSTALL_ARG" = "golang" ]]; then
-    source $root_dir/install/.golang
+if [[ "${INSTALL_ARG}" = "all" || "${INSTALL_ARG}" = "golang" ]]; then
+    source $root_dir/install/golang.sh
 fi
 
-if [[ "$INSTALL_ARG" = "all" || "$INSTALL_ARG" = "rust" ]]; then
-    source $root_dir/install/.rust
+if [[ "${INSTALL_ARG}" = "all" || "${INSTALL_ARG}" = "rust" ]]; then
+    source $root_dir/install/rust.sh
 fi
 
-if [[ "$INSTALL_ARG" = "all" || "$INSTALL_ARG" = "vscode" ]]; then
+if [[ "${INSTALL_ARG}" = "all" || "${INSTALL_ARG}" = "vscode" ]]; then
     source $root_dir/vscode/vsc_setup.sh
 fi
 

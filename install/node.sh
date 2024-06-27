@@ -23,18 +23,13 @@ for package in "${global_npm_packages[@]}"; do
     npm install --global "${package}"
 done
 
-##
-## Deprecated/dormant commands
-##
-
-not_currently_used_but_may_want_these_commands_again_someday=(
-    npm install --global serverless
-
+if [[ "$1" = "--oss" ]]; then
+    script_dir=$(dirname "$(readlink -f "$0")")
+    envvars_path="${script_dir}/../config/.envvars"
+    . "${envvars_path}"
     npm config set init-author-name "${MY_NAME}"
     npm config set init-author-email "${MY_EMAIL}"
     npm config set init-author-url "${MY_GITHUB}"
     npm config set init-license "MIT"
     npm config set init-version "0.0.1"
-)
-
-. ~/.bashrc
+fi

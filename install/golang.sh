@@ -44,4 +44,5 @@ else
     echo "golang config variables already exist in .bashrc"
 fi
 
+# shellcheck disable=SC1090
 . ~/.bashrc
