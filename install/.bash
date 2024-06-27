@@ -24,8 +24,8 @@ apt_packages=(
 sudo apt update
 
 for package in "${apt_packages[@]}"; do
-    if ! dpkg -s "$package" >/dev/null 2>&1; then
-        sudo apt install -y "$package"
+    if ! dpkg -s "${package}" >/dev/null 2>&1; then
+        sudo apt install -y "${package}"
     fi
 done
 
