@@ -30,7 +30,7 @@ for package in "${apt_packages[@]}"; do
 done
 
 # autoenv automatically runs .env file when you cd in
-curl -#fLo- 'https://raw.githubusercontent.com/hyperupcall/autoenv/master/scripts/install.sh' | sh
+wget --show-progress -o /dev/null -O- 'https://raw.githubusercontent.com/hyperupcall/autoenv/master/scripts/install.sh' | sh
 
 # install zoxide to full-on replace cd
 curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
