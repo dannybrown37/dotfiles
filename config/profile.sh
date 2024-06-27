@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 script=$(readlink -f "$BASH_SOURCE")
 profile_path=$(dirname "$script")
