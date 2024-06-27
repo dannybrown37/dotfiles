@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash -i
 
 apt_packages=(
     bash-completion
@@ -28,3 +28,9 @@ for package in "${apt_packages[@]}"; do
         sudo apt install -y "$package"
     fi
 done
+
+# autoenv automatically runs .env file when you cd in
+curl -#fLo- 'https://raw.githubusercontent.com/hyperupcall/autoenv/master/scripts/install.sh' | sh
+
+# install zoxide to full-on replace cd
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
