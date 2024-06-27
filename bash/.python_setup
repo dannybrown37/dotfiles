@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash -i
 
 ##
 ## Install dependencies pyenv needs to build individual python versions
@@ -64,12 +64,47 @@ else
 fi
 
 . ~/.bashrc
-. ~/.bashrc
-. ~/.bashrc
 
 ##
 ## Install 3.12, set it as global Python version
 ##
 
-pyenv install 3.12
+pyenv install -N 3.12
 pyenv global 3.12
+
+
+##
+## Install pipx and desirable pipx packages to have globally
+##
+
+if [ -n "$WSL_DISTRO_NAME" ]; then
+    sudo apt install -y pipx
+    pipx ensurepath
+else  # Git Bash
+    python3 -m pip install --user pipx
+    python3 -m pipx ensurepath
+fi
+
+pipx_packages=(
+    poetry
+    pre-commit
+    cookiecutter
+    ruff
+)
+
+for package in "${pipx_packages[@]}"; do
+    pipx install "$package"
+done
+
+##
+## Configure symlink for global ruff config
+##
+
+ruff_toml_dir=$(dirname "$(readlink -f "$BASH_SOURCE")")
+ruff_toml_file="$ruff_toml_dir/.ruff.toml"
+
+ln -s "$ruff_toml_file" "$HOME/.ruff.toml"
+
+echo "Symlink created between $ruff_toml_file and $HOME/.ruff.toml"
+
+. ~/.bashrc
