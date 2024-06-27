@@ -29,6 +29,10 @@ for package in "${apt_packages[@]}"; do
     fi
 done
 
+if [[ $WSL_DISTRO_NAME = 'kali-linux' ]]; then
+    sudo apt install eza
+fi
+
 # autoenv automatically runs .env file when you cd in
 wget --show-progress -o /dev/null -O- 'https://raw.githubusercontent.com/hyperupcall/autoenv/master/scripts/install.sh' | sh
 
