@@ -31,9 +31,9 @@
 
 
 ; bash
-::,,br::~/.bashrc
-::,,sbr::source ~/.bashrc
-::,,cbr::code ~/.bashrc
+::,,rc::~/.bashrc
+::,,src::source ~/.bashrc
+::,,crc::code ~/.bashrc
 ::,,devnull::2>/dev/null
 ::,,bashlist::"${list_name[@]}"
 ::,,sshkey::ssh-keygen -t rsa -b 4096 "email@email.email"
