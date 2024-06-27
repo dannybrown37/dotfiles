@@ -104,7 +104,7 @@ done
 
 # shellcheck disable=SC2128
 this_file=$(readlink -f "${BASH_SOURCE}")
-ruff_toml_dir=$(dirname "${this_file}")
+ruff_toml_dir=$(dirname "${this_file}")/../config
 ruff_toml_file="${ruff_toml_dir}/.ruff.toml"
 
 ln -s "${ruff_toml_file}" "${HOME}/.ruff.toml"
