@@ -8,62 +8,6 @@ buildlogs() {  # latest build logs in CLI; required arg is AWS stage
     aws s3 cp "s3://$BUILD_ARTIFACTS_BUCKET/$dev_stage-back-end-build-logs/$(aws s3 ls "s3://$BUILD_ARTIFACTS_BUCKET/$dev_stage-back-end-build-logs/" | sort -n | tail -1 | awk '{ print $4 }' )" - | zcat -
 }
 
-cwlogs() {  # latest cloudwatch logs; arg1 (optional): Lambda name; arg2 (optional): stage name
-    # TODO: THIS FUNCTION DOES NOT YET WORK, IT IS IN PROGRESS
-    if [ $# -eq 0 ]; then
-        lambda_folder=$(find "${LAMBDA_PATHS[@]}" \
-                        -mindepth 1 -maxdepth 1 \
-                        -type d \
-                        -not -path '*/node_modules*' | fzf)
-        [ -z "$lambda_folder" ] && echo "Error: No Lambda folder selected" && return
-        lambda_name=$(basename "$lambda_folder")
-    elif [ $# -eq 1 ]; then
-        lambda_name=$1
-    elif [ $# -eq 2 ]; then
-        lambda_name=$1
-        stage=$DEV_STAGE && echo "Using default stage $DEV_STAGE; pass an arg to override"
-    else
-        lambda_name=$1
-        stage=$2
-    fi
-
-    stage_title_case=$(echo "$stage" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}')
-
-    if [[ ! "${lambda_name,,}" == *"demo"* ]]; then  # old style Lambda names are a pain
-        echo "Appending title-cased stage to lambda name"
-        lambda_name="$lambda_name$stage_title_case"
-        lambda_name=${lambda_name/demo/$stage}
-        lambda_name=${lambda_name/Demo/$stage_title_case}
-        log_group_name="/wcp-$stage/wcp-$stage-$lambda_name"
-    else  # wcp-demo-* are a bit easier
-        lambda_name=${lambda_name/demo/$stage}
-        lambda_name=${lambda_name/Demo/$stage_title_case}
-        log_group_name="/wcp-$stage/$lambda_name"
-    fi
-
-    log_stream_name=$(aws logs describe-log-streams \
-                        --log-group-name "$log_group_name" \
-                        --order-by LastEventTime \
-                        --limit 1 \
-                        --query 'logStreams[0].logStreamName' \
-                        --output text)
-
-    if [[ -z "${log_stream_name}" ]]; then
-        echo "Error: Failed to retrieve log stream name"
-        return 1
-    fi
-
-    aws logs get-log-events --log-group-name "/wcp-$stage/${lambda_name}" \
-                            --log-stream-name "$(aws logs describe-log-streams \
-                            --log-group-name "/aws/lambda/${lambda_name}" \
-                            --order-by LastEventTime \
-                            --descending true \
-                            --limit 1 \
-                            --query 'logStreams[0].logStreamName' \
-                            --output text)" \
-                            --limit 10
-}
-
 lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2 (optional) stage; arg3 (optional) AWS region
     if [[ $# -eq 0 ]]; then
         # If no arguments are passed, use fzf to select a Lambda folder
