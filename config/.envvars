@@ -6,25 +6,25 @@ export MY_GITHUB="https://github.com/dannybrown37"
 
 BLUE='\[\033[01;34m\]'
 YELLOW='\[\033[33m\]'
-RED='\[\033[1;31m\]'
-GREEN='\[\033[1;32m\]'
+export RED='\[\033[1;31m\]'
+export GREEN='\[\033[1;32m\]'
 CYAN='\[\033[0;36m\]'
 MAGENTA='\[\033[0;35m\]'
 WHITE='\[\033[0;37m\]'
-RESET='\[\033[00m\]'
+export RESET='\[\033[00m\]'
 
-if [[ $WSL_DISTRO_NAME = 'kali-linux' ]]; then
+if [[ "${WSL_DISTRO_NAME}" = 'kali-linux' ]]; then
     PROMPT_SYMBOL=㉿
-elif [[ $WSL_DISTRO_NAME = 'Debian' ]]; then
+elif [[ "${WSL_DISTRO_NAME}" = 'Debian' ]]; then
     PROMPT_SYMBOL=🐧
-elif [[ $WSL_DISTRO_NAME = 'Ubuntu' ]]; then
+elif [[ "${WSL_DISTRO_NAME}" = 'Ubuntu' ]]; then
     PROMPT_SYMBOL='⚙ '
 elif [[ "$HOSTNAME" == *"raspberrypi"* ]]; then
     PROMPT_SYMBOL=🍓
 fi
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disables (venv) prepending prompt when venv activated, handled in PS1 var below
-export PS1=$WHITE'┌────${VIRTUAL_ENV:+'$BLUE'('$MAGENTA'$(basename $VIRTUAL_ENV)'$BLUE')}'$BLUE'('$GREEN'\w'$BLUE')'$WHITE'-'$BLUE'['$YELLOW'$(current_git_branch)'$BLUE']\n'$WHITE'└─'$GREEN$PROMPT_SYMBOL$RESET' '
+export PS1=$WHITE'┌────${VIRTUAL_ENV:+'$BLUE'('$MAGENTA'$(basename $VIRTUAL_ENV)'$BLUE')}'$BLUE'('$CYAN'\w'$BLUE')'$WHITE'-'$BLUE'['$YELLOW'$(current_git_branch)'$BLUE']\n'$WHITE'└─'$GREEN$PROMPT_SYMBOL$RESET' '
 
 # shellcheck disable=SC2155,SC2016
 export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
