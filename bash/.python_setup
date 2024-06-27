@@ -23,8 +23,8 @@ pyenv_build_depencies=(
     zlib1g-dev
 )
 for package in "${pyenv_build_depencies[@]}"; do
-    if ! dpkg -s "$package" >/dev/null 2>&1; then
-        sudo apt install -y "$package"
+    if ! dpkg -s "${package}" >/dev/null 2>&1; then
+        sudo apt install -y "${package}"
     fi
 done
 
@@ -33,12 +33,13 @@ done
 ## Install Pyenv
 ##
 
-curl pyenv.run | bash
+curl pyenv.run | bash || true
 
 ##
 ## Copy pyenv configuration to .bashrc file
 ##
 
+# shellcheck disable=SC2016
 PYENV_SETUP='
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
@@ -50,19 +51,20 @@ eval "$(pyenv virtualenv-init -)"
 
 needs_update=false
 while IFS= read -r line; do
-    if ! grep -Fxq "$line" ~/.bashrc; then
+    if ! grep -Fxq "${line}" ~/.bashrc; then
         needs_update=true
         break
     fi
-done <<< "$PYENV_SETUP"
+done <<< "${PYENV_SETUP}"
 
-if [ "$needs_update" = true ]; then
-    echo "$PYENV_SETUP" >> ~/.bashrc
+if [[ "${needs_update}" = true ]]; then
+    echo "${PYENV_SETUP}" >> ~/.bashrc
     echo "pyenv config variables added to .bashrc"
 else
     echo "pyenv config variables already exist in .bashrc"
 fi
 
+# shellcheck disable=SC1090
 . ~/.bashrc
 
 ##
@@ -77,7 +79,7 @@ pyenv global 3.12
 ## Install pipx and desirable pipx packages to have globally
 ##
 
-if [ -n "$WSL_DISTRO_NAME" ]; then
+if [[ -n "${WSL_DISTRO_NAME}" ]]; then
     sudo apt install -y pipx
     pipx ensurepath
 else  # Git Bash
@@ -93,18 +95,21 @@ pipx_packages=(
 )
 
 for package in "${pipx_packages[@]}"; do
-    pipx install "$package"
+    pipx install "${package}"
 done
 
 ##
 ## Configure symlink for global ruff config
 ##
 
-ruff_toml_dir=$(dirname "$(readlink -f "$BASH_SOURCE")")
-ruff_toml_file="$ruff_toml_dir/.ruff.toml"
+# shellcheck disable=SC2128
+this_file=$(readlink -f "${BASH_SOURCE}")
+ruff_toml_dir=$(dirname "${this_file}")
+ruff_toml_file="${ruff_toml_dir}/.ruff.toml"
 
-ln -s "$ruff_toml_file" "$HOME/.ruff.toml"
+ln -s "${ruff_toml_file}" "${HOME}/.ruff.toml"
 
-echo "Symlink created between $ruff_toml_file and $HOME/.ruff.toml"
+echo "Symlink created between ${ruff_toml_file} and ${HOME}/.ruff.toml"
 
+# shellcheck disable=SC1090
 . ~/.bashrc
