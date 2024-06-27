@@ -1,0 +1,20 @@
+#!/bin/bash
+
+parent_dir=$(dirname $(dirname $(readlink -f "${BASH_SOURCE}")))
+
+alias python=python3
+alias ahk="$parent_dir/ahk/ahk.sh"
+alias beep="powershell.exe -c \"[console]::beep(500, 300)\""
+
+eval "$(zoxide init bash)"
+alias cd=z
+
+# exa (ls replacement) config
+alias ls="exa"
+alias ll="exa -alh"
+alias tree="exa --tree"
+
+alias cat="batcat"
+alias bat="batcat"
+alias catp="batcat -p"
+alias batp="batcat -p"
