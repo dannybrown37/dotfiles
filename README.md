@@ -93,7 +93,7 @@ Install all of the above with this.
 
 * In the `./ahk` directory, set up any AutoHotKey scripts"
   * `dev_shortcuts.ahk` for generalized shortcuts
-  * `secrets.ahk` for non-public shortcuts not to be committed here
+  * `secrets.ahk` for non-public shortcuts not to be committed
 * In the `config/` directory, configure a Bash profile based on various settings:
   * `.aliases` for any aliases we want to use
   * `.aws` for AWS CLI functions to speed up feedback loops
@@ -117,29 +117,15 @@ For when you're truly starting from scratch.
 
 ### Set Up a WSL Debian Distro
 
-In PowerShell, choose a repo:
+In PowerShell, choose a distro:
 
 ```powershell
   wsl --set-default-version 2
   wsl --install -d Debian
 ```
 
-To reset (for example):
+To reset a WSL distro (for example):
 
 ```powershell
-  wsl --install kali-linux
-```
-
-### Set Up Git, Clone Dotfiles, Install
-
-In Debian:
-
-``` bash
- sudo apt update
- sudo apt install git -y
- mkdir projects
- cd projects
- git clone https://www.github.com/dannybrown37/dotfiles
- cd dotfiles
- source install.sh
+  wsl --unregister kali-linux
 ```
