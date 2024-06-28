@@ -21,6 +21,8 @@ elif [[ "${WSL_DISTRO_NAME}" = 'Ubuntu' ]]; then
     PROMPT_SYMBOL='⚙ '
 elif [[ "$HOSTNAME" == *"raspberrypi"* ]]; then
     PROMPT_SYMBOL=🍓
+elif [[ "$MSYSTEM" = "MINGW64" ]]; then
+    PROMPT_SYMBOL=🪟
 fi
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disables (venv) prepending prompt when venv activated, handled in PS1 var below
