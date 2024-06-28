@@ -40,16 +40,18 @@
 ::,,sshkey::ssh-keygen -t rsa -b 4096 "email@email.email"
 ::,,pathlines::echo $PATH | tr ':' '\n'
 ::,,noargs::[ ${#} -eq 0 ] && echo "Error: No args passed" && return
-::,,done::push danny_is_alerted The script has finished running.
+::,,done::&& push_to_topic danny_build_notifications The script has finished running.
 
 
 ; python
 ::,,ifn::if __name__ == '__main__':
+::,,fhi::from http import HTTPStatus
 ::,,ftit::from typing import TYPE_CHECKING
 ::,,ift::if TYPE_CHECKING:
 ::,,ipp::from pprint import pprint {;} print() {;} pprint(
 ::,,log::logger = logging.getLogger(__name__)
-::,,rst::ruff src tests
+::,,rst::ruff check src tests
+::,,rfst::ruff format src tests
 ::,,pv::python --version
 ::,,aok::assert response.status_code == HTTPStatus.OK, response.json()
 

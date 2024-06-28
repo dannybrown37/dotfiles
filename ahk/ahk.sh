@@ -18,11 +18,11 @@ AHK_SECRETS_PATH=$SCRIPT_PATH/secrets.ahk
 touch "${AHK_SECRETS_PATH}"
 
 # use "open" CLI arg to open the file for edits
-if [ "$1" = "open" ]; then
+if [[ "$1" = "open" ]]; then
     code "${AHK_FILE_PATH}"
-elif [ "$1" = "open_secrets" ]; then
+elif [[ "$1" = "open_secrets" ]]; then
     code "${AHK_SECRETS_PATH}"
-elif [ "$1" = "kill" ]; then
+elif [[ "$1" = "kill" ]]; then
     AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey | Select-Object -ExpandProperty Id")
     for PID in $AHK_PIDS; do
         if [ -n "$WSL_DISTRO_NAME" ]; then  # handle WSL
@@ -32,7 +32,7 @@ elif [ "$1" = "kill" ]; then
         fi
     done
 else
-    if [ -n "$WSL_DISTRO_NAME" ]; then  # handle WSL
+    if [[ -n "$WSL_DISTRO_NAME" ]]; then  # handle WSL
         WIN_DRIVE_PATH=$(wslpath -w -a "${AHK_FILE_PATH}")
         WIN_DRIVE_PATH_2=$(wslpath -w -a "${AHK_SECRETS_PATH}")
     else  # handle Git Bash

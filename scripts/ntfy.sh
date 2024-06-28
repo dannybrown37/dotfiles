@@ -6,10 +6,15 @@
 ## topic within the app.
 ##
 
-push() {
+push_to_topic() {
     local topic=$1
     shift
     local message=$*
 
     http POST ntfy.sh/"${topic}" alert="${message}"
+}
+
+push() {
+    topic="danny_is_alerted"
+    http POST ntfy.sh/"${topic}" alert="$*"
 }
