@@ -23,7 +23,7 @@ apt_packages=(
 
 sudo apt update
 
-if [[ $WSL_DISTRO_NAME = 'kali-linux' ]]; then
+if [[ "${WSL_DISTRO_NAME}" = 'kali-linux' ]]; then
     apt_packages+=(eza)
 else
     apt_packages+=(exa)

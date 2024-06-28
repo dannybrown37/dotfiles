@@ -19,16 +19,17 @@ elif [[ "${WSL_DISTRO_NAME}" = 'Debian' ]]; then
     PROMPT_SYMBOL=🐧
 elif [[ "${WSL_DISTRO_NAME}" = 'Ubuntu' ]]; then
     PROMPT_SYMBOL=⚙
-elif [[ "$HOSTNAME" == *"raspberrypi"* ]]; then
+elif [[ "${HOSTNAME}" == *"raspberrypi"* ]]; then
     PROMPT_SYMBOL=🍓
-elif [[ "$MSYSTEM" = "MINGW64" ]]; then
+elif [[ "${MSYSTEM}" = "MINGW64" ]]; then
     PROMPT_SYMBOL=🪟
 fi
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disables (venv) prepending prompt when venv activated, handled in PS1 var below
+# shellcheck disable=SC2250
 export PS1=$WHITE'┌────${VIRTUAL_ENV:+'$BLUE'('$MAGENTA'$(basename $VIRTUAL_ENV)'$BLUE')'$WHITE'-}'$RED'('$CYAN'\w'$RED')'$WHITE'-'$GREEN'['$YELLOW'$(current_git_branch)'$GREEN']\n'$WHITE'└─'$GREEN$PROMPT_SYMBOL$RESET' '
 
-if [[ -n "$WSL_DISTRO_NAME" || "$MSYSTEM" = "MINGW64" ]]; then
+if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
     # shellcheck disable=SC2155,SC2016
     export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
