@@ -1,30 +1,83 @@
 # Overview
 
-dotfiles for a WSL2-based Debian setup.
+dotfiles for a mostly WSL2-based setup with a growing list of compatible distros/environments.
 
 ## Clone and Run
+
+Install `apt` packages and basic Bash profile:
 
 ``` bash
 curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
 ```
 
-## Features Summary
+## Additional Install Options
 
-* Installs programming languages/packages:
-  * Python (all versions available via `pyenv`)
-  * NodeJS/NPM/TypeScript (gets latest available in Linux distribution, not always the most recent)
-  * Golang (overwrites existing install with latest version)
-  * Rust (latest stable version)
-  * An assortment of preferred `apt` packages
-* [Makes custom CLI commands globally available](#commands-available)
-* [Provides various configuration options](#config-options)
-* Installs the `autoenv` package to execute local `.env` files on each `cd` command
-* Installs my [fast-pr](https://www.github.com/dannybrown37/fast-pr) package that shortcuts opening pull requests
-* Adds to `~/.bashrc` an invocation of the `./bash/profile.sh` script
+### Bash
 
-### Commands Available
+```bash
+~/projects/dotfiles/setup
+```
 
-* `ahk`: run all AutoHotKey scripts in the `./ahk` directory from WSL in Windows
+This has already been run initially, but use this to sync `apt` packages.
+This will happen with any run of the script, including with an `--install`
+arg.
+
+### Python
+
+```bash
+~/projects/dotfiles/setup --install python
+```
+
+This installs Python build dependencies, `pyenv`, `Python 3.12`, `pipx`, a
+few `pipx` packages that I like to have globally, and creates a symlink
+for the `.ruff.toml` file in the `~` directory to provide global `ruff` rules.
+
+### Node
+
+```bash
+~/projects/dotfiles/setup --install node
+```
+
+This installs `nvm`, `Node 18`, and a few `NPM` packages that I like to
+have globally.
+
+### Golang
+
+```bash
+~/projects/dotfiles/setup --install golang
+```
+
+This deletes the current installation of Golang, installs the latest version,
+and copies needed environment variables to the `~/.bashrc` file.
+
+### Rust
+
+```bash
+~/projects/dotfiles/setup --install rust
+```
+
+This installs Rust/Cargo.
+
+### VS Code Configuration
+
+```bash
+~/projects/dotfiles/setup --install vscode
+```
+
+This installs various VSCode extensions and merges the `settings.json` with
+any existing user settings on the system.
+
+### The Full Suite
+
+```bash
+~/projects/dotfiles/setup --install all
+```
+
+Install all of the above with this.
+
+## Commands Available
+
+* `ahk`: run all AutoHotKey scripts in the `./ahk` directory from WSL or Git Bash in the Windows environment
 * `ahk kill`: kill all running autohotkey processes
 * `ahk open`: open ahk/dev_shortcuts.ahk in VSCode
 * `ahk open_secrets`: open ahk/secrets.ahk in VSCode
@@ -38,18 +91,18 @@ curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/thi
 
 ### Config Options
 
-* In the `bash/` directory, configure a Bash profile based on the types of settings:
+* In the `./ahk` directory, set up any AutoHotKey scripts"
+  * `dev_shortcuts.ahk` for generalized shortcuts
+  * `secrets.ahk` for non-public shortcuts not to be committed here
+* In the `config/` directory, configure a Bash profile based on various settings:
   * `.aliases` for any aliases we want to use
-  * `.apt_packages` to track `apt` packages to install in the distro
+  * `.aws` for AWS CLI functions to speed up feedback loops
   * `.envvars` to set environment variables we want permanently set
-  * `.functions` to store Bash functions meant to be invoked from other Bash scripts (not CLI commands)
-  * `.git_init` to store Git configuration for first-time setup
-  * `.language_config` stores any programming language-specific settings
-  * `.npm_init` holds global NPM packages to install and configurations to set
+  * `.functions` to store simple Bash functions to improve the scripting/CLI experience
   * `.secrets` holds secret data such as tokens and keys that aren't committed to Git
-* In the `./ahk` directory, set up any number of AutoHotKey scripts
-* In the `./scripts` directory, define functions meant to be invoked as CLI commands
-* In the `./vscode` directory, configure VSCode settings and extensions
+* In the `./.vscode` directory:
+  * `settings.json` for VS Code user settings
+  * `extensions.txt` for essential VS Code extensions
 
 ## Initial Windows Setup Notes
 
@@ -64,11 +117,17 @@ For when you're truly starting from scratch.
 
 ### Set Up a WSL Debian Distro
 
-In PowerShell:
+In PowerShell, choose a repo:
 
-``` powershell
-    wsl --set-default-version 2
-    wsl --install -d Debian
+```powershell
+  wsl --set-default-version 2
+  wsl --install -d Debian
+```
+
+To reset (for example):
+
+```powershell
+  wsl --install kali-linux
 ```
 
 ### Set Up Git, Clone Dotfiles, Install
