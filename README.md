@@ -5,11 +5,7 @@ dotfiles for a WSL2-based Debian setup.
 ## Clone and Run
 
 ``` bash
-mkdir projects
-cd projects
-git clone https://www.github.com/dannybrown37/dotfiles
-cd dotfiles
-./install
+curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
 ```
 
 ## Features Summary
