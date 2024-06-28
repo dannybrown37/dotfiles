@@ -40,6 +40,7 @@
 ::,,sshkey::ssh-keygen -t rsa -b 4096 "email@email.email"
 ::,,pathlines::echo $PATH | tr ':' '\n'
 ::,,noargs::[ ${#} -eq 0 ] && echo "Error: No args passed" && return
+::,,done::push danny_is_alerted The script has finished running.
 
 
 ; python
