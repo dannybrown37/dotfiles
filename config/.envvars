@@ -26,7 +26,7 @@ elif [[ "$MSYSTEM" = "MINGW64" ]]; then
 fi
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disables (venv) prepending prompt when venv activated, handled in PS1 var below
-export PS1=$WHITE'┌────${VIRTUAL_ENV:+'$BLUE'('$MAGENTA'$(basename $VIRTUAL_ENV)'$BLUE')}'$RED'('$CYAN'\w'$RED')'$WHITE'-'$GREEN'['$YELLOW'$(current_git_branch)'$GREEN']\n'$WHITE'└─'$GREEN$PROMPT_SYMBOL$RESET' '
+export PS1=$WHITE'┌────${VIRTUAL_ENV:+'$BLUE'('$MAGENTA'$(basename $VIRTUAL_ENV)'$BLUE')'$WHITE'-}'$RED'('$CYAN'\w'$RED')'$WHITE'-'$GREEN'['$YELLOW'$(current_git_branch)'$GREEN']\n'$WHITE'└─'$GREEN$PROMPT_SYMBOL$RESET' '
 
 if [[ -n "$WSL_DISTRO_NAME" || "$MSYSTEM" = "MINGW64" ]]; then
     export ON_WINDOWS=true
