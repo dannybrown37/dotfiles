@@ -1,5 +1,7 @@
 #!/usr/bin/bash -i
 
+sudo apt update
+sudo apt install git -y
 cd ~ || exit
 mkdir projects 2>/dev/null
 cd projects || exit
@@ -18,3 +20,5 @@ echo "Or full the full suite:"
 echo "      all"
 echo
 echo "Sync bash profile/apt packages at any time with '. ~/setup'"
+
+. ~/.bashrc
