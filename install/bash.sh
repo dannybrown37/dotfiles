@@ -18,6 +18,7 @@ apt_packages=(
     unzip
     wget
     zip
+    zoxide
 )
 
 sudo apt update
@@ -33,6 +34,3 @@ for package in "${apt_packages[@]}"; do
         sudo apt install -y "${package}"
     fi
 done
-
-# install zoxide to full-on replace cd
-curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh

@@ -1,22 +1,28 @@
 #!/bin/bash
 
-parent_dir=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")
-
-alias ahk='${parent_dir}/ahk/ahk.sh'
-alias beep="powershell.exe -c \"[console]::beep(500, 300)\""
-
 alias rc='vi ~/.bashrc'
 
-eval "$(zoxide init bash)"
-alias cd=z
+if [[ -n "$ON_WINDOWS" ]]; then
+    parent_dir=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")
+    alias ahk='${parent_dir}/ahk/ahk.sh'
+    alias beep="powershell.exe -c \"[console]::beep(500, 300)\""
+fi
 
-# exa (ls replacement) config
-alias l="exa"
-alias ll="exa -alh"
-alias ls=ll
-alias tree="exa --tree"
+if dpkg-query -W -f='${Status}' zoxide 2>/dev/null | grep -q "ok installed"; then
+    eval "$(zoxide init bash)"
+    alias cd=z
+fi
 
-alias cat="batcat"
-alias bat="batcat"
-alias catp="batcat -p"
-alias batp="batcat -p"
+if dpkg-query -W -f='${Status}' exa 2>/dev/null | grep -q "ok installed"; then
+    alias l="exa"
+    alias ll="exa -alh"
+    alias ls=ll
+    alias tree="exa --tree"
+fi
+
+if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then
+    alias cat="batcat"
+    alias bat="batcat"
+    alias catp="batcat -p"
+    alias batp="batcat -p"
+fi
