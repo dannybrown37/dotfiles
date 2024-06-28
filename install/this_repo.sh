@@ -5,4 +5,4 @@ mkdir projects 2>/dev/null
 cd projects || exit
 git clone https://www.github.com/dannybrown37/dotfiles
 cd dotfiles || exit
-./install
+./setup
