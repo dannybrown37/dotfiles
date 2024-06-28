@@ -17,11 +17,14 @@ global_npm_packages=(
     typescript
     ts-node
     fast-pr
+    '@hyperupcall/autoenv'
 )
 
 for package in "${global_npm_packages[@]}"; do
     npm install --global "${package}"
 done
+
+printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> ~/.bashrc
 
 if [[ "$1" = "--oss" ]]; then
     script_dir=$(dirname "$(readlink -f "$0")")
