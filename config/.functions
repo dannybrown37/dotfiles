@@ -1,5 +1,4 @@
-#! /bin/bash
-
+#!/usr/bin/bash -i
 
 # Simple bash functions for use in the terminal or other scripts
 
@@ -7,6 +6,34 @@
 current_git_branch() {
     # Get the current git branch
     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+}
+
+gg() {
+    if [[ $# -eq 0 ]]; then
+        read -p -r "Enter you Google query: " query
+    else
+        query=$*
+    fi
+
+    explorer.exe "https://www.google.com/search?q=${query}"
+}
+alias google=gg
+
+mk() {
+    mkdir -p "$@" && cd "$@" || exit
+}
+
+push() {
+    local topic="danny_is_alerted"
+    http POST ntfy.sh/"${topic}" alert="$*"
+}
+
+push_to_topic() {
+    local topic=$1
+    shift
+    local message=$*
+
+    http POST ntfy.sh/"${topic}" alert="${message}"
 }
 
 url() {
@@ -25,9 +52,9 @@ url() {
 
     URL=$1
 
-    if [[ $URL != https* ]]; then
-        URL="https://$URL"
+    if [[ "${URL}" != https* ]]; then
+        URL="https://${URL}"
     fi
 
-    ${BROWSER:-$open} "$URL"
+    ${BROWSER:-"${open}"} "${URL}"
 }

@@ -1,23 +1,24 @@
-#!/bin/bash
+#!/usr/bin/bash -i
+
 
 # Spin up some basic Node project files, with a little bit of prompting
 # and safeguarding to make sure we're not running in undesirable places
 
 
 function node_project_init {
-    if [ ! -z "$(ls -A)" ]; then
+    if [[ -n "$(ls -A)" ]]; then
         echo "WARNING: Current working directory is not empty, see the contents:"
         ls -A
-        read -p "Directory name to create in ~/projects/ (leave blank to proceed in cwd): " project_name
-        if [ -n "$project_name" ]; then
-            local location="$HOME/projects/$project_name"
-            mkdir -p "$location"
-            echo "Project directory created at: $location"
-            cd "$location"
+        read -r -p "Directory name to create in ~/projects/ (leave blank to proceed in cwd): " project_name
+        if [[ -n "${project_name}" ]]; then
+            local location="${HOME}/projects/${project_name}"
+            mkdir -p "${location}"
+            echo "Project directory created at: ${location}"
+            cd "${location}" || exit
         fi
     fi
-    if [[ $(pwd) = "$HOME/projects" || $(pwd) = $HOME ]]; then
-        echo "ERROR: Don't run this script in $HOME or $HOME/projects"
+    if [[ $(pwd) = "${HOME}/projects" || $(pwd) = "${HOME}" ]]; then
+        echo "ERROR: Don't run this script in ${HOME} or ${HOME}/projects"
         return
     fi
     if [[ -d ".git" ]]; then
@@ -43,5 +44,5 @@ function node_project_init {
 }
 EOF
 )
-    echo "$tsconfig_content" > tsconfig.json
+    echo "${tsconfig_content}" > tsconfig.json
 }

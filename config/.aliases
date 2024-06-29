@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/bash -i
 
 alias rc='vi ~/.bashrc'
 
-if [[ -n "$ON_WINDOWS" ]]; then
+if [[ -n "${ON_WINDOWS}" ]]; then
     parent_dir=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")
     alias ahk='${parent_dir}/ahk/ahk.sh'
     alias beep="powershell.exe -c \"[console]::beep(500, 300)\""

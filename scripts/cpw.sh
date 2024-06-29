@@ -1,4 +1,4 @@
-#! /bin/bash/
+#!/usr/bin/bash -i
 
 
 # Copy a file from WSL-Linux to Windows downloads folder with tab auto-completion

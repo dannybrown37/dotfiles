@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash -i
 
 # To set this up, use:
 #     alias cht=~/path/to/cht/cht.sh

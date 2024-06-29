@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/bash -i
 
 # Cd to any file in ~/projects from anywhere
 

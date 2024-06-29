@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash -i
 
 export MY_EMAIL=dannybrown37@gmail.com
 export MY_NAME="Danny Brown"

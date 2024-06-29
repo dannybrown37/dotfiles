@@ -2,8 +2,7 @@
 
 source ~/.bashrc
 
-# shellcheck disable=SC2128
-vscode_setup_script_path=$(dirname "$(readlink -f "${BASH_SOURCE}")")
+vscode_setup_script_path=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 default_settings_path="${vscode_setup_script_path}/default_settings.json"
 default_extensions_path="${vscode_setup_script_path}/extensions.txt"
 
