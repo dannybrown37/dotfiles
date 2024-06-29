@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/usr/bin/bash -i
 
 
 buildlogs() {  # latest build logs in CLI; required arg is AWS stage
-    [ $# -eq 0 ] && dev_stage=$DEV_STAGE && echo "Using default stage $DEV_STAGE; pass an arg to override"
-    [ $# -eq 1 ] && dev_stage=$1
-    aws-azure-login -f --profile $AWS_PROFILE --mode=debug
-    aws s3 cp "s3://$BUILD_ARTIFACTS_BUCKET/$dev_stage-back-end-build-logs/$(aws s3 ls "s3://$BUILD_ARTIFACTS_BUCKET/$dev_stage-back-end-build-logs/" | sort -n | tail -1 | awk '{ print $4 }' )" - | zcat -
+    [[ $# -eq 0 ]] && dev_stage="${DEV_STAGE}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
+    [[ $# -eq 1 ]] && dev_stage=$1
+    aws-azure-login -f --profile "${AWS_PROFILE}" --mode=debug
+    aws s3 cp "s3://${BUILD_ARTIFACTS_BUCKET}/${dev_stage}-back-end-build-logs/$(aws s3 ls "s3://${BUILD_ARTIFACTS_BUCKET}/${dev_stage}-back-end-build-logs/" | sort -n | tail -1 | awk '{ print $4 }' )" - | zcat -
 }
 
 lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2 (optional) stage; arg3 (optional) AWS region
@@ -16,19 +16,19 @@ lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2
                         -mindepth 1 -maxdepth 1 \
                         -type d \
                         -not -path '*/node_modules*' | fzf)
-        [ -z "$lambda_folder" ] && echo "Error: No Lambda folder selected" && return
-        lambda_name=$(basename "$lambda_folder")
-        stage=$DEV_STAGE && echo "Using default stage $DEV_STAGE; pass an arg to override"
+        [[ -z "${lambda_folder}" ]] && echo "Error: No Lambda folder selected" && return
+        lambda_name=$(basename "${lambda_folder}")
+        stage="${DEV_STAGE}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
         aws_region="us-east-1"
-    elif [ $# -eq 1 ]; then
+    elif [[ $# -eq 1 ]]; then
         lambda_name=$1
-        stage=$DEV_STAGE && echo "Using default stage $DEV_STAGE; pass an arg to override"
+        stage="${DEV_STAGE}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
         aws_region="us-east-1"
-    elif [ $# -eq 2 ]; then
+    elif [[ $# -eq 2 ]]; then
         lambda_name=$1
         stage=$2
         aws_region="us-east-1"
-    elif [ $# -eq 3 ]; then
+    elif [[ $# -eq 3 ]]; then
         lambda_name=$1
         stage=$2
         aws_region=$3
@@ -37,17 +37,17 @@ lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2
         return
     fi
 
-    stage_title_case=$(echo "$stage" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}')
+    stage_title_case=$(echo "${stage}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}')
 
     if [[ ! "${lambda_name,,}" == *"demo"* ]]; then
-        lambda_name="$lambda_name$stage_title_case"
+        lambda_name="${lambda_name}${stage_title_case}"
     fi
 
     lambda_name=${lambda_name/demo/$stage}
     lambda_name=${lambda_name/Demo/$stage_title_case}
 
-    url="https://$aws_region.console.aws.amazon.com/lambda/home?region=$aws_region#/functions/$lambda_name?tab=monitoring"
+    url="https://${aws_region}.console.aws.amazon.com/lambda/home?region=${aws_region}#/functions/${lambda_name}?tab=monitoring"
 
 
-    cmd.exe /c start "$url" 2>/dev/null
+    cmd.exe /c start "${url}" 2>/dev/null
 }
