@@ -13,7 +13,7 @@ if dpkg-query -W -f='${Status}' zoxide 2>/dev/null | grep -q "ok installed"; the
     alias cd=z
 fi
 
-if dpkg-query -W -f='${Status}' exa 2>/dev/null | grep -q "ok installed"; then
+if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then
     alias l="exa"
     alias ll="exa -alh"
     alias ls=ll
@@ -23,6 +23,6 @@ fi
 if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then
     alias cat="batcat"
     alias bat="batcat"
-    alias catp="batcat -p"
-    alias batp="batcat -p"
+    alias pcat="batcat -p"
+    alias pbat="batcat -p"
 fi
