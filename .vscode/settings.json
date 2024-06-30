@@ -13,8 +13,10 @@
     "cSpell.words": [
         "autoenv",
         "autohotkey",
+        "bashlist",
         "checkinstall",
         "cookiecutter",
+        "devnull",
         "distro",
         "dotfiles",
         "dpkg",
@@ -37,6 +39,7 @@
         "pprint",
         "ptufb",
         "pyenv",
+        "pytest",
         "rfst",
         "sshkey",
         "tfpro",
