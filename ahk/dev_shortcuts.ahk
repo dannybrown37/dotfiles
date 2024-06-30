@@ -3,8 +3,6 @@
 #Warn ; Enable warnings to assist with detecting common errors.
 
 SendMode Input ; Recommended for new scripts due to its superior speed and reliability.
-#space::#e ;this line solves the delay. Makes it Just like using Win + E
-
 
 
 ; LLM tools
