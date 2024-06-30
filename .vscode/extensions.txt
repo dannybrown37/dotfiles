@@ -1,15 +1,31 @@
-DavidAnson.vscode-markdownlint
+# visual/dev improvements
+aaron-bond.better-comments
 eamodio.gitlens
-esbenp.prettier-vscode
-ms-python.isort
+equinusocio.vsc-material-theme-icons
+oderwat.indent-rainbow
+streetsidesoftware.code-spell-checker
+usernamehw.errorlens
+
+# command-palette tools
+alefragnani.bookmarks
+donjayamanne.githistory
+
+# python
+charliermarsh.ruff
+mgesbert.indent-nested-dictionary
 ms-python.python
-ms-python.vscode-pylance
-ms-toolsai.jupyter
-nomi9995.intellij-merge-tool
-rvest.vs-code-prettier-eslint
+
+# markdown and protocols
+DavidAnson.vscode-markdownlint
 shd101wyy.markdown-preview-enhanced
 tamasfe.even-better-toml
-VisualStudioExptTeam.intellicode-api-usage-examples
+
+# js/ts
+dbaumer.vscode-eslint
+esbenp.prettier-vscode
+orta.vscode-jest
+
+# autocompletion, llms, etc.
+christian-kohler.path-intellisense
 VisualStudioExptTeam.vscodeintellicode
 VisualStudioExptTeam.vscodeintellicode-completions
-VisualStudioExptTeam.vscodeintellicode-insiders
