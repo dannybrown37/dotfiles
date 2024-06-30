@@ -88,6 +88,9 @@ Install all of the above with this.
 * `mk`: mkdir and cd into it
 * `node_project_init`: spin up a git repo, gitignore file, and package.json for a Node project
 * `pip_project_init`: spin up a Python package starter set of files via `cookiecutter` and [my configuration for it](https://github.com/dannybrown37/pip_package_cookiecutter)
+* `push`: Send a push alert to your phone
+* `push_to_topic`: Send a push alert to a custom topic
+* `url`: Open up a URL directly using the system browser
 
 ### Config Options
 
