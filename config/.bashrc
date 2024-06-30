@@ -360,3 +360,16 @@ if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then
     alias pcat="batcat -p"
     alias pbat="batcat -p"
 fi
+
+##
+## Language-specific configuration
+##
+
+if command -v pyenv >/dev/null 2>&1; then
+    export PYENV_ROOT="$HOME/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    if command -v pyenv 1>/dev/null 2>&1; then
+        eval "$(pyenv init --path)"
+    fi
+    eval "$(pyenv virtualenv-init -)"
+fi
