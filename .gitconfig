@@ -1,3 +1,9 @@
 [user]
-    email = dannybrown37@gmail.com
     name = Danny Brown
+    email = dannybrown37@gmail.com
+
+[includeIf "gitdir/i:**/whelen/**"]
+    email = danbrown@whelen.com
+
+[branch]
+    sort = -committerdate
