@@ -1,7 +1,14 @@
 #SingleInstance Force
+#NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
+#Warn ; Enable warnings to assist with detecting common errors.
+
+SendMode Input ; Recommended for new scripts due to its superior speed and reliability.
+#space::#e ;this line solves the delay. Makes it Just like using Win + E
+
+
 
 ; LLM tools
-::,,llmprep::For future responses in this chat: never apologize. Don't re-state my question before you answer it. Be as brief as possible unless I ask you to expand on a point. When I ask for code snippets, only provide the code unless I ask for follow-up explanation. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks! :)
+::,,llm::For future responses in this chat: never apologize. Don't re-state my question before you answer it. Be as brief as possible unless I ask you to expand on a point. When I ask for code snippets, only provide the code unless I ask for follow-up explanation. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks!
 
 
 ; personal
@@ -41,6 +48,7 @@
 ::,,pathlines::echo $PATH | tr ':' '\n'
 ::,,noargs::[ ${#} -eq 0 ] && echo "Error: No args passed" && return
 ::,,done::&& push_to_topic danny_build_notifications The script has finished running.
+::,,checkinstall::dpkg-query -W -f='${Status}'
 
 
 ; python
