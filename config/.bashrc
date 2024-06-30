@@ -43,6 +43,9 @@ export PATH="${DOTFILES_DIR}/scripts:${HOME}/.local/bin:${PATH}"
 # https://the.exa.website/docs/colour-themes
 export EXA_COLORS='*.yaml=37;44:*.yml=37;44:*.json=37;42:*.ts=30;47;1:.*=33;40:package.json=30;47;1:pyproject.toml=30;47;1:package-lock.json=30;40;1:*.js=30;40;1:*.js.map=30;40;1'
 
+touch "${DOTFILES_DIR}/.secrets"
+source "${DOTFILES_DIR}/.secrets"
+
 ##
 ## Prompt setup: seasonal colors, system based icon, git status icon
 ##
@@ -84,6 +87,15 @@ export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_E
 ##
 ## Functions
 ##
+
+# source all files in scripts directory
+# these use dynamic code executed outside of their functions
+for file in "$DOTFILES_DIR"/*; do
+    if [[ -f "$file" ]]; then
+        source "$file"
+    fi
+done
+
 
 buildlogs() {  # latest build logs in CLI; required arg is AWS stage
     [[ $# -eq 0 ]] && dev_stage="${DEV_STAGE}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
