@@ -34,3 +34,11 @@ for package in "${apt_packages[@]}"; do
         sudo apt install -y "${package}"
     fi
 done
+
+###
+### Create symlinks for various files
+###
+
+rm ~/.gitconfig 2>/dev/null
+ln -s "${DOTFILES_DIR}/config/.gitconfig" ~/.gitconfig
+echo "Symlinked .gitconfig"
