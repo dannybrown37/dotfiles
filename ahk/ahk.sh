@@ -22,7 +22,7 @@ if [[ "$1" = "open" ]]; then
 elif [[ "$1" = "open_secrets" ]]; then
     code "${AHK_SECRETS_PATH}"
 elif [[ "$1" = "kill" ]]; then
-    AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey | Select-Object -ExpandProperty Id")
+    AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey* | Select-Object -ExpandProperty Id")
     for PID in ${AHK_PIDS}; do
         if [[ -n "${WSL_DISTRO_NAME}" ]]; then  # handle WSL
             powershell.exe "Stop-Process -Id ${PID} '-Force'"

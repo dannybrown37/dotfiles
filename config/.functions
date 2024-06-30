@@ -10,7 +10,7 @@ current_git_branch() {
 
 gg() {
     if [[ $# -eq 0 ]]; then
-        read -p -r "Enter you Google query: " query
+        read -p "Enter you Google query: " query
     else
         query=$*
     fi
