@@ -36,7 +36,7 @@ fi
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disables (venv) prepending prompt when venv activated, handled in PS1 var below
 # shellcheck disable=SC2250
-export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'-}'$COLOR3'('$COLOR3'\w'$COLOR3')'$COLOR1'-'$COLOR4'['$COLOR4'$(current_git_branch)'$(git_status_color)'$(git_dot)'$COLOR4']\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
+export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'-}'$COLOR3'('$COLOR3'\w'$COLOR3')'$COLOR1'-'$COLOR4'['$(git_status_color)'$(git_dot)'$COLOR4'$(current_git_branch)'$(git_status_color)'$(git_dot)'$COLOR4']\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
 
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
