@@ -1,4 +1,5 @@
 #!/usr/bin/bash -i
+# shellcheck disable=SC2088
 
 apt_packages=(
     bash-completion
@@ -41,9 +42,12 @@ done
 ###
 
 rm ~/.gitconfig 2>/dev/null
-ln -s "${DOTFILES_DIR}/config/.gitconfig" ~/.gitconfig
+ln -s "~/projects/dotfiles/config/.gitconfig" ~/.gitconfig
 echo "Symlinked .gitconfig"
 
 mv ~/.bashrc ~/.bashrc.og.bak
-ln -s "${DOTFILES_DIR}/config/.bashrc" ~/.bashrc
+ln -s "~/projects/dotfiles/config/.bashrc" ~/.bashrc
 echo "Symlinked .bashrc"
+
+ln -s "~/projects/dotfiles/config/.ruff.toml" ~/.ruff.toml
+echo "Symlinked .ruff.toml"
