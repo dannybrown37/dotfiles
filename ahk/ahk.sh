@@ -15,7 +15,7 @@ SCRIPT_PATH=$(dirname "${SCRIPT}")
 AHK_FILE_PATH="${SCRIPT_PATH}/dev_shortcuts.ahk"
 AHK_SECRETS_PATH="${SCRIPT_PATH}/secrets.ahk"
 
-if [[ -z "${AHK_SECRETS_PATH}" ]]; then
+if [[ ! -d "${AHK_SECRETS_PATH}" ]]; then
     echo "#SingleInstance Force" >> "${AHK_SECRETS_PATH}"
 fi
 
