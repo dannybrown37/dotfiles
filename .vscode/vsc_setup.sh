@@ -3,7 +3,7 @@
 source ~/.bashrc
 
 vscode_setup_script_path=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-default_settings_path="${vscode_setup_script_path}/default_settings.json"
+default_settings_path="${vscode_setup_script_path}/settings.json"
 default_extensions_path="${vscode_setup_script_path}/extensions.txt"
 
 # Path to settings.json in WSL
@@ -22,7 +22,7 @@ if [[ -f "${vscode_settings_path}" ]]; then
   cat "${vscode_settings_path}"
 else
   echo "{}" > "${vscode_settings_path}"
-  echo "Created an empty settings.json"
+  echo "There is not an existing VSCode settings path in Windows"
 fi
 
 # merge existing and default settings
@@ -38,6 +38,9 @@ installed_extensions=$(code --list-extensions)
 extensions_to_install=()
 
 while IFS= read -r extension_id; do
+  if [[ -z "${extension_id}" || "${extension_id}" =~ ^# ]]; then
+    continue
+  fi
   if [[ ! "${installed_extensions}" == *"${extension_id}"* ]]; then
     extensions_to_install+=("${extension_id}")
   fi
