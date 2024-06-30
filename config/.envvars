@@ -1,19 +1,26 @@
 #!/usr/bin/bash -i
 
-export DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-
-export MY_EMAIL=dannybrown37@gmail.com
-export MY_NAME="Danny Brown"
-export MY_GITHUB="https://github.com/dannybrown37"
+export DOTFILES_DIR='$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )'
 
 BLUE='\[\033[01;34m\]'
-YELLOW='\[\033[33m\]'
-RED='\[\033[1;31m\]'
-GREEN='\[\033[1;32m\]'
 CYAN='\[\033[0;36m\]'
+GRAY='\[\033[1;30m\]'
+GREEN='\[\033[1;32m\]'
+LIGHT_CYAN='\[\033[1;36m\]'
+LIGHT_WHITE='\[\033[1;37m\]'
 MAGENTA='\[\033[0;35m\]'
+ORANGE='\[\033[0;33m\]'
+RED='\[\033[1;31m\]'
 WHITE='\[\033[0;37m\]'
-RESET='\[\033[00m\]'
+YELLOW='\[\033[1;33m\]'
+
+case $(date +%b) in
+    (Mar|Apr|May) COLOR1=$GREEN; COLOR2=$CYAN; COLOR3=$RED; COLOR4=$MAGENTA ;;
+    (Jun|Jul|Aug) COLOR1=$RED; COLOR2=$ORANGE; COLOR3=$RED; COLOR4=$ORANGE ;;
+    (Sep|Oct|Nov) COLOR1=$ORANGE; COLOR2=$YELLOW; COLOR3=$ORANGE; COLOR4=$YELLOW ;;
+    (Dec|Jan|Feb) COLOR1=$CYAN; COLOR2=$GRAY; COLOR3=$BLUE; COLOR4=$LIGHT_CYAN ;;
+esac
+
 
 if [[ "${WSL_DISTRO_NAME}" = 'kali-linux' ]]; then
     PROMPT_SYMBOL=㉿
@@ -29,7 +36,7 @@ fi
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disables (venv) prepending prompt when venv activated, handled in PS1 var below
 # shellcheck disable=SC2250
-export PS1=$WHITE'┌────${VIRTUAL_ENV:+'$BLUE'('$MAGENTA'$(basename $VIRTUAL_ENV)'$BLUE')'$WHITE'-}'$RED'('$CYAN'\w'$RED')'$WHITE'-'$GREEN'['$YELLOW'$(current_git_branch)'$GREEN']\n'$WHITE'└─'$GREEN$PROMPT_SYMBOL$RESET' '
+export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'('$COLOR2'$(basename $VIRTUAL_ENV)'$COLOR2')'$COLOR1'-}'$COLOR3'('$COLOR3'\w'$COLOR3')'$COLOR1'-'$COLOR4'['$COLOR4'$(current_git_branch)'$COLOR4']\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
 
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
