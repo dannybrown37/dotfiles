@@ -38,20 +38,8 @@ git_dot() {
       *) gitStatusDot='●' ;;
     esac
 
-    echo "${gitStatusDot}"
+    echo "$gitStatusDot"
   fi
-}
-
-git_status_color() {
-  local gitStatus="$(current_git_status)"
-  case $gitStatus in
-    clean*) statusText="$GREEN" ;;
-    modified*) statusText="$MAGENTA" ;;
-    staged*) statusText="$YELLOW" ;;
-    ahead*) statusText="$CYAN" ;;
-    *) statusText="$WHITE" ;;
-  esac
-  echo "$statusText"
 }
 
 gg() {
