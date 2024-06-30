@@ -48,7 +48,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,pathlines::echo $PATH | tr ':' '\n'
 ::,,noargs::[ ${#} -eq 0 ] && echo "Error: No args passed" && return
 ::,,done::&& push_to_topic danny_build_notifications The script has finished running.
-::,,checkinstall::dpkg-query -W -f='${Status}'
+::,,checkinstall::dpkg-query -W -f='${{}Status{}}'
 
 
 ; python
