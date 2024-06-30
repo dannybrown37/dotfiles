@@ -14,7 +14,10 @@ SCRIPT=$(readlink -f "${BASH_SOURCE[0]}")
 SCRIPT_PATH=$(dirname "${SCRIPT}")
 AHK_FILE_PATH="${SCRIPT_PATH}/dev_shortcuts.ahk"
 AHK_SECRETS_PATH="${SCRIPT_PATH}/secrets.ahk"
-touch "${AHK_SECRETS_PATH}"
+
+if [[ -z "${AHK_SECRETS_PATH}" ]]; then
+    echo "#SingleInstance Force" >> "${AHK_SECRETS_PATH}"
+fi
 
 # use "open" CLI arg to open the file for edits
 if [[ "$1" = "open" ]]; then

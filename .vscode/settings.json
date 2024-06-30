@@ -1,7 +1,9 @@
 {
     "editor.rulers": [
         72,
-        79
+        79,
+        88,
+        100
     ],
     "files.autoSave": "afterDelay",
     "files.insertFinalNewline": true,
@@ -10,9 +12,35 @@
     "cSpell.words": [
         "autoenv",
         "autohotkey",
+        "checkinstall",
         "cookiecutter",
         "distro",
         "dotfiles",
-        "pyenv"
+        "dpkg",
+        "ftit",
+        "gcdf",
+        "gcue",
+        "gcun",
+        "gitpurge",
+        "gred",
+        "keygen",
+        "llmprep",
+        "noargs",
+        "pathlines",
+        "piae",
+        "pidev",
+        "pidocs",
+        "pirdev",
+        "pirdocs",
+        "poetrynuke",
+        "pprint",
+        "ptufb",
+        "pyenv",
+        "rfst",
+        "sshkey",
+        "tfpro",
+        "tfsj",
+        "venv",
+        "virtualenv"
     ]
 }
