@@ -11,6 +11,7 @@ apt_packages=(
     make
     man-db
     neofetch
+    nvim
     pipx
     rename
     ripgrep
@@ -36,9 +37,13 @@ for package in "${apt_packages[@]}"; do
 done
 
 ###
-### Create symlinks for various files
+### Create symlinks for various config/dotfiles
 ###
 
 rm ~/.gitconfig 2>/dev/null
 ln -s "${DOTFILES_DIR}/config/.gitconfig" ~/.gitconfig
 echo "Symlinked .gitconfig"
+
+mv ~/.bashrc ~/.bashrc.og.bak
+ln -s "${DOTFILES_DIR}/config/.bashrc" ~/.bashrc
+echo "Symlinked .bashrc"
