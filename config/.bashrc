@@ -30,7 +30,7 @@ fi
 ##
 
 # shellcheck disable=SC2155
-export DOTFILES_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )
+export DOTFILES_DIR="${HOME}/projects/dotfiles"
 
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
@@ -90,7 +90,7 @@ export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_E
 
 # source all files in scripts directory
 # these use dynamic code executed outside of their functions
-for file in "$DOTFILES_DIR"/*; do
+for file in $DOTFILES_DIR/scripts/*; do
     if [[ -f "$file" ]]; then
         source "$file"
     fi
@@ -345,7 +345,6 @@ fi
 
 if dpkg-query -W -f='${Status}' zoxide 2>/dev/null | grep -q "ok installed"; then
     eval "$(zoxide init bash)"
-    alias cd=z
 fi
 
 if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then

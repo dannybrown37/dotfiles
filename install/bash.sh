@@ -41,13 +41,12 @@ done
 ### Create symlinks for various config/dotfiles
 ###
 
-rm ~/.gitconfig 2>/dev/null
-ln -s "~/projects/dotfiles/config/.gitconfig" ~/.gitconfig
+ln -s ~/projects/dotfiles/config/.gitconfig ~/.gitconfig
 echo "Symlinked .gitconfig"
 
 mv ~/.bashrc ~/.bashrc.og.bak
-ln -s "~/projects/dotfiles/config/.bashrc" ~/.bashrc
+ln -s ~/projects/dotfiles/config/.bashrc ~/.bashrc
 echo "Symlinked .bashrc"
 
-ln -s "~/projects/dotfiles/config/.ruff.toml" ~/.ruff.toml
+ln -s ~/projects/dotfiles/config/.ruff.toml ~/.ruff.toml
 echo "Symlinked .ruff.toml"
