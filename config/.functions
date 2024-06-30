@@ -4,8 +4,54 @@
 
 
 current_git_branch() {
-    # Get the current git branch
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+    local gitBranch=$(git branch 2> /dev/null | sed -e "/^[^*]/d" -e "s/* \(.*\)/\1/")
+    if [[ $gitBranch ]]; then
+        echo -en $gitBranch
+        return
+    fi
+}
+
+current_git_status() {
+  local gitBranch="$(current_git_branch)"
+  if [[ $gitBranch ]]; then
+    local statusCheck=$(git status 2> /dev/null)
+    if [[ $statusCheck =~ 'Your branch is ahead' ]]; then
+      echo 'ahead'
+    elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
+      echo 'staged'
+    elif [[ $statusCheck =~ 'no changes added' ]]; then
+      echo 'modified'
+    elif [[ $statusCheck =~ 'working tree clean' ]]; then
+      echo 'clean'
+    fi
+  fi
+}
+
+git_dot() {
+  local gitCheck="$(current_git_branch)"
+  if [[ $gitCheck ]]; then
+    local gitStatus="$(current_git_status)"
+
+    case $gitStatus in
+      staged) gitStatusDot='◍' ;;
+      modified) gitStatusDot='○' ;;
+      *) gitStatusDot='●' ;;
+    esac
+
+    echo "$gitStatusDot"
+  fi
+}
+
+git_status_color() {
+  local gitStatus="$(current_git_status)"
+  case $gitStatus in
+    clean*) statusText="$GREEN" ;;
+    modified*) statusText="$MAGENTA" ;;
+    staged*) statusText="$YELLOW" ;;
+    ahead*) statusText="$CYAN" ;;
+    *) statusText="$WHITE" ;;
+  esac
+  echo "$statusText"
 }
 
 gg() {
