@@ -102,14 +102,5 @@ done
 ## Configure symlink for global ruff config
 ##
 
-# shellcheck disable=SC2128
-this_file=$(readlink -f "${BASH_SOURCE}")
-ruff_toml_dir=$(dirname "${this_file}")/../config
-ruff_toml_file="${ruff_toml_dir}/.ruff.toml"
-
-ln -s "${ruff_toml_file}" "${HOME}/.ruff.toml"
-
-echo "Symlink created between ${ruff_toml_file} and ${HOME}/.ruff.toml"
-
 # shellcheck disable=SC1090
 . ~/.bashrc
