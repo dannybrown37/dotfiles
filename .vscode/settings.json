@@ -9,6 +9,7 @@
     "files.insertFinalNewline": true,
     "files.trimTrailingWhitespace": true,
     "files.trimFinalNewlines": true,
+    "workbench.iconTheme": "eq-material-theme-icons-deepforest",
     "cSpell.words": [
         "autoenv",
         "autohotkey",
