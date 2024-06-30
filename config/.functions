@@ -38,7 +38,7 @@ git_dot() {
       *) gitStatusDot='●' ;;
     esac
 
-    echo "$gitStatusDot"
+    echo "${gitStatusDot}"
   fi
 }
 
