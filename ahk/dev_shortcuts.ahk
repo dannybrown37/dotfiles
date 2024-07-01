@@ -14,7 +14,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::@@::dannybrown37@gmail.com
 ::,,linkedin::https://www.linkedin.com/in/dannybrown37
 ::,,github::https:://www.github.com/dannybrown37
-::,,installdotfiles::curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
+::,,installdotfiles::sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
 
 
 ; ts/js
