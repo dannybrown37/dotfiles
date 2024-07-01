@@ -352,7 +352,7 @@ if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; th
     alias l="exa"
     alias ll="exa -alh"
     alias ls=ll
-    alias tree="exa --tree"
+    alias tree="exa --tree -la --ignore-glob=\".git\""
 fi
 
 if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then
