@@ -2,7 +2,7 @@
     name = Danny Brown
     email = dannybrown37@gmail.com
 
-[includeIf "gitdir/i:**/whelen/**"]
+[includeIf "gitdir/i:**/wcp/**"]
     email = danbrown@whelen.com
 
 [branch]
