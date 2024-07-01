@@ -43,8 +43,8 @@ export PATH="${DOTFILES_DIR}/scripts:${HOME}/.local/bin:${PATH}"
 # https://the.exa.website/docs/colour-themes
 export EXA_COLORS='*.yaml=37;44:*.yml=37;44:*.json=37;42:*.ts=30;47;1:.*=33;40:package.json=30;47;1:pyproject.toml=30;47;1:package-lock.json=30;40;1:*.js=30;40;1:*.js.map=30;40;1'
 
-touch "${DOTFILES_DIR}/.secrets"
-source "${DOTFILES_DIR}/.secrets"
+touch "${DOTFILES_DIR}/config/.secrets"
+source "${DOTFILES_DIR}/config/.secrets"
 
 ##
 ## Prompt setup: seasonal colors, system based icon, git status icon
