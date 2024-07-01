@@ -12,7 +12,6 @@ apt_packages=(
     make
     man-db
     neofetch
-    nvim
     pipx
     rename
     ripgrep
