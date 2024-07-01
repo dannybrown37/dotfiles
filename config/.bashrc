@@ -1,4 +1,5 @@
 #!/usr/bin/bash -i
+#shellcheck disable=SC1090,SC1091,SC2155,SC2162
 
 ##
 ## System defaults; retained setup from fresh rc file
@@ -29,12 +30,11 @@ fi
 ## Environment variables
 ##
 
-# shellcheck disable=SC2155
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
-    # shellcheck disable=SC2155,SC2016
+    # shellcheck disable=SC2016
     export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
     if [[ "${MSYSTEM}" = "MINGW64" ]]; then
         export ON_GIT_BASH=true
@@ -93,7 +93,7 @@ export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_E
 
 # source all files in scripts directory
 # these use dynamic code executed outside of their functions
-for file in $DOTFILES_DIR/scripts/*; do
+for file in "$DOTFILES_DIR"/scripts/*; do
     if [[ -f "$file" ]]; then
         source "$file"
     fi
