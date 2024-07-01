@@ -33,20 +33,22 @@ done
 ## Install Pyenv
 ##
 
+rm -rf "${HOME}/.pyenv" 2>/dev/null
 curl pyenv.run | bash
 export PATH="$HOME/.pyenv/bin:$PATH"
 eval "$(pyenv init --path)"
+source "${HOME}/.bashrc"
 
 ##
 ## Install 3.12, set it as global Python version
 ##
 
-pyenv install -N 3.12
+pyenv install 3.12
 pyenv global 3.12
 
 
 ##
-## Install pipx and desirable pipx packages to have globally
+## Ensure pipx install and desirable pipx packages to have globally
 ##
 
 if [[ -n "${WSL_DISTRO_NAME}" ]]; then
@@ -67,10 +69,3 @@ pipx_packages=(
 for package in "${pipx_packages[@]}"; do
     pipx install "${package}"
 done
-
-##
-## Configure symlink for global ruff config
-##
-
-# shellcheck disable=SC1090
-. ~/.bashrc
