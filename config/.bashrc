@@ -328,8 +328,7 @@ url() {
 alias gg='google'
 
 if [[ -n "${ON_WINDOWS}" ]]; then
-    parent_dir=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")
-    alias ahk='${parent_dir}/ahk/ahk.sh'
+    alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
     alias beep_c4='powershell.exe -c "[console]::beep(261, 300)"'
     alias beep_d4='powershell.exe -c "[console]::beep(294, 300)"'
     alias beep_e4='powershell.exe -c "[console]::beep(330, 300)"'
