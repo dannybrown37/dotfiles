@@ -14,7 +14,8 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::@@::dannybrown37@gmail.com
 ::,,linkedin::https://www.linkedin.com/in/dannybrown37
 ::,,github::https:://www.github.com/dannybrown37
-::,,installdotfiles::sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
+::,,idf::sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
+::,,cdf::code ~/projects/dotfiles
 
 
 ; ts/js
@@ -177,6 +178,10 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,pebble::[[pebble]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,boulder::[[boulder]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,mountain::[[mountain]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
+
+
+; vscode
+::,,clearvscextensions::code --list-extensions | xargs -n 1 code --uninstall-extension
 
 
 ; fixes for weird situations
