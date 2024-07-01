@@ -36,6 +36,9 @@ if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
     # shellcheck disable=SC2155,SC2016
     export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
+    if [[ "${MSYSTEM}" = "MINGW64" ]]; then
+        export ON_GIT_BASH=true
+    fi
 fi
 
 export PATH="${DOTFILES_DIR}/scripts:${HOME}/.local/bin:${PATH}"

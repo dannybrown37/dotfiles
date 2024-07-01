@@ -35,8 +35,6 @@ root_dir=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 source "${root_dir}/install/bash.sh"
 
 if [[ "${INSTALL_ARG}" = "all" || "${INSTALL_ARG}" = "python" ]]; then
-    source "${root_dir}/install/pyenv.sh"
-    source ~/.bashrc
     source "${root_dir}/install/python.sh"
 fi
 
