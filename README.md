@@ -81,10 +81,12 @@ Install all of the above with this.
 * `ahk kill`: kill all running autohotkey processes
 * `ahk open`: open ahk/dev_shortcuts.ahk in VSCode
 * `ahk open_secrets`: open ahk/secrets.ahk in VSCode
+* `buildlogs`: see the latest build logs for configured AWS CodePipeline stack
 * `cdp`: move directly to any directory in ~/projects (with tab autocomplete)
 * `cht`: curl cht.sh for commonly used tools/languages. Add new ones as needed in cht/.cht_sh_index
 * `cpw`: copy files from WSL to Windows easily, defaults to Downloads folder (with tab autocomplete)
 * `gg/google`: google something from the terminal, no quotes needed, pops open a web browser
+* `lopen`: open to the monitoring tab of a specific AWS Lambda
 * `mk`: mkdir and cd into it
 * `node_project_init`: spin up a git repo, gitignore file, and package.json for a Node project
 * `pip_project_init`: spin up a Python package starter set of files via `cookiecutter` and [my configuration for it](https://github.com/dannybrown37/pip_package_cookiecutter)
@@ -98,11 +100,11 @@ Install all of the above with this.
   * `dev_shortcuts.ahk` for generalized shortcuts
   * `secrets.ahk` for non-public shortcuts not to be committed
 * In the `config/` directory, configure a Bash profile based on various settings:
-  * `.aliases` for any aliases we want to use
-  * `.aws` for AWS CLI functions to speed up feedback loops
-  * `.envvars` to set environment variables we want permanently set
-  * `.functions` to store simple Bash functions to improve the scripting/CLI experience
-  * `.secrets` holds secret data such as tokens and keys that aren't committed to Git
+  * `.bashrc` holds a full config file that is symlinked to `~`
+  * `.gitconfig` holds git config info that is symlinked to `~`
+  * `.ruff.toml` holds Python linting rules symlinked to `~` for global use
+  * `.secrets` holds data not for committing to git
+* In the `scripts/` directory, configure scripts that use dynamic data and need to invoke other functions outside of the main function
 * In the `./.vscode` directory:
   * `settings.json` for VS Code user settings
   * `extensions.txt` for essential VS Code extensions
