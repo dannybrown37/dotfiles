@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash -i
 
 
 # Get autohotkey files from this repo in WSL2, start in Windows environment
