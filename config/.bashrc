@@ -13,7 +13,7 @@ HISTCONTROL=ignoreboth:erasedups
 shopt -s histappend
 HISTSIZE=1000
 HISTFILESIZE=2000
-export HISTIGNORE="ls:cd:pwd:exit:date:clear:* --help:./setup *"
+export HISTIGNORE="ls:cd:pwd:exit:date:clear:* --help:./setup *:,,*"
 
 shopt -s checkwinsize
 
