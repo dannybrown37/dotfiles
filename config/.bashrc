@@ -137,35 +137,35 @@ current_git_branch() {
 
 
 current_git_status() {
-  local gitBranch="$(current_git_branch)"
-  if [[ $gitBranch ]]; then
-    local statusCheck=$(git status 2> /dev/null)
-    if [[ $statusCheck =~ 'Your branch is ahead' ]]; then
-      echo 'ahead'
-    elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
-      echo 'staged'
-    elif [[ $statusCheck =~ 'no changes added' ]]; then
-      echo 'modified'
-    elif [[ $statusCheck =~ 'working tree clean' ]]; then
-      echo 'clean'
+    local gitBranch="$(current_git_branch)"
+    if [[ $gitBranch ]]; then
+        local statusCheck=$(git status 2> /dev/null)
+        if [[ $statusCheck =~ 'Your branch is ahead' ]]; then
+            echo 'ahead'
+        elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
+            echo 'staged'
+        elif [[ $statusCheck =~ 'no changes added' ]]; then
+            echo 'modified'
+        elif [[ $statusCheck =~ 'working tree clean' ]]; then
+            echo 'clean'
+        fi
     fi
-  fi
 }
 
 
 git_dot() {
-  local gitCheck="$(current_git_branch)"
-  if [[ $gitCheck ]]; then
+    local gitCheck="$(current_git_branch)"
+    if [[ $gitCheck ]]; then
     local gitStatus="$(current_git_status)"
 
     case $gitStatus in
-      modified) gitStatusDot='○' ;;
-      staged) gitStatusDot='◍' ;;
+        modified) gitStatusDot='○' ;;
+        staged) gitStatusDot='◍' ;;
       *) gitStatusDot='●' ;;
     esac
 
     echo "$gitStatusDot"
-  fi
+    fi
 }
 
 
@@ -232,31 +232,41 @@ function pip_project_init {
     rm -rf .tempvenv
 }
 
-
-lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2 (optional) stage; arg3 (optional) AWS region
-    if [[ $# -eq 0 ]]; then
-        # If no arguments are passed, use fzf to select a Lambda folder
-        # LAMBDA_PATHS = an array of dirs
+# # # #
+# open browser to particular Lambda's monitoring page
+# lopen arg1 [developer stage] [AWS region] [Lambda name]
+# env variables:
+# LAMBDA_PATHS -- an array of paths to search for Lambda folders
+# DEV_STAGE -- the name of the dev stage
+lopen() {
+    if [[ $# -lt 3 ]]; then
         lambda_folder=$(find "${LAMBDA_PATHS[@]}" \
                         -mindepth 1 -maxdepth 1 \
                         -type d \
                         -not -path '*/node_modules*' | fzf)
         [[ -z "${lambda_folder}" ]] && echo "Error: No Lambda folder selected" && return
         lambda_name=$(basename "${lambda_folder}")
-        stage="${DEV_STAGE}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
+    fi
+    if [[ $# -eq 0 ]]; then
+        stage="${DEV_STAGE}"
+        if [[ -z "${stage}" ]]; then
+            echo "Error: no DEV_STAGE environment variable set or arg passed"
+            exit 1
+        fi
+        echo "Using default stage ${DEV_STAGE}; pass an arg to override"
         aws_region="us-east-1"
+        echo "Using default region us-east-1; pass an arg to override"
     elif [[ $# -eq 1 ]]; then
-        lambda_name=$1
-        stage="${DEV_STAGE}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
+        stage=$1
         aws_region="us-east-1"
+        echo "Using default region us-east-1; pass an arg to override"
     elif [[ $# -eq 2 ]]; then
-        lambda_name=$1
-        stage=$2
-        aws_region="us-east-1"
+        stage=$1
+        aws_region=$2
     elif [[ $# -eq 3 ]]; then
-        lambda_name=$1
-        stage=$2
-        aws_region=$3
+        stage=$1
+        aws_region=$2
+        lambda_name=$3
     else
         echo "Error: Invalid number of arguments"
         return
@@ -272,7 +282,7 @@ lopen() {  # pop open browser to particular Lambda; arg1 (opt) Lambda name; arg2
     lambda_name=${lambda_name/Demo/$stage_title_case}
 
     url="https://${aws_region}.console.aws.amazon.com/lambda/home?region=${aws_region}#/functions/${lambda_name}?tab=monitoring"
-
+    echo "$url"
 
     cmd.exe /c start "${url}" 2>/dev/null
 }

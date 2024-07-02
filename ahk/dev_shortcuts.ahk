@@ -1,6 +1,8 @@
 #SingleInstance Force
 #NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
 #Warn ; Enable warnings to assist with detecting common errors.
+#Persistent
+SetTitleMatchMode, 2  ;
 
 SendMode Input ; Recommended for new scripts due to its superior speed and reliability.
 
@@ -261,8 +263,6 @@ SwitchToVSCode() {
 ; Ctrl+Shift+C to focus on open Chrome window
 ^+c::
 {
-     ; Attempt to activate Chrome by its window title
-    SetTitleMatchMode, 2  ; Allows partial match for window titles
     if WinExist("Google Chrome")
     {
         WinActivate
@@ -274,17 +274,20 @@ SwitchToVSCode() {
     return
 }
 
-; Ctrl+Shift+D to open Microsoft T(D)eams
+; Ctrl+Shift+D to open Microsoft Teams ("Deams")
 ^+d::
 {
-    ; Attempt to activate Microsoft Teams by its window title
-    SetTitleMatchMode, 2  ; Allows partial match for window titles
-    if WinExist("Microsoft Teams")
+    IfWinExist, Microsoft Teams
     {
-        WinActivate
-        ; Wait for the window to be active
-        WinWaitActive, Microsoft Teams
-
+        WinGet, MinMax, MinMax, Microsoft Teams
+        if (MinMax = -1)  ; If the window is minimized
+        {
+            WinRestore, Microsoft Teams  ; Restore the window
+        }
+        else
+        {
+            WinMinimize, Microsoft Teams  ; Minimize the window
+        }
     }
     else
     {
