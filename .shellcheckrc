@@ -1,1 +1,5 @@
-disable=SC2312,SC1090,SC1091,SC2154,SC2155
+shell=bash
+disable=1090  # non-constant sources are known
+disable=1091  # I'm not including every path I source
+disable=2155  # sometimes masking return values is a-ok
+disable=2162  # no reads want or depend on backslashes
