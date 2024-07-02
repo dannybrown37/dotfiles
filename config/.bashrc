@@ -83,7 +83,7 @@ fi
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disables (venv) prepending prompt when venv activated, handled in PS1 var below
 # shellcheck disable=SC2250
-export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'-}'$COLOR3'('$COLOR3'\w'$COLOR3')'$COLOR1'-'$COLOR4'[$(git_dot)$(current_git_branch)$(git_dot)'$COLOR4']\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
+export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'-}'$COLOR3'('$COLOR3'\w'$COLOR3')'$COLOR1'-'$COLOR4'[$(current_git_branch)$(git_icon)'$COLOR4']\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
 
 ##
 ## Functions
@@ -133,25 +133,6 @@ current_git_branch() {
     fi
 }
 
-
-current_git_status() {
-    local gitBranch="$(current_git_branch)"
-    if [[ $gitBranch ]]; then
-        local statusCheck=$(git status 2> /dev/null)
-        if [[ $statusCheck =~ 'Your branch is ahead' ]]; then
-            echo 'ahead'
-        elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
-            echo 'staged'
-        elif [[ $statusCheck =~ 'no changes added' ]]; then
-            echo 'modified'
-        elif [[ $statusCheck =~ 'working tree clean' ]]; then
-            echo 'clean'
-        else
-            echo 'unknown'
-        fi
-    fi
-}
-
 function_history() {
     local cmd=$(history | awk '{$1=""; print $0}' | fzf)
     if [[ -n "$cmd" ]]; then
@@ -159,19 +140,19 @@ function_history() {
     fi
 }
 
-
-git_dot() {
-    local gitCheck="$(current_git_branch)"
-    if [[ $gitCheck ]]; then
-    local gitStatus="$(current_git_status)"
-
-    case $gitStatus in
-        modified) gitStatusDot='○' ;;
-        staged) gitStatusDot='◍' ;;
-      *) gitStatusDot='●' ;;
-    esac
-
-    echo "$gitStatusDot"
+git_icon() {
+    local gitBranch="$(current_git_branch)"
+    if [[ $gitBranch ]]; then
+        local statusCheck=$(git status 2> /dev/null)
+        if [[ $statusCheck =~ 'Your branch is ahead' ]]; then
+            echo 🚀
+        elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
+            echo ✏️
+        elif [[ $statusCheck =~ 'no changes added' ]]; then
+            echo 🎨
+        elif [[ $statusCheck =~ 'working tree clean' ]]; then
+            echo ✅
+        fi
     fi
 }
 
