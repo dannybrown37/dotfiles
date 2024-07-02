@@ -18,6 +18,7 @@
         "cookiecutter",
         "devnull",
         "distro",
+        "distros",
         "dotfiles",
         "dpkg",
         "ftit",

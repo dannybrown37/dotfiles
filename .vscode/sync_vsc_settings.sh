@@ -4,7 +4,6 @@ source ~/.bashrc
 
 vscode_setup_script_path=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 default_settings_path="${vscode_setup_script_path}/settings.json"
-default_extensions_path="${vscode_setup_script_path}/extensions.txt"
 
 # Path to settings.json in WSL
 if [[ -z "${WINDOWS_USERNAME}" ]]; then
@@ -29,26 +28,9 @@ fi
 merged_settings=$(jq -s '.[0] * .[1]' "${vscode_settings_path}" "${default_settings_path}")
 
 echo "${merged_settings}" | jq '.' > "${vscode_settings_path}"
+echo "${merged_settings}" | jq '.' > "${default_settings_path}"
 
 echo "New VSCode settings:"
 cat "${vscode_settings_path}"
 
-# Now handle extensions
-installed_extensions=$(code --list-extensions)
-extensions_to_install=()
-
-while IFS= read -r extension_id; do
-  if [[ -z "${extension_id}" || "${extension_id}" =~ ^# ]]; then
-    continue
-  fi
-  if [[ ! "${installed_extensions}" == *"${extension_id}"* ]]; then
-    extensions_to_install+=("${extension_id}")
-  fi
-done < "${default_extensions_path}"
-
-for extension_id in "${extensions_to_install[@]}"; do
-  echo "Installing extension: ${extension_id}"
-  code --install-extension "${extension_id}"
-done
-
-echo "All extensions have been installed."
+echo "VSCode settings synced between Windows and WSL"
