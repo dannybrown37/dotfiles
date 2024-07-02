@@ -1,5 +1,4 @@
 #!/usr/bin/bash -i
-#shellcheck disable=SC1090,SC1091,SC2155,SC2162
 
 ##
 ## System defaults; retained setup from fresh rc file
@@ -18,13 +17,11 @@ export HISTIGNORE="ls:cd:pwd:exit:date:clear:* --help:./setup *:,,*"
 shopt -s checkwinsize
 
 if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    # shellcheck disable=SC1091
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    # shellcheck disable=SC1091
-    . /etc/bash_completion
-  fi
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
 fi
 
 ##
@@ -102,6 +99,7 @@ done
 
 
 buildlogs() {  # latest build logs in CLI; required arg is AWS stage
+    # shellcheck disable=SC2153
     [[ $# -eq 0 ]] && dev_stage="${DEV_STAGE}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
     [[ $# -eq 1 ]] && dev_stage=$1
     aws-azure-login -f --profile "${AWS_PROFILE}" --mode=debug
@@ -117,7 +115,6 @@ cht() {
         return
     fi
 
-    # shellcheck disable=SC2162
     read -p "$selected keywords (optional): " query
 
     if [ -n "$query" ]; then
