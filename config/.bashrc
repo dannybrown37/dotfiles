@@ -89,6 +89,7 @@ export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_E
 ## Functions
 ##
 
+
 # source all files in scripts directory
 # these use dynamic code executed outside of their functions
 for file in "$DOTFILES_DIR"/scripts/*; do
@@ -133,12 +134,14 @@ current_git_branch() {
     fi
 }
 
+
 function_history() {
     local cmd=$(history | awk '{$1=""; print $0}' | fzf)
     if [[ -n "$cmd" ]]; then
         eval "$cmd"
     fi
 }
+
 
 git_icon() {
     local gitBranch="$(current_git_branch)"
@@ -219,6 +222,7 @@ pip_project_init() {
     deactivate
     rm -rf .tempvenv
 }
+
 
 # # # #
 # open browser to particular Lambda's monitoring page
