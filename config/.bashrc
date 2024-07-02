@@ -402,3 +402,10 @@ export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
 if [[ -f "$HOME/.cargo/env" ]]; then
     . "$HOME/.cargo/env"
 fi
+
+##
+## Bespoke environmental stuff
+##
+
+# In lieu of a symlink between WSL and Windows, just sync settings.json on each shell reboot
+"$DOTFILES_DIR"/.vscode/sync_vsc_settings.sh >/dev/null 2>&1
