@@ -1,5 +1,4 @@
 #!/usr/bin/bash -i
-# shellcheck disable=SC2088
 
 apt_packages=(
     bash-completion

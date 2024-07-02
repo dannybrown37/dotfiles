@@ -9,10 +9,11 @@ case $- in
     *i*) ;;
     *) return;;
 esac
-HISTCONTROL=ignoreboth
+HISTCONTROL=ignoreboth:erasedups
 shopt -s histappend
 HISTSIZE=1000
 HISTFILESIZE=2000
+export HISTIGNORE="ls:cd:pwd:exit:date:clear:* --help:./setup *"
 
 shopt -s checkwinsize
 
@@ -152,6 +153,13 @@ current_git_status() {
     fi
 }
 
+function_history() {
+    local cmd=$(history | awk '{$1=""; print $0}' | fzf)
+    if [[ -n "$cmd" ]]; then
+        eval "$cmd"
+    fi
+}
+
 
 git_dot() {
     local gitCheck="$(current_git_branch)"
@@ -223,7 +231,7 @@ EOF
 }
 
 
-function pip_project_init {
+pip_project_init() {
     python -m venv .tempvenv
     source .tempvenv/bin/activate
     pip install cookiecutter
@@ -238,7 +246,7 @@ function pip_project_init {
 # env variables:
 # LAMBDA_PATHS -- an array of paths to search for Lambda folders
 # DEV_STAGE -- the name of the dev stage
-lopen() {
+open_lambda_monitoring_tab_in_browser() {
     if [[ $# -lt 3 ]]; then
         lambda_folder=$(find "${LAMBDA_PATHS[@]}" \
                         -mindepth 1 -maxdepth 1 \
@@ -308,7 +316,7 @@ push_to_topic() {
 }
 
 
-url() {
+open_url_in_browser() {
     case $(uname -s) in
     Darwin)   open='open';;
     MINGW*)   open='start';;
@@ -316,7 +324,7 @@ url() {
     CYGWIN*)  open='cygstart';;
     *)  # Try to detect WSL (Windows Subsystem for Linux)
         if uname -r | grep -q -i microsoft; then
-            open='explore.exe'
+            open='explorer.exe'
         else
             open='xdg-open'
         fi;;
@@ -335,7 +343,10 @@ url() {
 ## Aliases
 ##
 
+alias fh='function_history'
 alias gg='google'
+alias lopen='open_lambda_monitoring_tab_in_browser'
+alias url='open_url_in_browser'
 
 if [[ -n "${ON_WINDOWS}" ]]; then
     alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
