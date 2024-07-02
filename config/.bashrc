@@ -144,14 +144,14 @@ git_icon() {
     local gitBranch="$(current_git_branch)"
     if [[ $gitBranch ]]; then
         local statusCheck=$(git status 2> /dev/null)
-        if [[ $statusCheck =~ 'Your branch is ahead' ]]; then
-            echo 🚀
+        if [[ $statusCheck =~ 'Changes not staged for commit' ]]; then
+            echo 🛠️  # changes made, need git add
         elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
-            echo ✏️
-        elif [[ $statusCheck =~ 'no changes added' ]]; then
-            echo 🎨
+            echo ✏️  # changes added, need git commit
+        elif [[ $statusCheck =~ 'Your branch is ahead' ]]; then
+            echo 🚀  # staged, need git push
         elif [[ $statusCheck =~ 'working tree clean' ]]; then
-            echo ✅
+            echo ✅  # in sync with remote branch
         fi
     fi
 }
