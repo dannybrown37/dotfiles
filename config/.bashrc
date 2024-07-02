@@ -146,6 +146,8 @@ current_git_status() {
             echo 'modified'
         elif [[ $statusCheck =~ 'working tree clean' ]]; then
             echo 'clean'
+        else
+            echo 'unknown'
         fi
     fi
 }
