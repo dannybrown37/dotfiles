@@ -5,3 +5,5 @@
     sort = -committerdate
 [core]
 	editor = vi
+[init]
+	defaultBranch = main
