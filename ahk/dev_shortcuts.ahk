@@ -174,6 +174,23 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,klp::kubectl logs -n namespace pod_name
 
 
+; password-store
+; sudo apt-get install pass
+; gpg --gen-key
+; pass init <GPG_KEY>  ; create a password store
+; pass git init
+::,,gsk::gpg -K  ; gpg show keys
+::,,gek::gpg --edit-key
+::,,ps::pass  ; shows stored passwords
+::,,psi::pass insert  ; (arg/path) add a password
+::,,psg::pass generate  ; (arg/path) generate and store a new password
+::,,pse::pass edit  ; (arg/path) use to encrypt metadata such as login credentials
+::,,psg::pass grep  ; (arg/path) grep across encrypted data
+::,,pss::pass show  ; (arg/path) show password and encrypted data with password
+::,,psc::pass show -c  ; (arg/path) copy first line (password) into clipboard
+::,,psr::pass rm  ; (arg/path) remove a password
+
+
 ; feedback
 ::,,dust::[[dust]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,sand::[[sand]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
