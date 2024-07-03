@@ -83,7 +83,6 @@
         "endregion",
         "etfv",
         "fixhashicorppublickey",
-        "fixhashicorppublickey",
         "ftit",
         "gcdf",
         "gcue",
@@ -105,14 +104,13 @@
         "pirdev",
         "pirdocs",
         "poetrynuke",
+        "psgen",
         "ptufb",
         "rfst",
         "sshkey",
         "tfav",
         "tfavf",
         "tfpro",
-        "tfpro",
-        "tfsj",
-        "tfsj",
+        "tfsj"
     ]
 }
