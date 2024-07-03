@@ -6,7 +6,7 @@
 
 sudo apt update
 
-pyenv_build_depencies=(
+pyenv_build_dependencies=(
     build-essential
     libbz2-dev
     libffi-dev
@@ -22,7 +22,7 @@ pyenv_build_depencies=(
     xz-utils
     zlib1g-dev
 )
-for package in "${pyenv_build_depencies[@]}"; do
+for package in "${pyenv_build_dependencies[@]}"; do
     if ! dpkg -s "${package}" >/dev/null 2>&1; then
         sudo apt install -y "${package}"
     fi
