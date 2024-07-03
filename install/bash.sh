@@ -11,6 +11,7 @@ apt_packages=(
     make
     man-db
     neofetch
+    pass
     pipx
     rename
     ripgrep
