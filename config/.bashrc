@@ -327,6 +327,7 @@ open_url_in_browser() {
 ## Aliases
 ##
 
+alias chrome='google-chrome 2>/dev/null &'
 alias fh='function_history'
 alias gg='google'
 alias lopen='open_lambda_monitoring_tab_in_browser'
