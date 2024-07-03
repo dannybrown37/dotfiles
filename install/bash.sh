@@ -11,6 +11,7 @@ apt_packages=(
     make
     man-db
     neofetch
+    openssh-server
     pass
     pipx
     rename

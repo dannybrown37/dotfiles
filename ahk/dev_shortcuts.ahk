@@ -195,6 +195,14 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,psr::pass rm  ; (arg/path) remove a password
 
 
+; ssh
+::,,sshstart::sudo service ssh start
+::,,sshstop::sudo service ssh stop
+::,,sshstat::sudo service ssh status
+::,,sship::curl ifconfig.me
+::,,sshin::ssh username@ip_address
+
+
 ; feedback
 ::,,dust::[[dust]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,sand::[[sand]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
