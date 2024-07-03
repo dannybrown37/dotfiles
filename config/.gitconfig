@@ -1,6 +1,7 @@
 [user]
     name = Danny Brown
     email = dannybrown37@gmail.com
-
 [branch]
     sort = -committerdate
+[core]
+	editor = vi
