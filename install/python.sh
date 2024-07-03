@@ -35,9 +35,8 @@ done
 
 rm -rf "${HOME}/.pyenv" 2>/dev/null
 curl pyenv.run | bash
-export PATH="$HOME/.pyenv/bin:$PATH"
+PATH="$HOME/.pyenv/bin:$PATH"
 eval "$(pyenv init --path)"
-source "${HOME}/.bashrc"
 
 ##
 ## Install 3.12, set it as global Python version

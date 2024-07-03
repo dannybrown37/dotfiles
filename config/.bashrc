@@ -30,6 +30,8 @@ fi
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 
+PATH="${DOTFILES_DIR}/scripts:${PATH}"
+
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
     # shellcheck disable=SC2016
@@ -39,10 +41,34 @@ if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     fi
 fi
 
-export PATH="${DOTFILES_DIR}/scripts:${HOME}/.local/bin:${PATH}"
-
 # https://the.exa.website/docs/colour-themes
-export EXA_COLORS='*.yaml=37;44:*.yml=37;44:*.json=37;42:*.ts=30;47;1:.*=33;40:package.json=30;47;1:pyproject.toml=30;47;1:package-lock.json=30;40;1:*.js=30;40;1:*.js.map=30;40;1'
+EXA_COLORS_ARRAY=(
+    "package.json=30;47"
+    "pyproject.toml=30;47"
+    "serverless.yml=30;47"
+    ".bashrc=30;47"
+
+    ".gitignore=35;40;1"
+    ".gitattributes=35;40;1"
+    ".gitmodules=35;40;1"
+    ".gitconfig=35;40;1"
+
+    "*rc.json=30;47;1"
+    "jest.config.js=30;47;1"
+    ".pre-commit-config.yaml=30;47;1"
+    "*config*.json=30;47;1"
+    ".shellcheckrc=30;47;1"
+    ".env=30;47;1"
+
+    ".ruff.toml=31;40"
+
+    "swagger*.yml=31;40;1"
+
+    "buildspec.yml=30;40;1"
+    "package-lock.json=30;40;1"
+    "*secrets*=30;40;1"
+)
+export EXA_COLORS="$(tr ' ' ':' <<< "${EXA_COLORS_ARRAY[*]}")"
 
 touch "${DOTFILES_DIR}/config/.secrets"
 source "${DOTFILES_DIR}/config/.secrets"
@@ -64,7 +90,7 @@ YELLOW='\[\033[1;33m\]'
 
 case $(date +%b) in
     (Mar|Apr|May) COLOR1=$GREEN; COLOR2=$CYAN; COLOR3=$RED; COLOR4=$MAGENTA ;;
-    (Jun|Jul|Aug) COLOR1=$RED; COLOR2=$ORANGE; COLOR3=$RED; COLOR4=$ORANGE ;;
+    (Jun|Jul|Aug) COLOR1=$RED; COLOR2=$ORANGE; COLOR3=$WHITE; COLOR4=$ORANGE ;;
     (Sep|Oct|Nov) COLOR1=$ORANGE; COLOR2=$YELLOW; COLOR3=$ORANGE; COLOR4=$YELLOW ;;
     (Dec|Jan|Feb) COLOR1=$CYAN; COLOR2=$GRAY; COLOR3=$BLUE; COLOR4=$LIGHT_CYAN ;;
 esac
@@ -354,11 +380,15 @@ fi
 
 if dpkg-query -W -f='${Status}' zoxide 2>/dev/null | grep -q "ok installed"; then
     eval "$(zoxide init bash)"
+    alias cd='z'
 fi
 
 if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then
-    alias l="exa"
-    alias ll="exa -alh"
+    # https://the.exa.website/features/filtering
+    ls_ignore_globs=".git|.github|node_modules|__pycache__|*.pyc|.pytest_cache|.ruff_cache|*.js.map|*.egg-info"
+    alias l="exa --ignore-glob=\${ls_ignore_globs}"
+    alias ll="exa -alh --ignore-glob=\${ls_ignore_globs}"
+    alias lsa="exa -alh"
     alias ls=ll
     alias tree="exa --tree -la --ignore-glob=\".git\""
 fi
@@ -375,7 +405,7 @@ fi
 ##
 
 export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
+PATH="$PYENV_ROOT/bin:$PATH"
 if command -v pyenv 1>/dev/null 2>&1; then
     eval "$(pyenv init --path)"
     eval "$(pyenv virtualenv-init -)"
@@ -387,7 +417,7 @@ export NVM_DIR="$HOME/.nvm"
 
 export GOROOT="/usr/local/go"
 export GOPATH="$HOME/go"
-export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
+PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
 
 if [[ -f "$HOME/.cargo/env" ]]; then
     . "$HOME/.cargo/env"
@@ -399,3 +429,7 @@ fi
 
 # In lieu of a symlink between WSL and Windows, just sync settings.json on each shell reboot
 "$DOTFILES_DIR"/.vscode/sync_vsc_settings.sh >/dev/null 2>&1
+
+# Remove duplicates from $PATH and then export. Do not export PATH anywhere else!
+PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
+export PATH
