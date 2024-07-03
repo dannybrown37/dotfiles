@@ -22,7 +22,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 ; ts/js
 ::,,cl::console.log(
-::,,arrow::const funcname = () => {}
+::,,arrow::const func = () => {}
 ::,,ifs::import fs from "fs";
 ::,,jsonout::fs.writeFileSync('trash.json', JSON.stringify(object, null, 2));
 ::,,jstest::test("Test ", () => {});
