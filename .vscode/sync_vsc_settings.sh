@@ -25,7 +25,10 @@ else
 fi
 
 # merge existing and default settings
-merged_settings=$(jq -s '.[0] * .[1]' "${windows_settings_path}" "${synced_settings_path}")
+merged_settings=$(
+  jq -s '.[0] * .[1]' "${windows_settings_path}" "${synced_settings_path}" |
+  jq 'to_entries | sort_by(.key) | from_entries'
+)
 
 echo "${merged_settings}" | jq '.' > "${windows_settings_path}"
 echo "${merged_settings}" | jq '.' > "${synced_settings_path}"

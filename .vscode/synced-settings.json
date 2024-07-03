@@ -1,18 +1,5 @@
 {
-  "editor.rulers": [
-    72,
-    79,
-    88,
-    100
-  ],
-  "files.autoSave": "afterDelay",
-  "files.insertFinalNewline": true,
-  "files.trimTrailingWhitespace": true,
-  "files.trimFinalNewlines": true,
-  "security.allowedUNCHosts": [
-    "wsl.localhost"
-  ],
-  "files.eol": "\n",
+  "accessibility.signals.sounds.volume": 0,
   "cSpell.userWords": [
     "autoenv",
     "autohotkey",
@@ -20,156 +7,21 @@
     "checkinstall",
     "clearvscextensions",
     "cookiecutter",
+    "dannybrown",
+    "Deams",
+    "dearmor",
     "devnull",
     "distro",
     "distros",
+    "dockerbuild",
+    "dockerlist",
+    "dockerrun",
+    "dockershell",
     "dotfiles",
     "dpkg",
+    "endregion",
+    "etfv",
     "fixhashicorppublickey",
-    "ftit",
-    "gcdf",
-    "gcue",
-    "gcun",
-    "gitpurge",
-    "gred",
-    "keygen",
-    "llmprep",
-    "noargs",
-    "pathlines",
-    "piae",
-    "pidev",
-    "pidocs",
-    "pipx",
-    "pirdev",
-    "pirdocs",
-    "poetrynuke",
-    "pprint",
-    "ptufb",
-    "pyenv",
-    "pytest",
-    "rfst",
-    "sshkey",
-    "tfpro",
-    "tfsj",
-    "venv",
-    "virtualenv",
-    "dannybrown",
-    "Deams",
-    "dearmor",
-    "dockerbuild",
-    "dockerlist",
-    "dockerrun",
-    "dockershell",
-    "endregion",
-    "etfv",
-    "jsonout",
-    "jstest",
-    "keyrings",
-    "newdotenv",
-    "tfav",
-    "tfavf",
-    "tfvars",
-    "Tsvg"
-  ],
-  "accessibility.signals.sounds.volume": 0,
-  "editor.accessibilitySupport": "off",
-  "task.autoDetect": "off",
-  "typescript.tsc.autoDetect": "off",
-  "grunt.autoDetect": "off",
-  "jake.autoDetect": "off",
-  "gulp.autoDetect": "off",
-  "npm.autoDetect": "off",
-  "jest.runAllTestsFirst": false,
-  "jest.autoEnable": false,
-  "jest.runMode": "on-save",
-  "workbench.iconTheme": "eq-material-theme-icons-deepforest",
-  "remote.autoForwardPortsSource": "hybrid",
-  "peacock.favoriteColors": [
-    {
-      "name": "Angular Red",
-      "value": "#dd0531"
-    },
-    {
-      "name": "Azure Blue",
-      "value": "#007fff"
-    },
-    {
-      "name": "JavaScript Yellow",
-      "value": "#f9e64f"
-    },
-    {
-      "name": "Mandalorian Blue",
-      "value": "#1857a4"
-    },
-    {
-      "name": "Node Green",
-      "value": "#215732"
-    },
-    {
-      "name": "React Blue",
-      "value": "#61dafb"
-    },
-    {
-      "name": "Something Different",
-      "value": "#832561"
-    },
-    {
-      "name": "Svelte Orange",
-      "value": "#ff3d00"
-    },
-    {
-      "name": "Vue Green",
-      "value": "#42b883"
-    },
-    {
-      "name": "WCP",
-      "value": "#4d0000"
-    },
-    {
-      "name": "Dotfiles Blue",
-      "value": "#0000b3"
-    }
-  ],
-  "workbench.colorCustomizations": {
-    "activityBar.activeBackground": "#0000e6",
-    "activityBar.background": "#0000e6",
-    "activityBar.foreground": "#e7e7e7",
-    "activityBar.inactiveForeground": "#e7e7e799",
-    "activityBarBadge.background": "#200000",
-    "activityBarBadge.foreground": "#e7e7e7",
-    "commandCenter.border": "#e7e7e799",
-    "sash.hoverBorder": "#0000e6",
-    "statusBar.background": "#0000b3",
-    "statusBar.foreground": "#e7e7e7",
-    "statusBarItem.hoverBackground": "#0000e6",
-    "statusBarItem.remoteBackground": "#0000b3",
-    "statusBarItem.remoteForeground": "#e7e7e7",
-    "titleBar.activeBackground": "#0000b3",
-    "titleBar.activeForeground": "#e7e7e7",
-    "titleBar.inactiveBackground": "#0000b399",
-    "titleBar.inactiveForeground": "#e7e7e799"
-  },
-  "peacock.remoteColor": "#0000b3",
-  "cSpell.words": [
-    "autoenv",
-    "autohotkey",
-    "bashlist",
-    "checkinstall",
-    "cookiecutter",
-    "dannybrown",
-    "Deams",
-    "dearmor",
-    "devnull",
-    "distro",
-    "distros",
-    "dockerbuild",
-    "dockerlist",
-    "dockerrun",
-    "dockershell",
-    "dotfiles",
-    "dpkg",
-    "endregion",
-    "etfv",
     "ftit",
     "gcdf",
     "gcue",
@@ -205,5 +57,31 @@
     "Tsvg",
     "venv",
     "virtualenv"
-  ]
+  ],
+  "editor.accessibilitySupport": "off",
+  "editor.rulers": [
+    72,
+    79,
+    88,
+    100
+  ],
+  "files.autoSave": "afterDelay",
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "grunt.autoDetect": "off",
+  "gulp.autoDetect": "off",
+  "jake.autoDetect": "off",
+  "jest.autoEnable": false,
+  "jest.runAllTestsFirst": false,
+  "jest.runMode": "on-save",
+  "npm.autoDetect": "off",
+  "remote.autoForwardPortsSource": "hybrid",
+  "security.allowedUNCHosts": [
+    "wsl.localhost"
+  ],
+  "task.autoDetect": "off",
+  "typescript.tsc.autoDetect": "off",
+  "workbench.iconTheme": "eq-material-theme-icons-deepforest"
 }

@@ -351,6 +351,12 @@ open_url_in_browser() {
     ${BROWSER:-"${open}"} "${URL}"
 }
 
+open_vs_code_settings_folder_in_windows_environment() {
+    if [[ -z "${ON_WINDOWS}" ]]; then echo "You're not on Windows"; return; fi
+    windows_path=$(wslpath -w "/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/")
+    explorer.exe "$windows_path"
+}
+
 ##
 ## Aliases
 ##
@@ -363,6 +369,7 @@ alias url='open_url_in_browser'
 
 if [[ -n "${ON_WINDOWS}" ]]; then
     alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
+    alias vscw='open_vs_code_settings_folder_in_windows_environment'
     alias beep_c4='powershell.exe -c "[console]::beep(261, 300)"'
     alias beep_d4='powershell.exe -c "[console]::beep(294, 300)"'
     alias beep_e4='powershell.exe -c "[console]::beep(330, 300)"'
