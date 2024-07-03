@@ -147,7 +147,9 @@ git_icon() {
     local gitBranch="$(current_git_branch)"
     if [[ $gitBranch ]]; then
         local statusCheck=$(git status 2> /dev/null)
-        if [[ $statusCheck =~ 'Changes not staged for commit' ]]; then
+        if [[ $statusCheck =~ 'Untracked files' ]]; then
+            echo ❓  # untracked files
+        elif [[ $statusCheck =~ 'Changes not staged for commit' ]]; then
             echo 🛠️  # changes made, need git add
         elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
             echo ✏️  # changes added, need git commit
