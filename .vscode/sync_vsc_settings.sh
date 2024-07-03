@@ -30,6 +30,7 @@ merged_settings=$(
   jq 'to_entries | sort_by(.key) | from_entries'
 )
 
+
 echo "${merged_settings}" | jq '.' > "${windows_settings_path}"
 echo "${merged_settings}" | jq '.' > "${synced_settings_path}"
 
