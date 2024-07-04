@@ -15,7 +15,7 @@ if [[ -z "${DOTFILES_DIR}" ]]; then
     exit 1
 fi
 
-AHK_FILE_PATH="${DOTFILES_DIR}/ahk/hotstrings.ahk"
+HOTSTRINGS_PATH="${DOTFILES_DIR}/ahk/hotstrings.ahk"
 AHK_SECRETS_PATH="${DOTFILES_DIR}/ahk/secrets.ahk"
 ALL_AHK_FILES=("${DOTFILES_DIR}/ahk/"*.ahk)
 
@@ -23,9 +23,12 @@ if [[ ! -e "${AHK_SECRETS_PATH}" ]]; then
     echo "#SingleInstance Force" >> "${AHK_SECRETS_PATH}"
 fi
 
-# use "open" CLI arg to open the file for edits
-if [[ "$1" = "open" ]]; then
-    code "${AHK_FILE_PATH}"
+HOTSTRING_DEFINITIONS=$(grep -oE '::[^:]+::[^:]+' "$HOTSTRINGS_PATH")
+
+if [[ "$1" = "help" ]]; then
+    echo "$HOTSTRING_DEFINITIONS" | fzf --sort
+elif [[ "$1" = "open" ]]; then
+    code "${HOTSTRINGS_PATH}"
 elif [[ "$1" = "open_secrets" ]]; then
     code "${AHK_SECRETS_PATH}"
 elif [[ "$1" = "kill" ]]; then
