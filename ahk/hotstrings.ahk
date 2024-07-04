@@ -205,6 +205,14 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,sship::curl ifconfig.me
 ::,,sshin::ssh username@ip_address
 ::,,sshrestart::sudo service ssh restart
+::,,sshconfig::sudo vi /etc/ssh/sshd_config
+::,,sshenable::sudo systemctl enable ssh
+::,,sshsystemstatus::sudo systemctl status ssh
+::,,sshwslenable::sudo echo "[boot]\nsystemd=true" >> /etc/wsl.conf
+
+
+; wsl
+::,,editwslconf::sudo vi /etc/wsl.conf
 
 
 ; feedback
