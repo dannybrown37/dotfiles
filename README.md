@@ -118,6 +118,22 @@ Install all of the above with this.
   * `settings.json` for VS Code user settings
   * `extensions.txt` for essential VS Code extensions
 
+### Handling Secrets
+
+Assuming you are properly authorized to do so on the machine in question:
+
+```bash
+make secrets-in
+```
+
+Push `./config/.secrets` and `./ahk/secrets.ahk` into the encrypted `password-store`.
+
+```bash
+make secrets-out
+```
+
+Pull files from the `password-store` into their locations at `./config/.secrets` and `./ahk/secrets.ahk`
+
 ## Initial Windows Setup Notes
 
 For when you're truly starting from scratch.
