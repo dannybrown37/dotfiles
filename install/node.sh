@@ -1,4 +1,4 @@
-#!/usr/bin/bash -i
+#!/usr/bin/bash
 
 ##
 ## Install nvm and set up Node 18 as global version

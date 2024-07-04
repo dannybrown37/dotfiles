@@ -1,4 +1,4 @@
-#!/usr/bin/bash -i
+#!/usr/bin/bash
 
 ##
 ## Clear existing version of golang and install latest version

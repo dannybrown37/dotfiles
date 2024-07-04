@@ -1,4 +1,4 @@
-#!/usr/bin/bash -i
+#!/usr/bin/bash
 
 sudo apt update
 sudo apt install git -y
