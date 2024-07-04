@@ -29,7 +29,7 @@ if [[ "$1" = "help" ]]; then
     echo "$HOTSTRING_DEFINITIONS" | fzf --sort
 elif [[ "$1" = "open" ]]; then
     code "${HOTSTRINGS_PATH}"
-elif [[ "$1" = "open_secrets" ]]; then
+elif [[ "$1" = "secrets" ]]; then
     code "${AHK_SECRETS_PATH}"
 elif [[ "$1" = "kill" ]]; then
     AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey* | Select-Object -ExpandProperty Id")
