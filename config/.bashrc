@@ -430,6 +430,11 @@ fi
 ## Bespoke environmental stuff
 ##
 
+AUTOENV_ACTIVATE_SCRIPT="$(npm root -g)"/@hyperupcall/autoenv/activate.sh
+if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
+    source "$AUTOENV_ACTIVATE_SCRIPT"
+fi
+
 # In lieu of a symlink between WSL and Windows, just sync settings.json on each shell reboot
 "$DOTFILES_DIR"/.vscode/sync_vsc_settings.sh >/dev/null 2>&1
 

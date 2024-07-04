@@ -45,7 +45,7 @@ done
 curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
 
 ##
-## Install programs with wget such as Google Chrome
+## Install programs with wget
 ##
 
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
