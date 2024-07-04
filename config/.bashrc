@@ -136,14 +136,11 @@ buildlogs() {  # latest build logs in CLI; required arg is AWS stage
 
 cht() {
     technologies=$(curl -s cht.sh/:list)
-
     selected=$(printf '%s\n' "${technologies[@]}" | fzf)
     if [[ -z $selected ]]; then
         return
     fi
-
     read -p "$selected keywords (optional): " query
-
     if [ -n "$query" ]; then
         curl "cht.sh/$selected/$(echo "$query" | tr ' ' '+')"
     else
@@ -162,7 +159,7 @@ current_git_branch() {
 
 
 function_history() {
-    local cmd=$(history | awk '{$1=""; print $0}' | fzf)
+    local cmd=$(history | tac | awk '{$1=""; print $0}' | fzf)
     if [[ -n "$cmd" ]]; then
         eval "$cmd"
     fi
