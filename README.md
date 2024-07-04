@@ -96,15 +96,16 @@ Install all of the above with this.
 
 ### Config Options
 
-* In the `./ahk` directory, set up any AutoHotKey scripts"
+* In the `ahk/` directory, set up any number of AutoHotKey scripts:
   * `hotstrings.ahk` for generalized shortcuts
   * `secrets.ahk` for non-public shortcuts not to be committed
+  * etc.
+* In the `bin/` directory, configure scripts that use dynamic data and need to invoke other functions outside of the main function
 * In the `config/` directory, configure a Bash profile based on various settings:
   * `.bashrc` holds a full config file that is symlinked to `~`
   * `.gitconfig` holds git config info that is symlinked to `~`
   * `.ruff.toml` holds Python linting rules symlinked to `~` for global use
   * `.secrets` holds data not for committing to git
-* In the `scripts/` directory, configure scripts that use dynamic data and need to invoke other functions outside of the main function
 * In the `./.vscode` directory:
   * `settings.json` for VS Code user settings
   * `extensions.txt` for essential VS Code extensions
