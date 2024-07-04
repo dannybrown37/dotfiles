@@ -79,7 +79,7 @@ Install all of the above with this.
 
 * `ahk`: run all AutoHotKey scripts in the `./ahk` directory from WSL or Git Bash in the Windows environment
 * `ahk kill`: kill all running autohotkey processes
-* `ahk open`: open ahk/dev_shortcuts.ahk in VSCode
+* `ahk open`: open ahk/hotstrings.ahk in VSCode
 * `ahk open_secrets`: open ahk/secrets.ahk in VSCode
 * `buildlogs`: see the latest build logs for configured AWS CodePipeline stack
 * `cdp`: move directly to any directory in ~/projects (with tab autocomplete)
@@ -97,7 +97,7 @@ Install all of the above with this.
 ### Config Options
 
 * In the `./ahk` directory, set up any AutoHotKey scripts"
-  * `dev_shortcuts.ahk` for generalized shortcuts
+  * `hotstrings.ahk` for generalized shortcuts
   * `secrets.ahk` for non-public shortcuts not to be committed
 * In the `config/` directory, configure a Bash profile based on various settings:
   * `.bashrc` holds a full config file that is symlinked to `~`
