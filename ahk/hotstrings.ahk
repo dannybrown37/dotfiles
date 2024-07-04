@@ -196,6 +196,10 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,pss::pass show  ; (arg/path) show password and encrypted data with password
 ::,,psc::pass show -c  ; (arg/path) copy first line (password) into clipboard
 ::,,psr::pass rm  ; (arg/path) remove a password
+::,,psbashsecretsin::pass insert -m bash/secrets < .env
+::,,psahksecretsin::pass insert -m ahk/secrets < .env
+::,,psbashsecretsout::pass bash/secrets >> ~/projects/dotfiles/bash/.secrets
+::,,psahksecretsout::pass ahk/secrets >> ~/projects/dotfiles/ahk/secrets.ahk
 
 
 ; ssh
