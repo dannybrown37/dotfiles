@@ -12,10 +12,16 @@ curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/thi
 
 ## Additional Install Options
 
+```bash
+make help
+```
+
+Use this to see in-terminal help message for available Makefile options.
+
 ### Bash
 
 ```bash
-~/projects/dotfiles/setup
+make bash
 ```
 
 This has already been run initially, but use this to sync `apt` packages.
@@ -25,7 +31,7 @@ arg.
 ### Python
 
 ```bash
-~/projects/dotfiles/setup --install python
+make python
 ```
 
 This installs Python build dependencies, `pyenv`, `Python 3.12`, `pipx`, a
@@ -35,7 +41,7 @@ for the `.ruff.toml` file in the `~` directory to provide global `ruff` rules.
 ### Node
 
 ```bash
-~/projects/dotfiles/setup --install node
+make node
 ```
 
 This installs `nvm`, `Node 18`, and a few `NPM` packages that I like to
@@ -44,7 +50,7 @@ have globally.
 ### Golang
 
 ```bash
-~/projects/dotfiles/setup --install golang
+make golang
 ```
 
 This deletes the current installation of Golang, installs the latest version,
@@ -53,7 +59,7 @@ and copies needed environment variables to the `~/.bashrc` file.
 ### Rust
 
 ```bash
-~/projects/dotfiles/setup --install rust
+make rust
 ```
 
 This installs Rust/Cargo.
@@ -61,7 +67,7 @@ This installs Rust/Cargo.
 ### VS Code Configuration
 
 ```bash
-~/projects/dotfiles/setup --install vscode
+make vscode
 ```
 
 This installs various VSCode extensions and merges the `settings.json` with
@@ -70,7 +76,7 @@ any existing user settings on the system.
 ### The Full Suite
 
 ```bash
-~/projects/dotfiles/setup --install all
+make all
 ```
 
 Install all of the above with this.
@@ -78,13 +84,15 @@ Install all of the above with this.
 ## Commands Available
 
 * `ahk`: run all AutoHotKey scripts in the `./ahk` directory from WSL or Git Bash in the Windows environment
+* `ahk help`: feed all available hotstrings into `fzf` for review (not selection)
 * `ahk kill`: kill all running autohotkey processes
 * `ahk open`: open ahk/hotstrings.ahk in VSCode
-* `ahk open_secrets`: open ahk/secrets.ahk in VSCode
+* `ahk secrets`: open ahk/secrets.ahk in VSCode
 * `buildlogs`: see the latest build logs for configured AWS CodePipeline stack
 * `cdp`: move directly to any directory in ~/projects (with tab autocomplete)
 * `cht`: curl cht.sh for commonly used tools/languages. Add new ones as needed in cht/.cht_sh_index
 * `cpw`: copy files from WSL to Windows easily, defaults to Downloads folder (with tab autocomplete)
+* `fh`: Run bash history into `fzf` and select command to run from there.
 * `gg/google`: google something from the terminal, no quotes needed, pops open a web browser
 * `lopen`: open to the monitoring tab of a specific AWS Lambda
 * `mk`: mkdir and cd into it
