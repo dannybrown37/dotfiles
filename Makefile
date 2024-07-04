@@ -33,3 +33,11 @@ vscode: bash
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
 
 all: python node golang rust vscode
+
+secrets-in:
+	bash -c "pass insert -m bash/secrets < $(root_dir)/config/.secrets"
+	bash -c "pass insert -m ahk/secrets < $(root_dir)/ahk/secrets.ahk"
+
+secrets-out:
+	bash -c "pass ahk/secrets > $(root_dir)/ahk/secrets.ahk"
+	bash -c "pass bash/secrets > $(root_dir)/config/.secrets"
