@@ -1,2 +1,3 @@
 ahk/secrets.ahk
 config/.secrets
+**/.env
