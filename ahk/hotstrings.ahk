@@ -8,7 +8,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 
 ; LLM tools
-::,,llm::For future responses in this chat: never apologize. Don't re-state my question before you answer it. Be as brief as possible unless I ask you to expand on a point. When I ask for code snippets, only provide the code unless I ask for follow-up explanation. If I ask you to change code, only re-print the line(s) you're changing rather than the entire block. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks an absolute bundle for your helpful brevity.
+::,,llm::For future responses in this chat, never apologize. Don't re-state my question before you answer it. Be as brief as possible unless I ask you to expand on a point. When I ask for code snippets, only provide the code unless I ask for follow-up explanation. If I ask you to change code, only re-print the line(s) you're changing rather than the entire block. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks an absolute bundle for your helpful brevity.
 
 
 ; personal
