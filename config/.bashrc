@@ -430,7 +430,7 @@ fi
 ## Bespoke environmental stuff
 ##
 
-AUTOENV_ACTIVATE_SCRIPT="$(npm root -g)"/@hyperupcall/autoenv/activate.sh
+AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh 
 if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
     source "$AUTOENV_ACTIVATE_SCRIPT"
 fi
