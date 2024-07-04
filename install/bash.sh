@@ -68,4 +68,4 @@ ln -s ~/projects/dotfiles/config/.ruff.toml ~/.ruff.toml
 echo "Symlinked .ruff.toml"
 
 ln -s ~/projects/dotfiles/pass ~/.password-store
-echo "Symlinked pass to ~/.password-store"
+echo "Symlinked pass/ to ~/.password-store"
