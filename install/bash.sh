@@ -1,4 +1,4 @@
-#!/usr/bin/bash -i
+#!/usr/bin/bash
 
 apt_packages=(
     bash-completion
@@ -20,7 +20,6 @@ apt_packages=(
     unzip
     wget
     zip
-    zoxide
 )
 
 sudo apt update
@@ -37,6 +36,13 @@ for package in "${apt_packages[@]}"; do
         sudo apt install -y "${package}"
     fi
 done
+
+##
+## Install zoxide, per creator, Debian/Ubuntu have old versions in apt
+## https://github.com/ajeetdsouza/zoxide/issues/694#issuecomment-1946069618
+##
+
+curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
 
 ##
 ## Install programs with wget such as Google Chrome

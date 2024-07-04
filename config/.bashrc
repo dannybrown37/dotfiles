@@ -1,4 +1,4 @@
-#!/usr/bin/bash -i
+#!/usr/bin/bash
 
 ##
 ## System defaults; retained setup from fresh rc file
@@ -30,7 +30,7 @@ fi
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 
-PATH="${DOTFILES_DIR}/scripts:${PATH}"
+PATH="${DOTFILES_DIR}/scripts:${HOME}/.local/bin:${PATH}"
 
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
@@ -385,9 +385,8 @@ if [[ -n "${ON_WINDOWS}" ]]; then
     alias monks='beep_a4; beep_a4; beep_g4; beep_g4; beep_f4; beep_e4; beep_a4; beep_c5; beep_b4; beep_a4; beep_a4; beep_g4; beep_a4'
 fi
 
-if dpkg-query -W -f='${Status}' zoxide 2>/dev/null | grep -q "ok installed"; then
-    eval "$(zoxide init bash)"
-    alias cd='z'
+if [[ -f "${HOME}/.local/bin/zoxide" ]]; then
+    eval "$(zoxide init bash --cmd cd)"
 fi
 
 if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then

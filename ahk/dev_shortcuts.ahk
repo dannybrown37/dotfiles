@@ -43,7 +43,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,rc::~/.bashrc
 ::,,src::source ~/.bashrc
 ::,,crc::code ~/.bashrc
-::,,shebang::{#}{!}/usr/bin/bash -i
+::,,shebang::{#}{!}/usr/bin/bash
 ::,,devnull::2>/dev/null
 ::,,bashlist::"${list_name[@]}"
 ::,,sshkey::ssh-keygen -t rsa -b 4096 "email@email.email"
@@ -183,8 +183,10 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,gek::gpg --edit-key ; (key ID), opens a sub shell menu, commands:
   ; expire  -- set expiration deactivate
   ; passwd  -- set new passphrase
+  ; trust -- public key needs to be set to 5 to encrypt new pws on new machines
   ; save -- save changes
-::,,gpgout::gpg --output public.pgp --armor --export && gpg --output private.pgp --armor --export-secret-key
+::,,gpgout::gpg --armor --export > public.gpg && gpg --armor --export-secret-key > private.gpg
+::,,scpkeys::scp -r username@ip_address:folder_with_keys_in_home_dir output_path
 ::,,ps::pass  ; shows stored passwords
 ::,,psi::pass insert  ; (arg/path) add a password
 ::,,psgen::pass generate  ; (arg/path) generate and store a new password
@@ -201,6 +203,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,sshstat::sudo service ssh status
 ::,,sship::curl ifconfig.me
 ::,,sshin::ssh username@ip_address
+::,,sshrestart::sudo service ssh restart
 
 
 ; feedback
