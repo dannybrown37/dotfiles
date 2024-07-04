@@ -1,4 +1,7 @@
 {
+  "accessibility.signalOptions": {
+    "volume": 0
+  },
   "accessibility.signals.sounds.volume": 0,
   "cSpell.userWords": [
     "dearmor",
