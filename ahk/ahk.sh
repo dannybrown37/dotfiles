@@ -10,10 +10,14 @@ if [[ -z "${ON_WINDOWS}" ]]; then
     exit 1
 fi
 
-SCRIPT=$(readlink -f "${BASH_SOURCE[0]}")
-SCRIPT_PATH=$(dirname "${SCRIPT}")
-AHK_FILE_PATH="${SCRIPT_PATH}/dev_shortcuts.ahk"
-AHK_SECRETS_PATH="${SCRIPT_PATH}/secrets.ahk"
+if [[ -z "${DOTFILES_DIR}" ]]; then
+    echo "Something went wrong with your .bashrc, no value for DOTFILES_DIR"
+    exit 1
+fi
+
+AHK_FILE_PATH="${DOTFILES_DIR}/ahk/hotstrings.ahk"
+AHK_SECRETS_PATH="${DOTFILES_DIR}/ahk/secrets.ahk"
+ALL_AHK_FILES=("${DOTFILES_DIR}/ahk/"*.ahk)
 
 if [[ ! -e "${AHK_SECRETS_PATH}" ]]; then
     echo "#SingleInstance Force" >> "${AHK_SECRETS_PATH}"
@@ -34,13 +38,12 @@ elif [[ "$1" = "kill" ]]; then
         fi
     done
 else
-    if [[ -n "${WSL_DISTRO_NAME}" ]]; then  # handle WSL
-        WIN_DRIVE_PATH=$(wslpath -w -a "${AHK_FILE_PATH}")
-        WIN_DRIVE_PATH_2=$(wslpath -w -a "${AHK_SECRETS_PATH}")
-    else  # handle Git Bash
-        WIN_DRIVE_PATH=$(cygpath -w -a "${AHK_FILE_PATH}")
-        WIN_DRIVE_PATH_2=$(cygpath -w -a "${AHK_SECRETS_PATH}")
-    fi
-    powershell.exe -Command "Start-Process '${WIN_DRIVE_PATH}'" 2> /dev/null
-    powershell.exe -Command "Start-Process '${WIN_DRIVE_PATH_2}'" 2> /dev/null
+    for AHK_FILE in "${ALL_AHK_FILES[@]}"; do
+        if [[ -n "${WSL_DISTRO_NAME}" ]]; then  # handle WSL
+            WIN_DRIVE_PATH=$(wslpath -w -a "${AHK_FILE}")
+        else  # handle Git Bash
+            WIN_DRIVE_PATH=$(cygpath -w -a "${AHK_FILE}")
+        fi
+        powershell.exe -Command "Start-Process '${WIN_DRIVE_PATH}'" 2> /dev/null
+    done
 fi

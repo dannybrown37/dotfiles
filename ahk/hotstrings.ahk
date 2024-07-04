@@ -175,10 +175,11 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 
 ; password-store
-; sudo apt-get install pass
-; gpg --gen-key
-; pass init <GPG_KEY>  ; create a password store
-; pass git init
+  ; Getting Started Commands:
+  ; sudo apt-get install pass
+  ; gpg --gen-key
+  ; pass init <GPG_KEY>  ; create a password store
+  ; pass git init
 ::,,gsk::gpg -K  ; gpg show keys with key IDs
 ::,,gek::gpg --edit-key ; (key ID), opens a sub shell menu, commands:
   ; expire  -- set expiration deactivate
@@ -214,116 +215,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,mountain::[[mountain]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 
 
-; vscode
-::,,clearvscextensions::code --list-extensions | xargs -n 1 code --uninstall-extension
-
-
 ; fixes for weird situations
 
 ; when a `sudo apt-get update` was failing due to a missing public key, this was the needle in the haystack among a lot of suggestions that didn't work
 ::,,fixhashicorppublickey::wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
-
-; Control+Shift+G will automatically search Google for text in clipboard
-^+g::
-{
-  Send, ^c
-  Sleep 50
-  Run, https://www.google.com/search?q=%clipboard%
-  Return
-}
-
-; Control + Shift + Z toggles Windows terminal
-SwitchToWindowsTerminal()
-{
-  windowHandleId := WinExist("ahk_exe WindowsTerminal.exe")
-  windowExistsAlready := windowHandleId > 0
-
-  ; If the Windows Terminal is already open, determine if we should put it in focus or minimize it.
-  if (windowExistsAlready = true)
-  {
-    activeWindowHandleId := WinExist("A")
-    windowIsAlreadyActive := activeWindowHandleId == windowHandleId
-
-    if (windowIsAlreadyActive)
-    {
-      ; Minimize the window.
-      WinMinimize, "ahk_id %windowHandleId%"
-    }
-    else
-    {
-      ; Put the window in focus.
-      WinActivate, "ahk_id %windowHandleId%"
-      WinShow, "ahk_id %windowHandleId%"
-    }
-  }
-  ; Else it's not already open, so launch it.
-  else
-  {
-    Run, wt
-  }
-}
-^+z::SwitchToWindowsTerminal()
-
-
-; Control + Shift + X toggles Visual Studio Code
-^+x::
-  SwitchToVSCode()
-return
-
-SwitchToVSCode() {
-  exeName := "Code.exe"
-  windowHandleId := WinExist("ahk_exe " exeName)
-  windowExistsAlready := windowHandleId > 0
-
-  if (windowExistsAlready = true) {
-    activeWindowHandleId := WinExist("A")
-    windowIsAlreadyActive := activeWindowHandleId == windowHandleId
-
-    if (windowIsAlreadyActive) {
-      WinMinimize, "ahk_id %windowHandleId%"
-    }
-    else {
-      WinActivate, "ahk_id %windowHandleId%"
-      WinShow, "ahk_id %windowHandleId%"
-    }
-  }
-  else {
-    Run, % exeName
-  }
-}
-
-; Ctrl+Shift+C to focus on open Chrome window
-^+c::
-{
-    if WinExist("Google Chrome")
-    {
-        WinActivate
-    }
-    else
-    {
-        MsgBox, Chrome is not running.
-    }
-    return
-}
-
-; Ctrl+Shift+D to open Microsoft Teams ("Deams")
-^+d::
-{
-    IfWinExist, Microsoft Teams
-    {
-        WinGet, MinMax, MinMax, Microsoft Teams
-        if (MinMax = -1)  ; If the window is minimized
-        {
-            WinRestore, Microsoft Teams  ; Restore the window
-        }
-        else
-        {
-            WinMinimize, Microsoft Teams  ; Minimize the window
-        }
-    }
-    else
-    {
-        MsgBox, Microsoft Teams is not running.
-    }
-    return
-}
