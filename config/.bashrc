@@ -30,7 +30,7 @@ fi
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 
-PATH="${DOTFILES_DIR}/scripts:${HOME}/.local/bin:${PATH}"
+PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
@@ -116,9 +116,9 @@ export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_E
 ##
 
 
-# source all files in scripts directory
+# source all files in bin directory
 # these use dynamic code executed outside of their functions
-for file in "$DOTFILES_DIR"/scripts/*; do
+for file in "$DOTFILES_DIR"/bin/*; do
     if [[ -f "$file" ]]; then
         source "$file"
     fi
