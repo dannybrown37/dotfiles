@@ -68,6 +68,9 @@ fi
 ln -s ~/projects/dotfiles/config/.gitconfig ~/.gitconfig \
 && echo "Symlinked .gitconfig"
 
+ln -s ~/projects/dotfiles/config/.gitignore_global ~/.gitignore_global \
+&& echo "Symlinked .gitignore_global"
+
 if [[ ! -f "${HOME}/.bashrc.og.bak" ]]; then
     mv ~/.bashrc ~/.bashrc.og.bak
     echo "Backed up original .bashrc to ~/.bashrc.og.bak"
