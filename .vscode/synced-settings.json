@@ -9,6 +9,7 @@
     "distros",
     "dpkg",
     "pipx",
+    "plusplus",
     "pprint",
     "pyenv",
     "pytest",
