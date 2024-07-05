@@ -32,6 +32,7 @@ extensions_to_install=(
 
     # markdown and protocols
     DavidAnson.vscode-markdownlint
+    ms-vscode.makefile-tools
     redhat.vscode-yaml
     shd101wyy.markdown-preview-enhanced
     tamasfe.even-better-toml
