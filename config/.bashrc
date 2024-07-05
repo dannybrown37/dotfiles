@@ -135,8 +135,8 @@ buildlogs() {  # latest build logs in CLI; required arg is AWS stage
 
 
 cht() {
-    technologies=$(curl -s cht.sh/:list)
-    selected=$(printf '%s\n' "${technologies[@]}" | fzf)
+    local technologies=$(curl -s cht.sh/:list)
+    local selected=$(printf '%s\n' "${technologies[@]}" | fzf)
     if [[ -z $selected ]]; then
         return
     fi
@@ -260,7 +260,9 @@ open_lambda_monitoring_tab_in_browser() {
         lambda_folder=$(find "${LAMBDA_PATHS[@]}" \
                         -mindepth 1 -maxdepth 1 \
                         -type d \
-                        -not -path '*/node_modules*' | fzf)
+                        -not -path '*/node_modules*' \
+                        | sed "s|^${HOME}/projects/||" \
+                        | fzf)
         [[ -z "${lambda_folder}" ]] && echo "Error: No Lambda folder selected" && return
         lambda_name=$(basename "${lambda_folder}")
     fi
@@ -430,7 +432,7 @@ fi
 ## Bespoke environmental stuff
 ##
 
-AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh 
+AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh
 if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
     source "$AUTOENV_ACTIVATE_SCRIPT"
 fi
