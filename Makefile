@@ -60,4 +60,4 @@ insert-ahk:
 insert-bash:
 	bash -c "pass insert -m bash/secrets < $(root_dir)/config/.secrets"
 
-insert-secrets: pull-ahk pull-bash
+insert-secrets: insert-ahk insert-bash
