@@ -1,0 +1,78 @@
+{
+  "env": {
+    "node": true,
+    "es6": true
+  },
+  "import/no-extraneous-dependencies": [
+    "error",
+    {
+      "ignorePatterns": [
+        "aws-sdk*",
+        "@aws-sdk*",
+        "@jest/globals"
+      ]
+    }
+  ],
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "moduleDirectory": ["node_modules", "**/node_modules"]
+      }
+    }
+  },
+  "extends": [
+    "airbnb-base",
+    "prettier",
+    "eslint:recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:import/typescript",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "plugins": ["prettier", "@typescript-eslint"],
+  "rules": {
+    "prefer-const": 2,
+    "import/prefer-default-export": 0,
+    "prefer-destructuring": 2,
+    "no-else-return": 2,
+    "object-shorthand": 2,
+    "consistent-return": 2,
+    "no-plusplus": 2,
+    "no-restricted-syntax": 2,
+    "no-param-reassign": ["error", { "props": false }],
+    "prettier/prettier": [
+      "error",
+      {
+        "extends": "airbnb",
+        "endOfLine": "lf",
+        "printWidth": 88
+      }
+    ],
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          "builtin",
+          "external",
+          "internal",
+          ["parent", "sibling"],
+          "index"
+        ],
+        "newlines-between": "always",
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }
+    ],
+    "no-use-before-define": [
+      "error",
+      {
+        "functions": false,
+        "classes": true,
+        "variables": true,
+        "allowNamedExports": true
+      }
+    ]
+  }
+}
