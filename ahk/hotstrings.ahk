@@ -220,10 +220,10 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 
 ; tmux
-::,,tms::tmux new -s Session
-::,,tmd::tmux detach
-::,,tml::tmux ls
-::,,tma::tmux attach -t Session
+::,,ts::tmux new -s Session
+::,,td::tmux detach
+::,,tl::tmux ls
+::,,ta::tmux attach -t Session
 
 
 ; feedback
