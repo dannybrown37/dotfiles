@@ -224,7 +224,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,td::tmux detach
 ::,,tl::tmux ls
 ::,,ta::tmux attach -t Session
-
+::,,tconf::tmux source-file ~/.tmux.conf
 
 ; feedback
 ::,,dust::[[dust]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)

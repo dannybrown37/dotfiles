@@ -83,6 +83,16 @@ else
     nvim --version
 fi
 
+##
+## Clone tmux plugin manager
+##
+
+if [[ ! -d "${HOME}/.tmux/plugins/tpm" ]]; then
+    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+else
+    echo "tmux plugin manager is already installed on this system"
+fi
+
 ###
 ### Create symlinks for various config/dotfiles
 ###
