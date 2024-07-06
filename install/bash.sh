@@ -70,8 +70,8 @@ chmod u+x nvim.appimage
 ./nvim.appimage
 ./nvim.appimage --appimage-extract
 ./squashfs-root/AppRun --version
-mv squashfs-root /
-ln -s /squashfs-root/AppRun /usr/bin/nvim
+sudo mv squashfs-root /
+sudo ln -s /squashfs-root/AppRun /usr/bin/nvim
 nvim --version
 
 ###
@@ -104,5 +104,9 @@ else
     echo "password-store has already been symlinked"
 fi
 
-ln -s ~/projects/dotfiles/nvim ~/.config/nvim \
-&& echo "Symlinked nvim config to ~/.config/nvim"
+if [ ! -L "${HOME}/.config/nvim" ]; then
+    ln -s ~/projects/dotfiles/nvim ~/.config/nvim \
+    && echo "Symlinked nvim config to ~/.config/nvim"
+else
+    echo "nvim config has already been symlinked"
+fi
