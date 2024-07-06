@@ -29,6 +29,7 @@ fi
 ##
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
+export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" --glob "!.git"'
 
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 
@@ -361,9 +362,12 @@ open_vs_code_settings_folder_in_windows_environment() {
 ##
 
 alias chrome='google-chrome 2>/dev/null &'
+alias cf='code $(fzf -m --preview="batcat --color=always {}")'
+alias ff='fzf --preview="batcat --color=always {}"'
 alias fh='function_history'
 alias gg='google'
 alias lopen='open_lambda_monitoring_tab_in_browser'
+alias nvi='nvim $(fzf -m --info=hidden --preview="batcat --color=always {}")'
 alias url='open_url_in_browser'
 
 if [[ -n "${ON_WINDOWS}" ]]; then

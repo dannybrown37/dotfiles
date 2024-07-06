@@ -1,4 +1,8 @@
 {
+    "[lua]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+    },
     "workbench.colorCustomizations": {
         "activityBar.activeBackground": "#0000e6",
         "activityBar.background": "#0000e6",

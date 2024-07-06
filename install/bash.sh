@@ -61,6 +61,19 @@ else
     rm google-chrome-stable_current_amd64.deb
 fi
 
+##
+## Install Neovim from appimage
+##
+
+curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
+chmod u+x nvim.appimage
+./nvim.appimage
+./nvim.appimage --appimage-extract
+./squashfs-root/AppRun --version
+mv squashfs-root /
+ln -s /squashfs-root/AppRun /usr/bin/nvim
+nvim --version
+
 ###
 ### Create symlinks for various config/dotfiles
 ###
@@ -90,3 +103,6 @@ if [ ! -L "${HOME}/.password-store" ]; then
 else
     echo "password-store has already been symlinked"
 fi
+
+ln -s ~/projects/dotfiles/nvim ~/.config/nvim \
+&& echo "Symlinked nvim config to ~/.config/nvim"
