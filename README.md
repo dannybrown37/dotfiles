@@ -115,6 +115,7 @@ Install all of the above with this.
 * In the `config/` directory, configure a Bash profile based on various settings:
   * `.bashrc` holds a full config file that is symlinked to `~`
   * `.gitconfig` holds git config info that is symlinked to `~`
+  * `.inputrc` for Bash prompt customizations
   * `.ruff.toml` holds Python linting rules symlinked to `~` for global use
   * `.secrets` holds data not for committing to git
 * In the `./nvim` directory, configure a Neovim profile.
@@ -122,21 +123,42 @@ Install all of the above with this.
   * `settings.json` for VS Code user settings
   * `extensions.txt` for essential VS Code extensions
 
+### Bash Customizations
+
+* Use Ctrl+J/Ctrl+K to scroll up and down through command history
+* Use escape to clear current prompt entry
+
 ### Handling Secrets
 
 Assuming you are properly authorized to do so on the machine in question:
 
 ```bash
-make secrets-in
+make insert-secrets
 ```
 
 Push `./config/.secrets` and `./ahk/secrets.ahk` into the encrypted `password-store`.
 
+Or push individually:
+* `make insert-ahk`
+* `make insert-bash`
+
 ```bash
-make secrets-out
+make pull-secrets
 ```
 
-Pull files from the `password-store` into their locations at `./config/.secrets` and `./ahk/secrets.ahk`
+Pull data from the `password-store` into locations at `./config/.secrets` and `./ahk/secrets.ahk`
+
+Or pull individually:
+* `make pull-ahk`
+* `make pull-bash`
+
+```bash
+make sync-secrets
+```
+
+Attempt to sync data between `password-store` and local secrets files. Because this may
+have unintended consequences, local secrets files are backed up first (`password-store`
+would require a commit to truly overwrite).
 
 ## Initial Windows Setup Notes
 
