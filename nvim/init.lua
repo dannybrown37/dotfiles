@@ -17,7 +17,7 @@ vim.g.have_nerd_font = false -- Set to true if you have a Nerd Font installed an
 -- NOTE: Vim Options
 -- [[ Setting options ]]  -- See `:help vim.opt`  For more options, you can see `:help option-list`
 vim.opt.number = true -- line numbers show
-vim.opt.relativenumber = true -- relative live numbers for faster jumping
+vim.opt.relativenumber = false -- relative live numbers for faster jumping
 vim.opt.mouse = "a" -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.showmode = false -- already shown in status bar
 vim.opt.clipboard = "unnamedplus" -- Sync clipboard between OS and Neovim.
@@ -32,11 +32,8 @@ vim.opt.updatetime = 250 -- Decrease update time
 vim.opt.timeoutlen = 300 -- Decrease mapped sequence wait time  -- Displays which-key popup sooner
 vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
--- Sets how neovim will display certain whitespace characters in the editor.
---  See `:help 'list'`
---  and `:help 'listchars'`
-vim.opt.list = true
-vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
+vim.opt.list = true -- `:help 'list'`
+vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" } --  `:help 'listchars'`, how white space is displayed
 vim.opt.inccommand = "split" -- Preview substitutions live, as you type!
 vim.opt.hlsearch = true
 --#endregion
