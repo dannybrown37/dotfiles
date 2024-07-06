@@ -1,0 +1,108 @@
+:Mason  -- package manager/installer, use i on line to install package
+:checkhealth
+:Lazy update
+
+# space + commands
+# Ctrl+P and Ctrl+N to scroll up and down in these context menus
+sf -- search files
+gd -- go to definition of currently selected function/variable/etc. (requires language lsp)
+
+
+# delete things fast
+dw  -- delete the whole/rest of the word from the point of the cursor
+dd  -- delete the whole line
+<num>dd  -- delete the next <num> lines
+d$ --  delete from cursor to end of line
+d<num>w  -- delete the next <num> words in the line
+
+# insert mode fast
+o -- open a line below cursor and immediately go into insert mode
+O -- same, but line above cursor
+i -- insert mode right before cursor
+a -- insert mode right after cursor ("append")
+A -- insert mode at end of line ("Append")
+jA -- insert mode at the end of the next line
+ja -- insert mode at next line moving cursor down vertically
+
+# yank/place i.e., copy/paste
+y -- yank/copy text selected
+yw -- yank word, copy from cursor to end of word
+p -- paste/place text copied or deleted after cursor
+P -- paste/place text copied or deleted before cursor
+
+# replacement
+r<char> -- replace currently selected char with <char>
+R -- replace characters until you hit <escape>
+:s/<old>/<new>  -- replaces first instance of <old> with <new> on line
+:s/<old>/<new>/g  -- replaces all instance of <old> with <new> on line
+:#,#s/<old>/<new>/g  -- replace all instance <old> with <new> between lines # and #
+:%s/<old>/<new>/g  -- replace all instances of <old> with <new> in whole file
+:%s/<old>/<new>/gc  -- prompt for each instance of <old> in file whether to replace with <new>
+
+# remove words/line
+ce -- remove rest of the word from point of cursor and immediately put in insert mode
+c<num>e -- remove <num> words
+c$ -- remove until end of line and immediately put in insert mode
+
+# file navigation
+gg -- straight to top of the file
+G  -- straight to bottom of the file
+:<num>  -- straight to line number
+<num>G  -- also straight to line number
+0 -- straight to beginning of line
+<num>w  -- move cursor forward <num> words
+$  -- move cursor to end of current line
+j$ -- move cursor to the end of the next line
+e -- moves cursor to the end of the next word
+
+% -- toggles between matching {} () [] icon selected
+
+# undo
+u -- undo last command
+U -- return current line to its original state
+
+# searching
+/<phrase> + Enter -- searches file for phrase
+	n  -- moves cursor to next instance of phrase searched for
+
+# external commands
+:!<command>  -- execute external commands such as `ls` from within Neovim. Args accepted.
+
+# SAVE AS
+:w <NEW_FILE_NAME>  -- write current file to new location
+
+# SAVE PART OF TEXT
+v  -- visual selection, this will select the current line and allow you to select more with j/k or arrows, et al
+:  -- after finishing selecting, enter this, you will see this: '<,'>
+w <FILE_NAME>  -- write selected text to a new file named <FILE_NAME>
+w! <FILE_NAME>  -- overwrite file if it already exists
+d -- delete selected text
+
+# Copying from a file
+:r <FILE_NAME> -- copy the text of <FILE_NAME> below the cursor
+:r!<command> -- copy the output of the command (such as `ls`) below the cursor
+
+# :set command for settings
+:set ic  -- ignore case in searching
+:set noic  -- don't ignore case in searching
+:set hls  -- highlights search term (pretty sure?)
+:set is   -- inclusive search (matches when term matches parts of words)
+:set invic -- inverts value of setting prefixed with "inv"
+:nohlsearch -- removes highlighting of search
+NOTE: If you want to ignore case for just one search command, use [\c](/\c)
+      in the phrase: /ignore\c <Enter>
+
+# help
+:e<tab>  -- neovim will show all available commands that start with "e"
+:help <command>  -- get docs on any command with :help
+
+
+# TODO
+~/.inputrc
+# Use `Ctrl+j` and `Ctrl+k` to navigate history in Bash
+"\C-j": history-search-forward
+"\C-k": history-search-backward
+
+bind -f ~/.inputrc
+
+# THIS ALLOWS FOR Ctrl+J Ctrl+K scrolling in terminal history
