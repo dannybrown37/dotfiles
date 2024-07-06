@@ -98,7 +98,6 @@ ln -s ~/projects/dotfiles/config/.eslintrc ~/.eslintrc \
 && echo "Symlinked .eslintrc"
 
 ln -s ~/projects/dotfiles/config/.inputrc ~/.inputrc \
-&& bind -f "~/.inputrc"
 && echo "Symlinked .inputrc"
 
 if [ ! -L "${HOME}/.password-store" ]; then
