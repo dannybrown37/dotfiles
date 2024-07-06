@@ -4,14 +4,37 @@
 ## neovim commands
 ##
 
-:Mason  -- package manager/installer, use i on line to install package
-:checkhealth
-:Lazy update
+:Mason  -- package manager/installer, use i on selected line to install package
+:checkhealth  -- run when if you encounter errors with init.lua
+:Lazy update  -- update packages etc.
+:help  -- general neovim help
+:help lua-guide  -- get help with lua integrations into neovim
+:Telescope help_tags  -- search help tags via Telescope plugin (keymaps is a neat option)
+:help telescope  -- learn more about telescope and how to use it
+:help telescope.setup()  -- learn more about how to set up telescope
+<c-/> && ?  -- important keymaps for telescope (TODO: investigate more)
+:help lsp-vs-treesitter  -- maybe I'll want to look at this someday
 
-# space + commands
+
+# Telescope commands w/ no space
+gI -- go to implementation (useful for types defined separate from implementation)
+gr -- go to references
+gd -- go to definition of currently selected function/variable/etc. (requires language lsp)
+gD -- go to declaration (i.e., the import statement)
+K -- pop up documentation for the word under cursor; scroll away to remove 
+
+# Telescope space + commands
 # Ctrl+P and Ctrl+N to scroll up and down in these context menus
 sf -- search files
-gd -- go to definition of currently selected function/variable/etc. (requires language lsp)
+sh -- search help
+ds -- document symbols fuzzy find, search current document for vars, functions, classes, etc.
+ws -- workspace symbols fuzzy find, search entire workspace for vars, functions, classes, etc.
+rn -- rename variable under cursor, with LSP should support multi-file changes
+
+
+# numToStr/Comment.nvim plugin
+gcc -- toggle comment on/off on current line
+
 
 ##
 ## vim
@@ -38,6 +61,8 @@ y -- yank/copy text selected
 yw -- yank word, copy from cursor to end of word
 p -- paste/place text copied or deleted after cursor
 P -- paste/place text copied or deleted before cursor
+yap  -- select and yank a full paragraph (copy/paste)
+yy  -- yanks/copies the full current line
 
 # shift text
 Shift+>  -- shift selected right by a tab width
@@ -67,12 +92,15 @@ G  -- straight to bottom of the file
 $  -- move cursor to end of current line
 j$ -- move cursor to the end of the next line
 e -- moves cursor to the end of the next word
+<num>j  -- jump down <num> lines
+<num>k  -- jump up <num> lines
 
 % -- toggles between matching {} () [] icon selected
 
-# undo
+# undo/redo
 u -- undo last command
 U -- return current line to its original state
+Ctrl+r  -- redo last undone change
 
 # searching
 /<phrase> + Enter -- searches file for phrase, then `n` moves cursor to next instance of phrase searched for
