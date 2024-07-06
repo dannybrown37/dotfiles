@@ -39,6 +39,10 @@ yw -- yank word, copy from cursor to end of word
 p -- paste/place text copied or deleted after cursor
 P -- paste/place text copied or deleted before cursor
 
+# shift text
+Shift+>  -- shift selected right by a tab width
+Shift+<  -- shift selected left by a tab width
+
 # replacement
 r<char> -- replace currently selected char with <char>
 R -- replace characters until you hit <escape>
