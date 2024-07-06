@@ -219,6 +219,13 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,editwslconf::sudo vi /etc/wsl.conf
 
 
+; tmux
+::,,tms::tmux new -s Session
+::,,tmd::tmux detach
+::,,tml::tmux ls
+::,,tma::tmux attach -t Session
+
+
 ; feedback
 ::,,dust::[[dust]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
 ::,,sand::[[sand]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)
