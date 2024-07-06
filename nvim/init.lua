@@ -83,6 +83,15 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	end,
 })
 
+-- Autocommand to ensure exactly one blank line at the end of the file on save
+vim.api.nvim_create_autocmd("BufWritePre", {
+	pattern = "*",
+	callback = function()
+		vim.cmd("%s/\\s\\+$//e")
+		vim.cmd("%s/\\r//e")
+	end,
+})
+
 --#endregion
 
 --#region
@@ -649,8 +658,3 @@ require("lazy").setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
-
-
-
-
-
