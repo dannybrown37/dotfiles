@@ -97,6 +97,10 @@ ln -s ~/projects/dotfiles/config/.ruff.toml ~/.ruff.toml \
 ln -s ~/projects/dotfiles/config/.eslintrc ~/.eslintrc \
 && echo "Symlinked .eslintrc"
 
+ln -s ~/projects/dotfiles/config/.inputrc ~/.inputrc \
+&& bind -f "~/.inputrc"
+&& echo "Symlinked .inputrc"
+
 if [ ! -L "${HOME}/.password-store" ]; then
     ln -s ~/projects/dotfiles/pass ~/.password-store
     echo "Symlinked pass/ to ~/.password-store"
