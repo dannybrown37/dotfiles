@@ -1,3 +1,9 @@
+## use `vc` command to run non-comment lines of this file into fzf
+
+##
+## neovim commands
+##
+
 :Mason  -- package manager/installer, use i on line to install package
 :checkhealth
 :Lazy update
@@ -7,6 +13,9 @@
 sf -- search files
 gd -- go to definition of currently selected function/variable/etc. (requires language lsp)
 
+##
+## vim
+##
 
 # delete things fast
 dw  -- delete the whole/rest of the word from the point of the cursor
@@ -16,8 +25,8 @@ d$ --  delete from cursor to end of line
 d<num>w  -- delete the next <num> words in the line
 
 # insert mode fast
-o -- open a line below cursor and immediately go into insert mode
-O -- same, but line above cursor
+o -- open a line below cursor in insert mode
+O -- open a line above cursor in insert mode
 i -- insert mode right before cursor
 a -- insert mode right after cursor ("append")
 A -- insert mode at end of line ("Append")
@@ -62,8 +71,7 @@ u -- undo last command
 U -- return current line to its original state
 
 # searching
-/<phrase> + Enter -- searches file for phrase
-	n  -- moves cursor to next instance of phrase searched for
+/<phrase> + Enter -- searches file for phrase, then `n` moves cursor to next instance of phrase searched for
 
 # external commands
 :!<command>  -- execute external commands such as `ls` from within Neovim. Args accepted.
@@ -89,10 +97,8 @@ d -- delete selected text
 :set is   -- inclusive search (matches when term matches parts of words)
 :set invic -- inverts value of setting prefixed with "inv"
 :nohlsearch -- removes highlighting of search
-NOTE: If you want to ignore case for just one search command, use [\c](/\c)
-      in the phrase: /ignore\c <Enter>
+NOTE: If you want to ignore case for just one search command, use [\c](/\c) in the phrase: /ignore\c <Enter>
 
 # help
 :e<tab>  -- neovim will show all available commands that start with "e"
 :help <command>  -- get docs on any command with :help
-
