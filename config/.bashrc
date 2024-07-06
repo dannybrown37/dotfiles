@@ -362,12 +362,12 @@ open_vs_code_settings_folder_in_windows_environment() {
 ##
 
 alias chrome='google-chrome 2>/dev/null &'
-alias cf='code $(fzf -m --preview="batcat --color=always {}")'
-alias ff='fzf --preview="batcat --color=always {}"'
+alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r nvim'  # code search interactive
+alias ff='fzf --preview="batcat --color=always {}"'  # file find
 alias fh='function_history'
 alias gg='google'
 alias lopen='open_lambda_monitoring_tab_in_browser'
-alias nvi='nvim $(fzf -m --info=hidden --preview="batcat --color=always {}")'
+alias nvi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim'  # neovim interactive
 alias url='open_url_in_browser'
 
 if [[ -n "${ON_WINDOWS}" ]]; then
