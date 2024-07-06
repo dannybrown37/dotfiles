@@ -436,6 +436,8 @@ fi
 ## Bespoke environmental stuff
 ##
 
+bind -f "${HOME}/.inputrc"
+
 AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh
 if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
     source "$AUTOENV_ACTIVATE_SCRIPT"

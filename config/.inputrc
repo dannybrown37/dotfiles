@@ -1,4 +1,4 @@
 # Use `Ctrl+j` and `Ctrl+k` to navigate history in Bash
 "\C-j": history-search-forward
 "\C-k": history-search-backward
-
+"\e": "\C-u"
