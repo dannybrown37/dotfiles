@@ -90,13 +90,16 @@ Install all of the above with this.
 * `ahk secrets`: open ahk/secrets.ahk in VSCode
 * `buildlogs`: see the latest build logs for configured AWS CodePipeline stack
 * `cdp`: move directly to any directory in ~/projects (with tab autocomplete)
+* `cf`: use fzf to open one or more (with tab) files in VS Code
 * `cht`: curl cht.sh for commonly used tools/languages. Add new ones as needed in cht/.cht_sh_index
 * `cpw`: copy files from WSL to Windows easily, defaults to Downloads folder (with tab autocomplete)
+* `ff`: Fuzzy find current folder with a preview panel.
 * `fh`: Run bash history into `fzf` and select command to run from there.
 * `gg/google`: google something from the terminal, no quotes needed, pops open a web browser
 * `lopen`: open to the monitoring tab of a specific AWS Lambda
 * `mk`: mkdir and cd into it
 * `node_project_init`: spin up a git repo, gitignore file, and package.json for a Node project
+* `nvi`: use fzf to open one or more (with tab) files in Neovim
 * `pip_project_init`: spin up a Python package starter set of files via `cookiecutter` and [my configuration for it](https://github.com/dannybrown37/pip_package_cookiecutter)
 * `push`: Send a push alert to your phone
 * `push_to_topic`: Send a push alert to a custom topic
@@ -114,6 +117,7 @@ Install all of the above with this.
   * `.gitconfig` holds git config info that is symlinked to `~`
   * `.ruff.toml` holds Python linting rules symlinked to `~` for global use
   * `.secrets` holds data not for committing to git
+* In the `./nvim` directory, configure a Neovim profile.
 * In the `./.vscode` directory:
   * `settings.json` for VS Code user settings
   * `extensions.txt` for essential VS Code extensions
