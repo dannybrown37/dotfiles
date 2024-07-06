@@ -96,13 +96,3 @@ NOTE: If you want to ignore case for just one search command, use [\c](/\c)
 :e<tab>  -- neovim will show all available commands that start with "e"
 :help <command>  -- get docs on any command with :help
 
-
-# TODO
-~/.inputrc
-# Use `Ctrl+j` and `Ctrl+k` to navigate history in Bash
-"\C-j": history-search-forward
-"\C-k": history-search-backward
-
-bind -f ~/.inputrc
-
-# THIS ALLOWS FOR Ctrl+J Ctrl+K scrolling in terminal history
