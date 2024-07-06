@@ -28,7 +28,9 @@ vim.api.nvim_create_autocmd("FileType", {
 		-- if you are a heavy user of folds, consider using `nvim-ufo`
 		vim.opt_local.foldmethod = "indent"
 
-		local iabbrev = function(lhs, rhs) vim.keymap.set("ia", lhs, rhs, { buffer = true }) end
+		local iabbrev = function(lhs, rhs)
+			vim.keymap.set("ia", lhs, rhs, { buffer = true })
+		end
 		-- automatically capitalize boolean values. Useful if you come from a
 		-- different language, and lowercase them out of habit.
 		iabbrev("true", "True")
@@ -103,7 +105,9 @@ local plugins = {
 					organizeImports = false,
 				},
 				-- disable ruff as hover provider to avoid conflicts with pyright
-				on_attach = function(client) client.server_capabilities.hoverProvider = false end,
+				on_attach = function(client)
+					client.server_capabilities.hoverProvider = false
+				end,
 			})
 		end,
 	},
@@ -118,7 +122,9 @@ local plugins = {
 		keys = {
 			{
 				"<leader>f",
-				function() require("conform").format({ lsp_fallback = true }) end,
+				function()
+					require("conform").format({ lsp_fallback = true })
+				end,
 				desc = "Format",
 			},
 		},
@@ -159,7 +165,9 @@ local plugins = {
 			cmp.setup({
 				-- tell cmp to use Luasnip as our snippet engine
 				snippet = {
-					expand = function(args) require("luasnip").lsp_expand(args.body) end,
+					expand = function(args)
+						require("luasnip").lsp_expand(args.body)
+					end,
 				},
 				-- Define the mappings for the completion. The `fallback()` call
 				-- ensures that when there is no suggestion window open, the mapping
@@ -317,7 +325,9 @@ local plugins = {
 		lazy = false,
 		priority = 1000,
 		-- enable the colorscheme
-		config = function() vim.cmd.colorscheme("tokyonight") end,
+		config = function()
+			vim.cmd.colorscheme("tokyonight")
+		end,
 	},
 
 	-----------------------------------------------------------------------------
@@ -332,17 +342,23 @@ local plugins = {
 		keys = {
 			{
 				"<leader>dc",
-				function() require("dap").continue() end,
+				function()
+					require("dap").continue()
+				end,
 				desc = "Start/Continue Debugger",
 			},
 			{
 				"<leader>db",
-				function() require("dap").toggle_breakpoint() end,
+				function()
+					require("dap").toggle_breakpoint()
+				end,
 				desc = "Add Breakpoint",
 			},
 			{
 				"<leader>dt",
-				function() require("dap").terminate() end,
+				function()
+					require("dap").terminate()
+				end,
 				desc = "Terminate Debugger",
 			},
 		},
@@ -357,16 +373,24 @@ local plugins = {
 		keys = {
 			{
 				"<leader>du",
-				function() require("dapui").toggle() end,
+				function()
+					require("dapui").toggle()
+				end,
 				desc = "Toggle Debugger UI",
 			},
 		},
 		-- automatically open/close the DAP UI when starting/stopping the debugger
 		config = function()
 			local listener = require("dap").listeners
-			listener.after.event_initialized["dapui_config"] = function() require("dapui").open() end
-			listener.before.event_terminated["dapui_config"] = function() require("dapui").close() end
-			listener.before.event_exited["dapui_config"] = function() require("dapui").close() end
+			listener.after.event_initialized["dapui_config"] = function()
+				require("dapui").open()
+			end
+			listener.before.event_terminated["dapui_config"] = function()
+				require("dapui").close()
+			end
+			listener.before.event_exited["dapui_config"] = function()
+				require("dapui").close()
+			end
 		end,
 	},
 
@@ -396,7 +420,9 @@ local plugins = {
 		keys = {
 			{
 				"<leader>a",
-				function() require("neogen").generate() end,
+				function()
+					require("neogen").generate()
+				end,
 				desc = "Add Docstring",
 			},
 		},
@@ -409,7 +435,6 @@ local plugins = {
 		"chrisgrieser/nvim-puppeteer",
 		dependencies = "nvim-treesitter/nvim-treesitter",
 	},
-
 }
 
 --------------------------------------------------------------------------------

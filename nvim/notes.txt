@@ -15,6 +15,24 @@
 <c-/> && ?  -- important keymaps for telescope (TODO: investigate more)
 :help lsp-vs-treesitter  -- maybe I'll want to look at this someday
 
+# buffers
+:split  -- horizontally split the screen
+:vsplit -- vertically split the screen
+:edit <file/path> -- but <leader>sf to fuzzy search files is better
+:enew  -- open a new file in the editor
+:new  -- split horizontally and open a new file in the editor
+:vnew  -- split vertically and open a new file in the editor
+
+# tabs
+:tabnew <filename>  -- open a new tab to an empty file or pass a file name/path
+:tabclose  -- close the current tab
+:tabonly  -- close all other tabs except the current one
+:tabmove -/+1  -- move current tab to the left/right
+:tabnext <or> :tabn -- switch to next tab
+:tabprevious <or> :tabp -- switch to previous tab
+:tabn <number> -- go to a specific tab by number
+
+
 
 # Telescope commands w/ no space
 gI -- go to implementation (useful for types defined separate from implementation)
@@ -22,6 +40,7 @@ gr -- go to references
 gd -- go to definition of currently selected function/variable/etc. (requires language lsp)
 gD -- go to declaration (i.e., the import statement)
 K -- pop up documentation for the word under cursor; scroll away to remove 
+
 
 # Telescope space + commands
 # Ctrl+P and Ctrl+N to scroll up and down in these context menus
@@ -35,10 +54,15 @@ rn -- rename variable under cursor, with LSP should support multi-file changes
 # numToStr/Comment.nvim plugin
 gcc -- toggle comment on/off on current line
 
-
 ##
 ## vim
 ##
+
+
+# macros
+q<char>  -- start recording in the <char> macro
+q        -- finish recording macro
+@<char>  -- call recorded macro
 
 # delete things fast
 dw  -- delete the whole/rest of the word from the point of the cursor
