@@ -29,7 +29,7 @@ fi
 ##
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
-export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" --glob "!.git"'
+export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" --glob "!.git/*" --glob "!.venv/*" --glob "!node_modules/*"'
 
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 
@@ -351,6 +351,7 @@ open_url_in_browser() {
     ${BROWSER:-"${open}"} "${URL}"
 }
 
+
 open_vs_code_settings_folder_in_windows_environment() {
     if [[ -z "${ON_WINDOWS}" ]]; then echo "You're not on Windows"; return; fi
     windows_path=$(wslpath -w "/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/")
@@ -361,9 +362,10 @@ open_vs_code_settings_folder_in_windows_environment() {
 ## Aliases
 ##
 
+
 alias chrome='google-chrome 2>/dev/null &'
-alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r nvim'  # code search interactive
-alias ff='fzf --preview="batcat --color=always {}"'  # file find
+alias coi='fzf -m --preview="batcat --color=always {}" | xargs -r nvim'  # code open interactive
+alias ff='fzf --preview="batcat --color=always {}"'  # file find, just reviews, selection does nothing
 alias fh='function_history'
 alias gg='google'
 alias lopen='open_lambda_monitoring_tab_in_browser'
