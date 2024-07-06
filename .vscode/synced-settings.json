@@ -4,10 +4,12 @@
   },
   "accessibility.signals.sounds.volume": 0,
   "cSpell.userWords": [
+    "checkhealth",
     "dearmor",
     "distro",
     "distros",
     "dpkg",
+    "neovim",
     "pipx",
     "plusplus",
     "pprint",
