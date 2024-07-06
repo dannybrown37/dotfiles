@@ -1,5 +1,10 @@
 #!/usr/bin/bash
 
+##
+##  Sync bash profile with packages and symlinks
+##  This script is designed to idempotent and can be run multiple times
+##
+
 apt_packages=(
     bash-completion
     bat
