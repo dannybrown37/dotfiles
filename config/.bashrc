@@ -371,7 +371,7 @@ alias gg='google'
 alias lopen='open_lambda_monitoring_tab_in_browser'
 alias nvi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim'  # neovim interactive
 alias url='open_url_in_browser'
-alias vc="grep -v -E '^\s*$|^#' "$DOTFILES_DIR/nvim/notes.txt" | sort | fzf"
+alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf"
 
 if [[ -n "${ON_WINDOWS}" ]]; then
     alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
