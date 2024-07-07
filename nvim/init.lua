@@ -81,6 +81,9 @@ vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true })
 vim.api.nvim_set_keymap("n", "<C-v>", "p", { noremap = true })
 -- Ctrl+X to cut text into clipboard
 vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true })
+-- Ctrl+Z to undo
+vim.api.nvim_set_keymap("n", "<C-z>", "u", { noremap = true })
+vim.api.nvim_set_keymap("i", "<C-z>", "<Esc>u", { noremap = true })
 
 -- Use F2 for rename symbol
 vim.keymap.set({ "n", "i" }, "<F2>", function()
@@ -597,14 +600,19 @@ require("lazy").setup({
 				mapping = cmp.mapping.preset.insert({
 					["<C-n>"] = cmp.mapping.select_next_item(), -- Select the [n]ext item
 					["<C-p>"] = cmp.mapping.select_prev_item(), -- Select the [p]revious item
+					["<C-j>"] = cmp.mapping.select_next_item(), -- Select the [n]ext item
+					["<C-k>"] = cmp.mapping.select_prev_item(), -- Select the [p]revious item
 					-- Scroll the documentation window [b]ack / [f]orward
 					["<C-b>"] = cmp.mapping.scroll_docs(-4),
 					["<C-f>"] = cmp.mapping.scroll_docs(4),
 					-- select words from autocomplete list with tab/control
 					["<C-y>"] = cmp.mapping.confirm({ select = true }),
 					["<CR>"] = cmp.mapping.confirm({ select = true }),
-					["<Tab>"] = cmp.mapping.select_next_item(),
-					["<S-Tab>"] = cmp.mapping.select_prev_item(),
+					["<Tab>"] = cmp.mapping.confirm({ select = true }),
+					["<Right>"] = cmp.mapping.select_next_item(),
+					["<Down>"] = cmp.mapping.select_next_item(),
+					["<Up>"] = cmp.mapping.select_next_item(),
+					["<Left>"] = cmp.mapping.select_next_item(),
 					["<Esc>"] = cmp.mapping.close(),
 
 					-- Manually trigger a completion from nvim-cmp.
