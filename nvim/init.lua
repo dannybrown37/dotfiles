@@ -257,13 +257,18 @@ require("lazy").setup({
 						i = { ["<c-enter>"] = "to_fuzzy_refine" },
 					},
 				},
-				pickers = {},
 				extensions = {
 					["ui-select"] = {
 						require("telescope.themes").get_dropdown(),
 					},
 				},
-				file_ignore_patterns = { "node_modules", ".git", ".venv" },
+				pickers = {
+					find_files = {
+						prompt_prefix = "🔍 ",
+						hidden = "true",
+						file_ignore_patterns = { "node_modules", ".git", ".venv" },
+					},
+				},
 			})
 
 			-- Enable Telescope extensions if they are installed
