@@ -364,14 +364,14 @@ open_vs_code_settings_folder_in_windows_environment() {
 
 
 alias chrome='google-chrome 2>/dev/null &'
-alias coi='fzf -m --preview="batcat --color=always {}" | xargs -r nvim'  # code open interactive
+alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r nvim'  # code search interactive
 alias ff='fzf --preview="batcat --color=always {}"'  # file find, just reviews, selection does nothing
 alias fh='function_history'
 alias gg='google'
 alias lopen='open_lambda_monitoring_tab_in_browser'
-alias nvi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim'  # neovim interactive
 alias url='open_url_in_browser'
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf"
+alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim'  # vim search interactive
 
 if [[ -n "${ON_WINDOWS}" ]]; then
     alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
