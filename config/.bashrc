@@ -29,7 +29,7 @@ fi
 ##
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
-export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" --glob "!.git/*" --glob "!.venv/*" --glob "!node_modules/*"'
+export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" --glob "!.git/*" --glob "!.venv/*" --glob "!node_modules/*" --glob "!**.*cache*"'
 
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 
