@@ -219,7 +219,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,editwslconf::sudo vi /etc/wsl.conf
 
 
-; powershell
+; powershell -- like, actually *in* powershell
 ::,,installnerdfonts::iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/amnweb/nf-installer/main/install.ps1'))
 
 
