@@ -74,6 +74,8 @@ vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
 vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
 -- Ctrl+A selects the full document
 vim.api.nvim_set_keymap("n", "<C-a>", "ggVG", { noremap = true })
+-- Ctrl+C to copy text
+vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true })
 
 -- Use F2 for rename symbol
 vim.keymap.set({ "n", "i" }, "<F2>", function()
@@ -691,6 +693,7 @@ require("lazy").setup({
 			--  Check out: https://github.com/echasnovski/mini.nvim
 		end,
 	},
+
 	{ -- Highlight, edit, and navigate code
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
