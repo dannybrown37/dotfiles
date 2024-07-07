@@ -24,6 +24,7 @@ apt_packages=(
     shellcheck
     unzip
     wget
+    xclip
     zip
 )
 
