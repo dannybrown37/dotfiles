@@ -68,7 +68,9 @@ vim.keymap.set("n", "<C-l>", "<C-w><C-l>", { desc = "Move focus to the right win
 vim.keymap.set("n", "<C-j>", "<C-w><C-j>", { desc = "Move focus to the lower window" })
 vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
 
+-- Ctrl+S == save in both insert and normal mode, decades of muscle memory is real
 vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
+vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
 --#endregion
 
 --#region
@@ -83,12 +85,61 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	end,
 })
 
--- Autocommand to ensure exactly one blank line at the end of the file on save
+--  Ensures that white space at end of lines and files is controlled
 vim.api.nvim_create_autocmd("BufWritePre", {
 	pattern = "*",
 	callback = function()
+		local save_cursor = vim.fn.getpos(".")
+		local last_line = vim.fn.line("$")
+		vim.cmd("silent! " .. last_line .. "s/^\\n\\+//e")
+		vim.cmd("silent! " .. last_line .. "s/$/\\r/e")
 		vim.cmd("%s/\\s\\+$//e")
 		vim.cmd("%s/\\r//e")
+		vim.fn.setpos(".", save_cursor)
+	end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "python",
+	callback = function()
+		-- use pep8 standards
+		vim.opt_local.expandtab = true
+		vim.opt_local.shiftwidth = 4
+		vim.opt_local.tabstop = 4
+		vim.opt_local.softtabstop = 4
+		-- folds based on indentation https://neovim.io/doc/user/fold.html#fold-indent
+		-- if you are a heavy user of folds, consider using `nvim-ufo`
+		vim.opt_local.foldmethod = "indent"
+		local iabbrev = function(lhs, rhs)
+			vim.keymap.set("ia", lhs, rhs, { buffer = true })
+		end
+		-- automatically capitalize boolean values. Useful if you come from a
+		-- different language, and lowercase them out of habit.
+		iabbrev("true", "True")
+		iabbrev("false", "False")
+		-- put us in Python if we happen to be in TS mode
+		iabbrev("//", "#")
+		iabbrev("null", "None")
+		iabbrev("none", "None")
+	end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "typescript",
+	callback = function()
+		vim.opt_local.expandtab = true
+		vim.opt_local.shiftwidth = 2
+		vim.opt_local.tabstop = 2
+		vim.opt_local.softtabstop = 2
+		vim.opt_local.foldmethod = "indent"
+		local iabbrev = function(lhs, rhs)
+			vim.keymap.set("i", lhs, rhs, { buffer = true, silent = true })
+		end
+		-- put us in TS if we happen to be in Python mode
+		iabbrev("True", "true")
+		iabbrev("False", "false")
+		iabbrev("#", "//")
+		iabbrev("None", "null")
 	end,
 })
 
@@ -115,7 +166,7 @@ require("lazy").setup({
 
 	{ "numToStr/Comment.nvim", opts = {} }, -- comment highlighting and gcc toggling
 
-	{ -- show symbols next to lines indicating git changes
+	{ -- show symbols next to lines indicating git changes
 		"lewis6991/gitsigns.nvim",
 		opts = {
 			signs = {
@@ -199,6 +250,7 @@ require("lazy").setup({
 						require("telescope.themes").get_dropdown(),
 					},
 				},
+				file_ignore_patterns = { "node_modules", ".git", ".venv" },
 			})
 
 			-- Enable Telescope extensions if they are installed
@@ -311,11 +363,8 @@ require("lazy").setup({
 					--  For example, in C this would take you to the header.
 					map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
-					-- The following two autocommands are used to highlight references of the
-					-- word under your cursor when your cursor rests there for a little while.
-					--    See `:help CursorHold` for information about when this is executed
-					--
 					-- When you move your cursor, the highlights will be cleared (the second autocommand).
+					--    See `:help CursorHold` for information about when this is executed
 					local client = vim.lsp.get_client_by_id(event.data.client_id)
 					if client and client.server_capabilities.documentHighlightProvider then
 						local highlight_augroup =
@@ -359,6 +408,9 @@ require("lazy").setup({
 			local capabilities = vim.lsp.protocol.make_client_capabilities()
 			capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
 
+			require("lspconfig").pyright.setup({ capabilities = capabilities })
+			require("lspconfig").taplo.setup({ capabilities = capabilities })
+			require("lspconfig").ruff_lsp.setup({ capabilities = capabilities })
 			-- Enable the following language servers
 			--  Add any additional override configuration in the following tables. Available keys are:
 			--  - cmd (table): Override the default command used to start the server
@@ -390,7 +442,13 @@ require("lazy").setup({
 			require("mason").setup()
 			local ensure_installed = vim.tbl_keys(servers or {})
 			vim.list_extend(ensure_installed, {
-				"stylua", -- Used to format Lua code
+				"stylua",
+				"pyright",
+				"ruff-lsp",
+				"debugpy",
+				"black",
+				"isort",
+				"taplo", -- LSP for toml
 			})
 
 			require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
@@ -431,12 +489,9 @@ require("lazy").setup({
 			end,
 			formatters_by_ft = {
 				lua = { "stylua" },
-				-- Conform can also run multiple formatters sequentially
-				-- python = { "isort", "black" },
-				--
-				-- You can use a sub-list to tell conform to run *until* a formatter
-				-- is found.
-				-- javascript = { { "prettierd", "prettier" } },
+				python = { "isort", "black" }, -- list runs formatters sequentially
+				javascript = { { "prettierd", "prettier" } }, -- sub-list to run *until* formatter found
+				markdown = { "inject" },
 			},
 		},
 	},
@@ -481,18 +536,12 @@ require("lazy").setup({
 				completion = { completeopt = "menu,menuone,noinsert" },
 				-- seriously. Please read `:help ins-completion`, it is really good!
 				mapping = cmp.mapping.preset.insert({
-					-- Select the [n]ext item
-					["<C-n>"] = cmp.mapping.select_next_item(),
-					-- Select the [p]revious item
-					["<C-p>"] = cmp.mapping.select_prev_item(),
-
+					["<C-n>"] = cmp.mapping.select_next_item(), -- Select the [n]ext item
+					["<C-p>"] = cmp.mapping.select_prev_item(), -- Select the [p]revious item
 					-- Scroll the documentation window [b]ack / [f]orward
 					["<C-b>"] = cmp.mapping.scroll_docs(-4),
 					["<C-f>"] = cmp.mapping.scroll_docs(4),
-
-					-- Accept ([y]es) the completion.
-					--  This will auto-import if your LSP supports it.
-					--  This will expand snippets if the LSP sent a snippet.
+					-- select words from autocomplete list with tab/control
 					["<C-y>"] = cmp.mapping.confirm({ select = true }),
 					["<CR>"] = cmp.mapping.confirm({ select = true }),
 					["<Tab>"] = cmp.mapping.select_next_item(),
@@ -600,20 +649,25 @@ require("lazy").setup({
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
 		opts = {
-			ensure_installed = { "bash", "c", "diff", "html", "lua", "luadoc", "markdown", "vim", "vimdoc" },
-			auto_install = true,
-			highlight = {
-				enable = true,
-				-- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-				--  If you are experiencing weird indenting issues, add the language to
-				--  the list of additional_vim_regex_highlighting and disabled languages for indent.
-				additional_vim_regex_highlighting = { "ruby" },
+			ensure_installed = {
+				"bash",
+				"diff",
+				"html",
+				"javascript",
+				"lua",
+				"luadoc",
+				"markdown",
+				"markdown_inline",
+				"python",
+				"toml",
+				"typescript",
+				"vim",
+				"vimdoc",
 			},
-			indent = { enable = true, disable = { "ruby" } },
+			auto_install = true,
+			highlight = { enable = true },
 		},
-		config = function(_, opts)
-			-- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-
+		config = function(_, opts) -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
 			-- Prefer git instead of curl in order to improve connectivity in some environments
 			require("nvim-treesitter.install").prefer_git = true
 			---@diagnostic disable-next-line: missing-fields
@@ -628,7 +682,39 @@ require("lazy").setup({
 		end,
 	},
 
-	-- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
+	-- semshi for additional syntax highlighting.
+	-- See the README for Treesitter cs Semshi comparison.
+	-- requires `pynvim` (`python3 -m pip install pynvim`)
+	{
+		"wookayin/semshi", -- maintained fork
+		ft = "python",
+		build = ":UpdateRemotePlugins", -- don't disable `rplugin` in lazy.nvim for this
+		init = function()
+			vim.g.python3_host_prog = vim.fn.exepath("python3")
+			-- better done by LSP
+			vim.g["semshi#error_sign"] = false
+			vim.g["semshi#simplify_markup"] = false
+			vim.g["semshi#mark_selected_nodes"] = false
+			vim.g["semshi#update_delay_factor"] = 0.001
+			vim.api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, {
+				callback = function()
+					vim.cmd([[
+						highlight! semshiGlobal gui=italic
+						highlight! link semshiImported @lsp.type.namespace
+						highlight! link semshiParameter @lsp.type.parameter
+						highlight! link semshiParameterUnused DiagnosticUnnecessary
+						highlight! link semshiBuiltin @function.builtin
+						highlight! link semshiAttribute @field
+						highlight! link semshiSelf @lsp.type.selfKeyword
+						highlight! link semshiUnresolved @lsp.type.unresolvedReference
+						highlight! link semshiFree @comment
+					]])
+				end,
+			})
+		end,
+	},
+
+	-- INFO: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
 	--    This is the easiest way to modularize your config.
 	--
 	--  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
