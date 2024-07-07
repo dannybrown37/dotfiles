@@ -72,6 +72,7 @@ vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper win
 -- Ctrl+S == save in both insert and normal mode, decades of muscle memory is real
 vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
 vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
+vim.api.nvim_set_keymap("n", "<C-a>", "ggVG", { noremap = true })
 
 -- Use F2 for rename symbol
 vim.keymap.set({ "n", "i" }, "<F2>", function()
