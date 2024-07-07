@@ -72,6 +72,7 @@ vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper win
 -- Ctrl+S == save in both insert and normal mode, decades of muscle memory is real
 vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
 vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
+-- Ctrl+A selects the full document
 vim.api.nvim_set_keymap("n", "<C-a>", "ggVG", { noremap = true })
 
 -- Use F2 for rename symbol
@@ -102,17 +103,12 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	end,
 })
 
---  Ensures that white space at end of lines and files is controlled
+--  Control white space at end of lines
 vim.api.nvim_create_autocmd("BufWritePre", {
 	pattern = "*",
 	callback = function()
-		local save_cursor = vim.fn.getpos(".")
-		local last_line = vim.fn.line("$")
-		vim.cmd("silent! " .. last_line .. "s/^\\n\\+//e")
-		vim.cmd("silent! " .. last_line .. "s/$/\\r/e")
 		vim.cmd("%s/\\s\\+$//e")
 		vim.cmd("%s/\\r//e")
-		vim.fn.setpos(".", save_cursor)
 	end,
 })
 
@@ -609,12 +605,12 @@ require("lazy").setup({
 	-- - quickly create docstrings via `<leader>a`
 	{
 		"danymat/neogen",
-		opts = true,
+		opts = {},
 		keys = {
 			{
 				"<leader>a",
 				function()
-					require("neogen").generate()
+					require("neogen").generate({})
 				end,
 				desc = "Add Docstring",
 			},
