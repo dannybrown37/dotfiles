@@ -4,6 +4,12 @@
 ## neovim commands
 ##
 
+:map <key>  -- see key bindings for a particular key
+:nmap  -- all key bindings for normal mode
+:vmap  -- all key bindings for visual mode
+:imap  -- all key bindings for insert mode
+:omap  -- all key binds for operator-pending mode
+
 :Mason  -- package manager/installer, use i on selected line to install package
 :checkhealth  -- run when if you encounter errors with init.lua
 :Lazy update  -- update packages etc.
