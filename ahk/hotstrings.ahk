@@ -219,6 +219,10 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,editwslconf::sudo vi /etc/wsl.conf
 
 
+; powershell
+::,,installnerdfonts::iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/amnweb/nf-installer/main/install.ps1'))
+
+
 ; tmux
 ::,,ts::tmux new -s Session
 ::,,td::tmux detach
