@@ -76,6 +76,8 @@ vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
 vim.api.nvim_set_keymap("n", "<C-a>", "ggVG", { noremap = true })
 -- Ctrl+C to copy text
 vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true })
+-- Ctrl+V to paste for good measure
+vim.api.nvim_set_keymap("n", "<C-v>", "p", { noremap = true })
 
 -- Use F2 for rename symbol
 vim.keymap.set({ "n", "i" }, "<F2>", function()
