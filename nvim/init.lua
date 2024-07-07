@@ -106,7 +106,6 @@ function copy_region_to_region()
 	local start_line = cursor[1]
 	local end_line = cursor[1]
 	-- Find start of region
-	print("sanity")
 	while start_line > 1 do
 		if vim.api.nvim_buf_get_lines(bufnr, start_line - 1, start_line, false)[1]:find("#region") then
 			break
@@ -121,25 +120,16 @@ function copy_region_to_region()
 		end
 		end_line = end_line + 1
 	end
-	-- Copy lines between start and end
-	local lines = {}
-	for line = start_line, end_line - 1 do
-		table.insert(lines, vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1])
-	end
-	-- Join lines into a single string
-	local region_text = table.concat(lines, "\n")
-	-- Copy the text to the clipboard
-	vim.fn.setreg("+", region_text)
-	-- Optionally, echo a message indicating success
-	vim.api.nvim_echo({ { "Region copied to clipboard", "Title" } }, true, {})
-	-- Alternatively, paste the copied text into the current buffer at the cursor position
-	-- Uncomment the following line to paste directly:
-	vim.api.nvim_put({ region_text }, "c", true, true)
-	-- Optionally, return the copied text
-	return region_text
+	-- Yank lines between start and end into a register (using "0" for simplicity)
+	local lines_to_yank = vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line - 1, false)
+	vim.fn.setreg("0", lines_to_yank)
+	local content = table.concat(lines_to_yank, "\n")
+	-- Note: This requires the `xclip` or `xsel` command-line tool to be installed
+	local command = string.format('echo -n "%s" | xclip -selection clipboard', content)
+	vim.fn.system(command)
 end
 -- Bind this function to a key mapping in Neovim
-vim.api.nvim_set_keymap("n", "rap", ":lua copy_region_to_region()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "yar", ":lua copy_region_to_region()<CR>", { noremap = true, silent = true })
 
 -- Highlight when yanking (copying) text  --  See `:help vim.highlight.on_yank()`
 vim.api.nvim_create_autocmd("TextYankPost", {
