@@ -362,14 +362,16 @@ open_vs_code_settings_folder_in_windows_environment() {
 ## Aliases
 ##
 
+alias cb='tee >(xclip -selection clipboard)'  # clip board
 alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r nvim'  # code search interactive
 alias ff='fzf --preview="batcat --color=always {}"'  # file find, just reviews, selection does nothing
 alias fh='function_history'
 alias gg='google'
 alias lopen='open_lambda_monitoring_tab_in_browser'
+alias pcb='xclip -selection clipboard -o'  # print clip board
 alias url='open_url_in_browser'
-alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf"
+alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf"  # vim cheat
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim'  # vim search interactive
 
 if [[ -n "${ON_WINDOWS}" ]]; then
