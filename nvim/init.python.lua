@@ -15,6 +15,7 @@ vim.opt.runtimepath:prepend(lazypath)
 -- just that buffer. (As an alternative to using an autocmd, you can also put those
 -- configurations into a file `/after/ftplugin/{filetype}.lua` in your
 -- nvim-directory.)
+
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = "python", -- filetype for which to run the autocmd
 	callback = function()
@@ -23,11 +24,9 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.opt_local.shiftwidth = 4
 		vim.opt_local.tabstop = 4
 		vim.opt_local.softtabstop = 4
-
 		-- folds based on indentation https://neovim.io/doc/user/fold.html#fold-indent
 		-- if you are a heavy user of folds, consider using `nvim-ufo`
 		vim.opt_local.foldmethod = "indent"
-
 		local iabbrev = function(lhs, rhs)
 			vim.keymap.set("ia", lhs, rhs, { buffer = true })
 		end
@@ -35,7 +34,6 @@ vim.api.nvim_create_autocmd("FileType", {
 		-- different language, and lowercase them out of habit.
 		iabbrev("true", "True")
 		iabbrev("false", "False")
-
 		-- in the same way, we can fix habits regarding comments or None
 		iabbrev("--", "#")
 		iabbrev("null", "None")
@@ -293,7 +291,6 @@ local plugins = {
 			vim.g["semshi#simplify_markup"] = false
 			vim.g["semshi#mark_selected_nodes"] = false
 			vim.g["semshi#update_delay_factor"] = 0.001
-
 			vim.api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, {
 				callback = function()
 					vim.cmd([[
@@ -441,3 +438,4 @@ local plugins = {
 
 -- tell lazy.nvim to load and configure all the plugins
 require("lazy").setup(plugins)
+

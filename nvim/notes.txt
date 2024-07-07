@@ -14,6 +14,7 @@
 :help telescope.setup()  -- learn more about how to set up telescope
 <c-/> && ?  -- important keymaps for telescope (TODO: investigate more)
 :help lsp-vs-treesitter  -- maybe I'll want to look at this someday
+:Telescope colorscheme  -- change the color scheme for the session
 
 # buffers
 :split  -- horizontally split the screen
@@ -39,7 +40,7 @@ gI -- go to implementation (useful for types defined separate from implementatio
 gr -- go to references
 gd -- go to definition of currently selected function/variable/etc. (requires language lsp)
 gD -- go to declaration (i.e., the import statement)
-K -- pop up documentation for the word under cursor; scroll away to remove 
+K -- pop up documentation for the word under cursor; scroll away to remove
 
 
 # Telescope space + commands
@@ -158,3 +159,4 @@ NOTE: If you want to ignore case for just one search command, use [\c](/\c) in t
 # help
 :e<tab>  -- neovim will show all available commands that start with "e"
 :help <command>  -- get docs on any command with :help
+
