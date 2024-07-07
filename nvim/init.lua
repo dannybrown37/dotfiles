@@ -3,7 +3,6 @@
       A guide on neovim's lua integration:  https://neovim.io/doc/user/lua-guide.html
       If experiencing any errors while trying to run inti.lua, run `:checkhealth` for more info.
 --]]
-
 --#region
 -- NOTE: Global Settings
 -- Sets <space> as the leader key  -- See `:help mapleader`
@@ -68,9 +67,26 @@ vim.keymap.set("n", "<C-l>", "<C-w><C-l>", { desc = "Move focus to the right win
 vim.keymap.set("n", "<C-j>", "<C-w><C-j>", { desc = "Move focus to the lower window" })
 vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
 
+-- The Windows Section -- recreating shortcuts that I find useful
+
 -- Ctrl+S == save in both insert and normal mode, decades of muscle memory is real
 vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
 vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
+
+-- Use F2 for rename symbol
+vim.keymap.set({ "n", "i" }, "<F2>", function()
+	if vim.fn.mode() == "i" then
+		-- Exit insert mode
+		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", true)
+		-- Wait for mode change
+		vim.wait(50, function()
+			return vim.fn.mode() == "n"
+		end)
+	end
+	-- Trigger rename
+	vim.lsp.buf.rename()
+end, { noremap = true, silent = true })
+
 --#endregion
 
 --#region
@@ -408,9 +424,16 @@ require("lazy").setup({
 			local capabilities = vim.lsp.protocol.make_client_capabilities()
 			capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
 
-			require("lspconfig").pyright.setup({ capabilities = capabilities })
+			require("lspconfig").pyright.setup({
+				capabilities = (function()
+					local capabilities_pr = vim.lsp.protocol.make_client_capabilities()
+					capabilities_pr.textDocument.publishDiagnostics.tagSupport.valueSet = { 2 }
+					return capabilities_pr
+				end)(),
+			})
 			require("lspconfig").taplo.setup({ capabilities = capabilities })
 			require("lspconfig").ruff_lsp.setup({ capabilities = capabilities })
+
 			-- Enable the following language servers
 			--  Add any additional override configuration in the following tables. Available keys are:
 			--  - cmd (table): Override the default command used to start the server
@@ -442,12 +465,9 @@ require("lazy").setup({
 			require("mason").setup()
 			local ensure_installed = vim.tbl_keys(servers or {})
 			vim.list_extend(ensure_installed, {
-				"stylua",
-				"pyright",
-				"ruff-lsp",
-				"debugpy",
-				"black",
-				"isort",
+				"stylua", -- lua styler
+				"pyright", -- LSP for Python
+				"ruff-lsp", -- linter
 				"taplo", -- LSP for toml
 			})
 
@@ -546,6 +566,7 @@ require("lazy").setup({
 					["<CR>"] = cmp.mapping.confirm({ select = true }),
 					["<Tab>"] = cmp.mapping.select_next_item(),
 					["<S-Tab>"] = cmp.mapping.select_prev_item(),
+					["<Esc>"] = cmp.mapping.close(),
 
 					-- Manually trigger a completion from nvim-cmp.
 					--  Generally you don't need this, because nvim-cmp will display
@@ -581,6 +602,29 @@ require("lazy").setup({
 				},
 			})
 		end,
+	},
+
+	-- Docstring creation
+	-- - quickly create docstrings via `<leader>a`
+	{
+		"danymat/neogen",
+		opts = true,
+		keys = {
+			{
+				"<leader>a",
+				function()
+					require("neogen").generate()
+				end,
+				desc = "Add Docstring",
+			},
+		},
+	},
+	-- f-strings
+	-- - auto-convert strings to f-strings when typing `{}` in a string
+	-- - also auto-converts f-strings back to regular strings when removing `{}`
+	{
+		"chrisgrieser/nvim-puppeteer",
+		dependencies = "nvim-treesitter/nvim-treesitter",
 	},
 
 	{ -- You can easily change to a different colorscheme.
@@ -679,38 +723,6 @@ require("lazy").setup({
 			--    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
 			--    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
 			--    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
-		end,
-	},
-
-	-- semshi for additional syntax highlighting.
-	-- See the README for Treesitter cs Semshi comparison.
-	-- requires `pynvim` (`python3 -m pip install pynvim`)
-	{
-		"wookayin/semshi", -- maintained fork
-		ft = "python",
-		build = ":UpdateRemotePlugins", -- don't disable `rplugin` in lazy.nvim for this
-		init = function()
-			vim.g.python3_host_prog = vim.fn.exepath("python3")
-			-- better done by LSP
-			vim.g["semshi#error_sign"] = false
-			vim.g["semshi#simplify_markup"] = false
-			vim.g["semshi#mark_selected_nodes"] = false
-			vim.g["semshi#update_delay_factor"] = 0.001
-			vim.api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, {
-				callback = function()
-					vim.cmd([[
-						highlight! semshiGlobal gui=italic
-						highlight! link semshiImported @lsp.type.namespace
-						highlight! link semshiParameter @lsp.type.parameter
-						highlight! link semshiParameterUnused DiagnosticUnnecessary
-						highlight! link semshiBuiltin @function.builtin
-						highlight! link semshiAttribute @field
-						highlight! link semshiSelf @lsp.type.selfKeyword
-						highlight! link semshiUnresolved @lsp.type.unresolvedReference
-						highlight! link semshiFree @comment
-					]])
-				end,
-			})
 		end,
 	},
 

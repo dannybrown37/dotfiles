@@ -59,6 +59,7 @@ gcc -- toggle comment on/off on current line
 ## vim
 ##
 
+cheat sheet  -- https://cheatography.com/marconlsantos/cheat-sheets/neovim/
 
 # macros
 q<char>  -- start recording in the <char> macro
