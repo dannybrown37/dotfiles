@@ -1,4 +1,4 @@
-.PHONY: help python node golang rust vscode all
+.PHONY: help python node golang rust vscode all sync-secrets pull-ahk pull-bash pull-secrets insert-ahk insert-bash insert-secrets
 
 help:
 	@echo "Usage: make [target]"
