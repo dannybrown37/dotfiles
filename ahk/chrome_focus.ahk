@@ -3,11 +3,10 @@
 #Warn ; Enable warnings to assist with detecting common errors.
 #Persistent
 
-
 ; Ctrl+Shift+C to focus on open Chrome window
 ^+c::
 {
-    if WinExist("Google Chrome")
+    if WinExist("ahk_class Chrome_WidgetWin_1")
     {
         WinActivate
     }
