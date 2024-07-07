@@ -362,7 +362,6 @@ open_vs_code_settings_folder_in_windows_environment() {
 ## Aliases
 ##
 
-
 alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r nvim'  # code search interactive
 alias ff='fzf --preview="batcat --color=always {}"'  # file find, just reviews, selection does nothing
