@@ -3,6 +3,7 @@
       A guide on neovim's lua integration:  https://neovim.io/doc/user/lua-guide.html
       If experiencing any errors while trying to run inti.lua, run `:checkhealth` for more info.
 --]]
+
 --#region
 -- NOTE: Global Settings
 -- Sets <space> as the leader key  -- See `:help mapleader`
@@ -67,9 +68,9 @@ vim.keymap.set("n", "<C-l>", "<C-w><C-l>", { desc = "Move focus to the right win
 vim.keymap.set("n", "<C-j>", "<C-w><C-j>", { desc = "Move focus to the lower window" })
 vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
 
--- The Windows Section -- recreating shortcuts that I find useful
+-- The Windows Section -- because you can't beat decades of muscle memory
 
--- Ctrl+S == save in both insert and normal mode, decades of muscle memory is real
+-- Ctrl+S == save in both insert and normal mode
 vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
 vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
 -- Ctrl+A selects the full document
@@ -78,6 +79,8 @@ vim.api.nvim_set_keymap("n", "<C-a>", "ggVG", { noremap = true })
 vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true })
 -- Ctrl+V to paste for good measure
 vim.api.nvim_set_keymap("n", "<C-v>", "p", { noremap = true })
+-- Ctrl+X to cut text into clipboard
+vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true })
 
 -- Use F2 for rename symbol
 vim.keymap.set({ "n", "i" }, "<F2>", function()
@@ -85,18 +88,58 @@ vim.keymap.set({ "n", "i" }, "<F2>", function()
 		-- Exit insert mode
 		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", true)
 		-- Wait for mode change
-		vim.wait(50, function()
+		vim.wait(49, function()
 			return vim.fn.mode() == "n"
 		end)
 	end
 	-- Trigger rename
 	vim.lsp.buf.rename()
 end, { noremap = true, silent = true })
-
 --#endregion
 
 --#region
 -- NOTE: [[ Basic Autocommands ]] See `:help lua-guide-autocommands`
+
+function copy_region_to_region()
+	local bufnr = vim.fn.bufnr("%") -- Get current buffer number
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local start_line = cursor[1]
+	local end_line = cursor[1]
+	-- Find start of region
+	print("sanity")
+	while start_line > 1 do
+		if vim.api.nvim_buf_get_lines(bufnr, start_line - 1, start_line, false)[1]:find("#region") then
+			break
+		end
+		start_line = start_line - 1
+	end
+	-- Find end of region
+	local line_count = vim.api.nvim_buf_line_count(bufnr)
+	while end_line <= line_count do
+		if vim.api.nvim_buf_get_lines(bufnr, end_line - 1, end_line, false)[1]:find("#endregion") then
+			break
+		end
+		end_line = end_line + 1
+	end
+	-- Copy lines between start and end
+	local lines = {}
+	for line = start_line, end_line - 1 do
+		table.insert(lines, vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1])
+	end
+	-- Join lines into a single string
+	local region_text = table.concat(lines, "\n")
+	-- Copy the text to the clipboard
+	vim.fn.setreg("+", region_text)
+	-- Optionally, echo a message indicating success
+	vim.api.nvim_echo({ { "Region copied to clipboard", "Title" } }, true, {})
+	-- Alternatively, paste the copied text into the current buffer at the cursor position
+	-- Uncomment the following line to paste directly:
+	vim.api.nvim_put({ region_text }, "c", true, true)
+	-- Optionally, return the copied text
+	return region_text
+end
+-- Bind this function to a key mapping in Neovim
+vim.api.nvim_set_keymap("n", "rap", ":lua copy_region_to_region()<CR>", { noremap = true, silent = true })
 
 -- Highlight when yanking (copying) text  --  See `:help vim.highlight.on_yank()`
 vim.api.nvim_create_autocmd("TextYankPost", {
