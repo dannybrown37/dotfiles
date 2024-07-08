@@ -1,27 +1,29 @@
 #SingleInstance Force
-#NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
-#Warn ; Enable warnings to assist with detecting common errors.
+#NoEnv
+#Warn
 #Persistent
-
 
 ; Ctrl+Shift+D to toggle Microsoft Teams ("Deams")
 ^+d::
 {
-    IfWinExist, Microsoft Teams
+    if WinExist("ahk_class TeamsWebView")
     {
-        WinGet, MinMax, MinMax, Microsoft Teams
-        if (MinMax = -1)  ; If the window is minimized
+        WinGet, id, ID, ahk_class TeamsWebView
+        if id
         {
-            WinRestore, Microsoft Teams  ; Restore the window
-        }
-        else
-        {
-            WinMinimize, Microsoft Teams  ; Minimize the window
+            WinGet, MinMax, MinMax, ahk_id %id%
+            if (MinMax = -1)  ; If the window is minimized
+            {
+                WinRestore, ahk_id %id%  ; Restore the window
+            }
+            else
+            {
+                WinMinimize, ahk_id %id%  ; Minimize the window
+            }
+            return
         }
     }
-    else
-    {
-        MsgBox, Microsoft Teams is not running.
-    }
+    MsgBox, Microsoft Teams is not running.
     return
 }
+
