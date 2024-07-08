@@ -22,6 +22,7 @@ apt_packages=(
     rename
     ripgrep
     shellcheck
+    tmux
     unzip
     wget
     xclip
