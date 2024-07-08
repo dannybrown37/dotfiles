@@ -34,6 +34,7 @@ elif [[ "$1" = "secrets" ]]; then
 elif [[ "$1" = "kill" ]]; then
     AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey* | Select-Object -ExpandProperty Id")
     for PID in ${AHK_PIDS}; do
+        echo "Starting ${PID}"
         if [[ -n "${WSL_DISTRO_NAME}" ]]; then  # handle WSL
             powershell.exe "Stop-Process -Id ${PID} '-Force'"
         else  # handle Git Bash
