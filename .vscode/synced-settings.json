@@ -35,6 +35,9 @@
   "files.trimTrailingWhitespace": true,
   "grunt.autoDetect": "off",
   "gulp.autoDetect": "off",
+  "indentRainbow.indentSetter": {
+    "json": 2
+  },
   "jake.autoDetect": "off",
   "jest.autoEnable": false,
   "jest.runAllTestsFirst": false,
