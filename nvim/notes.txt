@@ -93,8 +93,13 @@ y -- yank/copy text selected
 yw -- yank word, copy from cursor to end of word
 p -- paste/place text copied or deleted after cursor
 P -- paste/place text copied or deleted before cursor
-yap  -- select and yank a full paragraph (copy/paste)
+yap  -- select and yank a full paragraph (copy/paste), white space to white space
 yy  -- yanks/copies the full current line
+yiw -- yank inner word, yanks current word without surrounding whitespace
+yaw -- yank a word, but also yanks trailing whitespace
+ygg -- yank from cursor to top of file
+yG  -- yank from cursor to bottom of file
+
 
 # shift text
 Shift+>  -- shift selected right by a tab width
