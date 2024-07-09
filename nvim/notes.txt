@@ -22,6 +22,9 @@
 :help lsp-vs-treesitter  -- maybe I'll want to look at this someday
 :Telescope colorscheme  -- change the color scheme for the session
 
+# debug
+:redir! > ~/nvim_msgs.txt  -- errors sometimes flash on exit, review them by writing to a file
+
 # buffers
 :split  -- horizontally split the screen
 :vsplit -- vertically split the screen

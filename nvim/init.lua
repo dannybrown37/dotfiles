@@ -7,6 +7,10 @@
 require("settings")
 require("keymaps")
 require("autocommands")
+require("pythonconfig")
+require("nodeconfig")
+require("luaconfig")
+require("bashconfig")
 require("experimental")
 
 --#region
