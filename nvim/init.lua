@@ -4,199 +4,10 @@
       If experiencing any errors while trying to run inti.lua, run `:checkhealth` for more info.
 --]]
 
---#region
--- NOTE: Global Settings
--- Sets <space> as the leader key  -- See `:help mapleader`
--- WARNING: Must happen before plugins are loaded (otherwise wrong leader will be used)
-vim.g.mapleader = " "
-vim.g.maplocalleader = " "
-vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed and selected in the terminal
---#endregion
-
---#region
--- NOTE: [[ Setting options ]]  -- See `:help vim.opt`  For more options, you can see `:help option-list`
-vim.opt.number = true -- line numbers show
-vim.opt.relativenumber = false -- relative live numbers for faster jumping
-vim.opt.mouse = "a" -- Enable mouse mode, can be useful for resizing splits for example!
-vim.opt.showmode = false -- already shown in status bar
-vim.opt.clipboard = "unnamedplus" -- Sync clipboard between OS and Neovim.
-vim.opt.breakindent = true
-vim.opt.undofile = true
-vim.opt.ignorecase = true -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
-vim.opt.smartcase = true
-vim.opt.signcolumn = "yes" -- Keep signcolumn on by default
-vim.opt.cursorline = true -- Show which line your cursor is on
-vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
-vim.opt.updatetime = 250 -- Decrease update time
-vim.opt.timeoutlen = 300 -- Decrease mapped sequence wait time  -- Displays which-key popup sooner
-vim.opt.splitright = true -- Configure how new splits should be opened
-vim.opt.splitbelow = true
-vim.opt.list = true -- `:help 'list'`
-vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" } --  `:help 'listchars'`, how white space is displayed
-vim.opt.inccommand = "split" -- Preview substitutions live, as you type!
-vim.opt.hlsearch = true
-vim.opt.expandtab = true
-vim.opt.shiftwidth = 4
-vim.opt.tabstop = 4
-vim.opt.softtabstop = 4
---#endregion
-
---#region
--- NOTE: [[ Basic Keymaps ]] See `:help vim.keymap.set()`
-
--- Set highlight on search, but clear on pressing <Esc> in normal mode
-vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
-
--- Diagnostic keymaps
-vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "Go to previous [D]iagnostic message" })
-vim.keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "Go to next [D]iagnostic message" })
-vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "Show diagnostic [E]rror messages" })
-vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
-
--- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
--- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
--- is not what someone will guess without a bit more experience.
---
--- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
--- or just use <C-\><C-n> to exit terminal mode
-vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
-
--- Keybinds to make split navigation easier. Use CTRL+<hjkl> to switch between windows
---  See `:help wincmd` for a list of all window commands
-vim.keymap.set("n", "<C-h>", "<C-w><C-h>", { desc = "Move focus to the left window" })
-vim.keymap.set("n", "<C-l>", "<C-w><C-l>", { desc = "Move focus to the right window" })
-vim.keymap.set("n", "<C-j>", "<C-w><C-j>", { desc = "Move focus to the lower window" })
-vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
-
--- The Windows Section -- because you can't beat decades of muscle memory
-
--- Ctrl+S == save in both insert and normal mode
-vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
-vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
--- Ctrl+A selects the full document
-vim.api.nvim_set_keymap("n", "<C-a>", "ggVG", { noremap = true })
--- Ctrl+C to copy text
-vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true })
--- Ctrl+V to paste for good measure
-vim.api.nvim_set_keymap("n", "<C-v>", "p", { noremap = true })
--- Ctrl+X to cut text into clipboard
-vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true })
--- Ctrl+Z to undo
-vim.api.nvim_set_keymap("n", "<C-z>", "u", { noremap = true })
-vim.api.nvim_set_keymap("i", "<C-z>", "<Esc>u", { noremap = true })
-
--- Use F2 for rename symbol
-vim.keymap.set({ "n", "i" }, "<F2>", function()
-	if vim.fn.mode() == "i" then
-		-- Exit insert mode
-		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", true)
-		-- Wait for mode change
-		vim.wait(49, function()
-			return vim.fn.mode() == "n"
-		end)
-	end
-	-- Trigger rename
-	vim.lsp.buf.rename()
-end, { noremap = true, silent = true })
---#endregion
-
---#region
--- NOTE: [[ Basic Autocommands ]] See `:help lua-guide-autocommands`
-
-function copy_region_to_region()
-	local bufnr = vim.fn.bufnr("%") -- Get current buffer number
-	local cursor = vim.api.nvim_win_get_cursor(0)
-	local start_line = cursor[1]
-	local end_line = cursor[1]
-	-- Find start of region
-	while start_line > 1 do
-		if vim.api.nvim_buf_get_lines(bufnr, start_line - 1, start_line, false)[1]:find("#region") then
-			break
-		end
-		start_line = start_line - 1
-	end
-	-- Find end of region
-	local line_count = vim.api.nvim_buf_line_count(bufnr)
-	while end_line <= line_count do
-		if vim.api.nvim_buf_get_lines(bufnr, end_line - 1, end_line, false)[1]:find("#endregion") then
-			break
-		end
-		end_line = end_line + 1
-	end
-	-- Yank lines between start and end into a register (using "0" for simplicity)
-	local lines_to_yank = vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line - 1, false)
-	vim.fn.setreg("0", lines_to_yank)
-	local content = table.concat(lines_to_yank, "\n")
-	-- Note: This requires the `xclip` or `xsel` command-line tool to be installed
-	local command = string.format('echo -n "%s" | xclip -selection clipboard', content)
-	vim.fn.system(command)
-end
--- Bind this function to a key mapping in Neovim
-vim.api.nvim_set_keymap("n", "yar", ":lua copy_region_to_region()<CR>", { noremap = true, silent = true })
-
--- Highlight when yanking (copying) text  --  See `:help vim.highlight.on_yank()`
-vim.api.nvim_create_autocmd("TextYankPost", {
-	desc = "Highlight when yanking (copying) text",
-	group = vim.api.nvim_create_augroup("kickstart-highlight-yank", { clear = true }),
-	callback = function()
-		vim.highlight.on_yank()
-	end,
-})
-
---  Control white space at end of lines
-vim.api.nvim_create_autocmd("BufWritePre", {
-	pattern = "*",
-	callback = function()
-		vim.cmd("%s/\\s\\+$//e")
-		vim.cmd("%s/\\r//e")
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "python",
-	callback = function()
-		-- use pep8 standards
-		vim.opt_local.expandtab = true
-		vim.opt_local.shiftwidth = 4
-		vim.opt_local.tabstop = 4
-		vim.opt_local.softtabstop = 4
-		-- folds based on indentation https://neovim.io/doc/user/fold.html#fold-indent
-		-- if you are a heavy user of folds, consider using `nvim-ufo`
-		vim.opt_local.foldmethod = "indent"
-		local iabbrev = function(lhs, rhs)
-			vim.keymap.set("ia", lhs, rhs, { buffer = true })
-		end
-		-- automatically capitalize boolean values. Useful if you come from a
-		-- different language, and lowercase them out of habit.
-		iabbrev("true", "True")
-		iabbrev("false", "False")
-		-- put us in Python if we happen to be in TS mode
-		iabbrev("//", "#")
-		iabbrev("null", "None")
-		iabbrev("none", "None")
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "typescript",
-	callback = function()
-		vim.opt_local.expandtab = true
-		vim.opt_local.shiftwidth = 2
-		vim.opt_local.tabstop = 2
-		vim.opt_local.softtabstop = 2
-		vim.opt_local.foldmethod = "indent"
-		local iabbrev = function(lhs, rhs)
-			vim.keymap.set("i", lhs, rhs, { buffer = true, silent = true })
-		end
-		-- put us in TS if we happen to be in Python mode
-		iabbrev("True", "true")
-		iabbrev("False", "false")
-		iabbrev("#", "//")
-		iabbrev("None", "null")
-	end,
-})
-
---#endregion
+require("settings")
+require("keymaps")
+require("autocommands")
+require("experimental")
 
 --#region
 -- NOTE: [[ Install `lazy.nvim` plugin manager ]]
@@ -453,7 +264,7 @@ require("lazy").setup({
 					-- This may be unwanted, since they displace some of your code
 					if client and client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
 						map("<leader>th", function()
-							vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+							vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({}))
 						end, "[T]oggle Inlay [H]ints")
 					end
 				end,
@@ -666,9 +477,8 @@ require("lazy").setup({
 			},
 		},
 	},
-	-- f-strings
-	-- - auto-convert strings to f-strings when typing `{}` in a string
-	-- - also auto-converts f-strings back to regular strings when removing `{}`
+
+	-- f-strings auto converter
 	{
 		"chrisgrieser/nvim-puppeteer",
 		dependencies = "nvim-treesitter/nvim-treesitter",
