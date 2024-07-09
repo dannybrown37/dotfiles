@@ -12,7 +12,8 @@
 
 :Mason  -- package manager/installer, use i on selected line to install package
 :checkhealth  -- run when if you encounter errors with init.lua
-:Lazy update  -- update packages etc.
+:Lazy -- check status of plugins, use ? in this menu for additional help
+:Lazy update  -- update plugins etc.
 :help  -- general neovim help
 :help lua-guide  -- get help with lua integrations into neovim
 :Telescope help_tags  -- search help tags via Telescope plugin (keymaps is a neat option)
