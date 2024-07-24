@@ -175,7 +175,7 @@ conditional_aws_azure_login() {
 
 
 current_git_branch() {
-    local gitBranch=$(git branch 2> /dev/null | sed -e "/^[^*]/d" -e "s/* \(.*\)/\1/")
+    local gitBranch=$(git branch 2> /dev/null | grep '\*' | sed -e 's/* //')
     if [[ $gitBranch ]]; then
         echo "$gitBranch"
         return
