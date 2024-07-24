@@ -10,6 +10,7 @@ case $- in
 esac
 HISTCONTROL=ignoreboth:erasedups
 shopt -s histappend
+shopt -s expand_aliases
 HISTSIZE=1000
 HISTFILESIZE=2000
 export HISTIGNORE="ls:cd:pwd:exit:date:clear:* --help:./setup *:,,*"
