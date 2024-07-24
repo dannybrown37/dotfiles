@@ -13,9 +13,6 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 ; personal
 ::,,me::Danny Brown
-::@@::dannybrown37@gmail.com
-::,,linkedin::https://www.linkedin.com/in/dannybrown37
-::,,github::https:://www.github.com/dannybrown37
 ::,,idf::sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
 ::,,cdf::code ~/projects/dotfiles
 
@@ -122,7 +119,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,gpf::git push -f
 ::,,gpo::git push -u origin
 ::,,glo::git log -1 --pretty=%B ; shows last commit message
-::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "magic" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
+::,,gitpurge::git branch | grep -v -e "main" -e "develop" -e "magic" -e "sword" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D ; deletes all local branches not named main or develop or currently checked out
 ::,,gred::git reset --hard origin/develop  ; fix a diverged develop branch
 ::,,nv::--no-verify
 ::,,gsu::git submodule update
@@ -229,6 +226,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,tl::tmux ls
 ::,,ta::tmux attach -t Session
 ::,,tconf::tmux source-file ~/.tmux.conf
+
 
 ; feedback
 ::,,dust::[[dust]](https://www.netlify.com/blog/2020/03/05/feedback-ladders-how-we-encode-code-reviews-at-netlify/)

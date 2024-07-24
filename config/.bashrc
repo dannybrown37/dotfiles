@@ -6,7 +6,7 @@
 
 case $- in
     *i*) ;;
-    *) return;;
+    *) return;; # only run this file in interactive shell
 esac
 HISTCONTROL=ignoreboth:erasedups
 shopt -s histappend
