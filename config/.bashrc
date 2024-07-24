@@ -150,6 +150,29 @@ cht() {
 }
 
 
+conditional_aws_azure_login() {
+    check_aws_credentials() {
+        aws sts get-caller-identity > /dev/null 2>&1
+        return $?
+    }
+    check_aws_credentials
+    # shellcheck disable=SC2181
+    if [ $? -ne 0 ]; then
+        echo "AWS credentials are expired or invalid. Renewing credentials..."
+        aws-azure-login -f --all-profiles --no-prompt
+        check_aws_credentials
+        if [ $? -eq 0 ]; then
+            echo "AWS credentials successfully renewed."
+        else
+            echo "Failed to renew AWS credentials."
+            exit 1
+        fi
+    else
+        echo "AWS credentials are valid."
+    fi
+}
+
+
 current_git_branch() {
     local gitBranch=$(git branch 2> /dev/null | sed -e "/^[^*]/d" -e "s/* \(.*\)/\1/")
     if [[ $gitBranch ]]; then
@@ -362,6 +385,7 @@ open_vs_code_settings_folder_in_windows_environment() {
 ## Aliases
 ##
 
+alias caal='conditional_aws_azure_login'
 alias cb='tee >(xclip -selection clipboard)'  # clip board
 alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r code'  # code search interactive
