@@ -40,7 +40,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,rc::~/.bashrc
 ::,,src::source ~/.bashrc
 ::,,crc::code ~/.bashrc
-::,,shebang::{#}{!}/usr/bin/bash
+::,,shebang::{#}{!}/usr/bin/env bash
 ::,,devnull::2>/dev/null
 ::,,bashlist::"${list_name[@]}"
 ::,,sshkey::ssh-keygen -t rsa -b 4096 "email@email.email"
