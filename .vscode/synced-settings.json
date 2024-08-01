@@ -36,7 +36,8 @@
   "grunt.autoDetect": "off",
   "gulp.autoDetect": "off",
   "indentRainbow.indentSetter": {
-    "json": 2
+    "json": 2,
+    "typescript": 2
   },
   "jake.autoDetect": "off",
   "jest.autoEnable": false,
