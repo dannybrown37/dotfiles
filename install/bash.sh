@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 ##
 ##  Sync bash profile with packages and symlinks

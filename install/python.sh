@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 ##
 ## Install dependencies pyenv needs to build individual python versions
