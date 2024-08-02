@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 ## invoke with no argument to install all VS Code extensions below
 ## invoke with --uninstall to uninstall all VS Code extensions

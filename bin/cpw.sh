@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 
 # Copy a file from WSL-Linux to Windows downloads folder with tab

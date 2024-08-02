@@ -1,4 +1,6 @@
-#!/usr/bin/bash -eufo
+#!/usr/bin/env bash
+
+set -euf -o pipefail
 
 sudo apt update
 sudo apt install git make -y

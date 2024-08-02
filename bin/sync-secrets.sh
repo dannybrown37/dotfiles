@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 ##
 ## This reads secret files from pass
@@ -36,7 +36,7 @@ sync-secrets() {
         | sort \
         | uniq)
     merged_bash_secrets=$(
-        echo -e "#!/usr/bin/bash\n$merged_bash_secrets" \
+        echo -e "#!/usr/bin/env bash\n$merged_bash_secrets" \
         | awk '!seen[$0]++')
 
     echo "$merged_ahk_secrets" > "$ahk_secrets_file"
