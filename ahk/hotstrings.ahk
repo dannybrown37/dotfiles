@@ -214,7 +214,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 ; wsl
 ::,,editwslconf::sudo vi /etc/wsl.conf
-
+::,,wdf::/mnt/c/Users/$WINDOWS_USERNAME/Downloads  ; "Windows Downloads folder"
 
 ; powershell -- like, actually *in* powershell
 ::,,installnerdfonts::iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/amnweb/nf-installer/main/install.ps1'))
