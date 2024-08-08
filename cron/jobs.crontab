@@ -1,0 +1,2 @@
+# This cron job will attempt to log into AWS every 8 minutes and log the results
+*/15 * * * * ~/projects/dotfiles/cron/aws-azure-login.sh
