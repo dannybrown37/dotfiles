@@ -15,7 +15,9 @@ cdp() {
     local selected_project
 
     # Using grep with --color=never to enable tab auto-completion
-    selected_project=$(echo "${PROJECTS_LIST[@]}" | tr ' ' '\n' | grep -E --color=never "^$partial_name")
+    selected_project=$(echo "${PROJECTS_LIST[@]}" \
+                                | tr ' ' '\n' \
+                                | grep -E --color=never "^$partial_name")
 
     if [[ -z "${partial_name}" ]]; then
         echo "Usage: cdp <project_name>"
