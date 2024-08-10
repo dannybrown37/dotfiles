@@ -15,39 +15,42 @@ if [[ -z "${DOTFILES_DIR}" ]]; then
     exit 1
 fi
 
-HOTSTRINGS_PATH="${DOTFILES_DIR}/ahk/hotstrings.ahk"
-AHK_SECRETS_PATH="${DOTFILES_DIR}/ahk/secrets.ahk"
-ALL_AHK_FILES=("${DOTFILES_DIR}/ahk/"*.ahk)
+hotstrings_path="${DOTFILES_DIR}/ahk/hotstrings.ahk"
+ahk_secrets_path="${DOTFILES_DIR}/ahk/secrets.ahk"
+all_ahk_files=("${DOTFILES_DIR}/ahk/"*.ahk)
 
-if [[ ! -e "${AHK_SECRETS_PATH}" ]]; then
-    echo "#SingleInstance Force" >> "${AHK_SECRETS_PATH}"
+if [[ ! -e "${ahk_secrets_path}" ]]; then
+    echo "#SingleInstance Force" >> "${ahk_secrets_path}"
 fi
 
-HOTSTRING_DEFINITIONS=$(grep -oE '::[^:]+::[^:]+' "$HOTSTRINGS_PATH")
+hotstring_definitions=$(grep -oE '::[^:]+::[^:]+' "$hotstrings_path")
 
 if [[ "$1" = "help" ]]; then
-    echo "$HOTSTRING_DEFINITIONS" | fzf --sort
+    echo "$hotstring_definitions" | fzf --sort
 elif [[ "$1" = "open" ]]; then
-    nvim "${HOTSTRINGS_PATH}" || code "{$HOTSTRINGS_PATH}"
+    nvim "${hotstrings_path}" || code "{$hotstrings_path}"
 elif [[ "$1" = "secrets" ]]; then
-    nvim "${AHK_SECRETS_PATH}" || code "${AHK_SECRETS_PATH}"
+    nvim "${ahk_secrets_path}" || code "${ahk_secrets_path}"
 elif [[ "$1" = "kill" ]]; then
-    AHK_PIDS=$(powershell.exe "Get-Process AutoHotkey* | Select-Object -ExpandProperty Id")
-    for PID in ${AHK_PIDS}; do
-        echo "Starting ${PID}"
+    ahk_pids=$(powershell.exe \
+        "Get-Process AutoHotkey* | Select-Object -ExpandProperty Id"
+    )
+    for pid in ${ahk_pids}; do
+        echo "Starting ${pid}"
         if [[ -n "${WSL_DISTRO_NAME}" ]]; then  # handle WSL
-            powershell.exe "Stop-Process -Id ${PID} '-Force'"
+            powershell.exe "Stop-Process -Id ${pid} '-Force'"
         else  # handle Git Bash
-            powershell.exe "Stop-Process -Id ${PID} -Force"
+            powershell.exe "Stop-Process -Id ${pid} -Force"
         fi
     done
 else
-    for AHK_FILE in "${ALL_AHK_FILES[@]}"; do
+    for ahk_file in "${all_ahk_files[@]}"; do
         if [[ -n "${WSL_DISTRO_NAME}" ]]; then  # handle WSL
-            WIN_DRIVE_PATH=$(wslpath -w -a "${AHK_FILE}")
+            win_drive_path=$(wslpath -w -a "${ahk_file}")
         else  # handle Git Bash
-            WIN_DRIVE_PATH=$(cygpath -w -a "${AHK_FILE}")
+            win_drive_path=$(cygpath -w -a "${ahk_file}")
         fi
-        powershell.exe -Command "Start-Process '${WIN_DRIVE_PATH}'" 2> /dev/null
+        powershell.exe \
+            -Command "Start-Process '${win_drive_path}'" 2> /dev/null
     done
 fi
