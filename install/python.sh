@@ -63,6 +63,7 @@ pipx_packages=(
     pre-commit
     cookiecutter
     ruff
+    bashate
 )
 
 for package in "${pipx_packages[@]}"; do
