@@ -55,4 +55,11 @@ vim.keymap.set({ "n", "i" }, "<F2>", function()
 	-- Trigger rename
 	vim.lsp.buf.rename()
 end, { noremap = true, silent = true })
+
+-- Move lines up and down with Alt + j and Alt + k
+vim.api.nvim_set_keymap("n", "<A-j>", ":m .+1<CR>==", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<A-Down>", ":m .+1<CR>==", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<A-k>", ":m .-2<CR>==", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<A-Up>", ":m .-2<CR>==", { noremap = true, silent = true })
+
 --#endregion
