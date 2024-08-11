@@ -13,7 +13,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 ; personal
 ::,,me::Danny Brown
-::,,idf::sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
+::,,idf::sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
 ::,,cdf::code ~/projects/dotfiles
 
 
