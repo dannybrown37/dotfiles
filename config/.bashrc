@@ -183,7 +183,7 @@ current_git_branch() {
 }
 
 
-function_history() {
+func_history() {
     local cmd=$(history | tac | awk '{$1=""; print $0}' | fzf)
     if [[ -n "$cmd" ]]; then
         eval "$cmd"
@@ -377,7 +377,10 @@ open_url_in_browser() {
 
 
 open_vs_code_settings_folder_in_windows_environment() {
-    if [[ -z "${ON_WINDOWS}" ]]; then echo "You're not on Windows"; return; fi
+    if [[ -z "${ON_WINDOWS}" ]]; then
+        echo "You're not on Windows";
+        return;
+    fi
     windows_path=$(wslpath -w "/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/")
     explorer.exe "$windows_path"
 }
@@ -391,7 +394,7 @@ alias cb='tee >(xclip -selection clipboard)'  # clip board
 alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r code'  # code search interactive
 alias ff='fzf --preview="batcat --color=always {}"'  # file find, just reviews, selection does nothing
-alias fh='function_history'
+alias fh='func_history'
 alias gg='google'
 alias lopen='open_lambda_monitoring_tab_in_browser'
 alias pcb='xclip -selection clipboard -o'  # print clip board

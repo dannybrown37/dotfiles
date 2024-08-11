@@ -22,4 +22,4 @@ repos:
         entry: bashate
         language: system
         files: \.(sh|bash)$
-        args: ['--max-line-length=80']
+        args: ['--ignore E006,E042']  # ignore line length, local usage is considered
