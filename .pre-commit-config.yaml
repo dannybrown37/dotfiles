@@ -17,9 +17,10 @@ repos:
       - id: trailing-whitespace
   - repo: local
     hooks:
+
       - id: bashate
         name: Bashate
         entry: bashate
         language: system
         files: \.(sh|bash)$
-        args: ['--ignore E006,E042']  # ignore line length, local usage is considered
+        args: ['--ignore', 'E006,E042']  # ignore line length, local usage is considered
