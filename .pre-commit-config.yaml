@@ -21,6 +21,11 @@ repos:
     hooks:
       - id: shellcheck
 
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.8.0-1
+    hooks:
+      - id: shfmt
+
   - repo: local
     hooks:
 
