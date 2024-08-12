@@ -14,14 +14,16 @@ windows_settings_path="/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/Use
 
 echo "Installing from ${windows_settings_path}"
 
-# Check if settings.json file already exists -- if so, read it
+# Check if settings.json file already exists
 if [[ -f "${windows_settings_path}" ]]; then
-  # Print contents of settings file
-  echo "CurrentVSCode settings:"
-  cat "${windows_settings_path}"
+  # If the file is empty, initialize it with "{}"
+  [[ ! -s "${windows_settings_path}" ]] && echo "{}" > "${windows_settings_path}"
+  echo "Current VSCode settings:"
 else
+  # Create the file with "{}" if it does not exist
   echo "{}" > "${windows_settings_path}"
-  echo "There is not an existing VSCode settings path in Windows"
+  echo "There was no existing VSCode settings file. Created new file with default content."
+  echo "Current VSCode settings:"
 fi
 
 # merge existing and default settings
