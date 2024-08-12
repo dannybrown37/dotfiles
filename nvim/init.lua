@@ -5,20 +5,23 @@
 --]]
 
 require("settings")
-require("keymaps")
-require("autocommands")
-require("pythonconfig")
-require("nodeconfig")
-require("luaconfig")
-require("bashconfig")
-require("experimental")
-require("lazysetup")
 
+require("lazysetup")
 require("lazy").setup({
 	{ import = "plugins" }, -- one plugin config per file in lua/plugins
 }, {
 	ui = require("iconconfig"),
 })
+
+require("keymaps")
+require("autocommands")
+
+require("pythonconfig")
+require("nodeconfig")
+require("luaconfig")
+require("bashconfig")
+
+require("experimental")
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et

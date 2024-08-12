@@ -470,7 +470,7 @@ fi
 
 bind -f "${HOME}/.inputrc"
 
-tmux source-file ~/.tmux.conf
+tmux source-file ~/.tmux.conf 2>/dev/null
 
 AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh
 if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
