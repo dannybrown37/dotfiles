@@ -109,9 +109,11 @@ elif [[ "${MSYSTEM}" = "MINGW64" ]]; then
     PROMPT_SYMBOL=🪟
 fi
 
+PROMPT_COMMAND=git_info_env_vars
+
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disables (venv) prepending prompt when venv activated, handled in PS1 var below
 # shellcheck disable=SC2250
-export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'-}'$COLOR3'('$COLOR3'\w'$COLOR3')'$COLOR1'-'$COLOR4'[$(current_git_branch)$(git_icon)'$COLOR4']\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
+export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'-}'$COLOR3'('$COLOR3'\w'$COLOR3')'$COLOR1'-'$COLOR4'[$GIT_BRANCH$GIT_ICON'$COLOR4']\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
 
 ##
 ## Functions
@@ -174,7 +176,7 @@ conditional_aws_azure_login() {
 }
 
 
-current_git_branch() {
+function current_git_branch() {
     local gitBranch=$(git branch 2> /dev/null | grep '\*' | sed -e 's/* //')
     if [[ $gitBranch ]]; then
         echo "$gitBranch"
@@ -191,7 +193,7 @@ func_history() {
 }
 
 
-git_icon() {
+function git_icon() {
     local gitBranch="$(current_git_branch)"
     if [[ $gitBranch ]]; then
         local statusCheck=$(git status 2> /dev/null)
@@ -207,6 +209,11 @@ git_icon() {
             echo ✅  # in sync with remote branch
         fi
     fi
+}
+
+function git_info_env_vars() {
+    export GIT_BRANCH=$(current_git_branch)
+    export GIT_ICON=$(git_icon)
 }
 
 
