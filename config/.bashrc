@@ -13,7 +13,7 @@ shopt -s histappend
 shopt -s expand_aliases
 HISTSIZE=1000
 HISTFILESIZE=2000
-export HISTIGNORE="ls:cd:pwd:exit:date:clear:* --help:,,*"
+export HISTIGNORE="history:ls *:ls:cd:pwd:exit:date:fh:clear:* --help:,,*"
 
 shopt -s checkwinsize
 
@@ -189,6 +189,7 @@ func_history() {
     local cmd=$(history | tac | awk '{$1=""; print $0}' | fzf)
     if [[ -n "$cmd" ]]; then
         eval "$cmd"
+        history -s "$cmd"
     fi
 }
 
