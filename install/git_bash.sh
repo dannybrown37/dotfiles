@@ -32,12 +32,15 @@ cd ..
 rm ripgrep-13.0.0-x86_64-pc-windows-msvc.zip
 rm -rf ripgrep-13.0.0-x86_64-pc-windows-msvc
 
+##
+## TODO: make scoop available in this script, or just close your shell, restart, and run again to get the rest of this
+##
+
 scoop install pipx
 pipx ensurepath
 
-pipx install cookiecutter \
-             pre-commit
+pipx install cookiecutter 
+pipx install pre-commit
 
 
-# TODO: exa?
 
