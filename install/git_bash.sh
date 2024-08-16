@@ -8,6 +8,7 @@ powershell.exe -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scop
 
 # Install Scoop, a Windows package manager
 powershell.exe -Command "Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression"
+source "$HOME/scoop/apps/scoop/current/scoop-completion.bash"
 
 # Use powershell to install jq as admin, there will be a pop-up prompt
 powershell.exe -Command "Start-Process curl -ArgumentList '-L -o /usr/bin/jq.exe https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe' -Verb RunAs"
@@ -30,6 +31,10 @@ rm -rf ripgrep-13.0.0-x86_64-pc-windows-msvc
 
 scoop install pipx
 pipx ensurepath
+
+pipx install cookiecutter \
+             pre-commit
+
 
 # TODO: exa?
 # TODO: bat alias?
