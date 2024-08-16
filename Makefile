@@ -22,13 +22,13 @@ help:
 root_dir := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 ifeq ($(MSYSTEM), MINGW64)
-    bash_script := $(root_dir)/install/git_bash.sh
+    bash_bootstrap_script := $(root_dir)/install/git_bash.sh
 else
-    bash_script := $(root_dir)/install/bash.sh
+    bash_bootstrap_script := $(root_dir)/install/bash.sh
 endif
 
 bash:
-	@bash -c ". $(bash_script)"
+	@bash -c ". $(bash_bootstrap_script)"
 
 python: bash
 	bash -c ". $(root_dir)/install/python.sh"
