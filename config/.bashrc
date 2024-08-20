@@ -30,6 +30,7 @@ fi
 ##
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
+export NOTES_DIR="${HOME}/notes"
 export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" --glob "!.git/*" --glob "!.venv/*" --glob "!node_modules/*" --glob "!**.*cache*"'
 
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
@@ -272,6 +273,53 @@ EOF
 }
 
 
+function note() {
+
+    ## Create notes files from the command line
+    ##
+    ## 0 args -- will prompt for title and content
+    ## 1 arg -- will assume no content desired
+    ## 2 args -- first title, second content
+
+    if [[ ! -d "$NOTES_DIR" ]]; then
+        mkdir $NOTES_DIR
+    fi
+
+    local note_title
+    local note_content
+
+    if [[ $# -eq 0 ]]; then
+        read -p "Enter a note title to store at $NOTES_DIR: " note_title
+        read -p "Enter additional context for file contents (optional): " note_content
+        if [[ -z "$note_title" ]]; then
+            echo "A note title is required"
+            return 1
+        fi
+    elif [[ $# -eq 1 ]]; then
+        note_title=$1
+        note_content=""
+    elif [[ $# -eq 2 ]]; then
+        note_title=$1
+        note_content=$2
+    fi
+
+    local note_path="${NOTES_DIR}/${note_title}"
+
+    echo $note_path
+
+    if [[ -e "$note_path" ]]; then
+        echo "Error: This note already exists!"
+        return 1
+    fi
+
+    echo "$note_content" > "$note_path" >/dev/null
+}
+
+
+function notes() {
+    find "$NOTES_DIR" -type f -exec basename {} \; | fzf --preview 'cat '"$NOTES_DIR"'/{1}'
+}
+
 pip_project_init() {
     python -m venv .tempvenv
     source .tempvenv/bin/activate
@@ -282,13 +330,12 @@ pip_project_init() {
 }
 
 
-# # # #
-# open browser to particular Lambda's monitoring page
-# lopen arg1 [developer stage] [AWS region] [Lambda name]
-# env variables:
-# LAMBDA_PATHS -- an array of paths to search for Lambda folders
-# DEV_STAGE -- the name of the dev stage
 open_lambda_monitoring_tab_in_browser() {
+    # open browser to particular Lambda's monitoring page
+    # lopen arg1 [developer stage] [AWS region] [Lambda name]
+    # env variables:
+    # LAMBDA_PATHS -- an array of paths to search for Lambda folders
+    # DEV_STAGE -- the name of the dev stage
     if [[ $# -lt 3 ]]; then
         lambda_folder=$(find "${LAMBDA_PATHS[@]}" \
                         -mindepth 1 -maxdepth 1 \
