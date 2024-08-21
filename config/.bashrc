@@ -274,56 +274,56 @@ EOF
 
 
 function note() {
-
     ## Create notes files from the command line
     ##
     ## 0 args -- will prompt for title and content
     ## 1 arg -- will assume no content desired
     ## 2 args -- first title, second content
-
     if [[ ! -d "$NOTES_DIR" ]]; then
         mkdir $NOTES_DIR
     fi
-
     local note_title
-    local note_content
-
+    local note_content=""
     if [[ $# -eq 0 ]]; then
         read -p "Enter a note title to store at $NOTES_DIR: " note_title
-        read -p "Enter additional context for file contents (optional): " note_content
         if [[ -z "$note_title" ]]; then
             echo "A note title is required"
             return 1
         fi
     elif [[ $# -eq 1 ]]; then
         note_title=$1
-        note_content=""
-    elif [[ $# -eq 2 ]]; then
-        note_title=$1
-        note_content=$2
     fi
-
     local note_path="${NOTES_DIR}/${note_title}"
-
-    echo $note_path
-
     if [[ -e "$note_path" ]]; then
         echo "Error: This note already exists!"
         return 1
     fi
-
-    echo "$note_content" > "$note_path" >/dev/null
+    echo "Enter additional lines file (empty input to finish):"
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && break
+        note_content+="$line"$'\n'
+    done
+    # echo "$note_content" > "$note_path" >/dev/null
+    {
+        printf "%s" "$note_content"
+    } > "$note_path"
+    echo "Note saved to: $note_path"
 }
 
 
 function notes() {
-    cd $NOTES_DIR
-    find "$NOTES_DIR" -type f -exec basename {} \;  \
-        | fzf --preview 'cat {}'  \
-        | sed "s/'//g"  \
-        | xargs -r nvim
-    cd -
+    local selected_file
+    cd "$NOTES_DIR" || return
+    selected_file=$(find . -type f -exec basename {} \; \
+        | fzf --preview 'cat {}' \
+        | sed "s/'//g"
+    )
+    if [[ -n "$selected_file" ]]; then
+        nvim "$NOTES_DIR/$selected_file"
+    fi
+    cd - || return
 }
+
 
 pip_project_init() {
     python -m venv .tempvenv
