@@ -317,7 +317,12 @@ function note() {
 
 
 function notes() {
-    find "$NOTES_DIR" -type f -exec basename {} \; | fzf --preview 'cat '"$NOTES_DIR"'/{1}'
+    cd $NOTES_DIR
+    find "$NOTES_DIR" -type f -exec basename {} \;  \
+        | fzf --preview 'cat {}'  \
+        | sed "s/'//g"  \
+        | xargs -r nvim
+    cd -
 }
 
 pip_project_init() {
