@@ -1,4 +1,4 @@
-
+#!/usr/bin/env bash
 
 function ask_gemini_a_question() {
   curl -s https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY} \
