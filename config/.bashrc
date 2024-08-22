@@ -298,7 +298,7 @@ function note() {
         echo "Error: This note already exists!"
         return 1
     fi
-    echo "Enter additional lines file (empty input to finish):"
+    echo "Enter additional lines for file (empty input to finish):"
     while IFS= read -r line; do
         [[ -z "$line" ]] && break
         note_content+="$line"$'\n'
