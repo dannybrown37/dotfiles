@@ -19,7 +19,7 @@ return -- LSP Configuration & Plugins
 			group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
 			callback = function(event)
 				local map = function(keys, func, desc)
-					vim.keymap.set("n", keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
+					vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc .. " (LSP)" })
 				end
 
 				-- Jump to the definition of the word under your cursor.
@@ -41,19 +41,23 @@ return -- LSP Configuration & Plugins
 
 				-- Fuzzy find all the symbols in your current document.
 				--  Symbols are things like variables, functions, types, etc.
-				map("<leader>ds", require("telescope.builtin").lsp_document_symbols, "[D]ocument [S]ymbols")
+				map("<leader>yd", require("telescope.builtin").lsp_document_symbols, "S[y]mbols from [D]ocument")
 
 				-- Fuzzy find all the symbols in your current workspace.
 				--  Similar to document symbols, except searches over your entire project.
-				map("<leader>ws", require("telescope.builtin").lsp_dynamic_workspace_symbols, "[W]orkspace [S]ymbols")
+				map(
+					"<leader>yw",
+					require("telescope.builtin").lsp_dynamic_workspace_symbols,
+					"S[y]mbols from [W]orkspace"
+				)
 
 				-- Rename the variable under your cursor.
 				--  Most Language Servers support renaming across files, etc.
-				map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")
+				map("<leader>r", vim.lsp.buf.rename, "[R]ename")
 
 				-- Execute a code action, usually your cursor needs to be on top of an error
 				-- or a suggestion from your LSP for this to activate.
-				map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction")
+				map("<leader>a", vim.lsp.buf.code_action, "Code [A]ction")
 
 				-- Opens a popup that displays documentation about the word under your cursor
 				--  See `:help K` for why this keymap.
