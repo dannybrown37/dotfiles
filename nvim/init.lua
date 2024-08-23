@@ -16,7 +16,5 @@ require("lazy").setup({
 require("keymaps")
 require("autocommands") -- includes autocmds for lsp autoformatting
 
-require("experimental")
-
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
