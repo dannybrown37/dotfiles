@@ -52,7 +52,7 @@ vim.api.nvim_set_keymap("n", "<A-Up>", ":m .-2<CR>==", { noremap = true, silent 
 
 --#region Leader Keymaps
 
-vim.keymap.set("n", "<leader>ex", vim.cmd.Ex) -- explore files
+vim.keymap.set("n", "<leader>e", vim.cmd.Ex) -- explore files
 
 function CREATE_NOTE()
 	local notes_dir = os.getenv("HOME") .. "/notes/"
@@ -127,3 +127,34 @@ end, { desc = "[S]earch [/] in Open Files" })
 vim.keymap.set("n", "<leader>sn", function()
 	builtin.find_files({ cwd = vim.fn.stdpath("config") })
 end, { desc = "[S]earch [N]eovim files" })
+
+--#endregion
+
+--#region Harpoon Keymaps
+local harpoon = require("harpoon")
+harpoon:setup()
+
+vim.keymap.set("n", "<leader>sm", ":Telescope harpoon marks<CR>", { desc = "[S]how Harpoon [M]arks" })
+
+vim.keymap.set("n", "<leader>m", function()
+	harpoon:list():add()
+end, { desc = "[M]ark with Harpoon" })
+
+vim.keymap.set("n", "<C-h>", function()
+	harpoon.ui:toggle_quick_menu(harpoon:list())
+end, { desc = "[H]arpoon Quick Menu Toggle" })
+
+vim.keymap.set("n", "<C-u>", function()
+	harpoon:list():select(1)
+end)
+vim.keymap.set("n", "<C-i>", function()
+	harpoon:list():select(2)
+end)
+vim.keymap.set("n", "<C-o>", function()
+	harpoon:list():select(3)
+end)
+vim.keymap.set("n", "<C-p>", function()
+	harpoon:list():select(4)
+end)
+
+--#endregion
