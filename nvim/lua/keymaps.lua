@@ -19,12 +19,12 @@ vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" }
 -- Ctrl+S == save in both insert and normal mode
 vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
 vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
--- Ctrl+A selects the full document
+-- Ctrl+A selects from the cursor to the end of the document (select all)
 vim.api.nvim_set_keymap("n", "<C-a>", "VggG", { noremap = true })
 -- Ctrl+C to copy text
 vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true })
 -- Ctrl+V to paste for good measure
-vim.api.nvim_set_keymap("n", "<C-v>", "p", { noremap = true })
+vim.api.nvim_set_keymap("i", "<C-v>", "p", { noremap = true })
 -- Ctrl+X to cut text into clipboard
 vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true })
 -- Ctrl+Z to undo
