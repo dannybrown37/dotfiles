@@ -10,7 +10,7 @@ vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed and
 --#region
 -- NOTE: [[ Setting options ]]  -- See `:help vim.opt`  For more options, you can see `:help option-list`
 vim.opt.number = true -- line numbers show
-vim.opt.relativenumber = false -- relative live numbers for faster jumping
+vim.opt.relativenumber = true -- relative live numbers for faster jumping
 vim.opt.mouse = "a" -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.showmode = false -- already shown in status bar
 vim.opt.clipboard = "unnamedplus" -- Sync clipboard between OS and Neovim.

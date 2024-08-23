@@ -154,6 +154,8 @@ Ctrl+r  -- redo last undone change
 
 # SAVE PART OF TEXT
 v  -- visual selection, this will select the current line and allow you to select more with j/k or arrows, et al
+V -- visual line selection
+o -- while in visual mode, toggle between start and end of selection
 :  -- after finishing selecting, enter this, you will see this: '<,'>
 w <FILE_NAME>  -- write selected text to a new file named <FILE_NAME>
 w! <FILE_NAME>  -- overwrite file if it already exists
