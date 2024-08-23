@@ -52,7 +52,7 @@ vim.api.nvim_set_keymap("n", "<A-Up>", ":m .-2<CR>==", { noremap = true, silent 
 
 --#region Leader Keymaps
 
-vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files" }) -- explore files
+vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from curent location" })
 
 function CREATE_NOTE()
 	local notes_dir = os.getenv("HOME") .. "/notes/"
@@ -62,7 +62,7 @@ function CREATE_NOTE()
 		print("A note title is required.")
 		return
 	end
-	print("Enter note content one line at a time (empty input to finish): ")
+	print("\nEnter note content one line at a time (empty input to finish): ")
 	local note_content = ""
 	local line
 	while true do
@@ -86,7 +86,12 @@ function CREATE_NOTE()
 		print("Error: Could not write the note.")
 	end
 end
-vim.api.nvim_set_keymap("n", "<leader>note", ":lua CREATE_NOTE()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap(
+	"n",
+	"<leader>n",
+	":lua CREATE_NOTE()<CR>",
+	{ noremap = true, silent = true, desc = "[N]ote file (created in ~/notes)" }
+)
 
 --#endregion
 
@@ -134,7 +139,7 @@ end, { desc = "[S]earch [N]eovim files" })
 local harpoon = require("harpoon")
 harpoon:setup()
 
-vim.keymap.set("n", "<leader>sm", ":Telescope harpoon marks<CR>", { desc = "[S]how Harpoon [M]arks" })
+vim.keymap.set("n", "<leader>h", ":Telescope harpoon marks<CR>", { desc = "Show [H]arpoon Marks" })
 
 vim.keymap.set("n", "<leader>m", function()
 	harpoon:list():add()
