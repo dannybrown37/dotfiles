@@ -14,12 +14,7 @@ require("lazy").setup({
 })
 
 require("keymaps")
-require("autocommands")
-
-require("pythonconfig")
-require("nodeconfig")
-require("luaconfig")
-require("bashconfig")
+require("autocommands") -- includes autocmds for lsp autoformatting
 
 require("experimental")
 
