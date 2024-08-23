@@ -52,7 +52,7 @@ vim.api.nvim_set_keymap("n", "<A-Up>", ":m .-2<CR>==", { noremap = true, silent 
 
 --#region Leader Keymaps
 
-vim.keymap.set("n", "<leader>e", vim.cmd.Ex) -- explore files
+vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files" }) -- explore files
 
 function CREATE_NOTE()
 	local notes_dir = os.getenv("HOME") .. "/notes/"
