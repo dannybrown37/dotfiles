@@ -105,7 +105,7 @@ local action_state = require("telescope.actions.state")
 vim.keymap.set("n", "<leader>sv", function()
 	builtin.find_files({
 		-- layout_strategy = "vertical",
-		attach_mappings = function(_, map)
+		attach_mappings = function(_, _)
 			-- Replace the default selection action with one that opens in a vertical split
 			actions.select_default:replace(function(prompt_bufnr)
 				actions.close(prompt_bufnr)
@@ -152,7 +152,7 @@ vim.keymap.set("n", "<leader>m", function()
 	harpoon:list():add()
 end, { desc = "[M]ark with Harpoon" })
 
-vim.keymap.set("n", "<C-h>", function()
+vim.keymap.set("n", "<C-n>", function()
 	harpoon.ui:toggle_quick_menu(harpoon:list())
 end, { desc = "[H]arpoon Quick Menu Toggle" })
 
