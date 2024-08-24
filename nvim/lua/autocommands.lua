@@ -63,11 +63,8 @@ vim.api.nvim_create_autocmd("FileType", {
 		local iabbrev = function(lhs, rhs)
 			vim.keymap.set("ia", lhs, rhs, { buffer = true })
 		end
-		-- automatically capitalize boolean values. Useful if you come from a
-		-- different language, and lowercase them out of habit.
 		iabbrev("true", "True")
 		iabbrev("false", "False")
-		-- put us in Python if we happen to be in TS mode
 		iabbrev("//", "#")
 		iabbrev("null", "None")
 		iabbrev("none", "None")
@@ -85,7 +82,6 @@ vim.api.nvim_create_autocmd("FileType", {
 		local iabbrev = function(lhs, rhs)
 			vim.keymap.set("i", lhs, rhs, { buffer = true, silent = true })
 		end
-		-- put us in TS if we happen to be in Python mode
 		iabbrev("True", "true")
 		iabbrev("False", "false")
 		iabbrev("#", "//")
@@ -104,10 +100,7 @@ vim.api.nvim_create_autocmd("FileType", {
 		local iabbrev = function(lhs, rhs)
 			vim.keymap.set("i", lhs, rhs, { buffer = true, silent = true })
 		end
-		-- Insert Lua specific abbreviations here
-		iabbrev("local", "local ")
-		iabbrev("function", "function ")
-		-- Add more abbreviations as needed
+		iabbrev("func", "function")
 	end,
 })
 
