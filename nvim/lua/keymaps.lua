@@ -1,7 +1,6 @@
 --#region
 -- NOTE: [[ Basic Keymaps ]] See `:help vim.keymap.set()`
 
--- Set highlight on search, but clear on pressing <Esc> in normal mode
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear highlight on search in normal mode" })
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
 
@@ -10,7 +9,6 @@ vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagn
 vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 
 -- region The Windows Section -- because it's silly to ignore decades of muscle memory
-
 vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true, desc = "Exit insert mode and save file" })
 vim.api.nvim_set_keymap("i", "<C-a>", "<Esc>VggG", { noremap = true, desc = "Select from cursor to end of document" })
 vim.api.nvim_set_keymap("n", "<C-a>", "VggG", { noremap = true, desc = "Select from cursor to end of document" })
@@ -19,8 +17,6 @@ vim.api.nvim_set_keymap("i", "<C-v>", "p", { noremap = true, desc = "Paste text 
 vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true, desc = "Cut text in visual mode" })
 vim.api.nvim_set_keymap("n", "<C-z>", "u", { noremap = true, desc = "Undo" })
 vim.api.nvim_set_keymap("i", "<C-z>", "<Esc>u", { noremap = true, desc = "Undo" })
-
--- Use F2 for rename symbol
 vim.keymap.set({ "n", "i" }, "<F2>", function()
 	if vim.fn.mode() == "i" then
 		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", true)
@@ -29,58 +25,19 @@ vim.keymap.set({ "n", "i" }, "<F2>", function()
 		end)
 	end
 	vim.lsp.buf.rename()
-end, { noremap = true, silent = true })
-
--- Move lines up and down with Alt + j and Alt + k
-vim.api.nvim_set_keymap("n", "<A-j>", ":m .+1<CR>==", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<A-Down>", ":m .+1<CR>==", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<A-k>", ":m .-2<CR>==", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<A-Up>", ":m .-2<CR>==", { noremap = true, silent = true })
-
+end, { noremap = true, silent = true, desc = "Rename symbol" })
+vim.api.nvim_set_keymap("n", "<A-j>", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
+vim.api.nvim_set_keymap("n", "<A-Down>", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
+vim.api.nvim_set_keymap("n", "<A-k>", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
+vim.api.nvim_set_keymap("n", "<A-Up>", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
 --#endregion
 
---#region Leader Keymaps
+--#region <leader> Keymaps of my own
 
 vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from curent location" })
 
-function CreateNote()
-	local notes_dir = os.getenv("HOME") .. "/notes/"
-	vim.fn.mkdir(notes_dir, "p")
-	local note_title = vim.fn.input("Enter note title: ")
-	if note_title == "" then
-		print("A note title is required.")
-		return
-	end
-	print("\nEnter note content one line at a time (empty input to finish): ")
-	local note_content = ""
-	local line
-	while true do
-		line = vim.fn.input("")
-		if line == "" then
-			break
-		end
-		note_content = note_content .. line .. "\n"
-	end
-	local note_path = notes_dir .. note_title
-	if vim.fn.filereadable(note_path) == 1 then
-		print("Error: This note already exists!")
-		return
-	end
-	local file = io.open(note_path, "w")
-	if file then
-		file:write(note_content)
-		file:close()
-		print("Note saved to: " .. note_path)
-	else
-		print("Error: Could not write the note.")
-	end
-end
-vim.api.nvim_set_keymap(
-	"n",
-	"<leader>n",
-	":lua CreateNote()<CR>",
-	{ noremap = true, silent = true, desc = "[N]ote file (created in ~/notes)" }
-)
+local fn = require("functions")
+vim.keymap.set("n", "<leader>n", fn.CreateNote, { desc = "[N]ote file (created in ~/notes)" })
 
 --#endregion
 
@@ -104,9 +61,7 @@ local action_state = require("telescope.actions.state")
 
 vim.keymap.set("n", "<leader>sv", function()
 	builtin.find_files({
-		-- layout_strategy = "vertical",
 		attach_mappings = function(_, _)
-			-- Replace the default selection action with one that opens in a vertical split
 			actions.select_default:replace(function(prompt_bufnr)
 				actions.close(prompt_bufnr)
 				local selection = action_state.get_selected_entry()
@@ -117,17 +72,13 @@ vim.keymap.set("n", "<leader>sv", function()
 	})
 end, { desc = "[S]earch for and [V]ertically split a file" })
 
--- Slightly advanced example of overriding default behavior and theme
 vim.keymap.set("n", "<leader>/", function()
-	-- You can pass additional configuration to Telescope to change the theme, layout, etc.
 	builtin.current_buffer_fuzzy_find(require("telescope.themes").get_dropdown({
 		winblend = 10,
 		previewer = false,
 	}))
 end, { desc = "[/] Fuzzily search in current buffer" })
 
--- It's also possible to pass additional configuration options.
---  See `:help telescope.builtin.live_grep()` for information about particular keys
 vim.keymap.set("n", "<leader>s/", function()
 	builtin.live_grep({
 		grep_open_files = true,
@@ -135,10 +86,9 @@ vim.keymap.set("n", "<leader>s/", function()
 	})
 end, { desc = "[S]earch [/] in Open Files" })
 
--- Shortcut for searching your Neovim configuration files
 vim.keymap.set("n", "<leader>sn", function()
 	builtin.find_files({ cwd = vim.fn.stdpath("config") })
-end, { desc = "[S]earch [N]eovim files" })
+end, { desc = "[S]earch [N]eovim configuration files" })
 
 --#endregion
 
@@ -168,13 +118,10 @@ end)
 vim.keymap.set("n", "<C-p>", function()
 	harpoon:list():select(4)
 end)
-
 --#endregion
 
 --#region Undotree Keymaps (https://github.com/mbbill/undotree)
-
 vim.keymap.set("n", "<leader>tu", function()
 	vim.cmd("UndotreeToggle")
 end, { desc = "[T]oggle [U]ndotree" })
-
 --#endregion
