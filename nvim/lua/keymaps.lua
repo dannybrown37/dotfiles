@@ -170,3 +170,11 @@ vim.keymap.set("n", "<C-p>", function()
 end)
 
 --#endregion
+
+--#region Undotree Keymaps (https://github.com/mbbill/undotree)
+
+vim.keymap.set("n", "<leader>tu", function()
+	vim.cmd("UndotreeToggle")
+end, { desc = "[T]oggle [U]ndotree" })
+
+--#endregion

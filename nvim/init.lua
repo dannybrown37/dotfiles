@@ -4,6 +4,7 @@
       If experiencing any errors while trying to run inti.lua, run `:checkhealth` for more info.
 --]]
 
+--NOTE: Settings need to be loaded before lazy.nvim is loaded
 require("settings")
 
 --  See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
@@ -17,9 +18,26 @@ vim.opt.rtp:prepend(lazypath)
 require("lazy").setup({
 	{ import = "plugins" }, -- one plugin config per file in lua/plugins
 }, {
-	ui = require("iconconfig"),
+	ui = {
+		icons = vim.g.have_nerd_font and {} or {
+			cmd = "⌘",
+			config = "🛠",
+			event = "📅",
+			ft = "📂",
+			init = "⚙",
+			keys = "🗝",
+			plugin = "🔌",
+			runtime = "💻",
+			require = "🌙",
+			source = "📄",
+			start = "🚀",
+			task = "📌",
+			lazy = "💤 ",
+		},
+	},
 })
 
+-- NOTE: Keymaps and autocommands need to be loaded after lazy.nvim is loaded
 require("keymaps")
 require("autocommands") -- includes autocmds for lsp autoformatting
 
