@@ -17,12 +17,14 @@ vim.opt.rtp:prepend(lazypath)
 
 -- plugin setup
 require("lazy").setup({
-	{ import = "plugins" }, -- complex plugins in lua/plugins; simple installs below
+	{ import = "plugins" }, -- complex plugins configurations in lua/plugins
+	-- one-line plugin installs
 	"tpope/vim-sleuth",
 	"tpope/vim-fugitive",
 	{ "numToStr/Comment.nvim", opts = {} },
 	{ "ThePrimeagen/harpoon", branch = "harpoon2", dependencies = { "nvim-lua/plenary.nvim" } },
-	{ { "mbbill/undotree", cmd = "UndotreeToggle" } },
+	{ "mbbill/undotree", cmd = "UndotreeToggle" },
+	{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
 }, {
 	ui = {
 		icons = vim.g.have_nerd_font and {} or {
