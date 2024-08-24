@@ -22,6 +22,7 @@ require("lazy").setup({
 	"tpope/vim-fugitive",
 	{ "numToStr/Comment.nvim", opts = {} },
 	{ "ThePrimeagen/harpoon", branch = "harpoon2", dependencies = { "nvim-lua/plenary.nvim" } },
+	{ { "mbbill/undotree", cmd = "UndotreeToggle" } },
 }, {
 	ui = {
 		icons = vim.g.have_nerd_font and {} or {
