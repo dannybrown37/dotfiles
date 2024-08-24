@@ -7,6 +7,7 @@ return -- LSP Configuration & Plugins
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
 		{ "j-hui/fidget.nvim", opts = {} },
 		{ "folke/neodev.nvim", opts = {} },
+		"jose-elias-alvarez/null-ls.nvim",
 	},
 
 	config = function() --  This function gets run when an LSP attaches to a particular buffer.
@@ -141,6 +142,16 @@ return -- LSP Configuration & Plugins
 			"shellcheck",
 			"eslint",
 			"prettier",
+		})
+
+		local null_ls = require("null-ls")
+
+		null_ls.setup({
+			sources = {
+				null_ls.builtins.formatting.prettier.with({
+					filetypes = { "html", "css", "javascript", "typescript", "json", "yaml", "markdown" },
+				}),
+			},
 		})
 
 		require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
