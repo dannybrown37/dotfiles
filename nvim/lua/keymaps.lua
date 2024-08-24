@@ -120,11 +120,23 @@ vim.keymap.set("n", "<C-p>", function()
 end)
 --#endregion
 
---#region Undotree Keymaps (https://github.com/mbbill/undotree)
+--#region Undotree (https://github.com/mbbill/undotree)
 vim.keymap.set("n", "<leader>tu", function()
 	vim.cmd("UndotreeToggle")
 end, { desc = "[T]oggle [U]ndotree" })
 --#endregion
 
---#region Fugitive Keymaps (https://github.com/tpope/vim-fugitive)
-vim.keymap.set("n", "<leader>g", vim.cmd.Git, { desc = "[G]it status" })
+--#region Fugitive (https://github.com/tpope/vim-fugitive)
+vim.keymap.set("n", "<leader>gs", vim.cmd.Git, { desc = "[G]it [S]tatus" })
+--#endregion
+
+--#region Autocomplete
+vim.keymap.set("n", "<leader>ta", function()
+	vim.g.toggle_cmp = not vim.g.toggle_cmp
+	if vim.g.toggle_cmp then
+		vim.notify("Toggled On", vim.log.levels.INFO, { title = "Autocomplete" })
+	else
+		vim.notify("Toggled Off", vim.log.levels.INFO, { title = "Autocomplete" })
+	end
+end, { desc = "[T]oggle [A]utocomplete" })
+--#endregion

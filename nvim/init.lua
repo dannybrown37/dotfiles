@@ -3,7 +3,6 @@
 --       A guide on neovim's lua integration:  https://neovim.io/doc/user/lua-guide.html
 --       If experiencing any errors while trying to run inti.lua, run `:checkhealth` for more info.
 
-
 -- NOTE: Settings need to be loaded before lazy.nvim is loaded
 require("settings")
 
