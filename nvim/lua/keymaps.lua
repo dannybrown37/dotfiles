@@ -43,7 +43,7 @@ vim.api.nvim_set_keymap("n", "<A-Up>", ":m .-2<CR>==", { noremap = true, silent 
 
 vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from curent location" })
 
-function CREATE_NOTE()
+function CreateNote()
 	local notes_dir = os.getenv("HOME") .. "/notes/"
 	vim.fn.mkdir(notes_dir, "p")
 	local note_title = vim.fn.input("Enter note title: ")
@@ -78,7 +78,7 @@ end
 vim.api.nvim_set_keymap(
 	"n",
 	"<leader>n",
-	":lua CREATE_NOTE()<CR>",
+	":lua CreateNote()<CR>",
 	{ noremap = true, silent = true, desc = "[N]ote file (created in ~/notes)" }
 )
 
