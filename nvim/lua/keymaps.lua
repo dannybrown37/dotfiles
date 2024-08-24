@@ -2,12 +2,7 @@
 -- NOTE: [[ Basic Keymaps ]] See `:help vim.keymap.set()`
 
 -- Set highlight on search, but clear on pressing <Esc> in normal mode
-vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
-
--- Diagnostic keymaps
-vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "Go to previous [D]iagnostic message" })
-vim.keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "Go to next [D]iagnostic message" })
-vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "Show diagnostic [E]rror messages" })
+vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear highlight on search in normal mode" })
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
 
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
@@ -16,20 +11,14 @@ vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" }
 
 -- region The Windows Section -- because it's silly to ignore decades of muscle memory
 
--- Ctrl+S == save in both insert and normal mode
-vim.api.nvim_set_keymap("n", "<C-S>", ":w<CR>", { noremap = true })
-vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true })
--- Ctrl+A selects from the cursor to the end of the document (select all)
-vim.api.nvim_set_keymap("n", "<C-a>", "VggG", { noremap = true })
--- Ctrl+C to copy text
-vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true })
--- Ctrl+V to paste for good measure
-vim.api.nvim_set_keymap("i", "<C-v>", "p", { noremap = true })
--- Ctrl+X to cut text into clipboard
-vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true })
--- Ctrl+Z to undo
-vim.api.nvim_set_keymap("n", "<C-z>", "u", { noremap = true })
-vim.api.nvim_set_keymap("i", "<C-z>", "<Esc>u", { noremap = true })
+vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true, desc = "Exit insert mode and save file" })
+vim.api.nvim_set_keymap("i", "<C-a>", "<Esc>VggG", { noremap = true, desc = "Select from cursor to end of document" })
+vim.api.nvim_set_keymap("n", "<C-a>", "VggG", { noremap = true, desc = "Select from cursor to end of document" })
+vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true, desc = "Copy text in visual mode" })
+vim.api.nvim_set_keymap("i", "<C-v>", "p", { noremap = true, desc = "Paste text in insert mode" })
+vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true, desc = "Cut text in visual mode" })
+vim.api.nvim_set_keymap("n", "<C-z>", "u", { noremap = true, desc = "Undo" })
+vim.api.nvim_set_keymap("i", "<C-z>", "<Esc>u", { noremap = true, desc = "Undo" })
 
 -- Use F2 for rename symbol
 vim.keymap.set({ "n", "i" }, "<F2>", function()
