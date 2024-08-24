@@ -15,8 +15,13 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- plugin setup
 require("lazy").setup({
-	{ import = "plugins" }, -- one plugin config per file in lua/plugins
+	{ import = "plugins" }, -- complex plugins in lua/plugins; simple installs below
+	"tpope/vim-sleuth",
+	"tpope/vim-fugitive",
+	{ "numToStr/Comment.nvim", opts = {} },
+	{ "ThePrimeagen/harpoon", branch = "harpoon2", dependencies = { "nvim-lua/plenary.nvim" } },
 }, {
 	ui = {
 		icons = vim.g.have_nerd_font and {} or {

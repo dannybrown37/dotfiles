@@ -125,3 +125,6 @@ vim.keymap.set("n", "<leader>tu", function()
 	vim.cmd("UndotreeToggle")
 end, { desc = "[T]oggle [U]ndotree" })
 --#endregion
+
+--#region Fugitive Keymaps (https://github.com/tpope/vim-fugitive)
+vim.keymap.set("n", "<leader>g", vim.cmd.Git, { desc = "[G]it status" })
