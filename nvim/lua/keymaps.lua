@@ -26,13 +26,14 @@ vim.keymap.set({ "n", "i" }, "<F2>", function()
 	end
 	vim.lsp.buf.rename()
 end, { noremap = true, silent = true, desc = "Rename symbol" })
-vim.api.nvim_set_keymap("n", "<A-j>", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
-vim.api.nvim_set_keymap("n", "<A-Down>", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
-vim.api.nvim_set_keymap("n", "<A-k>", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
-vim.api.nvim_set_keymap("n", "<A-Up>", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
 --#endregion
 
 --#region <leader> Keymaps of my own
+
+vim.api.nvim_set_keymap("n", "J", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
+vim.api.nvim_set_keymap("n", "K", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
+vim.api.nvim_set_keymap("v", "J", ":m '>+1<CR>gv=gv", { noremap = true, silent = true, desc = "Move lines down" })
+vim.api.nvim_set_keymap("v", "K", ":m '<-2<CR>gv=gv", { noremap = true, silent = true, desc = "Move lines up" })
 
 vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from curent location" })
 
