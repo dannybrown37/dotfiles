@@ -1,11 +1,9 @@
 --#region
--- NOTE: [[ Basic Keymaps ]] See `:help vim.keymap.set()`
+-- NOTE: [[ Keymaps ]] See `:help vim.keymap.set()`
 
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear highlight on search in normal mode" })
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
-
--- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
--- or just use <C-\><C-n> to exit terminal mode
+-- NOTE: This won't work in all terminal emulators/tmux/etc.
 vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 
 -- region The Windows Section -- because it's silly to ignore decades of muscle memory
@@ -17,23 +15,24 @@ vim.api.nvim_set_keymap("i", "<C-v>", "p", { noremap = true, desc = "Paste text 
 vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true, desc = "Cut text in visual mode" })
 vim.api.nvim_set_keymap("n", "<C-z>", "u", { noremap = true, desc = "Undo" })
 vim.api.nvim_set_keymap("i", "<C-z>", "<Esc>u", { noremap = true, desc = "Undo" })
-vim.keymap.set({ "n", "i" }, "<F2>", function()
-	if vim.fn.mode() == "i" then
-		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", true)
-		vim.wait(49, function()
-			return vim.fn.mode() == "n"
-		end)
-	end
-	vim.lsp.buf.rename()
-end, { noremap = true, silent = true, desc = "Rename symbol" })
 --#endregion
 
---#region <leader> Keymaps of my own
+--#region <leader> QOL Keymaps
 
 vim.api.nvim_set_keymap("n", "J", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
 vim.api.nvim_set_keymap("n", "K", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
 vim.api.nvim_set_keymap("v", "J", ":m '>+1<CR>gv=gv", { noremap = true, silent = true, desc = "Move lines down" })
 vim.api.nvim_set_keymap("v", "K", ":m '<-2<CR>gv=gv", { noremap = true, silent = true, desc = "Move lines up" })
+
+vim.keymap.set("n", "<C-j>", "20jzz", { desc = "Jump down 20 lines but keep cursor in center of screen" })
+vim.keymap.set("n", "<C-k>", "20kzz", { desc = "Jump up 20 lines but keep cursor in center of screen" })
+
+vim.keymap.set("n", "n", "nzzzv", { desc = "Keep cursor in center of screen when searching buffer" })
+vim.keymap.set("n", "N", "Nzzzv", { desc = "Keep cursor in center of screen when searching buffer" })
+
+vim.keymap.set("n", "<leader>c", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI", { desc = "Replace [c]urrent word under cursor" })
+
+vim.keymap.set("n", "<leader>x", "<cmd>!chmod +x %<CR>", { desc = "Make current file e[x]ecutable" })
 
 vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from curent location" })
 
