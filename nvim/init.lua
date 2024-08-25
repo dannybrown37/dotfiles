@@ -23,7 +23,7 @@ require("lazy").setup({
 	{ "numToStr/Comment.nvim", opts = {} },
 	{ "ThePrimeagen/harpoon", branch = "harpoon2", dependencies = { "nvim-lua/plenary.nvim" } },
 	{ "mbbill/undotree", cmd = "UndotreeToggle" },
-	{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
+	{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = { signs = false } },
 }, {
 	ui = {
 		icons = vim.g.have_nerd_font and {} or {
