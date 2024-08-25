@@ -49,7 +49,7 @@ return -- LSP Configuration & Plugins
 
 				-- Rename the variable under your cursor.
 				--  Most Language Servers support renaming across files, etc.
-				map("<leader>r", vim.lsp.buf.rename, "[R]ename")
+				map("<leader>rs", vim.lsp.buf.rename, "[R]ename [S]ymbol")
 
 				-- Execute a code action, usually your cursor needs to be on top of an error
 				-- or a suggestion from your LSP for this to activate.
