@@ -1,11 +1,6 @@
 --#region
 -- NOTE: [[ Keymaps ]] See `:help vim.keymap.set()`
 
-vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear highlight on search in normal mode" })
-vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
--- NOTE: This won't work in all terminal emulators/tmux/etc.
-vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
-
 -- region The Windows Section -- because it's silly to ignore decades of muscle memory
 vim.api.nvim_set_keymap("i", "<C-S>", "<Esc>:w<CR>", { noremap = true, desc = "Exit insert mode and save file" })
 vim.api.nvim_set_keymap("i", "<C-a>", "<Esc>VggG", { noremap = true, desc = "Select from cursor to end of document" })
@@ -18,6 +13,9 @@ vim.api.nvim_set_keymap("i", "<C-z>", "<Esc>u", { noremap = true, desc = "Undo" 
 --#endregion
 
 --#region <leader> QOL Keymaps
+vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear highlight on search in normal mode" })
+vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
+vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" }) -- NOTE: This won't work in all terminal emulators/tmux/etc.
 
 vim.api.nvim_set_keymap("n", "J", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
 vim.api.nvim_set_keymap("n", "K", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
@@ -30,7 +28,7 @@ vim.keymap.set("n", "<C-k>", "20kzz", { desc = "Jump up 20 lines but keep cursor
 vim.keymap.set("n", "n", "nzzzv", { desc = "Keep cursor in center of screen when searching buffer" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Keep cursor in center of screen when searching buffer" })
 
-vim.keymap.set("n", "<leader>c", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI", { desc = "Replace [c]urrent word under cursor" })
+vim.keymap.set("n", "<leader>rw", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI", { desc = "[R]eplace [W]ord in current buffer" })
 
 vim.keymap.set("n", "<leader>x", "<cmd>!chmod +x %<CR>", { desc = "Make current file e[x]ecutable" })
 
@@ -139,4 +137,15 @@ vim.keymap.set("n", "<leader>ta", function()
 		vim.notify("Toggled Off", vim.log.levels.INFO, { title = "Autocomplete" })
 	end
 end, { desc = "[T]oggle [A]utocomplete" })
+--#endregion
+
+--#region Which-Key prefix mapping
+local wk = require("which-key")
+wk.add({
+	{ "<leader>g", group = "Goto (LSP)" },
+	{ "<leader>r", group = "Replace/Rename" },
+	{ "<leader>s", group = "Search" },
+	{ "<leader>t", group = "Toggle Options" },
+	{ "<leader>y", group = "Symbol Search (LSP)" },
+})
 --#endregion
