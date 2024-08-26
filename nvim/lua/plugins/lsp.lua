@@ -14,23 +14,23 @@ return -- LSP Configuration & Plugins
 		vim.api.nvim_create_autocmd("LspAttach", {
 			group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
 			callback = function(event)
-				local map = function(keys, func, desc)
+				local lspMap = function(keys, func, desc)
 					vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc .. " (word under cursor: LSP)" })
 				end
 
 				local tele = require("telescope.builtin")
 
-				map("<leader>gd", tele.lsp_definitions, "[G]oto [D]efinition")
-				map("<leader>gr", tele.lsp_references, "[G]oto [R]eferences")
-				map("<leader>gI", tele.lsp_implementations, "[G]oto [I]mplementation")
-				map("<leader>gt", tele.lsp_type_definitions, "[G]oto [T]ype Definition")
-				map("<leader>gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration (i.e. import)")
+				lspMap("<leader>fd", tele.lsp_definitions, "[F]ind [D]efinition")
+				lspMap("<leader>fr", tele.lsp_references, "[F]ind [R]eferences")
+				lspMap("<leader>fI", tele.lsp_implementations, "[F]ind [I]mplementation")
+				lspMap("<leader>ft", tele.lsp_type_definitions, "[F]ind [T]ype Definition")
+				lspMap("<leader>fD", vim.lsp.buf.declaration, "[F]ind [D]eclaration (i.e. import)")
 
-				map("<leader>sd", tele.lsp_document_symbols, "[S]earch [D]ocument Symbols")
-				map("<leader>sp", tele.lsp_dynamic_workspace_symbols, "[S]earch [P]roject Symbols")
-				map("<leader>rs", vim.lsp.buf.rename, "[R]ename [S]ymbol")
-				map("<leader>a", vim.lsp.buf.code_action, "Code [A]ction (try with cursor on top of error)")
-				map("D", vim.lsp.buf.hover, "Hover [D]ocumentation")
+				lspMap("<leader>sd", tele.lsp_document_symbols, "[S]earch [D]ocument Symbols")
+				lspMap("<leader>sp", tele.lsp_dynamic_workspace_symbols, "[S]earch [P]roject Symbols")
+				lspMap("<leader>rs", vim.lsp.buf.rename, "[R]ename [S]ymbol")
+				lspMap("<leader>a", vim.lsp.buf.code_action, "Code [A]ction (try with cursor on top of error)")
+				lspMap("D", vim.lsp.buf.hover, "Hover [D]ocumentation")
 
 				-- When you move your cursor, the highlights will be cleared (the second autocommand).
 				--    See `:help CursorHold` for information about when this is executed
@@ -62,7 +62,7 @@ return -- LSP Configuration & Plugins
 				-- code, if the language server you are using supports them
 				-- This may be unwanted, since they displace some of your code
 				if client and client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
-					map("<leader>th", function()
+					lspMap("<leader>th", function()
 						vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({}))
 					end, "[T]oggle Inlay [H]ints")
 				end
