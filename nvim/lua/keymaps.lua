@@ -155,7 +155,8 @@ end, { desc = "[T]oggle [A]utocomplete" })
 local wk = require("which-key")
 wk.add({
 	{ "<leader>d", group = "Duck (just for fun)", mode = "n" },
-	{ "<leader>g", group = "Git/Goto (LSP)" },
+	{ "<leader>f", group = "Find (LSP)" },
+	{ "<leader>g", group = "Git" },
 	{ "<leader>ga", group = "Git Add" },
 	{ "<leader>gc", group = "Git Commit" },
 	{ "<leader>r", group = "Replace/Rename" },
