@@ -41,6 +41,7 @@ vim.opt.expandtab = true
 vim.opt.shiftwidth = 4
 vim.opt.softtabstop = 4
 vim.opt.tabstop = 4
+vim.opt.foldmethod = "manual"
 
 vim.opt.colorcolumn = "72,79,88,100"
 vim.opt.termguicolors = true
