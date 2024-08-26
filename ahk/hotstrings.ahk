@@ -101,6 +101,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 
 ; git
+::,,gb::git branch
 ::,,gs::git status
 ::,,gpr::git pull rebase
 ::,,gap::git add -p
