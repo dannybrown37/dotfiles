@@ -130,9 +130,14 @@ end, { desc = "[T]oggle [U]ndotree" })
 
 --#region Fugitive (https://github.com/tpope/vim-fugitive)
 vim.keymap.set("n", "<leader>gs", ":Git status<CR>", { desc = "[G]it [S]tatus" })
+vim.keymap.set("n", "<leader>gb", ":Git branch<CR>", { desc = "[G]it [B]ranch" })
 vim.keymap.set("n", "<leader>gap", ":Git add -p<CR>", { desc = "[G]it [A]dd [P]atch" })
 vim.keymap.set("n", "<leader>ga.", ":Git add .<CR>", { desc = "[G]it [A]dd [.]" })
-vim.keymap.set("n", "<leader>gc", ":Git commit<CR>", { desc = "[G]it [Commit]" })
+vim.keymap.set("n", "<leader>gc", ":Git commit<CR>", { desc = "[G]it [C]ommit" })
+vim.keymap.set("n", "<leader>gcm", ':Git commit --message "', { desc = "[G]it [C]ommit [M]essage" })
+vim.keymap.set("n", "<leader>gca", ":Git commit --amend<CR>", { desc = "[G]it [C]ommit [A]mend" })
+vim.keymap.set("n", "<leader>gcr", ":Git commit --amend --no-edit<CR>", { desc = "[G]it [C]ommit [R]ebase" })
+vim.keymap.set("n", "<leader>gp", ":Git push<CR>", { desc = "[G]it [P]ush" })
 --#endregion
 
 --#region Autocomplete
@@ -152,6 +157,7 @@ wk.add({
 	{ "<leader>d", group = "Duck (just for fun)", mode = "n" },
 	{ "<leader>g", group = "Git/Goto (LSP)" },
 	{ "<leader>ga", group = "Git Add" },
+	{ "<leader>gc", group = "Git Commit" },
 	{ "<leader>r", group = "Replace/Rename" },
 	{ "<leader>s", group = "Search" },
 	{ "<leader>t", group = "Toggle Options" },
