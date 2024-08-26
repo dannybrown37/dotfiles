@@ -8,6 +8,8 @@ vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true, desc = "Copy text i
 vim.api.nvim_set_keymap("i", "<C-v>", "p", { noremap = true, desc = "Paste text in insert mode" })
 vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true, desc = "Cut text in visual mode" })
 vim.api.nvim_set_keymap("i", "<C-z>", "<Esc>u", { noremap = true, desc = "Undo" })
+vim.api.nvim_set_keymap("i", "<C-S-Right>", "<C-o>vwe", { noremap = true, desc = "Visually select word to right" })
+vim.api.nvim_set_keymap("i", "<C-S-Left>", "<C-o>vb", { noremap = true, desc = "Visually select word to left" })
 --#endregion
 
 --#region <leader> QOL Keymaps
@@ -51,7 +53,7 @@ vim.keymap.set("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles
 vim.keymap.set("n", "<leader>ss", builtin.builtin, { desc = "[S]earch [S]elect Telescope" })
 vim.keymap.set("n", "<leader>sw", builtin.grep_string, { desc = "[S]earch current [W]ord" })
 vim.keymap.set("n", "<leader>sg", builtin.live_grep, { desc = "[S]earch by [G]rep" })
-vim.keymap.set("n", "<leader>sd", builtin.diagnostics, { desc = "[S]earch [D]iagnostics" })
+vim.keymap.set("n", "<leader>sD", builtin.diagnostics, { desc = "[S]earch [D]iagnostics" })
 vim.keymap.set("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
 vim.keymap.set("n", "<leader>s.", builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
 vim.keymap.set("n", "<leader><leader>", builtin.buffers, { desc = "[ ] Find existing buffers" })
@@ -144,6 +146,7 @@ end, { desc = "[T]oggle [A]utocomplete" })
 --#region Which-Key prefix mapping
 local wk = require("which-key")
 wk.add({
+	{ "<leader>d", group = "Duck (just for fun)", mode = "n" },
 	{ "<leader>g", group = "Goto (LSP)" },
 	{ "<leader>r", group = "Replace/Rename" },
 	{ "<leader>s", group = "Search" },

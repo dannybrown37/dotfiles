@@ -13,10 +13,9 @@ if not vim.loop.fs_stat(lazypath) then
 	vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
 end
 vim.opt.rtp:prepend(lazypath)
-
--- plugin setup
 require("lazy").setup({
-	{ import = "plugins" }, -- complex plugins configurations in lua/plugins
+	-- complex plugins configurations in lua/plugins
+	{ import = "plugins" },
 	-- one-line plugin installs
 	"tpope/vim-sleuth",
 	"tpope/vim-fugitive",
@@ -46,7 +45,7 @@ require("lazy").setup({
 
 -- NOTE: Keymaps and autocommands need to be loaded after lazy.nvim is loaded
 require("keymaps")
-require("autocommands") -- includes autocmds for lsp autoformatting
+require("autocommands")
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
