@@ -57,17 +57,7 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.opt_local.shiftwidth = 4
 		vim.opt_local.tabstop = 4
 		vim.opt_local.softtabstop = 4
-		-- folds based on indentation https://neovim.io/doc/user/fold.html#fold-indent
-		-- if you are a heavy user of folds, consider using `nvim-ufo`
 		vim.opt_local.foldmethod = "manual"
-		local iabbrev = function(lhs, rhs)
-			vim.keymap.set("ia", lhs, rhs, { buffer = true })
-		end
-		iabbrev("true", "True")
-		iabbrev("false", "False")
-		iabbrev("//", "#")
-		iabbrev("null", "None")
-		iabbrev("none", "None")
 	end,
 })
 
@@ -79,13 +69,6 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.opt_local.tabstop = 2
 		vim.opt_local.softtabstop = 2
 		vim.opt_local.foldmethod = "manual"
-		local iabbrev = function(lhs, rhs)
-			vim.keymap.set("i", lhs, rhs, { buffer = true, silent = true })
-		end
-		iabbrev("True", "true")
-		iabbrev("False", "false")
-		iabbrev("#", "//")
-		iabbrev("None", "null")
 	end,
 })
 
@@ -97,10 +80,6 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.opt_local.tabstop = 2
 		vim.opt_local.softtabstop = 2
 		vim.opt_local.foldmethod = "manual"
-		local iabbrev = function(lhs, rhs)
-			vim.keymap.set("i", lhs, rhs, { buffer = true, silent = true })
-		end
-		iabbrev("func", "function")
 	end,
 })
 
