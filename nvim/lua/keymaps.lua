@@ -129,7 +129,10 @@ end, { desc = "[T]oggle [U]ndotree" })
 --#endregion
 
 --#region Fugitive (https://github.com/tpope/vim-fugitive)
-vim.keymap.set("n", "<leader>gs", vim.cmd.Git, { desc = "[G]it [S]tatus" })
+vim.keymap.set("n", "<leader>gs", ":Git status<CR>", { desc = "[G]it [S]tatus" })
+vim.keymap.set("n", "<leader>gap", ":Git add -p<CR>", { desc = "[G]it [A]dd [P]atch" })
+vim.keymap.set("n", "<leader>ga.", ":Git add .<CR>", { desc = "[G]it [A]dd [.]" })
+vim.keymap.set("n", "<leader>gc", ":Git commit<CR>", { desc = "[G]it [Commit]" })
 --#endregion
 
 --#region Autocomplete
@@ -147,10 +150,10 @@ end, { desc = "[T]oggle [A]utocomplete" })
 local wk = require("which-key")
 wk.add({
 	{ "<leader>d", group = "Duck (just for fun)", mode = "n" },
-	{ "<leader>g", group = "Goto (LSP)" },
+	{ "<leader>g", group = "Git/Goto (LSP)" },
+	{ "<leader>ga", group = "Git Add" },
 	{ "<leader>r", group = "Replace/Rename" },
 	{ "<leader>s", group = "Search" },
 	{ "<leader>t", group = "Toggle Options" },
-	{ "<leader>y", group = "Symbol Search (LSP)" },
 })
 --#endregion
