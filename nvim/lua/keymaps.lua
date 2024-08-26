@@ -17,13 +17,13 @@ vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear highlight on
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
 vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" }) -- NOTE: This won't work in all terminal emulators/tmux/etc.
 
-vim.api.nvim_set_keymap("n", "J", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
-vim.api.nvim_set_keymap("n", "K", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
-vim.api.nvim_set_keymap("v", "J", ":m '>+1<CR>gv=gv", { noremap = true, silent = true, desc = "Move lines down" })
-vim.api.nvim_set_keymap("v", "K", ":m '<-2<CR>gv=gv", { noremap = true, silent = true, desc = "Move lines up" })
+vim.api.nvim_set_keymap("n", "<C-j>", ":m .+1<CR>==", { noremap = true, silent = true, desc = "Move line down" })
+vim.api.nvim_set_keymap("n", "<C-k>", ":m .-2<CR>==", { noremap = true, silent = true, desc = "Move line up" })
+vim.api.nvim_set_keymap("v", "<C-j>", ":m '>+1<CR>gv=gv", { noremap = true, silent = true, desc = "Move lines down" })
+vim.api.nvim_set_keymap("v", "<C-k>", ":m '<-2<CR>gv=gv", { noremap = true, silent = true, desc = "Move lines up" })
 
-vim.keymap.set("n", "<C-j>", "20jzz", { desc = "Jump down 20 lines but keep cursor in center of screen" })
-vim.keymap.set("n", "<C-k>", "20kzz", { desc = "Jump up 20 lines but keep cursor in center of screen" })
+vim.keymap.set("n", "J", "20jzz", { desc = "Jump down 20 lines but keep cursor in center of screen" })
+vim.keymap.set("n", "K", "20kzz", { desc = "Jump up 20 lines but keep cursor in center of screen" })
 
 vim.keymap.set("n", "n", "nzzzv", { desc = "Keep cursor in center of screen when searching buffer" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Keep cursor in center of screen when searching buffer" })
