@@ -28,6 +28,11 @@ vim.keymap.set("n", "<C-k>", "20kzz", { desc = "Jump up 20 lines but keep cursor
 vim.keymap.set("n", "n", "nzzzv", { desc = "Keep cursor in center of screen when searching buffer" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Keep cursor in center of screen when searching buffer" })
 
+vim.keymap.set("v", "<leader>o", ":'<,'>sort<CR>", { desc = "Sort selected lines" })
+vim.keymap.set("v", "<leader>O", ":'<,'>sort!<CR>", { desc = "Sort selected lines in reverse" })
+vim.keymap.set("n", "<leader>o", ":sort<CR>", { desc = "Sort current buffer" })
+vim.keymap.set("n", "<leader>O", ":sort!<CR>", { desc = "Sort current buffer in reverse" })
+
 vim.keymap.set("n", "<leader>rw", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI", { desc = "[R]eplace [W]ord in current buffer" })
 
 vim.keymap.set("n", "<leader>x", "<cmd>!chmod +x %<CR>", { desc = "Make current file e[x]ecutable" })
