@@ -3,8 +3,7 @@
 
 -- region The Windows Section -- because it's silly to ignore decades of muscle memory
 vim.api.nvim_set_keymap("i", "<C-s>", "<Esc>:w<CR>", { noremap = true, desc = "Exit insert mode and save file" })
-vim.api.nvim_set_keymap("i", "<C-a>", "<Esc>VggG", { noremap = true, desc = "Select from cursor to end of document" })
-vim.api.nvim_set_keymap("n", "<C-a>", "VggG", { noremap = true, desc = "Select from cursor to end of document" })
+vim.api.nvim_set_keymap("i", "<C-a>", "<Esc>yG", { noremap = true, desc = "Select all from current line" })
 vim.api.nvim_set_keymap("v", "<C-c>", "y", { noremap = true, desc = "Copy text in visual mode" })
 vim.api.nvim_set_keymap("i", "<C-v>", "p", { noremap = true, desc = "Paste text in insert mode" })
 vim.api.nvim_set_keymap("v", "<C-x>", "d", { noremap = true, desc = "Cut text in visual mode" })
@@ -40,7 +39,6 @@ vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from cure
 
 local fn = require("functions")
 vim.keymap.set("n", "<leader>n", fn.CreateNote, { desc = "[N]ote file (created in ~/notes)" })
-
 --#endregion
 
 --#region Telescope Keymaps
