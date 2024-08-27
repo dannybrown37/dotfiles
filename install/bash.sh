@@ -4,7 +4,6 @@
 ##  Sync bash profile with packages and symlinks
 ##  This script is designed to idempotent and can be run multiple times
 ##
-
 apt_packages=(
     bash-completion
     bat
@@ -55,7 +54,6 @@ echo "Cron jobs have been set up from dotfiles."
 crontab -l
 mkdir "$HOME/cron_logs"
 
-
 ##
 ## Install zoxide, per creator, Debian/Ubuntu have old versions in apt
 ## https://github.com/ajeetdsouza/zoxide/issues/694#issuecomment-1946069618
@@ -71,7 +69,7 @@ fi
 ## Install programs with wget
 ##
 
-if command -v google-chrome > /dev/null 2>&1; then
+if command -v google-chrome >/dev/null 2>&1; then
     echo "Google Chrome is already installed on this system"
 else
     wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -84,7 +82,7 @@ fi
 ## Install Neovim from appimage
 ##
 
-if command -v nvim &> /dev/null; then
+if command -v nvim &>/dev/null; then
     echo "Neovim is already installed on this system"
 else
     curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
@@ -112,30 +110,30 @@ fi
 ### Create symlinks for various config/dotfiles
 ###
 
-ln -s ~/projects/dotfiles/config/.gitconfig ~/.gitconfig \
-&& echo "Symlinked .gitconfig"
+ln -s ~/projects/dotfiles/config/.gitconfig ~/.gitconfig &&
+    echo "Symlinked .gitconfig"
 
-ln -s ~/projects/dotfiles/config/.gitignore_global ~/.gitignore_global \
-&& echo "Symlinked .gitignore_global"
+ln -s ~/projects/dotfiles/config/.gitignore_global ~/.gitignore_global &&
+    echo "Symlinked .gitignore_global"
 
 if [[ ! -f "${HOME}/.bashrc.og.bak" ]]; then
     mv ~/.bashrc ~/.bashrc.og.bak
     echo "Backed up original .bashrc to ~/.bashrc.og.bak"
 fi
-ln -s ~/projects/dotfiles/config/.bashrc ~/.bashrc \
-&& echo "Symlinked .bashrc"
+ln -s ~/projects/dotfiles/config/.bashrc ~/.bashrc &&
+    echo "Symlinked .bashrc"
 
-ln -s ~/projects/dotfiles/config/.ruff.toml ~/.ruff.toml \
-&& echo "Symlinked .ruff.toml"
+ln -s ~/projects/dotfiles/config/.ruff.toml ~/.ruff.toml &&
+    echo "Symlinked .ruff.toml"
 
-ln -s ~/projects/dotfiles/config/.eslintrc ~/.eslintrc \
-&& echo "Symlinked .eslintrc"
+ln -s ~/projects/dotfiles/config/.eslintrc ~/.eslintrc &&
+    echo "Symlinked .eslintrc"
 
-ln -s ~/projects/dotfiles/config/.inputrc ~/.inputrc \
-&& echo "Symlinked .inputrc"
+ln -s ~/projects/dotfiles/config/.inputrc ~/.inputrc &&
+    echo "Symlinked .inputrc"
 
-ln -s ~/projects/dotfiles/config/.tmux.conf ~/.tmux.conf \
-&& echo "Symlinked .tmux.conf"
+ln -s ~/projects/dotfiles/config/.tmux.conf ~/.tmux.conf &&
+    echo "Symlinked .tmux.conf"
 
 if [ ! -L "${HOME}/.password-store" ]; then
     ln -s ~/projects/dotfiles/pass ~/.password-store
@@ -146,8 +144,8 @@ fi
 
 if [ ! -L "${HOME}/.config/nvim" ]; then
     mkdir ~/.config
-    ln -s ~/projects/dotfiles/nvim ~/.config/nvim \
-    && echo "Symlinked nvim config to ~/.config/nvim"
+    ln -s ~/projects/dotfiles/nvim ~/.config/nvim &&
+        echo "Symlinked nvim config to ~/.config/nvim"
 else
     echo "nvim config has already been symlinked"
 fi
