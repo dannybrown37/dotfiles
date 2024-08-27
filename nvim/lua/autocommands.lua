@@ -42,6 +42,10 @@ vim.api.nvim_create_autocmd("CursorHold", {
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = "sh",
 	callback = function()
+		vim.bo.shiftwidth = 4
+		vim.bo.tabstop = 4
+		vim.bo.softtabstop = 4
+		vim.bo.expandtab = true
 		vim.lsp.start({
 			name = "bash-language-server",
 			cmd = { "bash-language-server", "start" },

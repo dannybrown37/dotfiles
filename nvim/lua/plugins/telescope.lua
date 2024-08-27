@@ -19,7 +19,10 @@ return { -- Fuzzy Finder (files, lsp, etc)
 		require("telescope").setup({
 			defaults = {
 				mappings = {
-					i = { ["<c-enter>"] = "to_fuzzy_refine" },
+					i = {
+						["<c-enter>"] = "to_fuzzy_refine",
+						["<ESC>"] = require("telescope.actions").close,
+					},
 				},
 			},
 			extensions = {
