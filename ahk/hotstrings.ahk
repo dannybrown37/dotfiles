@@ -34,6 +34,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,ns::npm start
 ::,,nsa::npm start -- --
 ::,,nrp::npm run pytest
+::,,nrpk::npm run pytest -- -k
 
 
 ; bash

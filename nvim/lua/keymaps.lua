@@ -46,6 +46,8 @@ vim.keymap.set("n", "<leader>n", fn.CreateNote, { desc = "[N]ote file (created i
 --#region Telescope Keymaps
 -- See `:help telescope.builtin`
 local builtin = require("telescope.builtin")
+local actions = require("telescope.actions")
+local action_state = require("telescope.actions.state")
 
 vim.keymap.set("n", "<leadev>sh", builtin.help_tags, { desc = "[S]earch [H]elp" })
 vim.keymap.set("n", "<leader>sk", builtin.keymaps, { desc = "[S]earch [K]eymaps" })
@@ -57,9 +59,6 @@ vim.keymap.set("n", "<leader>sD", builtin.diagnostics, { desc = "[S]earch [D]iag
 vim.keymap.set("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
 vim.keymap.set("n", "<leader>s.", builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
 vim.keymap.set("n", "<leader><leader>", builtin.buffers, { desc = "[ ] Find existing buffers" })
-
-local actions = require("telescope.actions")
-local action_state = require("telescope.actions.state")
 
 vim.keymap.set("n", "<leader>sv", function()
 	builtin.find_files({
