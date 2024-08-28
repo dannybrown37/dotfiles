@@ -5,7 +5,7 @@ function ask_gemini_a_question {
         echo "Please set the GOOGLE_API_KEY environment variable."
         return 1
     fi
-    curl -s https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="${GOOGLE_API_KEY}" \
+    result=$(curl -s https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="${GOOGLE_API_KEY}" \
         -H 'Content-Type: application/json' \
         -d "{
                 \"contents\": [{
@@ -14,7 +14,8 @@ function ask_gemini_a_question {
                     ]
                 }]
             }" |
-    jq -r '.candidates[0].content.parts[0].text'
+                jq -r '.candidates[0].content.parts[0].text')
+    less -F <<< "$result"
 }
 
 alias gem='ask_gemini_a_question'
