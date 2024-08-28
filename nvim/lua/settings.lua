@@ -24,6 +24,7 @@ vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
 vim.opt.list = true -- `:help 'list'`
 vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" } --  `:help 'listchars'`, how white space is displayed
+vim.opt.swapfile = false
 
 vim.opt.inccommand = "split" -- Preview substitutions live, as you type!
 vim.opt.hlsearch = true
