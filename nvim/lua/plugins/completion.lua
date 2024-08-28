@@ -1,5 +1,4 @@
-return -- Autocompletion
-{
+return {
 	"hrsh7th/nvim-cmp",
 
 	event = { "InsertEnter", "CmdlineEnter" },
@@ -49,10 +48,10 @@ return -- Autocompletion
 	},
 
 	config = function()
-		local cmp = require("cmp") -- See `:help cmp`
 		local luasnip = require("luasnip")
 		luasnip.config.setup({})
 
+		local cmp = require("cmp") -- See `:help cmp`
 		cmp.setup({
 
 			snippet = {
