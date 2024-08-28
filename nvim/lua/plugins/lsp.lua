@@ -107,7 +107,6 @@ return -- LSP Configuration & Plugins
 			"pyright", -- LSP for Python
 			"ruff-lsp", -- Python linter
 			"taplo", -- LSP for toml
-			"shfmt",
 			"shellcheck",
 			"eslint-lsp",
 			"prettier",
