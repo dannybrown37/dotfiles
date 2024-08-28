@@ -40,7 +40,7 @@ vim.keymap.set("n", "<leader>x", "<cmd>!chmod +x %<CR>", { desc = "Make current 
 vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from curent location" })
 
 local fn = require("functions")
-vim.keymap.set("n", "<leader>n", fn.CreateNote, { desc = "[N]ote file (created in ~/notes)" })
+vim.keymap.set("n", "<leader>note", fn.CreateNote, { desc = "[N]ote file (created in ~/notes)" })
 --#endregion
 
 --#region Telescope Keymaps
@@ -127,7 +127,7 @@ vim.keymap.set("n", "<leader>tu", function()
 end, { desc = "[T]oggle [U]ndotree" })
 --#endregion
 
---#region Fugitive (https://github.com/tpope/vim-fugitive)
+--#region Fugitive / Git (https://github.com/tpope/vim-fugitive)
 vim.keymap.set("n", "<leader>gs", ":Git status<CR>", { desc = "[G]it [S]tatus" })
 vim.keymap.set("n", "<leader>gb", ":Git branch<CR>", { desc = "[G]it [B]ranch" })
 vim.keymap.set("n", "<leader>gap", ":Git add -p<CR>", { desc = "[G]it [A]dd [P]atch" })
@@ -137,6 +137,16 @@ vim.keymap.set("n", "<leader>gcm", ':Git commit --message "', { desc = "[G]it [C
 vim.keymap.set("n", "<leader>gca", ":Git commit --amend<CR>", { desc = "[G]it [C]ommit [A]mend" })
 vim.keymap.set("n", "<leader>gcr", ":Git commit --amend --no-edit<CR>", { desc = "[G]it [C]ommit [R]ebase" })
 vim.keymap.set("n", "<leader>gp", ":Git push<CR>", { desc = "[G]it [P]ush" })
+--#endregion
+
+--#region NPM
+vim.keymap.set("n", "<leader>ni", "<cmd>! npm install<CR>", { desc = "[N]PM [I]nstall" })
+vim.keymap.set("n", "<leader>nu", "<cmd>! npm update<CR>", { desc = "[N]PM [U]pdate" })
+vim.keymap.set("n", "<leader>ns", "<cmd>! npm start<CR>", { desc = "[N]PM [S]tart" })
+vim.keymap.set("n", "<leader>nl", "<cmd>! npm run lint<CR>", { desc = "[N]PM [L]int" })
+vim.keymap.set("n", "<leader>nt", "<cmd>! npm test<CR>", { desc = "[N]PM [T]est" })
+vim.keymap.set("n", "<leader>nr", "<cmd>! npm run ", { desc = "[N]PM [R]un" })
+vim.keymap.set("n", "<leader>nrp", "<cmd>! npm run pytest", { desc = "[N]PM [R]un [P]ytest" })
 --#endregion
 
 --#region Autocomplete
@@ -158,6 +168,9 @@ wk.add({
 	{ "<leader>g", group = "Git" },
 	{ "<leader>ga", group = "Git Add" },
 	{ "<leader>gc", group = "Git Commit" },
+	{ "<leader>n", group = "NPM" },
+	{ "<leader>nr", group = "NPM Run" },
+	{ "<leader>note", group = "Note" },
 	{ "<leader>r", group = "Replace/Rename" },
 	{ "<leader>s", group = "Search" },
 	{ "<leader>t", group = "Toggle Options" },
