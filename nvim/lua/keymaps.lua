@@ -149,6 +149,12 @@ vim.keymap.set("n", "<leader>nr", "<cmd>! npm run ", { desc = "[N]PM [R]un" })
 vim.keymap.set("n", "<leader>nrp", "<cmd>! npm run pytest", { desc = "[N]PM [R]un [P]ytest" })
 --#endregion
 
+--#region Python
+vim.api.nvim_set_keymap("n", "<leader>pr", "<cmd>w<CR><cmd>!python %<CR>", { desc = "[P]ython [R]un Current File" })
+vim.api.nvim_set_keymap("n", "<leader>pt", "<cmd>w<CR><cmd>!pytest<CR>", { desc = "[P][T]est" })
+vim.api.nvim_set_keymap("n", "<leader>ptk", "<cmd>w<CR><cmd>!pytest -k ", { desc = "[P][T]est [K]ey" })
+--#endregion
+
 --#region Autocomplete
 vim.keymap.set("n", "<leader>ta", function()
 	vim.g.toggle_cmp = not vim.g.toggle_cmp
