@@ -146,12 +146,12 @@ vim.keymap.set("n", "<leader>ns", "<cmd>! npm start<CR>", { desc = "[N]PM [S]tar
 vim.keymap.set("n", "<leader>nl", "<cmd>! npm run lint<CR>", { desc = "[N]PM [L]int" })
 vim.keymap.set("n", "<leader>nt", "<cmd>! npm test<CR>", { desc = "[N]PM [T]est" })
 vim.keymap.set("n", "<leader>nr", "<cmd>! npm run ", { desc = "[N]PM [R]un" })
-vim.keymap.set("n", "<leader>nrp", "<cmd>! npm run pytest", { desc = "[N]PM [R]un [P]ytest" })
+vim.keymap.set("n", "<leader>nrp", "<cmd>! npm run pytest<CR>", { desc = "[N]PM [R]un [P]ytest" })
 --#endregion
 
 --#region Python
 vim.api.nvim_set_keymap("n", "<leader>pr", "<cmd>w<CR><cmd>!python %<CR>", { desc = "[P]ython [R]un Current File" })
-vim.api.nvim_set_keymap("n", "<leader>pt", "<cmd>w<CR><cmd>!pytest<CR>", { desc = "[P][T]est" })
+vim.api.nvim_set_keymap("n", "<leader>pts", "<cmd>w<CR><cmd>!pytest<CR>", { desc = "[P][T]est [S]uite" })
 vim.api.nvim_set_keymap("n", "<leader>ptk", "<cmd>w<CR><cmd>!pytest -k ", { desc = "[P][T]est [K]ey" })
 --#endregion
 
@@ -176,6 +176,8 @@ wk.add({
 	{ "<leader>gc", group = "Git Commit" },
 	{ "<leader>n", group = "NPM" },
 	{ "<leader>nr", group = "NPM Run" },
+	{ "<leader>p", group = "Python" },
+	{ "<leader>pt", group = "Pytest" },
 	{ "<leader>note", group = "Note" },
 	{ "<leader>r", group = "Replace/Rename" },
 	{ "<leader>s", group = "Search" },
