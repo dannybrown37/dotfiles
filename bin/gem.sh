@@ -13,9 +13,9 @@ function ask_gemini_a_question {
                         {\"text\": \"$*\"}
                     ]
                 }]
-            }" |
-                jq -r '.candidates[0].content.parts[0].text')
-    less -F <<< "$result"
+            }")
+    text=$(echo "$result" | jq -r '.candidates[0].content.parts[0].text')
+    less -F <<< "$text"
 }
 
 alias gem='ask_gemini_a_question'
@@ -28,7 +28,7 @@ LGTM acronym would be good, like Lightly Greased Turbo Machine or such. Make it 
 include any formatting characters like asterisks. Do it on two lines, with the acronym first and
 the expanded version second. Make sure the acronym matches the phrase. One of my favorites you
 have come up with FLAGOAG Fits Like a Glove on a Giraffe, which is hilarious. The importance of
-the phrase having the general meaning of "This is good, I approve this work" is paramount, please
+the phrase having the general meaning of This is good, I approve this work is paramount, please
 keep on theme. Thank you ever so much for your service, you are a real one.'
 
 alias lgtm='ask_gemini_a_question "${lgtm_prompt}"'
