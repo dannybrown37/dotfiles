@@ -47,6 +47,12 @@ pyenv global 3.12
 
 
 ##
+## Install uv
+##
+
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+##
 ## Ensure pipx install and desirable pipx packages to have globally
 ##
 
