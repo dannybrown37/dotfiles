@@ -106,7 +106,7 @@ Jun | Jul | Aug)
     ;;
 Sep | Oct | Nov)
     COLOR1=$ORANGE
-    COLOR2=$YELLOW
+    COLOR2=$RED
     COLOR3=$ORANGE
     COLOR4=$YELLOW
     ;;
