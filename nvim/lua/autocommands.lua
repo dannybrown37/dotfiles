@@ -40,20 +40,6 @@ vim.api.nvim_create_autocmd("CursorHold", {
 --#region LSP Autocommands for Formatting
 
 vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "sh", "bash" },
-	callback = function()
-		print("Setting up bash-language-server")
-		vim.lsp.start({
-			name = "bash-language-server",
-			cmd = { "bash-language-server", "start" },
-		})
-		vim.bo.shiftwidth = 4
-		vim.bo.tabstop = 4
-		vim.bo.softtabstop = 4
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "typescript", "javascript", "lua", "json", "yaml" },
 	callback = function()
 		print("Setting up ts/js/lua/json/yaml formatter")
