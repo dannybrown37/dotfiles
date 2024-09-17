@@ -410,7 +410,7 @@ if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; th
     alias ll="exa -alh --ignore-glob=\${ls_ignore_globs}"
     alias lsa="exa -alh"
     alias ls=ll
-    alias tree="exa --tree -la --ignore-glob=\".git\""
+    alias tree="exa --tree -la --ignore-glob=\".git\" --ignore-glob=\".venv\" --ignore-glob=\"__pycache__\""
 fi
 
 if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then
