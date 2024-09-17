@@ -44,6 +44,7 @@ elif [[ "$1" = "kill" ]]; then
     done
 else
     for ahk_file in "${all_ahk_files[@]}"; do
+        echo "Starting ${ahk_file}"
         if [[ -n "${WSL_DISTRO_NAME}" ]]; then # handle WSL
             win_drive_path=$(wslpath -w -a "${ahk_file}")
         else # handle Git Bash
