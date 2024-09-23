@@ -13,7 +13,7 @@ shopt -s histappend
 shopt -s expand_aliases
 HISTSIZE=1000
 HISTFILESIZE=2000
-export HISTIGNORE="$(alias | awk -F'[ =]' '{print $2}' | tr '\n' ':')history:ls *:ls:cd:pwd:exit:date:clear:* --help:,,*"
+export HISTIGNORE="$(alias | awk -F'[ =]' '{print $2}' | tr '\n' ':')history:ls *:ls:cd:pwd:exit:date:clear:,,*"
 
 shopt -s checkwinsize
 
