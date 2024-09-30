@@ -177,14 +177,6 @@ function epoch_timestamp() {
   echo $(($(date +%s%N) / 1000000))
 }
 
-func_history() {
-    local cmd=$(history | tac | awk '{$1=""; print $0}' | fzf)
-    if [[ -n "$cmd" ]]; then
-        eval "$cmd"
-        history -s "$cmd"
-    fi
-}
-
 function git_icon() {
     local gitBranch="$(current_git_branch)"
     if [[ $gitBranch ]]; then
@@ -394,7 +386,6 @@ alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r -I {} code "{}"' # code search interactive
 alias epoch='epoch_timestamp'
 alias ff='fzf --preview="batcat --color=always {}"'                                # file find, just reviews, selection does nothing
-alias fh='func_history'
 alias gg='google'
 alias pcb='xclip -selection clipboard -o' # print clip board
 alias url='open_url_in_browser'
