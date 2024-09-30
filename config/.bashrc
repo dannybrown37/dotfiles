@@ -173,6 +173,10 @@ function current_git_branch() {
     fi
 }
 
+function epoch_timestamp() {
+  echo $(($(date +%s%N) / 1000000))
+}
+
 func_history() {
     local cmd=$(history | tac | awk '{$1=""; print $0}' | fzf)
     if [[ -n "$cmd" ]]; then
@@ -366,6 +370,12 @@ open_vs_code_settings_folder_in_windows_environment() {
     explorer.exe "$windows_path"
 }
 
+
+
+utc_timestamp() {
+  date -u +"%Y-%m-%dT%H:%M:%S.%3NZ"
+}
+
 ##
 ## Aliases
 ##
@@ -373,11 +383,13 @@ open_vs_code_settings_folder_in_windows_environment() {
 alias cb='tee >(xclip -selection clipboard)' # clip board
 alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r -I {} code "{}"' # code search interactive
+alias epoch='epoch_timestamp'
 alias ff='fzf --preview="batcat --color=always {}"'                                # file find, just reviews, selection does nothing
 alias fh='func_history'
 alias gg='google'
 alias pcb='xclip -selection clipboard -o' # print clip board
 alias url='open_url_in_browser'
+alias utc='utc_timestamp'
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf"                # vim cheat
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim "{}"' # vim search interactive
 
