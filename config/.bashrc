@@ -377,12 +377,12 @@ utc_timestamp() {
 }
 
 function y() {
-	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
-	yazi "$@" --cwd-file="$tmp"
-	if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-		builtin cd -- "$cwd"
-	fi
-	rm -f -- "$tmp"
+    local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+    yazi "$@" --cwd-file="$tmp"
+    if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+            builtin cd -- "$cwd"
+    fi
+    rm -f -- "$tmp"
 }
 
 ##
@@ -463,6 +463,16 @@ PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
 if [[ -f "$HOME/.cargo/env" ]]; then
     . "$HOME/.cargo/env"
 fi
+
+if [[ -f "$HOME/.atuin/bin/env" ]]; then
+    . "$HOME/.atuin/bin/env"
+    [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
+    eval "$(atuin init bash)"
+    if [[ -n "$ATUIN_USERNAME" && -n "$ATUIN_PASSWORD" ]]; then
+        atuin login -u $ATUIN_USERNAME -p $ATUIN_PASSWORD -k "" >/dev/null
+    fi
+fi
+
 
 ##
 ## Bespoke environmental stuff
