@@ -12,9 +12,9 @@
 - Security Groups == stateful; NACLs == stateless (mnemonic: list/less ; groups become full)
 - AWS Wavelength == 5G network embedding
 
-### VPC
+### Common IP Ranges
 
-[Website to calculate IP ranges](https://cidr.xyz)
+[Website to calculate IP ranges: cidr.xyz](https://cidr.xyz)
 
 Common ranges:
 
@@ -22,15 +22,7 @@ Common ranges:
 - 172.16.0.0 - 172.31.255.255 (172.16/12 prefix)
 - 192.168.0.0 - 192.168.255.255 (192.168/16 prefix) (most homes use this)
 
-![Diagram of the VPC](./images/vpc-network-diagram-acloudguru.png)
-
-### Things We Can Do with a VPC
-
-- Launch instances into the subnet of your choosing
-- Assign custom IP address ranges in each subnet
-- Configure route tables between subnets
-- Create an Internet Gateway and attach it to the VPC
-- Create subnet NACLs (network access control lists) to control traffic
+![Diagram of a VPC](./images/vpc-network-diagram-acloudguru.png)
 
 ### Default VPC
 
@@ -46,7 +38,7 @@ Common ranges:
 ### Network Access Control Lists (NACLs)
 
 - NACLs are stateless, meaning that they do not store any information about the traffic
-- Rules are evaulted from low to high and the first rule that matches the traffic is applied
+- Rules are evaluated from low to high and the first rule that matches the traffic is applied
 - Default NACL: allow all traffic inbbound and outbound
 - Custom NACL: by default, deny all traffic inbound and outbound
 
