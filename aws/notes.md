@@ -2,5 +2,55 @@
 
 ## VPC
 
-Website to calculate IP ranges:
-https://cidr.xyz/
+### Exam Tips
+
+- VPC == logical data center in AWS
+- Consists of internet gateways (i.e., virtual private gateways), route tables, network access control lists (NACLs), subnets, and security groups
+- 1 subnet is always in 1 availability zone, cannot span multiple availability zones
+- NACLs can block specific IP addresses
+- Transit Gateway used over VPC Peering if there are too many VPCs to reasonably peer
+- Security Groups == stateful; NACLs == stateless (mnemonic: list/less ; groups become full)
+- AWS Wavelength == 5G network embedding
+
+### VPC
+
+[Website to calculate IP ranges](https://cidr.xyz)
+
+Common ranges:
+
+- 10.0.0.0 - 10.255.255.255 (10/8 prefix) (most corporations use this)
+- 172.16.0.0 - 172.31.255.255 (172.16/12 prefix)
+- 192.168.0.0 - 192.168.255.255 (192.168/16 prefix) (most homes use this)
+
+![Diagram of the VPC](./images/vpc-network-diagram-acloudguru.png)
+
+### Things We Can Do with a VPC
+
+- Launch instances into the subnet of your choosing
+- Assign custom IP address ranges in each subnet
+- Configure route tables between subnets
+- Create an Internet Gateway and attach it to the VPC
+- Create subnet NACLs (network access control lists) to control traffic
+
+### Default VPC
+
+- User friendly
+- All subnets in default VPC have a route out to the internet
+- Each EC2 instance has both a public and private IP address
+
+### NAT Gateway
+
+- NAT == Network Address Translation
+- AWS handles scaling
+
+### Network Access Control Lists (NACLs)
+
+- NACLs are stateless, meaning that they do not store any information about the traffic
+- Rules are evaulted from low to high and the first rule that matches the traffic is applied
+- Default NACL: allow all traffic inbbound and outbound
+- Custom NACL: by default, deny all traffic inbound and outbound
+
+### Security Groups
+
+- Can be changed when instance is RUNNING or STOPPED
+- Security groups are stateful, meaning that they store information about the traffic
