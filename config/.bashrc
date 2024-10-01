@@ -393,6 +393,14 @@ alias utc='utc_timestamp'
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf"                # vim cheat
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim "{}"' # vim search interactive
 
+# Cargo package aliases
+
+alias yless='jless --yaml'
+
+alias dlog='git -c diff.external=difft log -p --ext-diff'  # git log with patches shown with difftastic
+alias dshow='git -c diff.external=difft show --ext-diff' # Show the most recent commit with difftastic.
+alias ddiff='git -c diff.external=difft diff' # `git diff` with difftastic.
+
 if [[ -n "${ON_WINDOWS}" ]]; then
     alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
     alias vscw='open_vs_code_settings_folder_in_windows_environment'
