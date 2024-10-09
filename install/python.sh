@@ -1,6 +1,33 @@
 #!/usr/bin/env bash
 
 ##
+## Install uv
+##
+
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+##
+## Install global Python packages with uv tool
+##
+
+uv_tool_packages=(
+    pre-commit
+    cookiecutter
+    ruff
+    bashate
+)
+
+for package in "${uv_tool_packages[@]}"; do
+    uv tool install "${package}"
+done
+
+
+##
+#### Commented out below is my legacy configuration for pyenv/pipx.
+#### Retaining in case needed, but uv seems to be doing the job.
+##
+
+##
 ## Install dependencies pyenv needs to build individual python versions
 ##
 
@@ -68,24 +95,3 @@
 # for package in "${pipx_packages[@]}"; do
 #     pipx install "${package}"
 # done
-
-##
-## Install uv
-##
-
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-##
-## Install global Python packages with uv tool
-##
-
-uv_tool_packages=(
-    pre-commit
-    cookiecutter
-    ruff
-    bashate
-)
-
-for package in "${uv_tool_packages[@]}"; do
-    uv tool install "${package}"
-done
