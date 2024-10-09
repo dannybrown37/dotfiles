@@ -3,7 +3,7 @@
 help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
-	@echo "  bash            Install Bash profile"
+	@echo "  bash            Install Bash profile (run before any of the following)"
 	@echo "  python          Install Python environment"
 	@echo "  node            Install Node.js environment"
 	@echo "  golang          Install Go environment"
@@ -11,12 +11,12 @@ help:
 	@echo "  vscode          Install VS Code extensions"
 	@echo "  all             Install all environments"
 	@echo "  sync-secrets    Attempt to sync local secrets and password-store"
-	@echo "  insert-ahk	  Push local ahk secrets to password-store"
-	@echo "  insert-bash	  Push local bash secrets to password-store"
+	@echo "  insert-ahk      Push local ahk secrets to password-store"
+	@echo "  insert-bash     Push local bash secrets to password-store"
 	@echo "  insert-secrets  Write all secrets files to password-store"
-	@echo "  pull-ahk	  Pull ahk secrets from password-store to local files"
-	@echo "  pull-bash	  Pull bash secrets from password-store to local files"
-	@echo "  pull-secrets	  Read all secrets files from password-store"
+	@echo "  pull-ahk        Pull ahk secrets from password-store to local files"
+	@echo "  pull-bash       Pull bash secrets from password-store to local files"
+	@echo "  pull-secrets    Read all secrets files from password-store"
 
 
 root_dir := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
