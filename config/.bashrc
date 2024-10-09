@@ -431,7 +431,7 @@ fi
 
 if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then
     # https://the.exa.website/features/filtering
-    ls_ignore_globs=".git|.github|node_modules|__pycache__|*.pyc|.pytest_cache|.ruff_cache|*.js.map|*.egg-info"
+    ls_ignore_globs=".git|.github|node_modules|__pycache__|*.pyc|.pytest_cache|.ruff_cache|*.js.map|*.egg-info|.venv|build|dist|venv"
     alias l="exa --ignore-glob=\${ls_ignore_globs}"
     alias ll="exa -alh --ignore-glob=\${ls_ignore_globs}"
     alias lsa="exa -alh"
