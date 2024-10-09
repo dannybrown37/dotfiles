@@ -46,3 +46,11 @@ Common ranges:
 
 - Can be changed when instance is RUNNING or STOPPED
 - Security groups are stateful, meaning that they store information about the traffic
+
+## CloudWatch
+
+### Exam Tips
+
+- DEFAULT METRICS: CPU utilization, network throughput
+- EC2 Memory Utilization is NOT A DEFAULT METRIC (common question)
+- EBS Storage Capacity is NOT A DEFAULT METRIC (common question

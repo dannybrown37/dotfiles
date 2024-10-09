@@ -151,7 +151,7 @@ done
 # source aws-specific functions from aws/bin.sh
 source "$DOTFILES_DIR"/aws/bin.sh
 
-cht() {
+function cht() {
     local technologies=$(curl -s cht.sh/:list)
     local selected=$(printf '%s\n' "${technologies[@]}" | fzf)
     if [[ -z $selected ]]; then
@@ -174,7 +174,12 @@ function current_git_branch() {
 }
 
 function epoch_timestamp() {
-  echo $(($(date +%s%N) / 1000000))
+    echo $(($(date +%s%N) / 1000000)) | cb
+}
+
+function generate_random_uuid_and_put_in_clipboard() {
+    uuid=$(cat /proc/sys/kernel/random/uuid)
+    echo "$uuid" | cb
 }
 
 function git_icon() {
@@ -200,7 +205,7 @@ function git_info_env_vars() {
     export GIT_ICON=$(git_icon)
 }
 
-google() {
+function google() {
     if [[ $# -eq 0 ]]; then
         read -p "Enter you Google query: " query
     else
@@ -210,7 +215,7 @@ google() {
     explorer.exe "https://www.google.com/search?q=${query}"
 }
 
-node_project_init() {
+function node_project_init() {
     if [[ -n "$(ls -A)" ]]; then
         echo "WARNING: Current working directory is not empty, see the contents:"
         ls -A
@@ -304,7 +309,7 @@ function notes() {
     cd - || return
 }
 
-pip_project_init() {
+function pip_project_init() {
     python -m venv .tempvenv
     source .tempvenv/bin/activate
     pip install cookiecutter
@@ -313,16 +318,16 @@ pip_project_init() {
     rm -rf .tempvenv
 }
 
-mk() {
+function mk() {
     mkdir -p "$@" && cd "$@" || exit
 }
 
-push() {
+function push() {
     local topic="danny_is_alerted"
     http POST ntfy.sh/"${topic}" alert="$*"
 }
 
-push_to_topic() {
+function push_to_topic() {
     local topic=$1
     shift
     local message=$*
@@ -330,7 +335,7 @@ push_to_topic() {
     http POST ntfy.sh/"${topic}" alert="${message}"
 }
 
-open_url_in_browser() {
+function open_url_in_browser() {
     case $(uname -s) in
     Darwin) open='open' ;;
     MINGW*) open='start' ;;
@@ -353,7 +358,7 @@ open_url_in_browser() {
     ${BROWSER:-"${open}"} "${URL}"
 }
 
-open_vs_code_settings_folder_in_windows_environment() {
+function open_vs_code_settings_folder_in_windows_environment() {
     if [[ -z "${ON_WINDOWS}" ]]; then
         echo "You're not on Windows"
         return
@@ -364,15 +369,15 @@ open_vs_code_settings_folder_in_windows_environment() {
 
 
 
-utc_timestamp() {
-  date -u +"%Y-%m-%dT%H:%M:%S.%3NZ"
+function utc_timestamp() {
+  date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
 }
 
 function y() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
     yazi "$@" --cwd-file="$tmp"
     if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-            builtin cd -- "$cwd"
+        builtin cd -- "$cwd"
     fi
     rm -f -- "$tmp"
 }
@@ -390,6 +395,7 @@ alias gg='google'
 alias pcb='xclip -selection clipboard -o' # print clip board
 alias url='open_url_in_browser'
 alias utc='utc_timestamp'
+alias uuid='generate_random_uuid_and_put_in_clipboard'
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf"                # vim cheat
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim "{}"' # vim search interactive
 
