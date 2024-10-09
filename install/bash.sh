@@ -30,8 +30,8 @@ apt_packages=(
     zip
 )
 
-sudo apt update
-sudo apt upgrade
+sudo apt -y update
+sudo apt -y upgrade
 
 if [[ "${WSL_DISTRO_NAME}" = 'kali-linux' ]]; then
     apt_packages+=(eza)
@@ -75,7 +75,7 @@ if command -v google-chrome >/dev/null 2>&1; then
 else
     wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     sudo dpkg -i google-chrome-stable_current_amd64.deb
-    sudo apt-get install -f -y
+    sudo apt-get -y install -f
     rm google-chrome-stable_current_amd64.deb
 fi
 
