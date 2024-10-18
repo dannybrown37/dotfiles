@@ -42,12 +42,12 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,src::source ~/.bashrc
 ::,,crc::code ~/.bashrc
 ::,,shebang::{#}{!}/usr/bin/env bash
+::,,bashset::set -euo pipefail
 ::,,devnull::2>/dev/null
 ::,,bashlist::"${list_name[@]}"
-::,,sshkey::ssh-keygen -t rsa -b 4096 "email@email.email"
+::,,sshkey::ssh-keygen -t rsa -b 4096
 ::,,pathlines::echo $PATH | tr ':' '\n'
 ::,,noargs::[ ${#} -eq 0 ] && echo "Error: No args passed" && return
-::,,done::&& push_to_topic danny_build_notifications The script has finished running.
 ::,,checkinstall::dpkg-query -W -f='${{}Status{}}'
 ::,,curlafile::curl -L -o file.zip https://example.com/file.zip
 
