@@ -392,6 +392,7 @@ alias epoch='epoch_timestamp'
 alias ff='fzf --preview="batcat --color=always {}"' # file find, just reviews, selection does nothing
 alias gg='google'
 alias pcb='xclip -selection clipboard -o' # print clip board
+alias rc='source ~/.bashrc'
 alias url='open_url_in_browser'
 alias utc='utc_timestamp'
 alias uuid='generate_random_uuid_and_put_in_clipboard'
