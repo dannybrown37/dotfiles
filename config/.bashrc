@@ -31,7 +31,8 @@ fi
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 export NOTES_DIR="${HOME}/notes"
-export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" --glob "!.git/*" --glob "!.venv/*" --glob "!node_modules/*" --glob "!**.*cache*"'
+export LS_IGNORE_GLOBS=".git|.github|node_modules|__pycache__|*.pyc|.pytest_cache|.ruff_cache|*.js.map|*.egg-info|.venv|build|dist|venv"
+export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")"'
 
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 
@@ -367,10 +368,8 @@ function open_vs_code_settings_folder_in_windows_environment() {
     explorer.exe "$windows_path"
 }
 
-
-
 function utc_timestamp() {
-  date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
+    date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
 }
 
 function y() {
@@ -390,22 +389,23 @@ alias cb='tee >(xclip -selection clipboard)' # clip board
 alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r -I {} code "{}"' # code search interactive
 alias epoch='epoch_timestamp'
-alias ff='fzf --preview="batcat --color=always {}"'                                # file find, just reviews, selection does nothing
+alias ff='fzf --preview="batcat --color=always {}"' # file find, just reviews, selection does nothing
 alias gg='google'
 alias pcb='xclip -selection clipboard -o' # print clip board
 alias url='open_url_in_browser'
 alias utc='utc_timestamp'
 alias uuid='generate_random_uuid_and_put_in_clipboard'
-alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf"                # vim cheat
+alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # vim cheat
+alias vsd='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")" 2>/dev/null | sed "s|^$HOME/projects/||" | fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim -d "{}"'
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim "{}"' # vim search interactive
 
 # Cargo package aliases
 
 alias yless='jless --yaml'
 
-alias dlog='git -c diff.external=difft log -p --ext-diff'  # git log with patches shown with difftastic
-alias dshow='git -c diff.external=difft show --ext-diff' # Show the most recent commit with difftastic.
-alias ddiff='git -c diff.external=difft diff' # `git diff` with difftastic.
+alias dlog='git -c diff.external=difft log -p --ext-diff' # git log with patches shown with difftastic
+alias dshow='git -c diff.external=difft show --ext-diff'  # Show the most recent commit with difftastic.
+alias ddiff='git -c diff.external=difft diff'             # `git diff` with difftastic.
 
 if [[ -n "${ON_WINDOWS}" ]]; then
     alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
@@ -431,12 +431,11 @@ fi
 
 if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then
     # https://the.exa.website/features/filtering
-    ls_ignore_globs=".git|.github|node_modules|__pycache__|*.pyc|.pytest_cache|.ruff_cache|*.js.map|*.egg-info|.venv|build|dist|venv"
-    alias l="exa --ignore-glob=\${ls_ignore_globs}"
-    alias ll="exa -alh --ignore-glob=\${ls_ignore_globs}"
+    alias l="exa --ignore-glob=\${LS_IGNORE_GLOBS}"
+    alias ll="exa -alh --ignore-glob=\${LS_IGNORE_GLOBS}"
     alias lsa="exa -alh"
     alias ls=ll
-    alias tree="exa --tree -la --ignore-glob=\${ls_ignore_globs}"
+    alias tree="exa --tree -la --ignore-glob=\${LS_IGNORE_GLOBS}"
 fi
 
 if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then
@@ -479,7 +478,6 @@ if [[ -f "$HOME/.atuin/bin/env" ]]; then
         atuin login -u $ATUIN_USERNAME -p $ATUIN_PASSWORD -k "" >/dev/null
     fi
 fi
-
 
 ##
 ## Bespoke environmental stuff
