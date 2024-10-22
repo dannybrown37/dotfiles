@@ -1,4 +1,4 @@
-.PHONY: help python node golang rust vscode all sync-secrets pull-ahk pull-bash pull-secrets insert-ahk insert-bash insert-secrets
+.PHONY: help python deno node golang rust vscode all sync-secrets pull-ahk pull-bash pull-secrets insert-ahk insert-bash insert-secrets
 
 help:
 	@echo "Usage: make [option]"
@@ -7,6 +7,7 @@ help:
 	@echo "  bash            Install Bash profile (tmux, nvim, apt packages, etc.) (runs before all other commands)"
 	@echo "  python          Install Python environment (uv, select uv tools)"
 	@echo "  node            Install Node.js environment (nvm, Node 18, select global packages)"
+	@echo "  deno            Install Deno 2"
 	@echo "  golang          Install Go environment (latest Golang version)"
 	@echo "  rust            Install Rust environment (latest Rust version, select global packages)"
 	@echo "  vscode          Install VS Code extensions and settings"
@@ -35,6 +36,9 @@ bash:
 
 python: bash
 	bash -c ". $(root_dir)/install/python.sh"
+
+deno: bash
+	bash -c ". $(root_dir)/install/deno.sh"
 
 node: bash
 	bash -c ". $(root_dir)/install/node.sh"
