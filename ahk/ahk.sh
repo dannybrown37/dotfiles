@@ -31,15 +31,15 @@ elif [[ "$1" = "secrets" ]]; then
     nvim "${ahk_secrets_path}" || code "${ahk_secrets_path}"
 elif [[ "$1" = "kill" ]]; then
     ahk_pids=$(
-        powershell.exe -File \
+        powershell.exe -Command \
             "Get-Process AutoHotkey* | Select-Object -ExpandProperty Id"
     )
     for pid in ${ahk_pids}; do
         echo "Starting ${pid}"
         if [[ -n "${WSL_DISTRO_NAME}" ]]; then # handle WSL
-            powershell.exe -File "Stop-Process -Id ${pid} '-Force'"
+            powershell.exe -Command "Stop-Process -Id ${pid} '-Force'"
         else # handle Git Bash
-            powershell.exe -File "Stop-Process -Id ${pid} -Force"
+            powershell.exe -Command "Stop-Process -Id ${pid} -Force"
         fi
     done
 else
@@ -50,7 +50,7 @@ else
         else # handle Git Bash
             win_drive_path=$(cygpath -w -a "${ahk_file}")
         fi
-        powershell.exe -File \
+        powershell.exe \
             -Command "Start-Process '${win_drive_path}'" 2>/dev/null
     done
 fi

@@ -38,7 +38,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 
 
 ; deno
-::,,dt::deno test
+::,,dt::deno run test
 ::,,dr::deno run
 ::,,drp::deno run pytest
 ::,,drpk::deno run pytest -k
