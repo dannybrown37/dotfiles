@@ -37,6 +37,13 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,nrpk::npm run pytest -- -k
 
 
+; deno
+::,,dt::deno test
+::,,dr::deno run
+::,,drp::deno run pytest
+::,,drpk::deno run pytest -k
+
+
 ; bash
 ::,,rc::~/.bashrc
 ::,,src::source ~/.bashrc
