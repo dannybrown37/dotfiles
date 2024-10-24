@@ -31,6 +31,8 @@ else
     bash_bootstrap_script := $(root_dir)/install/bash.sh
 endif
 
+# installs
+
 bash:
 	@bash -c ". $(bash_bootstrap_script)"
 
@@ -52,7 +54,9 @@ rust: bash
 vscode: bash
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
 
-all: python node golang rust vscode
+all: python deno node golang rust vscode
+
+# pass secret store
 
 sync-secrets:
 	bash -c ". $(root_dir)/bin/sync-secrets.sh && sync-secrets"
