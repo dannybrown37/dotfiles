@@ -289,7 +289,6 @@ function note() {
         [[ -z "$line" ]] && break
         note_content+="$line"$'\n'
     done
-    # echo "$note_content" > "$note_path" >/dev/null
     {
         printf "%s" "$note_content"
     } >"$note_path"
