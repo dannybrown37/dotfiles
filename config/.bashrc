@@ -387,6 +387,7 @@ function y() {
 alias cb='tee >(xclip -selection clipboard)' # clip board
 alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r -I {} code "{}"' # code search interactive
+alias du='du -h | sort -h'
 alias epoch='epoch_timestamp'
 alias ff='fzf --preview="batcat --color=always {}"' # file find, just reviews, selection does nothing
 alias gg='google'
