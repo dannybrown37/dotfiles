@@ -390,6 +390,7 @@ alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r -I {} code "{}
 alias du='du -h | sort -h'
 alias epoch='epoch_timestamp'
 alias ff='fzf --preview="batcat --color=always {}"' # file find, just reviews, selection does nothing
+alias gap='git add -p'
 alias gg='google'
 alias pcb='xclip -selection clipboard -o' # print clip board
 alias rc='source ~/.bashrc'
