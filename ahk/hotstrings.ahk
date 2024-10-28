@@ -138,6 +138,7 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,gcue::git config --global user.email "dannybrown37@gmail.com"
 ::,,gcun::git config --global user.name "Danny Brown"
 ::,,gcdf::git clone https://www.github.com/dannybrown37/dotfiles
+::,,gitlines::git ls-files | xargs wc -l  ; counts Git-tracked lines of code in all files/current repo
 
 
 ; serverless
