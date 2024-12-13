@@ -28,6 +28,7 @@
     88,
     100
   ],
+  "evenBetterToml.schema.enabled": false,
   "files.autoSave": "afterDelay",
   "files.eol": "\n",
   "files.insertFinalNewline": true,
