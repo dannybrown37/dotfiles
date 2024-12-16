@@ -21,8 +21,8 @@ conditional_aws_azure_login() {
         return $?
     }
     check_aws_credentials
-    # shellcheck disable=SC2181
-    if [ $? -ne 0 ]; then
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
         echo "AWS credentials are expired or invalid. Renewing credentials..."
         aws-azure-login -f --all-profiles --no-prompt
         check_aws_credentials
@@ -91,7 +91,16 @@ open_lambda_monitoring_tab_in_browser() {
     url="https://${aws_region}.console.aws.amazon.com/lambda/home?region=${aws_region}#/functions/${lambda_name}?tab=monitoring"
     echo "$url"
 
+    log_group_name=$(aws lambda get-function-configuration \
+                    --function-name "$lambda_name" \
+                    --query "LoggingConfig" \
+                    --output json |
+                        jq -r '.LogGroup')
+    log_group_url="https://console.aws.amazon.com/cloudwatch/home#logStream:group=${log_group_name}"
+    echo "$log_group_url"
+
     cmd.exe /c start "${url}" 2>/dev/null
+    cmd.exe /c start "${log_group_url}" 2>/dev/null
 }
 
 alias caal='conditional_aws_azure_login'
