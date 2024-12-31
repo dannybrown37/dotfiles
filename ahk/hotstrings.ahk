@@ -7,15 +7,54 @@ SetTitleMatchMode, 2  ;
 SendMode Input ; Recommended for new scripts due to its superior speed and reliability.
 
 
+; Load aliases into a dictionary on script startup
+aliases := {} ; Dictionary to hold alias-name => alias-command pairs
+LoadAliases()
+
+; LoadAliases function definition
+LoadAliases()
+{
+    global aliases
+    ; Run the alias command inside wsl.exe and capture the output
+    RunWait, wsl.exe bash -l -i -c "alias > /tmp/aliases.txt", , Hide
+    wslFilePath := "\\wsl$\Debian\tmp\aliases.txt"  ; Update this if needed based on your WSL distro
+    FileRead, OutputVar, %wslFilePath%
+    ; Split the output into lines and parse each alias
+    Loop, Parse, OutputVar, `n
+    {
+        line := A_LoopField
+        ; Only process lines that are aliases
+        if (RegExMatch(line, "^alias\s+([^=]+)=['\x22]([^'\x22]+)['\x22]", m))
+        {
+            aliases[m1] := m2
+        }
+    }
+}
+
+:*:,,,::
+{
+    Input, userInput, V T5, %A_Space%  ; Wait for space after `,,,<alias>`
+    aliasName := Trim(userInput)
+
+    if (!aliases.HasKey(aliasName))
+        return  ; Do nothing if alias not found
+
+    aliasValue := aliases[aliasName]
+
+    ; Replace `,,,<alias>` with alias value
+    Loop, % StrLen(",,,") + StrLen(aliasName)
+        Send, {BS}
+
+    Send, %aliasValue%
+    return
+}
+
+
 ; LLM tools
 ::,,llm::For future responses in this chat, never apologize. Don't re-state my question before you answer it. Be as brief as possible unless I ask you to expand on a point. When I ask for code snippets, only provide the code unless I ask for follow-up explanation. If I ask you to change code, only re-print the line(s) you're changing rather than the entire block. Respond to this with a brief, fun, and positive affirmation so I know you've understood. Thanks an absolute bundle for your helpful brevity.
 
-
 ; personal
 ::,,me::Danny Brown
-::,,idf::sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
-::,,cdf::code ~/projects/dotfiles
-
 
 ; ts/js
 ::,,cl::console.log(
@@ -25,23 +64,6 @@ SendMode Input ; Recommended for new scripts due to its superior speed and relia
 ::,,jstest::test("Test ", () => {});
 ::,,region::// {#}region
 ::,,er::// {#}endregion
-
-
-; npm
-::,,nt::npm test
-::,,nts::npm test -- path/to/test/file -t "test name" --verbose
-::,,nr::npm run
-::,,ns::npm start
-::,,nsa::npm start -- --
-::,,nrp::npm run pytest
-::,,nrpk::npm run pytest -- -k
-
-
-; deno
-::,,dt::deno run test
-::,,dr::deno run
-::,,drp::deno run pytest
-::,,drpk::deno run pytest -k
 
 
 ; bash

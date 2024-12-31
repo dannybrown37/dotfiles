@@ -401,6 +401,22 @@ alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf
 alias vsd='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")" 2>/dev/null | sed "s|^$HOME/projects/||" | fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim -d "{}"'
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim "{}"' # vim search interactive
 
+alias idf='sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash'
+alias cdf='code ~/projects/dotfiles'
+
+alias nt='npm test'
+alias nts='npm test -- path/to/test/file -t "test name" --verbose'
+alias nr='npm run'
+alias ns='npm start'
+alias nsa='npm start -- --'
+alias nrp='npm run pytest'
+alias nrpk='npm run pytest -- -k'
+
+alias dt='deno run test'
+alias dr='deno run'
+alias drp='deno run pytest'
+alias drpk='deno run pytest -k'
+
 # Cargo package aliases
 
 alias yless='jless --yaml'
