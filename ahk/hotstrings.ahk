@@ -23,10 +23,13 @@ LoadAliases()
     Loop, Parse, OutputVar, `n
     {
         line := A_LoopField
-        ; Only process lines that are aliases
-        if (RegExMatch(line, "^alias\s+([^=]+)=['\x22]([^'\x22]+)['\x22]", m))
+        if (RegExMatch(line, "^alias\s+([^=]+)=['""](.*)['""]$", m))
         {
-            aliases[m1] := m2
+            aliases[m1] := m2  ; Automatically strips the quotes
+        }
+        else if (RegExMatch(line, "^alias\s+([^=]+)=(.*)$", m))
+        {
+            aliases[m1] := m2  ; Handles unquoted values
         }
     }
 }
