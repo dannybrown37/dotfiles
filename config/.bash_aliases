@@ -98,7 +98,7 @@ alias pv='python --version'
 alias pmv='python -m venv .venv && source .venv/bin/activate'
 alias vba='source .venv/bin/activate'
 alias nukevenv='deactivate ; rm -r .venv && python -m venv .venv && source .venv/bin/activate'
-alias newdotenv='echo "source .venv/bin/activate" >> .env && echo "echo '$(basename $(pwd)) env activated'" >> .env && source .env'
+alias newdotenv='echo "source .venv/bin/activate" >> .env && echo "echo \"$(basename $(pwd)) env activated\"" >> .env && source .env'
 
 # pytest
 alias ptt='pytest tests'
