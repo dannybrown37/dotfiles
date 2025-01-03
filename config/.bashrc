@@ -13,7 +13,7 @@ shopt -s histappend
 shopt -s expand_aliases
 HISTSIZE=1000
 HISTFILESIZE=2000
-export HISTIGNORE="$(alias | awk -F'[ =]' '{print $2}' | tr '\n' ':')history:ls *:ls:cd:pwd:exit:date:clear:,,*"
+export HISTIGNORE="history:ls *:ls:cd:pwd:exit:date:clear:,,*"
 
 shopt -s checkwinsize
 
@@ -192,7 +192,7 @@ function git_icon() {
         elif [[ $statusCheck =~ 'Changes not staged for commit' ]]; then
             echo 🛠️ # changes made, need git add
         elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
-            echo ✏️ # changes added, need git commit
+            echo ✏️  # changes added, need git commit
         elif [[ $statusCheck =~ 'Your branch is ahead' ]]; then
             echo 🚀 # staged, need git push
         elif [[ $statusCheck =~ 'working tree clean' ]]; then
