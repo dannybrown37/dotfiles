@@ -46,7 +46,7 @@ if [[ -n "${ON_WINDOWS}" ]]; then
 fi
 
 if [[ -f "${HOME}/.local/bin/zoxide" ]]; then
-    eval "$(zoxide init bash --cmd cd)"
+    eval "$(zoxide init bash --cmd cd)"  # essentially alias cd=z
 fi
 
 if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then
@@ -117,36 +117,38 @@ alias puf='pip freeze | xargs pip uninstall -y'
 alias pup='python -m pip install --upgrade pip'
 
 # Git
-alias gb='git branch'
-alias gs='git status'
-alias gpr='git pull rebase'
+alias ga='git add'
+alias gaa='git add .'
 alias gap='git add -p'
+alias gb='git branch'
 alias gc='git commit -m'
 alias gca='git commit --amend -m'
-alias gcr='git commit --amend --no-edit'
-alias grh='git rebase -i HEAD~'
-alias grd='git rebase develop'
-alias grm='git rebase main'
-alias gco='git checkout'
 alias gcb='git checkout -b'
 alias gcd='git checkout develop'
-alias gcm='git checkout main'
+alias gcdf='git clone https://www.github.com/dannybrown37/dotfiles'
 alias gcl='git checkout -'
+alias gcm='git checkout main'
+alias gco='git checkout'
+alias gcr='git commit --amend --no-edit'
+alias gcuemail='git config --global user.email "dannybrown37@gmail.com"'
+alias gcuname='git config --global user.name "Danny Brown"'
+alias gitpurge='git branch | grep -v -e "main" -e "develop" -e "magic" -e "sword" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D'
+alias gl='git log'
+alias glinecount='git ls-files | xargs wc -l'
+alias glo='git log -1 --pretty=%B'
 alias gp='git push'
 alias gpf='git push -f'
 alias gpo='git push -u origin'
-alias gl='git log'
-alias glo='git log -1 --pretty=%B'
-alias gitpurge='git branch | grep -v -e "main" -e "develop" -e "magic" -e "sword" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D'
-alias gresethard='git reset --hard origin/develop'
-alias gsu='git submodule update'
-alias gsi='git submodule update --init --recursive'
-alias grc='git rebase --continue'
+alias gpr='git pull rebase'
 alias gra='git rebase --abort'
-alias gcuemail='git config --global user.email "dannybrown37@gmail.com"'
-alias gcuname='git config --global user.name "Danny Brown"'
-alias gcdf='git clone https://www.github.com/dannybrown37/dotfiles'
-alias glinecount='git ls-files | xargs wc -l'
+alias grc='git rebase --continue'
+alias grd='git rebase develop'
+alias gresethard='git reset --hard origin/develop'
+alias grh='git rebase -i HEAD~'
+alias grm='git rebase main'
+alias gs='git status'
+alias gsi='git submodule update --init --recursive'
+alias gsu='git submodule update'
 
 # Terraform
 alias tf='terraform'
