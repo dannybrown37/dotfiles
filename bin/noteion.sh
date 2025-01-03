@@ -3,14 +3,13 @@
 # Notion API endpoint and token
 NOTION_API_URL="https://api.notion.com/v1/pages"
 NOTION_VERSION="2022-06-28"
+TRIAGE_TABLE_ID="1289f04dc8b180a18846fb06072ab003"
+TASKS_TABLE_ID="1709f04dc8b18065a9a6ffb4b5dbd292"
+PROJECTS_TABLE_ID="1709f04dc8b180b7b53ddc7d50ffa5f5"
 
 notion_validate() {
     if [ -z "$NOTION_NOTES_TOKEN" ]; then
         echo "Error: NOTION_NOTES_TOKEN is not set"
-        return 1
-    fi
-    if [ -z "$NOTION_NOTES_TABLE_ID" ]; then
-        echo "Error: NOTION_NOTES_TABLE_ID is not set"
         return 1
     fi
 }
@@ -20,12 +19,12 @@ noteions() {
     notion_validate || return 1
 
     # Send request to Notion API
-    response=$(curl -s -X POST "$NOTION_API_URL/$NOTION_NOTES_TABLE_ID/query" \
+    response=$(curl -s -X POST "$NOTION_API_URL/$TRIAGE_TABLE_ID/query" \
         -H "Authorization: Bearer $NOTION_NOTES_TOKEN" \
         -H "Content-Type: application/json" \
         -H "Notion-Version: $NOTION_VERSION")
 
-    echo $response
+    echo "$response"
 
     # Check for errors
     if echo "$response" | grep -q '"object": "error"'; then
@@ -60,7 +59,7 @@ noteion() {
     local payload=$(
         cat <<EOF
 {
-    "parent": {"database_id": "$NOTION_NOTES_TABLE_ID"},
+    "parent": {"database_id": "$TRIAGE_TABLE_ID"},
     "properties": {
         "Header": {
             "title": [
@@ -103,3 +102,105 @@ EOF
         echo "Failed to add entry. Response: $response"
     fi
 }
+
+get_notion_contexts() {
+    local url="https://api.notion.com/v1/databases/1709f04dc8b180daae50f821ac38d73e/query"
+    local response=$(curl -s -X POST "$url" \
+        -H "Authorization: Bearer $NOTION_NOTES_TOKEN" \
+        -H "Content-Type: application/json" \
+        -H "Notion-Version: $NOTION_VERSION")
+
+    echo "$response" | jq -r '.results[].properties.Name.title[].text.content' | sort
+}
+
+sync_notion_multi_selects_with_contexts_single_page() {
+    local table_id=$1
+    local contexts
+    # Assuming get_notion_contexts is getting the contexts as expected
+    IFS=$'\n' read -rd '' -a contexts <<< "$(get_notion_contexts)"
+
+    # Prepare the context array in JSON format
+    local context_json=""
+    for context in "${contexts[@]}"; do
+        context_json+="{\"name\": \"$context\"},"
+    done
+    # shellcheck disable=SC2001
+    context_json=$(echo "$context_json" | sed 's/,$//')
+
+    # Now build the JSON payload
+    local payload=$(
+        cat <<EOF
+{
+    "parent": {"database_id": "$table_id"},
+    "properties": {
+        "Header": {
+            "title": [
+                {
+                    "text": {
+                        "content": "Sync record"
+                    }
+                }
+            ]
+        },
+        "Details": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": ""
+                    }
+                }
+            ]
+        },
+        "Created Date": {
+            "date": {
+                "start": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            }
+        },
+        "Context": {
+            "multi_select": [$context_json]
+        }
+    }
+}
+EOF
+    )
+
+    local response=$(curl -s -X POST "$NOTION_API_URL" \
+        -H "Authorization: Bearer $NOTION_NOTES_TOKEN" \
+        -H "Content-Type: application/json" \
+        -H "Notion-Version: $NOTION_VERSION" \
+        -d "$payload")
+
+    if echo "$response" | grep -q '"id":'; then
+        local page_id=$(echo "$response" | jq -r '.id')  # Extract page id
+        trash_notion_page "$page_id" "$table_id"  # Call the delete function
+    else
+        echo "Failed to add entry. Response: $response"
+    fi
+}
+
+trash_notion_page() {
+    local page_id=$1
+    local table_id=$2
+
+    local url="${NOTION_API_URL}/${page_id//-/}"
+    local delete_response=$(curl -s "$url" \
+        -X PATCH \
+        --data '{"in_trash": true}' \
+        -H "Authorization: Bearer $NOTION_NOTES_TOKEN" \
+        -H "Content-Type: application/json" \
+        -H "Notion-Version: $NOTION_VERSION")
+
+    if echo "$delete_response" | grep -q '"id":'; then
+        echo "Successfully deleted page: $page_id"
+    else
+        echo "Failed to delete page. Response: $delete_response"
+    fi
+}
+
+sync_notion_multi_selects_with_contexts_all_pages() {
+    sync_notion_multi_selects_with_contexts_single_page "$TRIAGE_TABLE_ID"
+    sync_notion_multi_selects_with_contexts_single_page "$TASKS_TABLE_ID"
+    sync_notion_multi_selects_with_contexts_single_page "$PROJECTS_TABLE_ID"
+}
+
+alias sync_notion="sync_notion_multi_selects_with_contexts_all_pages"
