@@ -70,8 +70,8 @@ alias idf='sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.g
 alias cdf='code ~/projects/dotfiles'
 
 # npm
+alias ni='npm install'
 alias nt='npm test'
-alias nts='npm test -- path/to/test/file -t "test name" --verbose'
 alias nr='npm run'
 alias ns='npm start'
 alias nsa='npm start -- --'
@@ -79,6 +79,7 @@ alias nrp='npm run pytest'
 alias nrpk='npm run pytest -- -k'
 
 # Deno
+alias di='deno install'
 alias dt='deno run test'
 alias dr='deno run'
 alias drp='deno run pytest'
