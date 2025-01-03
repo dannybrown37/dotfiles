@@ -191,7 +191,7 @@ trash_notion_page() {
         -H "Notion-Version: $NOTION_VERSION")
 
     if echo "$delete_response" | grep -q '"id":'; then
-        echo "Successfully deleted page: $page_id"
+        echo "Synced table ID $table_id"
     else
         echo "Failed to delete page. Response: $delete_response"
     fi
