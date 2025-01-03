@@ -39,8 +39,5 @@ rm -rf ripgrep-13.0.0-x86_64-pc-windows-msvc
 scoop install pipx
 pipx ensurepath
 
-pipx install cookiecutter 
+pipx install cookiecutter
 pipx install pre-commit
-
-
-

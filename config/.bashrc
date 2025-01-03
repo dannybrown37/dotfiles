@@ -32,6 +32,7 @@ fi
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 export NOTES_DIR="${HOME}/notes"
 export LS_IGNORE_GLOBS=".git|.github|node_modules|__pycache__|*.pyc|.pytest_cache|.ruff_cache|*.js.map|*.egg-info|.venv|build|dist|venv"
+# shellcheck disable=SC2016
 export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")"'
 
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
@@ -266,7 +267,7 @@ function note() {
     ## 1 arg -- will assume no content desired
     ## 2 args -- first title, second content
     if [[ ! -d "$NOTES_DIR" ]]; then
-        mkdir $NOTES_DIR
+        mkdir "$NOTES_DIR"
     fi
     local note_title
     local note_content=""
@@ -371,15 +372,6 @@ function utc_timestamp() {
     date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
 }
 
-function y() {
-    local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
-    yazi "$@" --cwd-file="$tmp"
-    if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-        builtin cd -- "$cwd"
-    fi
-    rm -f -- "$tmp"
-}
-
 source "$DOTFILES_DIR"/config/.bash_aliases
 
 ##
@@ -412,7 +404,7 @@ if [[ -f "$HOME/.atuin/bin/env" ]]; then
     [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
     eval "$(atuin init bash)"
     if [[ -n "$ATUIN_USERNAME" && -n "$ATUIN_PASSWORD" ]]; then
-        atuin login -u $ATUIN_USERNAME -p $ATUIN_PASSWORD -k "" >/dev/null
+        atuin login -u "$ATUIN_USERNAME" -p "$ATUIN_PASSWORD" -k "" >/dev/null
     fi
 fi
 
