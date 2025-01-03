@@ -7,7 +7,7 @@
 
 buildlogs() {  # latest build logs in CLI; required arg is AWS stage
     # shellcheck disable=SC2153
-    [[ $# -eq 0 ]] && dev_stage="${DEV_STAGE}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
+    [[ $# -eq 0 ]] && dev_stage="${DEV_STACK}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
     [[ -z $BUILD_ARTIFACTS_BUCKET ]] && echo "BUILD_ARTIFACTS_BUCKET is not set" && return
     [[ $# -eq 1 ]] && dev_stage=$1
     conditional_aws_azure_login
@@ -43,7 +43,7 @@ open_lambda_monitoring_tab_in_browser() {
     # lopen arg1 [developer stage] [AWS region] [Lambda name]
     # env variables:
     # LAMBDA_PATHS -- an array of paths to search for Lambda folders
-    # DEV_STAGE -- the name of the dev stage
+    # DEV_STACK -- the name of the dev stage
     if [[ $# -lt 3 ]]; then
         lambda_folder=$(find "${LAMBDA_PATHS[@]}" \
                         -mindepth 1 -maxdepth 1 \
@@ -55,12 +55,12 @@ open_lambda_monitoring_tab_in_browser() {
         lambda_name=$(basename "${lambda_folder}")
     fi
     if [[ $# -eq 0 ]]; then
-        stage="${DEV_STAGE}"
+        stage="${DEV_STACK}"
         if [[ -z "${stage}" ]]; then
-            echo "Error: no DEV_STAGE environment variable set or arg passed"
+            echo "Error: no DEV_STACK environment variable set or arg passed"
             exit 1
         fi
-        echo "Using default stage ${DEV_STAGE}; pass an arg to override"
+        echo "Using default stage ${DEV_STACK}; pass an arg to override"
         aws_region="us-east-1"
         echo "Using default region us-east-1; pass an arg to override"
     elif [[ $# -eq 1 ]]; then
