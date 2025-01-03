@@ -26,4 +26,3 @@
     MsgBox, Microsoft Teams is not running.
     return
 }
-

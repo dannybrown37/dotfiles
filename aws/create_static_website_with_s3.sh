@@ -36,5 +36,3 @@ EOF
 aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy file://~/projects/$BUCKET_NAME/policy.json
 
 echo "http://$BUCKET_NAME.s3-website-us-east-1.amazonaws.com"
-
-

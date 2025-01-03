@@ -177,4 +177,3 @@ NOTE: If you want to ignore case for just one search command, use [\c](/\c) in t
 # help
 :e<tab>  -- neovim will show all available commands that start with "e"
 :help <command>  -- get docs on any command with :help
-
