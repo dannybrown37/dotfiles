@@ -6,6 +6,7 @@ NOTION_VERSION="2022-06-28"
 TRIAGE_TABLE_ID="1289f04dc8b180a18846fb06072ab003"
 TASKS_TABLE_ID="1709f04dc8b18065a9a6ffb4b5dbd292"
 PROJECTS_TABLE_ID="1709f04dc8b180b7b53ddc7d50ffa5f5"
+CONTEXTS_TABLE_ID="1709f04dc8b180daae50f821ac38d73e"
 
 notion_validate() {
     if [ -z "$NOTION_NOTES_TOKEN" ]; then
@@ -104,7 +105,7 @@ EOF
 }
 
 get_notion_contexts() {
-    local url="https://api.notion.com/v1/databases/1709f04dc8b180daae50f821ac38d73e/query"
+    local url="https://api.notion.com/v1/databases/${CONTEXTS_TABLE_ID}/query"
     local response=$(curl -s -X POST "$url" \
         -H "Authorization: Bearer $NOTION_NOTES_TOKEN" \
         -H "Content-Type: application/json" \
