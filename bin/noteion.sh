@@ -56,6 +56,9 @@ noteion() {
     done
     note_content=$(echo -n "$note_content" | sed ':a;N;$!ba;s/\n/\\n/g') # escape newlines for JSON formatting
 
+    local contexts=$(get_notion_contexts)
+    local context=$(echo "$contexts" | fzf --prompt "Select a context for $header")
+
     # Create JSON payload
     local payload=$(
         cat <<EOF
@@ -84,6 +87,13 @@ noteion() {
             "date": {
                 "start": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
             }
+        },
+        "Context": {
+            "multi_select": [
+                {
+                    "name": "$context"
+                }
+            ]
         }
     }
 }
