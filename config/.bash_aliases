@@ -75,8 +75,8 @@ alias nt='npm test'
 alias nr='npm run'
 alias ns='npm start'
 alias nsa='npm start -- --'
-alias nrp='npm run pytest'
-alias nrpk='npm run pytest -- -k'
+alias nrp='npm run pytest -- -s -vv'
+alias nrpk='npm run pytest -- -s -vv -k'
 
 # Deno
 alias di='deno install'
