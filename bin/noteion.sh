@@ -3,9 +3,7 @@
 # Notion API endpoint and token
 NOTION_API_URL="https://api.notion.com/v1/pages"
 NOTION_VERSION="2022-06-28"
-TRIAGE_TABLE_ID="1289f04dc8b180a18846fb06072ab003"
-TASKS_TABLE_ID="1709f04dc8b18065a9a6ffb4b5dbd292"
-PROJECTS_TABLE_ID="1709f04dc8b180b7b53ddc7d50ffa5f5"
+PROJECTS_TABLE_ID="1709f04dc8b18065a9a6ffb4b5dbd292"
 CONTEXTS_TABLE_ID="1709f04dc8b180daae50f821ac38d73e"
 
 notion_validate() {
@@ -13,29 +11,6 @@ notion_validate() {
         echo "Error: NOTION_NOTES_TOKEN is not set"
         return 1
     fi
-}
-
-noteions() {
-
-    notion_validate || return 1
-
-    # Send request to Notion API
-    response=$(curl -s -X POST "$NOTION_API_URL/$TRIAGE_TABLE_ID/query" \
-        -H "Authorization: Bearer $NOTION_NOTES_TOKEN" \
-        -H "Content-Type: application/json" \
-        -H "Notion-Version: $NOTION_VERSION")
-
-    echo "$response"
-
-    # Check for errors
-    if echo "$response" | grep -q '"object": "error"'; then
-        echo "Failed to fetch data from Notion. Response: $response"
-        return 1
-    fi
-
-    # Parse and display results
-    echo "Database contents:"
-    echo "$response" | jq '.results[] | {id: .id, properties: .properties}'
 }
 
 noteion() {
@@ -63,7 +38,7 @@ noteion() {
     local payload=$(
         cat <<EOF
 {
-    "parent": {"database_id": "$TRIAGE_TABLE_ID"},
+    "parent": {"database_id": "$PROJECTS_TABLE_ID"},
     "properties": {
         "Header": {
             "title": [
@@ -94,6 +69,11 @@ noteion() {
                     "name": "$context"
                 }
             ]
+        },
+        "Classification": {
+            "select": {
+                "name": "Triage"
+            }
         }
     }
 }
@@ -169,6 +149,11 @@ sync_notion_multi_selects_with_contexts_single_page() {
         },
         "Context": {
             "multi_select": [$context_json]
+        },
+        "Classification": {
+            "select": {
+                "name": "Triage"
+            }
         }
     }
 }
@@ -209,8 +194,6 @@ trash_notion_page() {
 }
 
 sync_notion_multi_selects_with_contexts_all_pages() {
-    sync_notion_multi_selects_with_contexts_single_page "$TRIAGE_TABLE_ID"
-    sync_notion_multi_selects_with_contexts_single_page "$TASKS_TABLE_ID"
     sync_notion_multi_selects_with_contexts_single_page "$PROJECTS_TABLE_ID"
 }
 
