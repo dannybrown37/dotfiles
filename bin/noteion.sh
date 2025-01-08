@@ -70,7 +70,7 @@ noteion() {
                 }
             ]
         },
-        "Classification": {
+        "Status": {
             "select": {
                 "name": "Triage"
             }
@@ -150,7 +150,7 @@ sync_notion_multi_selects_with_contexts_single_page() {
         "Context": {
             "multi_select": [$context_json]
         },
-        "Classification": {
+        "Status": {
             "select": {
                 "name": "Triage"
             }
