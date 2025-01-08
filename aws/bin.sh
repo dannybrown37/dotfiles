@@ -38,7 +38,7 @@ conditional_aws_azure_login() {
 }
 
 
-open_lambda_monitoring_tab_in_browser() {
+open_lambda_and_cloudwatch_logs_in_browser() {
     # open browser to particular Lambda's monitoring page
     # lopen arg1 [developer stage] [AWS region] [Lambda name]
     # env variables:
@@ -88,7 +88,7 @@ open_lambda_monitoring_tab_in_browser() {
     lambda_name=${lambda_name/demo/$stage}
     lambda_name=${lambda_name/Demo/$stage_title_case}
 
-    url="https://${aws_region}.console.aws.amazon.com/lambda/home?region=${aws_region}#/functions/${lambda_name}?tab=monitoring"
+    url="https://${aws_region}.console.aws.amazon.com/lambda/home?region=${aws_region}#/functions/${lambda_name}"
     echo "$url"
 
     log_group_name=$(aws lambda get-function-configuration \
@@ -104,4 +104,4 @@ open_lambda_monitoring_tab_in_browser() {
 }
 
 alias caal='conditional_aws_azure_login'
-alias lopen='open_lambda_monitoring_tab_in_browser'
+alias lopen='open_lambda_and_cloudwatch_logs_in_browser'
