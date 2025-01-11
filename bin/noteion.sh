@@ -5,11 +5,98 @@ NOTION_API_URL="https://api.notion.com/v1/pages"
 NOTION_VERSION="2022-06-28"
 PROJECTS_TABLE_ID="1709f04dc8b18065a9a6ffb4b5dbd292"
 THEATER_TABLE_ID="84a6fc454d0749fa961b39e4309bd445"
+BOOKS_TABLE_ID="1789f04dc8b180c6bed6c29bdb46c0d0"
 
 notion_validate() {
     if [ -z "$NOTION_NOTES_TOKEN" ]; then
         echo "Error: NOTION_NOTES_TOKEN is not set"
         return 1
+    fi
+}
+
+update_books_table() {
+    notion_validate || return 1
+
+    read -r -p "Title: " title
+    read -r -p "Author Last Name: " author_last
+    read -r -p "Author First Name: " author_first
+    read -r -p "Age Read: " age
+    read -r -p "Recommendation: " recommendation
+
+    local payload=$(
+        cat <<EOF
+{
+    "parent": {"database_id": "$BOOKS_TABLE_ID"},
+    "properties": {
+        "Book Title": {
+            "title": [
+                {
+                    "text": {
+                        "content": "$title"
+                    }
+                }
+            ]
+        },
+        "Author Last Name": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "$author_last"
+                    }
+                }
+            ]
+        },
+        "Author First Name": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "$author_first"
+                    }
+                }
+            ]
+        },
+        "Times Read": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "1"
+                    }
+                }
+            ]
+        },
+        "Age": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "$age"
+                    }
+                }
+            ]
+        },
+        "Recommendation": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "$recommendation"
+                    }
+                }
+            ]
+        }
+    }
+}
+EOF
+    )
+
+    local response=$(curl -s -X POST "$NOTION_API_URL" \
+        -H "Authorization: Bearer $NOTION_NOTES_TOKEN" \
+        -H "Content-Type: application/json" \
+        -H "Notion-Version: $NOTION_VERSION" \
+        -d "$payload")
+
+    if echo "$response" | grep -q '"id":'; then
+        echo "Successfully added entry: $title"
+    else
+        echo "Failed to add entry. Response: $response"
     fi
 }
 
