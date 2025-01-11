@@ -22,6 +22,25 @@ update_books_table() {
     read -r -p "Author First Name: " author_first
     read -r -p "Age Read: " age
     read -r -p "Recommendation: " recommendation
+    echo "Choose a category:"
+    select category in "Fiction" "Non-Fiction"; do
+        case $REPLY in
+        1)
+            echo "You chose Fiction."
+            break
+            ;;
+        2)
+            echo "You chose Non-Fiction."
+            break
+            ;;
+        *)
+            echo "Invalid option. Please choose 1 or 2."
+            ;;
+        esac
+    done
+
+    # Use the selected category for further processing
+    echo "Selected category: $category"
 
     local payload=$(
         cat <<EOF
@@ -81,6 +100,11 @@ update_books_table() {
                     }
                 }
             ]
+        },
+        "Category": {
+            "select": {
+                "name": "$category"
+            }
         }
     }
 }
