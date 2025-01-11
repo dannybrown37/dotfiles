@@ -4,12 +4,104 @@
 NOTION_API_URL="https://api.notion.com/v1/pages"
 NOTION_VERSION="2022-06-28"
 PROJECTS_TABLE_ID="1709f04dc8b18065a9a6ffb4b5dbd292"
+THEATER_TABLE_ID="84a6fc454d0749fa961b39e4309bd445"
 
 notion_validate() {
     if [ -z "$NOTION_NOTES_TOKEN" ]; then
         echo "Error: NOTION_NOTES_TOKEN is not set"
         return 1
     fi
+}
+
+update_theater_table() {
+    notion_validate || return 1
+
+    read -r -p "Show name: " show_name
+    read -r -p "Date (YYYY-MM-DD): " show_date
+    read -r -p "Theater name: " theater_name
+    read -r -p "Theater city and state (e.g. New York, NY): " theater_city
+    read -r -p "Level of show (e.g., Broadway, School): " theater_level
+    read -r -p "Any notes about the show: " show_notes
+    read -r -p "Notable attendees: " notable_attendees
+
+    local payload=$(
+        cat <<EOF
+{
+    "parent": {"database_id": "$THEATER_TABLE_ID"},
+    "properties": {
+        "Show Name": {
+            "title": [
+                {
+                    "text": {
+                        "content": "$show_name"
+                    }
+                }
+            ]
+        },
+        "Date": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "$show_date"
+                    }
+                }
+            ]
+        },
+        "Theatre": {
+            "select": {
+                "name": "$theater_name"
+            }
+
+        },
+        "Where": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "$theater_city"
+                    }
+                }
+            ]
+        },
+        "Level": {
+            "select": {
+                "name": "$theater_level"
+            }
+        },
+        "Notes": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "$show_notes"
+                    }
+                }
+            ]
+        },
+        "Attendees": {
+            "rich_text": [
+                {
+                    "text": {
+                        "content": "$notable_attendees"
+                    }
+                }
+            ]
+        }
+    }
+}
+EOF
+    )
+
+    local response=$(curl -s -X POST "$NOTION_API_URL" \
+        -H "Authorization: Bearer $NOTION_NOTES_TOKEN" \
+        -H "Content-Type: application/json" \
+        -H "Notion-Version: $NOTION_VERSION" \
+        -d "$payload")
+
+    if echo "$response" | grep -q '"id":'; then
+        echo "Successfully added entry: $header"
+    else
+        echo "Failed to add entry. Response: $response"
+    fi
+
 }
 
 noteion() {
@@ -94,9 +186,9 @@ EOF
 get_notion_contexts() {
     local url="https://api.notion.com/v1/databases/${PROJECTS_TABLE_ID}/query"
     local response=$(curl -s -X POST "$url" \
-          -H "Authorization: Bearer ${NOTION_NOTES_TOKEN}" \
-          -H "Content-Type: application/json" \
-          -H "Notion-Version: 2022-06-28")
+        -H "Authorization: Bearer ${NOTION_NOTES_TOKEN}" \
+        -H "Content-Type: application/json" \
+        -H "Notion-Version: 2022-06-28")
 
     local contexts=$(echo "$response" | jq -r '.results[].properties.Context.multi_select[].name' | sort | uniq | grep -v "Pending Context")
     local final_contexts="Pending Context"$'\n'"$contexts"
