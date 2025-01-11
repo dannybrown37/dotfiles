@@ -99,6 +99,7 @@ EOF
         echo "Failed to add entry. Response: $response"
     fi
 }
+alias add_book="update_books_table"
 
 update_theater_table() {
     notion_validate || return 1
@@ -190,6 +191,7 @@ EOF
     fi
 
 }
+alias add_theater="update_theater_table"
 
 noteion() {
 
@@ -269,6 +271,7 @@ EOF
         echo "Failed to add entry. Response: $response"
     fi
 }
+alias triage="noteion"
 
 get_notion_contexts() {
     local url="https://api.notion.com/v1/databases/${PROJECTS_TABLE_ID}/query"
