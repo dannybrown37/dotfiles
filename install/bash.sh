@@ -11,6 +11,7 @@ apt_packages=(
     curl
     fzf
     git
+    gh
     httpie
     jq
     make
