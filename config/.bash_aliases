@@ -123,6 +123,7 @@ alias ga='git add'
 alias gaa='git add .'
 alias gap='git add -p'
 alias gb='git branch'
+alias gbs="git branch --sort=-committerdate | fzf | xargs -I{} git checkout {}"
 alias gc='git commit -m'
 alias gca='git commit --amend -m'
 alias gcb='git checkout -b'
