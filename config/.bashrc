@@ -372,15 +372,15 @@ function utc_timestamp() {
     date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
 }
 
+if [ -f ~/.git-completion.bash ]; then
+  . ~/.git-completion.bash
+fi
+
 source "$DOTFILES_DIR"/config/.bash_aliases
 
 ##
 ## Language-specific configuration
 ##
-
-if [ -f ~/.git-completion.bash ]; then
-  . ~/.git-completion.bash
-fi
 
 export PYENV_ROOT="$HOME/.pyenv"
 PATH="$PYENV_ROOT/bin:$PATH"
