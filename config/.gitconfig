@@ -4,7 +4,11 @@
 [branch]
     sort = -committerdate
 [core]
-	editor = vi
+    editor = vi
     excludesfile = ${HOME}/.gitignore_global
 [init]
-	defaultBranch = main
+    defaultBranch = main
+[credential "https://github.com"]
+    helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+    helper = !/usr/bin/gh auth git-credential
