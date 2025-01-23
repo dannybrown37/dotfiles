@@ -31,4 +31,4 @@ have come up with FLAGOAG Fits Like a Glove on a Giraffe, which is hilarious. Th
 the phrase having the general meaning of This is good, I approve this work is paramount, please
 keep on theme. Thank you ever so much for your service, you are a real one.'
 
-alias lgtm='ask_gemini_a_question "${lgtm_prompt}"'
+alias lgtm='ask_gemini_a_question "${lgtm_prompt}" | cb'
