@@ -141,7 +141,7 @@ alias glo='git log -1 --pretty=%B'
 alias gp='git push'
 alias gpf='git push -f'
 alias gpo='git push -u origin'
-alias gpup='git push -u origin HEAD'
+alias gpup='git push -u origin HEAD && git open'
 alias gpr='git pull rebase'
 alias gra='git rebase --abort'
 alias grc='git rebase --continue'
@@ -152,6 +152,9 @@ alias grm='git rebase main'
 alias gs='git status'
 alias gsi='git submodule update --init --recursive'
 alias gsu='git submodule update'
+
+# GitHub CLI
+alias ghd="BROWSER='cmd.exe /c start chrome' && export BROWSER && gh dash"
 
 # Terraform
 alias tf='terraform'
