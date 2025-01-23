@@ -109,10 +109,12 @@ else
 fi
 
 ##
-## curl installs
+## misc installs
 ##
 
 curl -o ~/.git-completion.bash https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
+
+gh extension install dlvhdr/gh-dash
 
 
 ###
