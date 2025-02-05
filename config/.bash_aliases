@@ -122,8 +122,7 @@ alias pup='python -m pip install --upgrade pip'
 alias ga='git add'
 alias gaa='git add .'
 alias gap='git add -p'
-alias gb='git branch'
-alias gbs="git branch --sort=-committerdate | fzf | xargs -I{} git checkout {}"
+alias gb='git branch --sort=-committerdate | fzf | xargs git checkout'
 alias gc='git commit -m'
 alias gca='git commit --amend -m'
 alias gcb='git checkout -b'
@@ -157,6 +156,13 @@ alias gsu='git submodule update'
 
 # GitHub CLI
 alias ghd="BROWSER='cmd.exe /c start chrome' && export BROWSER && gh dash"
+function ghpr() {
+    gh pr list --limit 100 --json number,title,updatedAt,author --template \
+      '{{range .}}{{tablerow .number .title .author.name (timeago .updatedAt)}}{{end}}' |
+      fzf --height 25% --reverse |
+      cut -f1 -d ' ' |
+      xargs gh pr checkout
+}
 
 # Terraform
 alias tf='terraform'
