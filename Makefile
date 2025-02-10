@@ -51,6 +51,9 @@ golang: bash
 rust: bash
 	bash -c ". $(root_dir)/install/rust.sh"
 
+nvim: bash
+	bash -c ". $(root_dir)/install/nvim.sh"
+
 vscode: bash
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
 
