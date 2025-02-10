@@ -155,6 +155,10 @@ vim.api.nvim_set_keymap("n", "<leader>pts", "<cmd>w<CR><cmd>!pytest<CR>", { desc
 vim.api.nvim_set_keymap("n", "<leader>ptk", "<cmd>w<CR><cmd>!pytest -k ", { desc = "[P][T]est [K]ey" })
 --#endregion
 
+--#region Bash
+vim.api.nvim_set_keymap("n", "<leader>br", "<cmd>w<CR><cmd>!bash %<CR>", { desc = "[B]ash [R]un Current File" })
+--
+
 --#region Autocomplete
 vim.keymap.set("n", "<leader>ta", function()
 	vim.g.toggle_cmp = not vim.g.toggle_cmp
