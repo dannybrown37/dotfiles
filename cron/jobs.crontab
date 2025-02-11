@@ -1,1 +1,1 @@
-*/15 * * * * ~/projects/dotfiles/cron/aws-azure-login.sh
+*/15 * * * * /home/danny/projects/dotfiles/cron/aws-azure-login.sh
