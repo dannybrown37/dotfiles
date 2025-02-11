@@ -36,28 +36,28 @@ endif
 bash:
 	@bash -c ". $(bash_bootstrap_script)"
 
-python: bash
+python:
 	bash -c ". $(root_dir)/install/python.sh"
 
-deno: bash
+deno:
 	bash -c ". $(root_dir)/install/deno.sh"
 
-node: bash
+node:
 	bash -c ". $(root_dir)/install/node.sh"
 
-golang: bash
+golang:
 	bash -c ". $(root_dir)/install/golang.sh"
 
-rust: bash
+rust:
 	bash -c ". $(root_dir)/install/rust.sh"
 
-nvim: bash
+nvim:
 	bash -c ". $(root_dir)/install/nvim.sh"
 
-vscode: bash
+vscode:
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
 
-all: python deno node golang rust vscode
+all: bash python deno node golang rust nvim vscode
 
 # pass secret store
 
