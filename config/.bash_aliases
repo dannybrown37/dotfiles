@@ -70,6 +70,7 @@ alias idf='sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.g
 alias cdf='code ~/projects/dotfiles'
 
 # npm
+alias n='npm'
 alias ni='npm install'
 alias nt='npm test'
 alias nr='npm run'

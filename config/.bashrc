@@ -37,13 +37,17 @@ export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS
 
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 
+##
+## WSL Specific Setup
+##
+
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
     # shellcheck disable=SC2016
     export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
-    if [[ "${MSYSTEM}" = "MINGW64" ]]; then
-        export ON_GIT_BASH=true
-    fi
+    # source "${DOTFILES_DIR}/ahk/ahk.sh"  # Choosing not to source this given the time to run, use ahk alias
+    source "${DOTFILES_DIR}/wsl/bin.sh"
+    source "${DOTFILES_DIR}/wsl/cpw.sh"
 fi
 
 # https://the.exa.website/docs/colour-themes
@@ -359,15 +363,6 @@ function open_url_in_browser() {
     ${BROWSER:-"${open}"} "${URL}"
 }
 
-function open_vs_code_settings_folder_in_windows_environment() {
-    if [[ -z "${ON_WINDOWS}" ]]; then
-        echo "You're not on Windows"
-        return
-    fi
-    windows_path=$(wslpath -w "/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/")
-    explorer.exe "$windows_path"
-}
-
 function utc_timestamp() {
     date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
 }
@@ -429,9 +424,6 @@ fi
 if [[ -f /etc/os-release && $(grep -i 'debian' /etc/os-release) ]] && [[ "$XDG_CURRENT_DESKTOP" == "GNOME" ]]; then
     . "$DOTFILES_DIR"/config/.gnome
 fi
-
-# In lieu of a symlink between WSL and Windows, just sync settings.json on each shell reboot
-"$DOTFILES_DIR"/.vscode/sync_vsc_settings.sh >/dev/null 2>&1
 
 # Remove duplicates from $PATH and then export. Do not export PATH anywhere else!
 PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')

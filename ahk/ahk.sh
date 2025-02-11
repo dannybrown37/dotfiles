@@ -18,7 +18,7 @@ ahk_secrets_path="${DOTFILES_DIR}/ahk/secrets.ahk"
 all_ahk_files=("${DOTFILES_DIR}/ahk/"*.ahk)
 
 if [[ ! -e "${ahk_secrets_path}" ]]; then
-    echo "#SingleInstance Force" >>"${ahk_secrets_path}"
+    echo "#SingleInstance Force" >> "${ahk_secrets_path}"
 fi
 
 hotstring_definitions=$(grep -oE '::[^:]+::[^:]+' "$hotstrings_path")

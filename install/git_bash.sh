@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ##
-## System setup for Git Bash on Windows
+## System setup for Git Bash on Windows, A Last Resort and Thus Very Underdeveloped
 ##
 
 powershell.exe -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser"
