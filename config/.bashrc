@@ -425,6 +425,11 @@ if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
     source "$AUTOENV_ACTIVATE_SCRIPT"
 fi
 
+
+if [[ -f /etc/os-release && $(grep -i 'debian' /etc/os-release) ]] && [[ "$XDG_CURRENT_DESKTOP" == "GNOME" ]]; then
+    . "$DOTFILES_DIR"/config/.gnome
+fi
+
 # In lieu of a symlink between WSL and Windows, just sync settings.json on each shell reboot
 "$DOTFILES_DIR"/.vscode/sync_vsc_settings.sh >/dev/null 2>&1
 
