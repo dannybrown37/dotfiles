@@ -35,6 +35,9 @@ export LS_IGNORE_GLOBS=".git|.github|node_modules|__pycache__|*.pyc|.pytest_cach
 # shellcheck disable=SC2016
 export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")"'
 
+touch "${DOTFILES_DIR}/config/.secrets"
+source "${DOTFILES_DIR}/config/.secrets"
+
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 
 ##
@@ -46,9 +49,18 @@ if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     # shellcheck disable=SC2016
     export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
     # source "${DOTFILES_DIR}/ahk/ahk.sh"  # Choosing not to source this given the time to run, use ahk alias
-    source "${DOTFILES_DIR}/wsl/bin.sh"
     source "${DOTFILES_DIR}/wsl/cpw.sh"
+    PATH="${DOTFILES_DIR}/wsl:${PATH}"
 fi
+
+##
+## GNOME Specific Setup
+##
+
+if [[ -f /etc/os-release && $(grep -i 'debian' /etc/os-release) ]] && [[ "$XDG_CURRENT_DESKTOP" == "GNOME" ]]; then
+    . "$DOTFILES_DIR"/config/.gnome
+fi
+
 
 # https://the.exa.website/docs/colour-themes
 EXA_COLORS_ARRAY=(
@@ -79,8 +91,6 @@ EXA_COLORS_ARRAY=(
 )
 export EXA_COLORS="$(tr ' ' ':' <<<"${EXA_COLORS_ARRAY[*]}")"
 
-touch "${DOTFILES_DIR}/config/.secrets"
-source "${DOTFILES_DIR}/config/.secrets"
 
 ##
 ## Prompt setup: seasonal colors, system based icon, git status icon
@@ -126,7 +136,7 @@ esac
 
 if [[ "${WSL_DISTRO_NAME}" = 'kali-linux' ]]; then
     PROMPT_SYMBOL=㉿
-elif [[ "${WSL_DISTRO_NAME}" = 'Debian' ]]; then
+elif [[ "${WSL_DISTRO_NAME}" = 'Debian' || ${HOSTNAME} == "debian" ]]; then
     PROMPT_SYMBOL=🐧
 elif [[ "${WSL_DISTRO_NAME}" = 'Ubuntu' ]]; then
     PROMPT_SYMBOL=⚙
@@ -261,7 +271,7 @@ function node_project_init() {
 }
 EOF
     )
-    echo "${tsconfig_content}" >tsconfig.json
+    echo "${tsconfig_content}" > tsconfig.json
 }
 
 function note() {
@@ -346,7 +356,7 @@ function open_url_in_browser() {
     MINGW*) open='start' ;;
     MSYS*) open='start' ;;
     CYGWIN*) open='cygstart' ;;
-    *) # Try to detect WSL (Windows Subsystem for Linux)
+    *) # Try to detect WSL
         if uname -r | grep -q -i microsoft; then
             open='explorer.exe'
         else
@@ -366,6 +376,11 @@ function open_url_in_browser() {
 function utc_timestamp() {
     date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
 }
+
+##
+## Alias Setup
+##
+
 
 if [ -f ~/.git-completion.bash ]; then
   . ~/.git-completion.bash
@@ -418,11 +433,6 @@ tmux source-file ~/.tmux.conf 2>/dev/null
 AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh
 if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
     source "$AUTOENV_ACTIVATE_SCRIPT"
-fi
-
-
-if [[ -f /etc/os-release && $(grep -i 'debian' /etc/os-release) ]] && [[ "$XDG_CURRENT_DESKTOP" == "GNOME" ]]; then
-    . "$DOTFILES_DIR"/config/.gnome
 fi
 
 # Remove duplicates from $PATH and then export. Do not export PATH anywhere else!
