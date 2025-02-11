@@ -1,16 +1,3 @@
 #!/usr/bin/env bash
 
 echo "Sourced .gnome"
-
-# Capture last input (command) and output (command result)
-PROMPT_COMMAND='
-    history -a;
-    last_cmd=$(history 1 | sed "s/^ *[0-9]* *//");
-    last_output=$( { eval "$last_cmd"; } 2>&1 );
-    # Handle the case where output is empty, such as for `cd`
-    if [[ -z "$last_output" ]]; then
-        last_output="No visible output";
-    fi;
-    # Format and copy both input and output to clipboard
-    echo -e "Input:\n$last_cmd\n\nOutput:\n$last_output" | wl-copy
-'
