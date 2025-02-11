@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 
-# Copy last input and output to clipboard
+echo "Sourced .gnome"
 
-
-# Copy last input and output to clipboard
+# Capture last input (command) and output (command result)
 PROMPT_COMMAND='
-  history -a;
-  last_cmd=$(history 1 | sed "s/^ *[0-9]* *//");
-  last_output=$(fc -ln -0 | tee /tmp/last_output.txt | tail -n +2);
-  echo -e "Input:\n$last_cmd\n\nOutput:\n$(cat /tmp/last_output.txt)" | wl-copy
+    history -a;
+    last_cmd=$(history 1 | sed "s/^ *[0-9]* *//");
+    last_output=$( { eval "$last_cmd"; } 2>&1 );
+    # Handle the case where output is empty, such as for `cd`
+    if [[ -z "$last_output" ]]; then
+        last_output="No visible output";
+    fi;
+    # Format and copy both input and output to clipboard
+    echo -e "Input:\n$last_cmd\n\nOutput:\n$last_output" | wl-copy
 '
