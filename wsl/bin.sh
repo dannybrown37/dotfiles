@@ -5,7 +5,7 @@
 ##
 
 
-function open_vs_code_settings_folder_in_windows_environment() {
+function open_vs_code_settings_folder_in_windows_environment {
     if [[ -z "${ON_WINDOWS}" ]]; then
         echo "You're not on Windows"
         return
@@ -13,4 +13,3 @@ function open_vs_code_settings_folder_in_windows_environment() {
     windows_path=$(wslpath -w "/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/")
     explorer.exe "$windows_path"
 }
-
