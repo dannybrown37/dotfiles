@@ -1,6 +1,6 @@
 # Use `Ctrl+j` and `Ctrl+k` to navigate history in Bash
-"\C-j": history-search-forward
-"\C-n": history-search-forward
-"\C-k": history-search-backward
-"\C-p": history-search-backward
+"\C-n": next-history
+"\C-j": next-history
+"\C-p": previous-history
+"\C-k": previous-history
 "\e": "\C-u"
