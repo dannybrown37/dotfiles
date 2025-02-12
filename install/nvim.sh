@@ -23,5 +23,3 @@ else
     nvim --version
     rm $file_name
 fi
-
-
