@@ -10,78 +10,36 @@ Install `apt` packages and basic Bash profile:
 curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
 ```
 
-## Additional Install Options
+## Install Options
 
-```bash
-make help
+The output of `make` in the root directory:
+
+```txt
+Usage: make [option]
+
+Bootstrap scripts:
+  bash            Install Bash profile (tmux, apt packages, etc.)
+  python          Install Python environment (uv, select uv tools)
+  node            Install Node.js environment (nvm, Node 18, select global packages)
+  deno            Install Deno 2
+  golang          Install Go environment (latest Golang version)
+  rust            Install Rust environment (latest Rust version, select global packages)
+  nvim            Install Neovim
+  vscode          Install VS Code extensions and settings
+  all             Install all of the above
+  gnome           Install Gnome extensions
+
+These commands require GPG keys and secrets:
+  sync-secrets    Attempt to sync local secrets and password-store
+  insert-ahk      Push local ahk secrets to password-store
+  insert-bash     Push local bash secrets to password-store
+  insert-secrets  Write all secrets files to password-store
+  pull-ahk        Pull ahk secrets from password-store to local files
+  pull-bash       Pull bash secrets from password-store to local files
+  pull-secrets    Read all secrets files from password-store
 ```
 
-Use this to see in-terminal help message for available Makefile options.
-
-### Bash
-
-```bash
-make bash
-```
-
-This has already been run initially, but use this to sync `apt` packages.
-This will happen with any run of the script, including with an `--install`
-arg.
-
-### Python
-
-```bash
-make python
-```
-
-This installs Python build dependencies, `pyenv`, `Python 3.12`, `pipx`, a
-few `pipx` packages that I like to have globally, and creates a symlink
-for the `.ruff.toml` file in the `~` directory to provide global `ruff` rules.
-
-### Node
-
-```bash
-make node
-```
-
-This installs `nvm`, `Node 18`, and a few `NPM` packages that I like to
-have globally.
-
-### Golang
-
-```bash
-make golang
-```
-
-This deletes the current installation of Golang, installs the latest version,
-and copies needed environment variables to the `~/.bashrc` file.
-
-### Rust
-
-```bash
-make rust
-```
-
-This installs Rust/Cargo.
-
-### VS Code Configuration
-
-```bash
-make vscode
-```
-
-This installs various VSCode extensions and merges the `settings.json` with
-any existing user settings on the system.
-
-### The Full Suite
-
-```bash
-make all
-```
-
-Install all of the above with this.
-
-## Commands Available
+## Commands Available (Incomplete)
 
 - `ahk`: run all AutoHotKey scripts in the `./ahk` directory from WSL or Git Bash in the Windows environment
 - `ahk help`: feed all available hotstrings into `fzf` for review (not selection)
@@ -122,6 +80,7 @@ Install all of the above with this.
 - In the `./.vscode` directory:
   - `settings.json` for VS Code user settings
   - `extensions.txt` for essential VS Code extensions
+- In the `./wsl/` directory, configure WSL-only settings and functions
 
 ### Bash Customizations
 
