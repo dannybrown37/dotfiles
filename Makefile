@@ -59,6 +59,9 @@ vscode:
 
 all: bash python deno node golang rust nvim vscode
 
+gnome:
+	bash -c ". $(root_dir)/install/gnome.sh"
+
 # pass secret store
 
 sync-secrets:

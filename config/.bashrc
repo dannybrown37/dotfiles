@@ -228,7 +228,7 @@ function google() {
         query=$*
     fi
 
-    explorer.exe "https://www.google.com/search?q=${query}"
+    url "https://www.google.com/search?q=${query// /+}"
 }
 
 function node_project_init() {
@@ -356,6 +356,7 @@ function open_url_in_browser() {
     MINGW*) open='start' ;;
     MSYS*) open='start' ;;
     CYGWIN*) open='cygstart' ;;
+    Linux) open='xdg-open' ;;
     *) # Try to detect WSL
         if uname -r | grep -q -i microsoft; then
             open='explorer.exe'
@@ -369,8 +370,8 @@ function open_url_in_browser() {
     if [[ "${URL}" != https* ]]; then
         URL="https://${URL}"
     fi
-
-    ${BROWSER:-"${open}"} "${URL}"
+    echo "Opening ${URL} in ${open}"
+    ${BROWSER:-"${open}"} "${URL}" || xdg-open "${URL}"
 }
 
 function utc_timestamp() {
