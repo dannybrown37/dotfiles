@@ -20,8 +20,8 @@ function ask_gemini_a_question {
 
 alias gem='ask_gemini_a_question'
 
-
-lgtm_prompt='Give me a pithy, brief, witty, and ridiculous way to say Looks Good To Me,
+lgtm_prompt=$(cat << 'EOF'
+Give me a pithy, brief, witty, and ridiculous way to say Looks Good To Me,
 with a matching acronym on the line above. Such as AGFMP for Appears Groovy From My Perspective.
 But not literally Looks Good To Me, that is not what I am looking for. That said, an alternative
 LGTM acronym would be good, like Lightly Greased Turbo Machine or such. Make it plaintext, do not
@@ -29,9 +29,15 @@ include any formatting characters like asterisks. Do it on two lines, with the a
 the expanded version second. Make sure the acronym matches the phrase. One of my favorites you
 have come up with FLAGOAG Fits Like a Glove on a Giraffe, which is hilarious. The importance of
 the phrase having the general meaning of This is good, I approve this work is paramount, please
-keep on theme. Thank you ever so much for your service, you are a real one.'
-
+keep on theme. Thank you ever so much for your service, you are a real one. If I provide a single
+word after the colon, make the acronym that word. Otherwise follow the instructions after the colon,
+if any:
+EOF
+)
 pokemon="${lgtm_prompt} Make the acronym a Pokemon!"
 
-alias lgtm='ask_gemini_a_question "${lgtm_prompt}" | cb'
+function lgtm {
+    ask_gemini_a_question "${lgtm_prompt} $1" | cb
+}
+
 alias pokemon='ask_gemini_a_question "${pokemon}" | cb'
