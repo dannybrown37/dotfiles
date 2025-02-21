@@ -34,7 +34,7 @@ word after the colon, make the acronym that word. Otherwise follow the instructi
 if any:
 EOF
 )
-pokemon="${lgtm_prompt} Make the acronym a Pokemon!"
+pokemon="${lgtm_prompt} Choose a random number between 1 and 151 and make the acronym the corresponding pokemon!"
 
 function lgtm {
     ask_gemini_a_question "${lgtm_prompt} $1" | cb
