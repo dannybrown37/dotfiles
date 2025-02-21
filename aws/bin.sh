@@ -105,3 +105,5 @@ open_lambda_and_cloudwatch_logs_in_browser() {
 
 alias caal='conditional_aws_azure_login'
 alias lopen='open_lambda_and_cloudwatch_logs_in_browser'
+
+complete -C '/usr/local/bin/aws_completer' aws
