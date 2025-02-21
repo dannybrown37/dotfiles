@@ -24,6 +24,7 @@ apt_packages=(
     ripgrep
     shellcheck
     shfmt
+    tldr
     tmux
     unzip
     wget
