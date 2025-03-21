@@ -214,11 +214,10 @@ alias sshwslenable='sudo echo "[boot]\nsystemd=true" >> /etc/wsl.conf'
 alias editwslconf='sudo vi /etc/wsl.conf'
 
 # Tmux
-alias ts='tmux new -s Session'
-alias td='tmux detach'
-alias tl='tmux ls'
-alias ta='tmux attach -t Session'
-alias tconf='tmux source-file ~/.tmux.conf'
+alias tms='tmux new -s Session || tmux attach -t Session'
+alias tmd='tmux detach'
+alias tml='tmux ls'
+alias tmconf='tmux source-file ~/.tmux.conf'
 
 # Fixes for weird situations
 alias fixhashicorppublickey='wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg'
