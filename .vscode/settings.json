@@ -71,6 +71,7 @@
       "value": "#0000b3"
     }
   ],
+  "shellcheck.customArgs": ["-x"],
   "cSpell.words": [
     "ATUIN",
     "autoenv",
