@@ -338,8 +338,7 @@ function mk() {
 }
 
 function push() {
-    local topic="danny_is_alerted"
-    http POST ntfy.sh/"${topic}" alert="$*"
+    http POST ntfy.sh/"${PERSONAL_ALERT_TOPIC}" alert="$*"
 }
 
 function push_to_topic() {
