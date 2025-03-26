@@ -109,6 +109,8 @@ alias ptu='pytest tests/unit'
 alias pte='pytest tests/e2e'
 alias ptc='pytest tests/e2e/cloud'
 alias ptl='pytest tests/e2e/local'
+alias ptff='pytest --ff'
+alias ptlf='pytest --lf'
 
 # pip
 alias pir='pip install -r requirements.txt --require-virtualenv'
