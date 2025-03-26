@@ -150,7 +150,7 @@ PROMPT_COMMAND=git_info_env_vars
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1 # disables (venv) prepending prompt when venv activated, handled in PS1 var below
 # shellcheck disable=SC2250
-export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'-}'$COLOR3'<'$COLOR3'\w'$COLOR3'>'$COLOR1'-'$COLOR4'{$DEV_STACK}'$COLOR1'-[$GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
+export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'( $(basename $VIRTUAL_ENV) )'$COLOR1'-}'$COLOR3'< \w >'$COLOR1'-'$COLOR4'{ $DEV_STACK }'$COLOR1'-[ $GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
 
 ##
 ## Functions
