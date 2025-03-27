@@ -13,6 +13,8 @@ function open_vs_code_settings_folder_in_windows_environment {
     windows_path=$(wslpath -w "/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/")
     explorer.exe "$windows_path"
 }
+alias vscw='open_vs_code_settings_folder_in_windows_environment'
+
 
 function copy_from_windows_downloads_folder_to_wsl {
     if [[ -z "${ON_WINDOWS}" ]]; then
@@ -26,3 +28,4 @@ function copy_from_windows_downloads_folder_to_wsl {
     cp "$downloads_path/$selected_file" "$wsl_downloads_path/$selected_file"
     echo "Copied $selected_file to $wsl_downloads_path"
 }
+alias cfw='copy_from_windows_downloads_folder_to_wsl'
