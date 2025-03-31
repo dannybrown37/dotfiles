@@ -88,7 +88,7 @@ open_lambda_and_cloudwatch_logs_in_browser() {
     lambda_name=${lambda_name/demo/$stage}
     lambda_name=${lambda_name/Demo/$stage_title_case}
 
-    url="https://${aws_region}.console.aws.amazon.com/lambda/home?region=${aws_region}#/functions/${lambda_name}/?subtab=triggers&tab=configure"
+    url="https://${aws_region}.console.aws.amazon.com/lambda/home?region=${aws_region}#/functions/${lambda_name}?subtab=triggers&tab=configure"
     echo "$url"
 
     log_group_name=$(aws lambda get-function-configuration \
