@@ -93,7 +93,7 @@ LoadAliases()
 ::,,curlafile::curl -L -o file.zip https://example.com/file.zip
 
 ; markdown
-::,,mdil::[![alt text](image_url)](link_url)
+::,,mdil::[![alt_text](image_url)](link_url)
 
 ; python
 ::,,ifn::if __name__ == '__main__':
