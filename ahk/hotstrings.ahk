@@ -34,7 +34,7 @@ LoadAliases()
     }
 }
 
-; triple-commas will be disappear to trigger a search of aliases, enter with space
+; triple-commas will disappear to trigger a search of aliases, enter with space
 :*:,,,::
 {
     Input, userInput, V T5, %A_Space%  ; Wait for space after `,,,<alias>`
@@ -91,6 +91,9 @@ LoadAliases()
 ::,,noargs::[ ${#} -eq 0 ] && echo "Error: No args passed" && return
 ::,,checkinstall::dpkg-query -W -f='${{}Status{}}'
 ::,,curlafile::curl -L -o file.zip https://example.com/file.zip
+
+; markdown
+::,,mdl::[![alt text](image_url)](link_url)
 
 ; python
 ::,,ifn::if __name__ == '__main__':
