@@ -76,7 +76,6 @@ alias nt='npm test'
 alias nr='npm run'
 alias ns='npm start'
 alias nsa='npm start -- --'
-alias nrp='npm run pytest -- -s -vv'
 alias nrpk='npm run pytest -- -s -vv -k'
 
 # Deno
@@ -95,6 +94,7 @@ alias vrc='nvim ~/.bashrc'
 alias rst='ruff check src tests'
 alias rfst='ruff format src tests'
 alias pv='python --version'
+alias repl='uv run python'
 
 # venv
 alias pmv='python -m venv .venv && source .venv/bin/activate'
