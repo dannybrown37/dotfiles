@@ -15,7 +15,7 @@ buildlogs() {  # latest build logs in CLI; required arg is AWS stage
 }
 
 
-conditional_aws_azure_login() {
+conditional_aws_azure_login_any_profile() {
     check_aws_credentials() {
         aws sts get-caller-identity > /dev/null 2>&1
         return $?
@@ -34,6 +34,46 @@ conditional_aws_azure_login() {
         fi
     else
         echo "AWS credentials are valid."
+    fi
+}
+
+
+conditional_aws_azure_login() {
+    get_all_profiles() {
+        grep '^\[profile ' ~/.aws/config | sed 's/\[profile \(.*\)\]/\1/' | tr -d ' '
+    }
+    check_all_profiles() {
+        local any_expired=0
+        local profiles=$(get_all_profiles)
+        echo "Checking credentials for all AWS profiles..."
+
+        for profile in $profiles; do
+            echo -n "Checking profile $profile: "
+            aws sts get-caller-identity --profile "$profile" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                echo "EXPIRED"
+                any_expired=1
+            else
+                echo "VALID"
+            fi
+        done
+
+        return $any_expired
+    }
+    check_all_profiles
+    local status=$?
+    if [ $status -ne 0 ]; then
+        echo "Some AWS credentials are expired or invalid. Renewing all credentials..."
+        aws-azure-login -f --all-profiles --no-prompt
+        check_all_profiles
+        if [ $? -eq 0 ]; then
+            echo "All AWS credentials successfully renewed."
+        else
+            echo "Failed to renew some AWS credentials."
+            exit 1
+        fi
+    else
+        echo "All AWS credentials are valid."
     fi
 }
 
