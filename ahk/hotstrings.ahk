@@ -103,6 +103,7 @@ LoadAliases()
 ::,,ipp::from pprint import pprint {;} print() {;} pprint(
 ::,,log::logger = logging.getLogger(__name__)
 ::,,aok::assert response.status_code == HTTPStatus.OK, response.json()
+::,,env::from os import environ as env
 
 ; git
 ::,,nv::--no-verify

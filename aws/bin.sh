@@ -46,7 +46,6 @@ conditional_aws_azure_login() {
         local any_expired=0
         local profiles=$(get_all_profiles)
         echo "Checking credentials for all AWS profiles..."
-
         for profile in $profiles; do
             echo -n "Checking profile $profile: "
             aws sts get-caller-identity --profile "$profile" > /dev/null 2>&1
@@ -57,7 +56,6 @@ conditional_aws_azure_login() {
                 echo "VALID"
             fi
         done
-
         return $any_expired
     }
     check_all_profiles
@@ -65,7 +63,6 @@ conditional_aws_azure_login() {
     if [ $status -ne 0 ]; then
         echo "Some AWS credentials are expired or invalid. Renewing all credentials..."
         aws-azure-login -f --all-profiles --no-prompt
-        check_all_profiles
         if [ $? -eq 0 ]; then
             echo "All AWS credentials successfully renewed."
         else

@@ -2,6 +2,7 @@
 ## Aliases
 ##
 
+alias awsconfig='nvim ~/.aws/config'
 alias cb='tee >(xclip -selection clipboard)' # clip board
 alias chrome='google-chrome 2>/dev/null &'
 alias csi='fzf -m --preview="batcat --color=always {}" | xargs -r -I {} code "{}"' # code search interactive
