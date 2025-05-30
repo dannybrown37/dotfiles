@@ -91,6 +91,7 @@ LoadAliases()
 ::,,noargs::[ ${#} -eq 0 ] && echo "Error: No args passed" && return
 ::,,checkinstall::dpkg-query -W -f='${{}Status{}}'
 ::,,curlafile::curl -L -o file.zip https://example.com/file.zip
+::,,ds::DEV_STACK=
 
 ; markdown
 ::,,mdil::{[}{!}[alt_text](image_url)](link_url)
