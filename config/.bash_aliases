@@ -1,6 +1,4 @@
-##
-## Aliases
-##
+## Misc. Aliases
 
 alias awsconfig='nvim ~/.aws/config'
 alias cb='tee >(xclip -selection clipboard)' # clip board
