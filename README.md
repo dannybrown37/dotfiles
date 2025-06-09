@@ -20,7 +20,7 @@ Usage: make [option]
 Bootstrap scripts:
   bash            Install Bash profile (tmux, apt packages, etc.)
   python          Install Python environment (uv, select uv tools)
-  node            Install Node.js environment (nvm, Node 18, select global packages)
+  node            Install Node.js environment (nvm, Node 22, select global packages)
   deno            Install Deno 2
   golang          Install Go environment (latest Golang version)
   rust            Install Rust environment (latest Rust version, select global packages)
