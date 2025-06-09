@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 ##
-## Install nvm and set up Node 18 as global version
+## Install nvm and set up Node 22 as global version
 ##
 
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 source "${HOME}/.bashrc"
 export NVM_DIR="${HOME}/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm install 18
-nvm use 18
+nvm install 22
+nvm use 22
 
 ##
 ## Install global npm packages
