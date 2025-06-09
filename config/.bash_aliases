@@ -47,7 +47,7 @@ if [[ -n "${ON_WINDOWS}" ]]; then
 fi
 
 if [[ -f "${HOME}/.local/bin/zoxide" ]]; then
-    eval "$(zoxide init bash --cmd cd)"  # essentially alias cd=z
+    eval "$(zoxide init bash --cmd cd)" # essentially alias cd=z
 fi
 
 if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then
@@ -141,6 +141,7 @@ alias gcuname='git config --global user.name "Danny Brown"'
 alias gitpurge='git branch | grep -v -e "main" -e "develop" -e "magic" -e "sword" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D'
 alias gl='git log'
 alias glinecount='git ls-files | xargs wc -l'
+alias glines=glinecount
 alias glo='git log -1 --pretty=%B'
 alias gp='git push'
 alias gpf='git push -f'
@@ -161,10 +162,10 @@ alias gsu='git submodule update'
 alias ghd="BROWSER='cmd.exe /c start chrome' && export BROWSER && gh dash"
 function ghpr() {
     gh pr list --limit 100 --json number,title,updatedAt,author --template \
-      '{{range .}}{{tablerow .number .title .author.name (timeago .updatedAt)}}{{end}}' |
-      fzf --height 25% --reverse |
-      cut -f1 -d ' ' |
-      xargs gh pr checkout
+        '{{range .}}{{tablerow .number .title .author.name (timeago .updatedAt)}}{{end}}' |
+        fzf --height 25% --reverse |
+        cut -f1 -d ' ' |
+        xargs gh pr checkout
 }
 
 # Terraform
