@@ -38,7 +38,7 @@ conditional_aws_azure_login_any_profile() {
 }
 
 
-conditional_aws_azure_login() {
+_conditional_aws_azure_login() {
     get_all_profiles() {
         grep '^\[profile ' ~/.aws/config | sed 's/\[profile \(.*\)\]/\1/' | tr -d ' '
     }
@@ -75,7 +75,7 @@ conditional_aws_azure_login() {
 }
 
 
-open_lambda_and_cloudwatch_logs_in_browser() {
+_open_lambda_and_cloudwatch_logs_in_browser() {
     # open browser to particular Lambda's monitoring page
     # lopen arg1 [developer stage] [AWS region] [Lambda name]
     # env variables:
@@ -140,7 +140,5 @@ open_lambda_and_cloudwatch_logs_in_browser() {
     cmd.exe /c start "${log_group_url}" 2>/dev/null
 }
 
-alias caal='conditional_aws_azure_login'
-alias lopen='open_lambda_and_cloudwatch_logs_in_browser'
 
 complete -C '/usr/local/bin/aws_completer' aws
