@@ -10,6 +10,8 @@ alias epoch='epoch_timestamp'
 alias ff='fzf --preview="batcat --color=always {}"' # file find, just reviews, selection does nothing
 alias gap='git add -p'
 alias gg='google'
+alias llmrules='pcat ~/projects/dotfiles/bin/llm_rules.txt | cb >/dev/null && echo "Copied to clipboard"'
+alias llmedit='nvim ~/projects/dotfiles/bin/llm_rules.txt'
 alias pcb='xclip -selection clipboard -o' # print clip board
 alias rc='source ~/.bashrc'
 alias url='open_url_in_browser'
