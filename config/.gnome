@@ -1,11 +1,75 @@
 #!/usr/bin/env bash
 
-
 cd ~/.local/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/
 glib-compile-schemas schemas/
 cd -
 
-gsettings --schemadir ~/.local/share/gnome-shell/extensions/just-perfection-desktop\@just-perfection/schemas/ list-recursively org.gnome.shell.extensions.just-perfection
+SCHEMA_DIR=~/.local/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/schemas/
 
-gsettings set org.gnome.shell.extensions.just-perfection activities-button false
-gsettings set org.gnome.shell.extensions.just-perfection animation false
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection accessibility-menu true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection activities-button false
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection activities-button-icon-monochrome true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection activities-button-icon-path ''
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection activities-button-label true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection aggregate-menu true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection alt-tab-icon-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection alt-tab-small-icon-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection alt-tab-window-preview-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection animation 1
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection app-menu true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection app-menu-icon true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection app-menu-label true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection background-menu true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection calendar true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection clock-menu true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection clock-menu-position 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection clock-menu-position-offset 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection controls-manager-spacing-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection dash true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection dash-app-running true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection dash-icon-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection dash-separator true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection double-super-to-appgrid true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection events-button true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection keyboard-layout true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection looking-glass-height 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection looking-glass-width 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection notification-banner-position 1
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection osd true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection osd-position 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection overlay-key true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection panel true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection panel-button-padding-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection panel-corner-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection panel-icon-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection panel-in-overview false
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection panel-indicator-padding-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection panel-notification-icon true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection panel-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection power-icon true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection quick-settings true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection ripple-box true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection screen-recording-indicator true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection screen-sharing-indicator true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection search true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection show-apps-button true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection startup-status 1
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection switcher-popup-delay true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection theme false
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection top-panel-position 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection type-to-search true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection weather true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection window-demands-attention-focus false
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection window-menu-take-screenshot-button true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection window-picker-icon true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection window-preview-caption true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection window-preview-close-button true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection workspace true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection workspace-background-corner-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection workspace-peek true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection workspace-popup true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection workspace-switcher-should-show false
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection workspace-switcher-size 0
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection workspace-wrap-around false
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection workspaces-in-app-grid true
+gsettings --schemadir $SCHEMA_DIR set org.gnome.shell.extensions.just-perfection world-clock true
