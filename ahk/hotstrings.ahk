@@ -16,7 +16,7 @@ LoadAliases()
 {
     global aliases
     ; Run the alias command inside wsl.exe and capture the output
-    RunWait, wsl.exe bash -l -i -c "alias > /tmp/aliases.txt", , Hide
+    RunWait, wsl.exe bash -l -i -c "source ~/.bashrc; alias > /tmp/aliases.txt", , Hide
     wslFilePath := "\\wsl$\Debian\tmp\aliases.txt"  ; Update this if needed based on your WSL distro
     FileRead, OutputVar, %wslFilePath%
     ; Split the output into lines and parse each alias
@@ -32,25 +32,15 @@ LoadAliases()
             aliases[m1] := m2  ; Handles unquoted values
         }
     }
-}
+    ; Load each alias in as a ,,-prefixed hotstring
+    for aliassName, aliassValue in aliases
+    {
+        ; Create hotstring like ::,,aliasname::aliasvalue
+        Hotstring("::,," . aliassName, aliassValue)
+    }
+    ; Uncomment this line to debug, prints alias contents:
+    ; MsgBox, File contents: %OutputVar%
 
-; triple-commas will disappear to trigger a search of aliases, enter with space
-:*:,,,::
-{
-    Input, userInput, V T5, %A_Space%  ; Wait for space after `,,,<alias>`
-    aliasName := Trim(userInput)
-
-    if (!aliases.HasKey(aliasName))
-        return  ; Do nothing if alias not found
-
-    aliasValue := aliases[aliasName]
-
-    ; Replace `,,,<alias>` with alias value
-    Loop, % StrLen(",,,") + StrLen(aliasName)
-        Send, {BS}
-
-    Send, %aliasValue%
-    return
 }
 
 
