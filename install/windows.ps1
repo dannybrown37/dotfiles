@@ -9,13 +9,3 @@ winget install LGUG2Z.whkd
 # TODO: integrate elsewhere as needed
 # komorebic quickstart
 # komorebic start --whkd --bar
-
-exit 0
-
-# NOTES:
-# to reset, run:
-komorebic stop
-taskkill /f /im komorebi.exe
-taskkill /f /im whkd.exe
-taskkill /f /im komorebi-bar.exe
-komorebic start --whkd --bar

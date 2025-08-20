@@ -1,4 +1,4 @@
-.PHONY: help python deno node golang rust vscode all sync-secrets pull-ahk pull-bash pull-secrets insert-ahk insert-bash insert-secrets
+.PHONY: help python deno node golang rust vscode all gnome windows resestkomo sync-secrets pull-ahk pull-bash pull-secrets insert-ahk insert-bash insert-secrets
 
 help:
 	@echo "Usage: make [option]"
@@ -14,6 +14,8 @@ help:
 	@echo "  vscode          Install VS Code extensions and settings"
 	@echo "  all             Install all of the above"
 	@echo "  gnome           Install Gnome extensions"
+	@echo "  windows         Install Windows extensions (NerdFonts and Komorebi)"
+	@echo "  resetkomo       Reset komorebi (useful for after configuration changes)"
 	@echo ""
 	@echo "These commands require GPG keys and secrets:"
 	@echo "  sync-secrets    Attempt to sync local secrets and password-store"
@@ -63,6 +65,12 @@ all: bash python deno node golang rust nvim vscode
 
 gnome:
 	bash -c ". $(root_dir)/install/gnome.sh"
+
+windows:
+	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/windows.ps1"
+
+resetkomo:
+	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/reset_komo.ps1"
 
 # pass secret store
 
