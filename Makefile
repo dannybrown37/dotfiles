@@ -15,7 +15,7 @@ help:
 	@echo "  all             Install all of the above"
 	@echo "  gnome           Install Gnome extensions"
 	@echo "  windows         Install Windows extensions (NerdFonts and Komorebi)"
-	@echo "  resetkomo       Reset komorebi (useful for after configuration changes)"
+	@echo "  komo       Reset komorebi (useful for after configuration changes)"
 	@echo ""
 	@echo "These commands require GPG keys and secrets:"
 	@echo "  sync-secrets    Attempt to sync local secrets and password-store"
@@ -69,7 +69,7 @@ gnome:
 windows:
 	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/windows.ps1"
 
-resetkomo:
+komo:
 	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/reset_komo.ps1"
 
 # pass secret store
