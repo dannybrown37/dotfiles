@@ -31,10 +31,27 @@ fi
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 export NOTES_DIR="${HOME}/notes"
-export LS_IGNORE_GLOBS=".git|.github|node_modules|__pycache__|*.pyc|.pytest_cache|.ruff_cache|*.js.map|*.egg-info|.venv|build|dist|venv"
-# shellcheck disable=SC2016
-export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")"'
 
+LS_IGNORE_PATTERNS=(
+    ".git"
+    ".github"
+    "node_modules"
+    "__pycache__"
+    "*.pyc"
+    ".pytest_cache"
+    ".ruff_cache"
+    "*.js.map"
+    "*.egg-info"
+    ".venv"
+    "build"
+    "dist"
+    "venv"
+    "package-lock.json"
+    "uv.lock"
+)
+export LS_IGNORE_GLOBS=$(IFS='|'; echo "${LS_IGNORE_PATTERNS[*]}")
+# shellcheck disable=SC2016
+export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")" | while IFS= read -r f; do [[ "$f" == *.js && -f "${f%.js}.ts" ]] || echo "$f"; done'
 touch "${DOTFILES_DIR}/config/.secrets"
 source "${DOTFILES_DIR}/config/.secrets"
 

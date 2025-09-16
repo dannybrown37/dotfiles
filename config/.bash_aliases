@@ -18,7 +18,6 @@ alias url='open_url_in_browser'
 alias utc='utc_timestamp'
 alias uuid='generate_random_uuid_and_put_in_clipboard'
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # vim cheat
-alias vsd='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")" 2>/dev/null | sed "s|^$HOME/projects/||" | fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim -d "{}"'
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r -I {} nvim "{}"' # vim search interactive
 
 # Cargo package aliases
