@@ -20,6 +20,13 @@ alias uuid='generate_random_uuid_and_put_in_clipboard'
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # vim cheat
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim "{}"' # vim search interactive
 
+# Tools I'm trying out
+
+alias cinrec='asciinema rec session.cast'
+alias cinplay='asciinema play session.cast'
+alias crocsend='croc send'
+alias crocinstall='curl https://getcroc.schollz.com | bash'
+
 # Cargo package aliases
 
 alias yless='jless --yaml'
