@@ -435,7 +435,9 @@ if [[ -f "$HOME/.atuin/bin/env" ]]; then
     [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
     eval "$(atuin init bash)"
     if [[ -n "$ATUIN_USERNAME" && -n "$ATUIN_PASSWORD" ]]; then
-        atuin login -u "$ATUIN_USERNAME" -p "$ATUIN_PASSWORD" -k "" >/dev/null
+        if ! atuin status 2>/dev/null | grep -q "Username: $ATUIN_USERNAME"; then
+            atuin login -u "$ATUIN_USERNAME" -p "$ATUIN_PASSWORD" -k "" >/dev/null
+        fi
     fi
 fi
 
