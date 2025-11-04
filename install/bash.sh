@@ -5,6 +5,7 @@
 ##  This script is designed to idempotent and can be run multiple times
 ##
 apt_packages=(
+    asciinema
     bash-completion
     bat
     cron
