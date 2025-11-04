@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 ##
-## System defaults; retained setup from fresh rc file
-##
+## Started as system defaults; slightly tweaked over time
 
 case $- in
 *i*) ;;
