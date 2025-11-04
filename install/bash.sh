@@ -101,6 +101,14 @@ curl -o ~/.git-completion.bash https://raw.githubusercontent.com/git/git/master/
 
 gh extension install dlvhdr/gh-dash
 
+##
+## Install croc file sharing tool
+##
+
+if [[ ! -f "${HOME}/.local/bin/croc" ]]; then
+    curl https://getcroc.schollz.com | bash
+fi
+
 
 ###
 ### Install atuin shell history manager
