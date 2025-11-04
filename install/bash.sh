@@ -10,6 +10,7 @@ apt_packages=(
     bat
     cron
     curl
+    faker
     fzf
     git
     gh
@@ -17,6 +18,7 @@ apt_packages=(
     jq
     make
     man-db
+    lolcat
     neofetch
     openssh-server
     pass
