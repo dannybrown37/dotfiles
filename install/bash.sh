@@ -8,9 +8,11 @@ apt_packages=(
     asciinema
     bash-completion
     bat
+    cowsay
     cron
     curl
     faker
+    fortune
     fzf
     git
     gh
