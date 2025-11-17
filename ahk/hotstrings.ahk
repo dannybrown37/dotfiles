@@ -95,6 +95,7 @@ LoadAliases()
 ::,,log::logger = logging.getLogger(__name__)
 ::,,aok::assert response.status_code == HTTPStatus.OK, response.json()
 ::,,env::from os import environ as env
+::,,bp::breakpont()
 
 ; git
 ::,,nv::--no-verify

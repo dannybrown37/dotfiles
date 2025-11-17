@@ -5,7 +5,7 @@ function ask_gemini_a_question {
         echo "Please set the GOOGLE_API_KEY environment variable."
         return 1
     fi
-    result=$(curl -s https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="${GOOGLE_API_KEY}" \
+    result=$(curl -s https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="${GOOGLE_API_KEY}" \
         -H 'Content-Type: application/json' \
         -d "{
                 \"contents\": [{
@@ -37,7 +37,7 @@ EOF
 pokemon="${lgtm_prompt} Choose a random number between 1 and 151 and make the acronym the corresponding pokemon!"
 
 function lgtm {
-    ask_gemini_a_question "${lgtm_prompt} $1" | cb
+    ask_gemini_a_question "${lgtm_prompt} $1" | cowsay | lolcat | cb
 }
 
 alias pokemon='ask_gemini_a_question "${pokemon}" | cb'
