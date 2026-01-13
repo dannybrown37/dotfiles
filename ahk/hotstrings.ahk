@@ -131,4 +131,6 @@ LoadAliases()
 
 ; Strudel
 
-::,,switchangel::await (async () => { (0, eval)(await (await fetch('https://raw.githubusercontent.com/switchangel/strudel-scripts/refs/heads/main/prebake.strudel')).text()); })();
+::,,switchangel::
+SendRaw, await (async () => { (0, eval)(await (await fetch('https://raw.githubusercontent.com/switchangel/strudel-scripts/refs/heads/main/prebake.strudel')).text()); })();
+return
