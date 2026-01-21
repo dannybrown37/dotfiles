@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # Profiling
-exec 3>&2 2>/tmp/bashrc_profile.$$
-PS4='+ $(date +%s.%N) '
-set -x
+# exec 3>&2 2>/tmp/bashrc_profile.$$
+# PS4='+ $(date +%s.%N) '
+# set -x
 
 ##
 ## Started as system defaults; slightly tweaked over time
@@ -464,5 +464,5 @@ PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
 export PATH
 
 # Profiling
-set +x
-exec 2>&3 3>&-
+# set +x
+# exec 2>&3 3>&-
