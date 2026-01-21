@@ -182,10 +182,8 @@ export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_E
 
 # source all files in bin directory
 # these use dynamic code executed outside of their functions
-for file in "$DOTFILES_DIR"/bin/*; do
-    if [[ -f "$file" && "$file" == *.sh ]]; then
-        source "$file"
-    fi
+for file in "$DOTFILES_DIR"/bin/*.sh; do
+    [[ -f "$file" ]] && source "$file"
 done
 
 # source aws-specific functions from aws/bin.sh
