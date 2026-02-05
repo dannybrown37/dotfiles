@@ -414,16 +414,9 @@ source "$DOTFILES_DIR"/config/.bash_aliases
 ## Language-specific configuration
 ##
 
-_nvm_lazy_load() {
-  if ! declare -F nvm >/dev/null; then
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-  fi
-}
-
-nvm()  { _nvm_lazy_load; command nvm "$@"; }
-node() { _nvm_lazy_load; command node "$@"; }
-npm()  { _nvm_lazy_load; command npm "$@"; }
+NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
 . "/home/danny/.deno/env"
 
