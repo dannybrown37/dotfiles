@@ -14,7 +14,9 @@ If multiple approaches exist, briefly state which one you're choosing and why (p
 
 Write tests with a `test.each`/`pytest.mark.parametrize` pattern for DRY code that can be reused.
 
-Follow these linting and formatting rules for all Python produced:
+Don't ask bait questions at the end of your response. Only ask questions at the end of the response if you're not sure what the answer is or need more information for me. If there's more to tell me, just tell me.
+
+*Follow these linting and formatting rules for all Python produced:*
 
 [tool.ruff]
 line-length = 88
@@ -23,59 +25,59 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = [
-    "A",  # https://beta.ruff.rs/docs/rules/#flake8-builtins-a
-    "ANN",  # https://beta.ruff.rs/docs/rules/#flake8-annotations-ann
-    "ARG",  # https://beta.ruff.rs/docs/rules/#flake8-unused-arguments-arg
-    "B",  # https://beta.ruff.rs/docs/rules/#flake8-bugbear-b
-    "C4",  # https://beta.ruff.rs/docs/rules/#flake8-comprehensions-c4
-    "COM",  # https://beta.ruff.rs/docs/rules/#flake8-commas-com
-    "C90",  # https://beta.ruff.rs/docs/rules/#mccabe-c90
-    "E",  # default! https://beta.ruff.rs/docs/rules/#error-e
-    "EM",  # https://beta.ruff.rs/docs/rules/#flake8-errmsg-em
-    "ERA",  # https://beta.ruff.rs/docs/rules/#eradicate-era  # we'd like for this to warn
-    "EXE",  # https://beta.ruff.rs/docs/rules/#flake8-executable-exe
-    "F",  # default! https://beta.ruff.rs/docs/rules/#pyflakes-f
-    "FBT",  # https://beta.ruff.rs/docs/rules/#flake8-boolean-trap-fbt
-    "G",  # https://beta.ruff.rs/docs/rules/#flake8-logging-format-g
-    "I",  # https://beta.ruff.rs/docs/rules/#isort-i
-    "ICN",  # https://beta.ruff.rs/docs/rules/#flake8-import-conventions-icn
-    "ISC",  # https://beta.ruff.rs/docs/rules/#flake8-implicit-str-concat-isc
-    "N",  # https://beta.ruff.rs/docs/rules/#pep8-naming-n
-    "PGH",  # https://beta.ruff.rs/docs/rules/#pygrep-hooks-pgh
-    "PIE",  # https://beta.ruff.rs/docs/rules/#flake8-pie-pie
-    "PL",  # https://beta.ruff.rs/docs/rules/#pylint-pl
-    "PLE",  # https://beta.ruff.rs/docs/rules/#error-ple
-    "PLR",  # https://beta.ruff.rs/docs/rules/#refactor-plr
-    "PLW",  # https://beta.ruff.rs/docs/rules/#warning-plw
-    "PT",  # https://beta.ruff.rs/docs/rules/#flake8-pytest-style-pt
-    "PTH",  # https://beta.ruff.rs/docs/rules/#flake8-use-pathlib-pth
-    "PYI",  # https://beta.ruff.rs/docs/rules/#flake8-pyi-pyi
-    "Q",  # https://beta.ruff.rs/docs/rules/#flake8-quotes-q
-    "RET",  # https://beta.ruff.rs/docs/rules/#flake8-return-ret
-    "RSE",  # https://beta.ruff.rs/docs/rules/#flake8-raise-rse
-    "RUF",  # https://beta.ruff.rs/docs/rules/#ruff-specific-rules-ruf
-    "S",  # https://beta.ruff.rs/docs/rules/#flake8-bandit-s
-    "SLF",  # https://beta.ruff.rs/docs/rules/#flake8-self-slf
-    "SIM",  # https://beta.ruff.rs/docs/rules/#flake8-simplify-sim
-    "TCH",  # https://beta.ruff.rs/docs/rules/#flake8-type-checking-tch
-    "TID",  # https://beta.ruff.rs/docs/rules/#flake8-tidy-imports-tid
-    "TRY",  # https://beta.ruff.rs/docs/rules/#tryceratops-try
-    "W",  # https://beta.ruff.rs/docs/rules/#warning-w
-    "UP",  # https://beta.ruff.rs/docs/rules/#pyupgrade-up
-    "YTT",  # https://beta.ruff.rs/docs/rules/#flake8-2020-ytt
+    "A",
+    "ANN",
+    "ARG",
+    "B",
+    "C4",
+    "COM",
+    "C90",
+    "E",
+    "EM",
+    "ERA",
+    "EXE",
+    "F",
+    "FBT",
+    "G",
+    "I",
+    "ICN",
+    "ISC",
+    "N",
+    "PGH",
+    "PIE",
+    "PL",
+    "PLE",
+    "PLR",
+    "PLW",
+    "PT",
+    "PTH",
+    "PYI",
+    "Q",
+    "RET",
+    "RSE",
+    "RUF",
+    "S",
+    "SLF",
+    "SIM",
+    "TCH",
+    "TID",
+    "TRY",
+    "W",
+    "UP",
+    "YTT",
 ]
 ignore = [
-  "S311",  # not using randomness for cryptography
-  "S101",  # assert is awesome
-  "ANN201",  # experimenting with not requiring return types -- our editors know. Still add them if convenient, it's nice to do
-  "S113",  # requests calls without timeouts are fine
-  "PLR0913",  # sometimes tests need 6+ fixtures,
-  "FBT001",  # boolean positionals are fine
-  "FBT002",  # as are boolean kwargs
-  "PLR0911",  # it seems arbitrary to limit number of return statements?
-  "COM812",  # Trailing comma missing (recommended ignore as it conflicts with ruff format)
-  "ISC001",  # Implicitly concatenated string literals on one line (recommended ignore as it conflicts with ruff format)
-  "S603",  # We are using Bash constantly and safely
+  "S311",
+  "S101",
+  "ANN201",
+  "S113",
+  "PLR0913",
+  "FBT001",
+  "FBT002",
+  "PLR0911",
+  "COM812",
+  "ISC001",
+  "S603",
 ]
 
 [tool.ruff.lint.isort]
@@ -86,3 +88,50 @@ inline-quotes = "single"
 
 [tool.ruff.format]
 quote-style = "single"
+
+*End Python rules*
+
+*Follow these linting and formatting rules for all TypeScript produced:*
+
+eslint:
+{
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "import", "unused-imports"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/explicit-function-return-type": "error",
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/consistent-type-imports": "error",
+    "unused-imports/no-unused-imports": "error",
+    "import/order": ["error", { "alphabetize": { "order": "asc" } }],
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": "error",
+    "eqeqeq": ["error", "always"],
+    "no-console": "warn",
+    "prefer-const": "error"
+  }
+}
+
+prettier:
+{
+  "extends": "airbnb",
+  "endOfLine": "lf",
+  "printWidth": 100,
+  "singleQuote": false,
+  "overrides": [
+    {
+      "files": ["swagger/**/*.yaml", "swagger/**/*.yml", "**/swagger*.yaml", "**/swagger*.yml"],
+      "options": {
+        "singleQuote": true
+      }
+    }
+  ]
+}
+
+Logs should follow the following format examples. If at all possible, log statements should be written in one line.
+
+log.info(LT.Topic, { msg: "Short", data, data2, data3 });
+log.error(LT.Topic, { msg: "Short", data, data2, data3 }, error);
+
+
+*End TypeScript rules*
