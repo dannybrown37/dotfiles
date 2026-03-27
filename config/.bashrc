@@ -52,8 +52,6 @@ LS_IGNORE_PATTERNS=(
     "build"
     "dist"
     "venv"
-    "package-lock.json"
-    "uv.lock"
 )
 export LS_IGNORE_GLOBS=$(IFS='|'; echo "${LS_IGNORE_PATTERNS[*]}")
 # shellcheck disable=SC2016
