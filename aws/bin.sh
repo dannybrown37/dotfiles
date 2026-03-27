@@ -10,7 +10,6 @@ buildlogs() {  # latest build logs in CLI; required arg is AWS stage
     [[ $# -eq 0 ]] && dev_stage="${DEV_STACK}" && echo "Using default stage ${DEV_STAGE}; pass an arg to override"
     [[ -z $BUILD_ARTIFACTS_BUCKET ]] && echo "BUILD_ARTIFACTS_BUCKET is not set" && return
     [[ $# -eq 1 ]] && dev_stage=$1
-    conditional_aws_azure_login
     aws s3 cp "s3://${BUILD_ARTIFACTS_BUCKET}/${dev_stage}-back-end-build-logs/$(aws s3 ls "s3://${BUILD_ARTIFACTS_BUCKET}/${dev_stage}-back-end-build-logs/" | sort -n | tail -1 | awk '{ print $4 }' )" - | zcat -
 }
 
