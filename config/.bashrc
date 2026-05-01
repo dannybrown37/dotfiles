@@ -5,6 +5,12 @@
 # PS4='+ $(date +%s.%N) '
 # set -x
 
+# skip .bashrc if parent is copilot
+parent=$(ps -h -p $PPID -ocmd)
+if [ "${parent:0:7}" = "copilot" ]; then
+    return
+fi
+
 ##
 ## Started as system defaults; slightly tweaked over time
 
