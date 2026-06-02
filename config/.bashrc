@@ -124,6 +124,18 @@ export EXA_COLORS="$(tr ' ' ':' <<<"${EXA_COLORS_ARRAY[*]}")"
 ## Prompt setup: seasonal colors, system based icon, git status icon
 ##
 
+rainbow() {
+    local colors=("$RED" "$ORANGE" "$YELLOW" "$GREEN" "$CYAN" "$MAGENTA")
+    local text="$1"
+    local result=""
+    local i=0
+    for (( c=0; c<${#text}; c++ )); do
+        result+="${colors[$((i % 6))]}${text:$c:1}"
+        ((i++))
+    done
+    echo "$result"
+}
+
 BLUE='\[\033[01;34m\]'
 CYAN='\[\033[0;36m\]'
 GRAY='\[\033[1;30m\]'
@@ -178,7 +190,11 @@ PROMPT_COMMAND=git_info_env_vars
 
 export VIRTUAL_ENV_DISABLE_PROMPT=1 # disables (venv) prepending prompt when venv activated, handled in PS1 var below
 # shellcheck disable=SC2250
-export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'─}'$COLOR3'< \w >'$COLOR1'─'$COLOR4'{ $DEV_STACK }'$COLOR1'─[ $GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
+if [[ $(date +%b) == "Jun" ]]; then
+    export PS1="$(rainbow '┌────')${VIRTUAL_ENV:+$(rainbow "($(basename $VIRTUAL_ENV))$(rainbow '─')")}$(rainbow '< ')${GREEN}\w$(rainbow ' >')$(rainbow '─')$(rainbow '{ ')${CYAN}$DEV_STACK$(rainbow ' }')$(rainbow '─[ ')${YELLOW}$GIT_BRANCH$GIT_ICON$(rainbow ' ]')\n$(rainbow '└─')$(rainbow "$PROMPT_SYMBOL")\[\033[0m\] "
+else
+    export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'─}'$COLOR3'< \w >'$COLOR1'─'$COLOR4'{ $DEV_STACK }'$COLOR1'─[ $GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
+fi
 
 ##
 ## Functions
