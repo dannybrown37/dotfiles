@@ -8,6 +8,8 @@ I was able to fix by skipping the DNS proxy and just using the default route:
 # copy down IP address
 ip route | grep default
 
+echo "nameserver ip.address.you.copied" | sudo tee /etc/resolv.conf
+
 # make this file mutable
 sudo chattr -i /etc/resolv.conf
 
