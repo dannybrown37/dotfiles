@@ -89,7 +89,17 @@ __git_complete gco _git_checkout
 alias gcr='git commit --amend --no-edit'
 alias gcuemail='git config --global user.email "dannybrown37@gmail.com"'
 alias gcuname='git config --global user.name "Danny Brown"'
-alias gitpurge='git branch | grep -v -e "main" -e "develop" -e "magic" -e "sword" -e "$(git rev-parse --abbrev-ref HEAD)" | xargs git branch -D'
+unalias gitpurge 2>/dev/null
+gitpurge() {
+    local current
+    current=$(git rev-parse --abbrev-ref HEAD)
+    git branch | sed 's/^[*+ ]*//' | while IFS= read -r branch; do
+        case "$branch" in
+            main|develop|bonfire|"$current") ;;
+            *) git branch -D "$branch" ;;
+        esac
+    done
+}
 alias gl='git log'
 alias glinecount='git ls-files | xargs wc -l'
 alias glines=glinecount
