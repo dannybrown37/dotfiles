@@ -15,6 +15,24 @@ pm = "main:main"
 
 
 [tool.ruff]
-line-length = 88
-show-fixes = true
+extend = "../config/.ruff.toml"
 target-version = "py312"
+
+[tool.ruff.lint]
+ignore = [
+  "S311",
+  "S101",
+  "I001",
+  "S113",
+  "PLR0913",
+  "PLR2004",  # magic values are fine in a CLI app
+  "FBT001",   # boolean positional args fine for internal helpers
+  "FBT002",
+  "S603",     # subprocess calls to fzf/less are safe
+  "S607",     # partial path for fzf/less is fine
+  "C901",     # view functions are inherently complex
+  "PLR0912",  # many branches in menu/view functions
+  "PLR0915",  # many statements in view functions
+  "E501",     # f-string display lines can't be split
+  "COM812",   # conflicts with formatter
+]
