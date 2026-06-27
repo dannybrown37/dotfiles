@@ -10,6 +10,19 @@ from pydantic import BaseModel, Field
 
 OUTPUT_PATH = Path.home() / '.local' / 'bin' / 'project_manager'
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+CONFIG_PATH = OUTPUT_PATH / 'config.json'
+
+
+def load_config() -> dict:
+    if CONFIG_PATH.exists():
+        with CONFIG_PATH.open() as f:
+            return json.load(f)
+    return {}
+
+
+def save_config(config: dict) -> None:
+    with CONFIG_PATH.open('w') as f:
+        json.dump(config, f, indent=2)
 
 
 class Tactic(BaseModel):
@@ -177,6 +190,25 @@ def view_goal(goal: Goal) -> Goal:
     return goal
 
 
+def edit_goal(goal: Goal) -> Goal:
+    print(f'  Current name: {goal.name}')
+    name = prompt_input('New name (Enter to keep): ')
+    print(f'  Current description: {goal.description}')
+    desc = prompt_input('New description (Enter to keep): ')
+
+    if name:
+        # rename the file
+        old_path = OUTPUT_PATH / f'{goal.name}.json'
+        goal.name = name
+        old_path.unlink(missing_ok=True)
+    if desc:
+        goal.description = desc
+
+    save_goal(goal)
+    print('\n✓ Goal updated')
+    return goal
+
+
 def add_tactic(goal: Goal) -> Goal:
     description = prompt_input('Tactic description: ')
     if not description:
@@ -316,10 +348,23 @@ def edit_todo(goal: Goal) -> Goal:
     return goal
 
 
+def edit_settings() -> None:
+    config = load_config()
+    print(f'  Current reminder dir: {config.get("reminder_dir", "not set")}')
+    reminder_dir = prompt_input('Reminder directory (Enter to keep, "clear" to remove): ')
+    if reminder_dir and reminder_dir.lower() == 'clear':
+        config.pop('reminder_dir', None)
+    elif reminder_dir:
+        config['reminder_dir'] = str(Path(reminder_dir).expanduser().resolve())
+    save_config(config)
+    print('\n✓ Settings updated')
+
+
 # --- Menus ---
 
 GOAL_MENU_ITEMS = [
     ('Goal',    'View goal'),
+    ('Goal',    'Edit goal'),
     ('Tactics', 'Add tactic'),
     ('Tactics', 'Edit tactic'),
     ('Tactics', 'Log update on tactic'),
@@ -327,20 +372,25 @@ GOAL_MENU_ITEMS = [
     ('To-do',   'Edit to-do'),
     ('To-do',   'Complete to-do'),
     ('',        'New goal'),
+    ('',        'Settings'),
 ]
 
 
 def goal_menu(goal: Goal) -> None:
-    labels = [f'{cat:<10}{action}' if cat else f'{"":10}{action}' for cat, action in GOAL_MENU_ITEMS]
-    actions = [action for _, action in GOAL_MENU_ITEMS]
+    labels = [f'{cat:<10}{action}' for cat, action in GOAL_MENU_ITEMS]
+    label_to_action = {label.strip(): action for label, (_, action) in zip(labels, GOAL_MENU_ITEMS)}
     while True:
         selection = fzf_on_a_list(labels, prompt=goal.name)
         if not selection:
             break
-        action = actions[labels.index(selection)]
+        action = label_to_action.get(selection)
+        if not action:
+            continue
         match action:
             case 'View goal':
                 goal = view_goal(goal)
+            case 'Edit goal':
+                goal = edit_goal(goal)
             case 'Add tactic':
                 goal = add_tactic(goal)
             case 'Log update on tactic':
@@ -355,6 +405,8 @@ def goal_menu(goal: Goal) -> None:
                 goal = complete_todo(goal)
             case 'New goal':
                 create_new_goal()
+            case 'Settings':
+                edit_settings()
         pause()
 
 
