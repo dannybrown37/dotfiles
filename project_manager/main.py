@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from typing import Literal, overload
 
 from dateutil import parser as dateparser
 from pydantic import BaseModel, Field
@@ -147,8 +148,27 @@ def get_stored_goal_names() -> list[str]:
 # --- fzf helpers ---
 
 
+@overload
 def fzf_on_a_list(
     items: list[str],
+    *,
+    multiple: Literal[True],
+    prompt: str = '',
+) -> list[str] | None: ...
+
+
+@overload
+def fzf_on_a_list(
+    items: list[str],
+    *,
+    multiple: Literal[False] = False,
+    prompt: str = '',
+) -> str | None: ...
+
+
+def fzf_on_a_list(
+    items: list[str],
+    *,
     multiple: bool = False,
     prompt: str = '',
 ) -> str | list[str] | None:
