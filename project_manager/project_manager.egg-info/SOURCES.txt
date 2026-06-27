@@ -1,9 +1,0 @@
-README.md
-main.py
-pyproject.toml
-project_manager.egg-info/PKG-INFO
-project_manager.egg-info/SOURCES.txt
-project_manager.egg-info/dependency_links.txt
-project_manager.egg-info/entry_points.txt
-project_manager.egg-info/requires.txt
-project_manager.egg-info/top_level.txt
