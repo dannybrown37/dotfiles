@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 from typing import Literal, overload
@@ -135,8 +136,15 @@ class Goal(BaseModel):
 # --- Storage ---
 
 
+def _safe_filename(name: str) -> str:
+    """Sanitize a goal name for use as a filename."""
+    safe = re.sub(r'[/<>:"\\|?*\x00-\x1f]', '-', name)
+    safe = re.sub(r'-{2,}', '-', safe)
+    return safe.strip('-. ') or 'unnamed'
+
+
 def save_goal(goal: Goal) -> None:
-    path = OUTPUT_PATH / f'{goal.name}.json'
+    path = OUTPUT_PATH / f'{_safe_filename(goal.name)}.json'
     with path.open('w') as f:
         json.dump(goal.model_dump(), f, indent=2)
 
@@ -410,7 +418,7 @@ def edit_goal(goal: Goal) -> Goal:
     print(f'  Current description: {goal.description}')
     desc = prompt_input('New description (Enter to keep): ')
     if name:
-        old_path = OUTPUT_PATH / f'{goal.name}.json'
+        old_path = OUTPUT_PATH / f'{_safe_filename(goal.name)}.json'
         goal.name = name
         old_path.unlink(missing_ok=True)
     if desc:
