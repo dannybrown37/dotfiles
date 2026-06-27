@@ -197,6 +197,7 @@ def score_pct(executed: int, total: int) -> str:
 # --- Goal actions (all take a Goal, return updated Goal) ---
 
 def view_goal(goal: Goal) -> Goal:
+    """Compact view — fits on one screen."""
     week = goal.current_week()
     weeks_left = goal.weeks_remaining()
     print(f'\n{"─" * 55}')
@@ -217,7 +218,7 @@ def view_goal(goal: Goal) -> Goal:
     if tot_w > 0:
         print(f'  Week {week} score: {score_pct(ex_w, tot_w)} ({ex_w}/{tot_w})')
 
-    # Tactics
+    # Tactics — one line each
     tactics = goal.get_tactics()
     if not tactics:
         print('\n  No tactics yet.')
@@ -226,22 +227,16 @@ def view_goal(goal: Goal) -> Goal:
         for i, t in enumerate(tactics, 1):
             wk_key = str(week)
             if wk_key in t.weekly_scores:
-                score = t.weekly_scores[wk_key]
-                mark = f'{score}/10'
+                mark = f'{t.weekly_scores[wk_key]}/10'
             else:
                 mark = '—'
-            print(f'\n  {i}. [{mark:>4}] {t.description}  ({t.reminder_cadence})')
-            n = len(t.updates)
-            if n > 0:
-                print(f'     Updates: {n}')
-                for u in t.updates[-3:]:
-                    date = datetime.fromisoformat(u["date"]).strftime("%b %-d")
-                    print(f'       {date}: {u["note"]}')
+            updates = f'  [{len(t.updates)} logs]' if t.updates else ''
+            print(f'  {i}. [{mark:>4}] {t.description}  ({t.reminder_cadence}){updates}')
 
-    # To-dos
+    # To-dos — open only, done as count
     todos = goal.get_todos()
     open_todos = [t for t in todos if not t.completed]
-    done_todos = [t for t in todos if t.completed]
+    done_count = sum(1 for t in todos if t.completed)
     if not todos:
         print('\n  No to-dos yet.')
     else:
@@ -250,12 +245,88 @@ def view_goal(goal: Goal) -> Goal:
             for t in open_todos:
                 due = f'  (due {datetime.fromisoformat(t.due_date):%b %-d})' if t.due_date else ''
                 print(f'    ☐  {t.description}{due}')
-        if done_todos:
-            print(f'\n  To-dos — Done ({len(done_todos)}):')
-            for t in done_todos:
-                print(f'    ✓  {t.description}')
+        if done_count:
+            print(f'\n  To-dos — Done: {done_count}')
 
     print(f'{"─" * 55}\n')
+    return goal
+
+
+def detailed_view(goal: Goal) -> Goal:
+    """Full detail piped through less."""
+    week = goal.current_week()
+    weeks_left = goal.weeks_remaining()
+    lines = []
+    lines.append(f'{"─" * 55}')
+    lines.append(f'  {goal.name}')
+    lines.append(f'  {goal.date_range_display()}')
+    lines.append(f'  {goal.progress_bar()}  •  Week {week}  •  {weeks_left} week{"s" if weeks_left != 1 else ""} left')
+    lines.append(f'  {goal.description}')
+
+    # Overall score
+    ex, tot = goal.overall_score()
+    if tot > 0:
+        pct = score_pct(ex, tot)
+        indicator = '🟢' if ex / tot >= 0.85 else '🟡' if ex / tot >= 0.65 else '🔴'
+        lines.append(f'\n  {indicator} Overall execution: {pct} ({ex}/{tot})')
+
+    ex_w, tot_w = goal.week_score(week)
+    if tot_w > 0:
+        lines.append(f'  Week {week} score: {score_pct(ex_w, tot_w)} ({ex_w}/{tot_w})')
+
+    # Tactics — full detail with logs
+    tactics = goal.get_tactics()
+    if not tactics:
+        lines.append('\n  No tactics yet.')
+    else:
+        lines.append(f'\n  Tactics ({len(tactics)}):')
+        for i, t in enumerate(tactics, 1):
+            wk_key = str(week)
+            if wk_key in t.weekly_scores:
+                mark = f'{t.weekly_scores[wk_key]}/10'
+            else:
+                mark = '—'
+            lines.append(f'\n  {i}. [{mark:>4}] {t.description}  ({t.reminder_cadence})')
+            if t.updates:
+                lines.append(f'     Updates ({len(t.updates)}):')
+                for u in t.updates:
+                    date = datetime.fromisoformat(u["date"]).strftime("%b %-d")
+                    lines.append(f'       {date}: {u["note"]}')
+
+    # All to-dos
+    todos = goal.get_todos()
+    open_todos = [t for t in todos if not t.completed]
+    done_todos = [t for t in todos if t.completed]
+    if not todos:
+        lines.append('\n  No to-dos yet.')
+    else:
+        if open_todos:
+            lines.append(f'\n  To-dos — Open ({len(open_todos)}):')
+            for t in open_todos:
+                due = f'  (due {datetime.fromisoformat(t.due_date):%b %-d})' if t.due_date else ''
+                lines.append(f'    ☐  {t.description}{due}')
+        if done_todos:
+            lines.append(f'\n  To-dos — Done ({len(done_todos)}):')
+            for t in done_todos:
+                lines.append(f'    ✓  {t.description}')
+
+    # Score history
+    lines.append(f'\n  Score History:')
+    for w in range(1, min(week, 12) + 1):
+        e, t = goal.week_score(w)
+        if t == 0:
+            lines.append(f'  Week {w:>2}: (not scored)')
+        else:
+            pct_val = e / t
+            indicator = '🟢' if pct_val >= 0.85 else '🟡' if pct_val >= 0.65 else '🔴'
+            current = ' ◀' if w == week else ''
+            lines.append(f'  Week {w:>2}: {indicator} {score_pct(e, t):>4} ({e}/{t}){current}')
+
+    lines.append(f'{"─" * 55}')
+
+    # Pipe through less
+    output = '\n'.join(lines)
+    subprocess.run(['less', '-R'], input=output, text=True, check=False)
     return goal
 
 
@@ -489,6 +560,7 @@ def edit_settings() -> None:
 
 GOAL_MENU_ITEMS = [
     ('Goal',    'View goal'),
+    ('Goal',    'Detailed view'),
     ('Goal',    'Edit goal'),
     ('Score',   'Weekly scorecard'),
     ('Score',   'Score history'),
@@ -526,6 +598,8 @@ def goal_menu(goal: Goal) -> None:
         match action:
             case 'View goal':
                 goal = view_goal(goal)
+            case 'Detailed view':
+                goal = detailed_view(goal)
             case 'Edit goal':
                 goal = edit_goal(goal)
             case 'Weekly scorecard':
