@@ -8,7 +8,11 @@ dependencies = ["pydantic>=2.13.4", "python-dateutil>=2.9.0.post0"]
 
 
 [project.scripts]
-pm = "main:main"
+pm = "project_manager.cli:main"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 
 [tool.ruff]

@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 
 
-from main import Goal, Tactic, Todo, Update, score_pct
+from project_manager.models import Goal, Tactic, Todo, Update
+from project_manager.ui import score_pct
 
 
 # --- Goal model tests ---
