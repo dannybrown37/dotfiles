@@ -28,3 +28,17 @@ repos:
         language: system
         files: \.(sh|bash)$
         args: ["--ignore", "E006,E042"] # ignore line length, local usage is considered
+
+      - id: ruff-check
+        name: Ruff check
+        entry: ruff check --config config/.ruff.toml --fix
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      - id: ruff-format
+        name: Ruff format
+        entry: ruff format --config config/.ruff.toml
+        language: system
+        types: [python]
+        pass_filenames: true
