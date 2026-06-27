@@ -500,7 +500,7 @@ GOAL_MENU_ITEMS = [
     ('To-do',   'Edit to-do'),
     ('To-do',   'Remove to-do'),
     ('To-do',   'Complete to-do'),
-    ('',        'Switch/New goal'),
+    ('',        'Other goals'),
     ('',        'Settings'),
 ]
 
@@ -508,6 +508,8 @@ TOP_MENU = [
     'Select goal',
     'New goal',
     'Remove goal',
+    'View archived goals',
+    'Restore archived goal',
 ]
 
 
@@ -546,7 +548,7 @@ def goal_menu(goal: Goal) -> None:
                 goal = remove_todo(goal)
             case 'Complete to-do':
                 goal = complete_todo(goal)
-            case 'Switch/New goal':
+            case 'Other goals':
                 break
             case 'Settings':
                 edit_settings()
@@ -591,20 +593,57 @@ def remove_goal() -> None:
         print(f'\n✓ "{name}" removed')
 
 
+def get_archived_goal_names() -> list[str]:
+    return [f.stem for f in sorted(ARCHIVE_PATH.glob('*.json'))]
+
+
+def view_archived_goals() -> None:
+    names = get_archived_goal_names()
+    if not names:
+        print('No archived goals.')
+        return
+    name = fzf_on_a_list(names, prompt='View archived goal')
+    if not name:
+        return
+    path = ARCHIVE_PATH / f'{name}.json'
+    with path.open() as f:
+        data = json.load(f)
+    goal = Goal.model_validate(data)
+    view_goal(goal)
+
+
+def restore_archived_goal() -> None:
+    names = get_archived_goal_names()
+    if not names:
+        print('No archived goals to restore.')
+        return
+    name = fzf_on_a_list(names, prompt='Restore goal')
+    if not name:
+        return
+    src = ARCHIVE_PATH / f'{name}.json'
+    dest = OUTPUT_PATH / f'{name}.json'
+    src.rename(dest)
+    print(f'\n✓ "{name}" restored')
+
+
 def main() -> None:
+    first_run = True
     while True:
         names = get_stored_goal_names()
 
         if len(names) == 0:
             print('No goals yet.')
             create_new_goal()
+            first_run = False
             continue
 
-        # Auto-load if only one goal exists
-        if len(names) == 1:
+        # Auto-load only on first run with a single goal
+        if first_run and len(names) == 1:
+            first_run = False
             goal_menu(load_goal(names[0]))
             continue
 
+        first_run = False
         action = fzf_on_a_list(TOP_MENU, prompt='12 Week Year')
         if not action:
             break
@@ -617,6 +656,11 @@ def main() -> None:
                     goal_menu(load_goal(name))
             case 'Remove goal':
                 remove_goal()
+            case 'View archived goals':
+                view_archived_goals()
+                pause()
+            case 'Restore archived goal':
+                restore_archived_goal()
 
 
 if __name__ == '__main__':
