@@ -528,12 +528,8 @@ def weekly_scorecard(goal: Goal) -> Goal:
 def view_score_history(goal: Goal) -> Goal:
     week = goal.current_week()
     print(f'\n  ── Score History: {goal.name} ──\n')
-    total_ex = 0
-    total_tot = 0
     for w in range(1, min(week, TOTAL_WEEKS) + 1):
         ex, tot = goal.week_score(w)
-        total_ex += ex
-        total_tot += tot
         if tot == 0:
             bar = '  (not scored)'
         else:
@@ -547,6 +543,7 @@ def view_score_history(goal: Goal) -> Goal:
         current = ' ◀' if w == week else ''
         print(f'  Week {w:>2}: {bar}{current}')
 
+    total_ex, total_tot = goal.overall_score()
     if total_tot > 0:
         print(
             f'\n  Overall: '
