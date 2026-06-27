@@ -25,10 +25,14 @@ def save_config(config: dict) -> None:
         json.dump(config, f, indent=2)
 
 
+# --- Models ---
+
 class Tactic(BaseModel):
     description: str
     reminder_cadence: str  # e.g. "daily", "weekly", "2x/week"
     updates: list[dict] = Field(default_factory=list)
+    # Weekly execution: {"1": true, "3": true, "5": false, ...}
+    weekly_scores: dict[str, int] = Field(default_factory=dict)  # week -> 1-10 score
 
 
 class Todo(BaseModel):
@@ -65,14 +69,50 @@ class Goal(BaseModel):
     def add_tactic(self, tactic: Tactic) -> None:
         self.tactics.append(tactic.model_dump())
 
+    def current_week(self) -> int:
+        start = datetime.fromisoformat(self.start_date)
+        elapsed = (datetime.now() - start).days // 7
+        return min(max(elapsed + 1, 1), 13)  # 1-indexed, cap at 13
+
     def weeks_remaining(self) -> int:
-        end = datetime.fromisoformat(self.end_date)
-        return max(0, (end - datetime.now()).days // 7)
+        return max(0, 12 - self.current_week())
+
+    def week_start_date(self, week_num: int) -> datetime:
+        start = datetime.fromisoformat(self.start_date)
+        return start + timedelta(weeks=week_num - 1)
 
     def date_range_display(self) -> str:
         start = datetime.fromisoformat(self.start_date)
         end = datetime.fromisoformat(self.end_date)
         return f'{start:%b %-d} – {end:%b %-d, %Y}'
+
+    def week_score(self, week_num: int) -> tuple[int, int]:
+        """Returns (total_score, max_possible) for a given week. Each tactic scored 1-10."""
+        total = 0
+        max_possible = 0
+        for t in self.get_tactics():
+            key = str(week_num)
+            if key in t.weekly_scores:
+                max_possible += 10
+                total += t.weekly_scores[key]
+        return total, max_possible
+
+    def overall_score(self) -> tuple[int, int]:
+        """Returns (total_executed, total_possible) across all scored weeks."""
+        executed = 0
+        total = 0
+        for week in range(1, self.current_week() + 1):
+            e, t = self.week_score(week)
+            executed += e
+            total += t
+        return executed, total
+
+    def progress_bar(self) -> str:
+        week = self.current_week()
+        completed = max(0, week - 1)  # weeks fully completed
+        filled = '█' * completed
+        empty = '░' * (12 - completed)
+        return f'[{filled}{empty}] Week {week}/12'
 
 
 # --- Storage ---
@@ -91,7 +131,7 @@ def load_goal(name: str) -> Goal:
 
 
 def get_stored_goal_names() -> list[str]:
-    return [f.stem for f in sorted(OUTPUT_PATH.glob('*.json'))]
+    return [f.stem for f in sorted(OUTPUT_PATH.glob('*.json')) if f.name != 'config.json']
 
 
 # --- fzf helpers ---
@@ -146,30 +186,57 @@ def prompt_input(label: str) -> str | None:
         return None
 
 
+def score_pct(executed: int, total: int) -> str:
+    if total == 0:
+        return '—'
+    return f'{executed / total * 100:.0f}%'
+
+
 # --- Goal actions (all take a Goal, return updated Goal) ---
 
 def view_goal(goal: Goal) -> Goal:
-    weeks = goal.weeks_remaining()
-    print(f'\n{"─" * 50}')
+    week = goal.current_week()
+    weeks_left = goal.weeks_remaining()
+    print(f'\n{"─" * 55}')
     print(f'  {goal.name}')
-    print(f'  {goal.date_range_display()}  ({weeks} week{"s" if weeks != 1 else ""} remaining)')
+    print(f'  {goal.date_range_display()}')
+    print(f'  {goal.progress_bar()}  •  Week {week}  •  {weeks_left} week{"s" if weeks_left != 1 else ""} left')
     print(f'  {goal.description}')
 
+    # Overall score
+    ex, tot = goal.overall_score()
+    if tot > 0:
+        pct = score_pct(ex, tot)
+        indicator = '🟢' if ex / tot >= 0.85 else '🟡' if ex / tot >= 0.65 else '🔴'
+        print(f'\n  {indicator} Overall execution: {pct} ({ex}/{tot})')
+
+    # This week's score
+    ex_w, tot_w = goal.week_score(week)
+    if tot_w > 0:
+        print(f'  Week {week} score: {score_pct(ex_w, tot_w)} ({ex_w}/{tot_w})')
+
+    # Tactics
     tactics = goal.get_tactics()
     if not tactics:
         print('\n  No tactics yet.')
     else:
         print(f'\n  Tactics ({len(tactics)}):')
         for i, t in enumerate(tactics, 1):
+            wk_key = str(week)
+            if wk_key in t.weekly_scores:
+                score = t.weekly_scores[wk_key]
+                mark = f'{score}/10'
+            else:
+                mark = '—'
+            print(f'\n  {i}. [{mark:>4}] {t.description}  ({t.reminder_cadence})')
             n = len(t.updates)
-            print(f'\n  {i}. {t.description}')
-            print(f'     Cadence: {t.reminder_cadence}')
-            print(f'     Updates: {n}')
-            if t.updates:
+            if n > 0:
+                print(f'     Updates: {n}')
                 for u in t.updates[-3:]:
                     date = datetime.fromisoformat(u["date"]).strftime("%b %-d")
                     print(f'       {date}: {u["note"]}')
 
+    # To-dos
     todos = goal.get_todos()
     open_todos = [t for t in todos if not t.completed]
     done_todos = [t for t in todos if t.completed]
@@ -186,7 +253,7 @@ def view_goal(goal: Goal) -> Goal:
             for t in done_todos:
                 print(f'    ✓  {t.description}')
 
-    print(f'{"─" * 50}\n')
+    print(f'{"─" * 55}\n')
     return goal
 
 
@@ -195,15 +262,12 @@ def edit_goal(goal: Goal) -> Goal:
     name = prompt_input('New name (Enter to keep): ')
     print(f'  Current description: {goal.description}')
     desc = prompt_input('New description (Enter to keep): ')
-
     if name:
-        # rename the file
         old_path = OUTPUT_PATH / f'{goal.name}.json'
         goal.name = name
         old_path.unlink(missing_ok=True)
     if desc:
         goal.description = desc
-
     save_goal(goal)
     print('\n✓ Goal updated')
     return goal
@@ -238,6 +302,73 @@ def log_update(goal: Goal) -> Goal:
     return goal
 
 
+def remove_tactic(goal: Goal) -> Goal:
+    idx = select_tactic_index(goal, prompt='Select tactic to remove')
+    if idx is None:
+        return goal
+    removed = goal.tactics.pop(idx)
+    save_goal(goal)
+    print(f'\n✓ Removed: {removed["description"]}')
+    return goal
+
+
+def weekly_scorecard(goal: Goal) -> Goal:
+    week = goal.current_week()
+    if week > 12:
+        print('This 12-week year is complete!')
+        return goal
+
+    tactics = goal.get_tactics()
+    if not tactics:
+        print('No tactics to score. Add some first.')
+        return goal
+
+    print(f'\n  ── Week {week} Scorecard ──\n')
+    for i, t in enumerate(tactics):
+        wk_key = str(week)
+        current = goal.tactics[i].get('weekly_scores', {}).get(wk_key)
+        status = f' (current: {current}/10)' if current is not None else ''
+
+        answer = prompt_input(f'  {t.description} — score 1-10{status}: ')
+        if answer and answer.isdigit():
+            score = max(1, min(10, int(answer)))
+            goal.tactics[i].setdefault('weekly_scores', {})[wk_key] = score
+
+    save_goal(goal)
+
+    sc, mx = goal.week_score(week)
+    pct = score_pct(sc, mx)
+    threshold = '🟢 On track!' if mx > 0 and sc / mx >= 0.85 else '🔴 Below 85% threshold' if mx > 0 else ''
+    print(f'\n  Week {week} score: {pct} ({sc}/{mx})  {threshold}')
+    return goal
+
+
+def view_score_history(goal: Goal) -> Goal:
+    week = goal.current_week()
+    print(f'\n  ── Score History: {goal.name} ──\n')
+    total_ex = 0
+    total_tot = 0
+    for w in range(1, min(week, 12) + 1):
+        ex, tot = goal.week_score(w)
+        total_ex += ex
+        total_tot += tot
+        if tot == 0:
+            bar = '  (not scored)'
+        else:
+            pct = ex / tot
+            filled = round(pct * 20)
+            bar_str = '█' * filled + '░' * (20 - filled)
+            indicator = '🟢' if pct >= 0.85 else '🟡' if pct >= 0.65 else '🔴'
+            bar = f'{indicator} [{bar_str}] {score_pct(ex, tot):>4} ({ex}/{tot})'
+        current = ' ◀' if w == week else ''
+        print(f'  Week {w:>2}: {bar}{current}')
+
+    if total_tot > 0:
+        print(f'\n  Overall: {score_pct(total_ex, total_tot)} ({total_ex}/{total_tot})')
+    print()
+    return goal
+
+
 def add_todo(goal: Goal) -> Goal:
     description = prompt_input('To-do description: ')
     if not description:
@@ -252,36 +383,14 @@ def add_todo(goal: Goal) -> Goal:
             print(f'Could not parse "{due}", saving without due date.')
     goal.todos.append(Todo(description=description, due_date=due_iso).model_dump())
     save_goal(goal)
-    print(f'\n✓ Todo added')
-    return goal
-
-
-def view_todos(goal: Goal) -> Goal:
-    todos = goal.get_todos()
-    if not todos:
-        print(f'\nNo todos for "{goal.name}".')
-        return goal
-    open_todos = [t for t in todos if not t.completed]
-    done_todos = [t for t in todos if t.completed]
-    print(f'\n{"─" * 50}')
-    print(f'  {goal.name} — Todos')
-    if open_todos:
-        print(f'\n  Open ({len(open_todos)}):')
-        for t in open_todos:
-            due = f'  (due {datetime.fromisoformat(t.due_date):%b %-d})' if t.due_date else ''
-            print(f'    ☐  {t.description}{due}')
-    if done_todos:
-        print(f'\n  Done ({len(done_todos)}):')
-        for t in done_todos:
-            print(f'    ✓  {t.description}')
-    print(f'{"─" * 50}\n')
+    print(f'\n✓ To-do added')
     return goal
 
 
 def complete_todo(goal: Goal) -> Goal:
     open_todos = [t for t in goal.get_todos() if not t.completed]
     if not open_todos:
-        print('No open todos.')
+        print('No open to-dos.')
         return goal
     selection = fzf_on_a_list([t.description for t in open_todos], prompt='Mark complete')
     if not selection:
@@ -292,6 +401,20 @@ def complete_todo(goal: Goal) -> Goal:
             break
     save_goal(goal)
     print(f'\n✓ "{selection}" marked complete')
+    return goal
+
+
+def remove_todo(goal: Goal) -> Goal:
+    todos = goal.get_todos()
+    if not todos:
+        print('No to-dos.')
+        return goal
+    selection = fzf_on_a_list([t.description for t in todos], prompt='Remove to-do')
+    if not selection:
+        return goal
+    goal.todos = [t for t in goal.todos if t['description'] != selection]
+    save_goal(goal)
+    print(f'\n✓ Removed: {selection}')
     return goal
 
 
@@ -365,14 +488,23 @@ def edit_settings() -> None:
 GOAL_MENU_ITEMS = [
     ('Goal',    'View goal'),
     ('Goal',    'Edit goal'),
+    ('Score',   'Weekly scorecard'),
+    ('Score',   'Score history'),
     ('Tactics', 'Add tactic'),
     ('Tactics', 'Edit tactic'),
+    ('Tactics', 'Remove tactic'),
     ('Tactics', 'Log update on tactic'),
     ('To-do',   'Add to-do'),
     ('To-do',   'Edit to-do'),
+    ('To-do',   'Remove to-do'),
     ('To-do',   'Complete to-do'),
     ('',        'New goal'),
     ('',        'Settings'),
+]
+
+TOP_MENU = [
+    'Select goal',
+    'New goal',
 ]
 
 
@@ -380,7 +512,7 @@ def goal_menu(goal: Goal) -> None:
     labels = [f'{cat:<10}{action}' for cat, action in GOAL_MENU_ITEMS]
     label_to_action = {label.strip(): action for label, (_, action) in zip(labels, GOAL_MENU_ITEMS)}
     while True:
-        selection = fzf_on_a_list(labels, prompt=goal.name)
+        selection = fzf_on_a_list(labels, prompt=f'{goal.name} (Wk {goal.current_week()}/12)')
         if not selection:
             break
         action = label_to_action.get(selection)
@@ -391,6 +523,10 @@ def goal_menu(goal: Goal) -> None:
                 goal = view_goal(goal)
             case 'Edit goal':
                 goal = edit_goal(goal)
+            case 'Weekly scorecard':
+                goal = weekly_scorecard(goal)
+            case 'Score history':
+                goal = view_score_history(goal)
             case 'Add tactic':
                 goal = add_tactic(goal)
             case 'Log update on tactic':
@@ -399,8 +535,12 @@ def goal_menu(goal: Goal) -> None:
                 goal = add_todo(goal)
             case 'Edit tactic':
                 goal = edit_tactic(goal)
+            case 'Remove tactic':
+                goal = remove_tactic(goal)
             case 'Edit to-do':
                 goal = edit_todo(goal)
+            case 'Remove to-do':
+                goal = remove_todo(goal)
             case 'Complete to-do':
                 goal = complete_todo(goal)
             case 'New goal':
