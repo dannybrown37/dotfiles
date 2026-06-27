@@ -105,7 +105,7 @@ return -- LSP Configuration & Plugins
 		vim.list_extend(ensure_installed, {
 			"stylua", -- lua styler
 			"pyright", -- LSP for Python
-			"ruff-lsp", -- Python linter
+			"ruff", -- Python linter
 			"taplo", -- LSP for toml
 			"shellcheck",
 			"eslint-lsp",
