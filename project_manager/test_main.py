@@ -28,7 +28,7 @@ class TestGoalCurrentWeek:
         )
         assert goal.current_week() == 2
 
-    def test_week_capped_at_13(self):
+    def test_week_capped_at_12(self):
         start = datetime.now() - timedelta(weeks=20)
         goal = Goal(
             name='test',
@@ -36,7 +36,8 @@ class TestGoalCurrentWeek:
             start_date=start.isoformat(),
             end_date=(start + timedelta(weeks=12)).isoformat(),
         )
-        assert goal.current_week() == 13
+        assert goal.current_week() == 12
+        assert goal.is_complete is True
 
     def test_never_below_1(self):
         future = datetime.now() + timedelta(days=5)

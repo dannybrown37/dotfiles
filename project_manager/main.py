@@ -78,10 +78,15 @@ class Goal(BaseModel):
             end_date=(now + timedelta(weeks=12)).isoformat(),
         )
 
+    @property
+    def is_complete(self) -> bool:
+        start = datetime.fromisoformat(self.start_date)
+        return (datetime.now() - start).days >= TOTAL_WEEKS * 7
+
     def current_week(self) -> int:
         start = datetime.fromisoformat(self.start_date)
         elapsed = (datetime.now() - start).days // 7
-        return min(max(elapsed + 1, 1), 13)
+        return min(max(elapsed + 1, 1), TOTAL_WEEKS)
 
     def weeks_remaining(self) -> int:
         return max(0, TOTAL_WEEKS - self.current_week())
@@ -118,6 +123,9 @@ class Goal(BaseModel):
 
     def progress_bar(self) -> str:
         week = self.current_week()
+        if self.is_complete:
+            filled = '█' * TOTAL_WEEKS
+            return f'[{filled}] Complete'
         completed = max(0, week - 1)
         filled = '█' * completed
         empty = '░' * (TOTAL_WEEKS - completed)
@@ -459,7 +467,7 @@ def remove_tactic(goal: Goal) -> Goal:
 
 def weekly_scorecard(goal: Goal) -> Goal:
     week = goal.current_week()
-    if week > TOTAL_WEEKS:
+    if goal.is_complete:
         print('This 12-week year is complete!')
         return goal
 
