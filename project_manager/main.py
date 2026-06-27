@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 
 OUTPUT_PATH = Path.home() / '.local' / 'bin' / 'project_manager'
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+ARCHIVE_PATH = OUTPUT_PATH / 'archive'
+ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
 CONFIG_PATH = OUTPUT_PATH / 'config.json'
 
 
@@ -498,18 +500,19 @@ GOAL_MENU_ITEMS = [
     ('To-do',   'Edit to-do'),
     ('To-do',   'Remove to-do'),
     ('To-do',   'Complete to-do'),
-    ('',        'New goal'),
+    ('',        'Switch/New goal'),
     ('',        'Settings'),
 ]
 
 TOP_MENU = [
     'Select goal',
     'New goal',
+    'Remove goal',
 ]
 
 
 def goal_menu(goal: Goal) -> None:
-    labels = [f'{cat:<10}{action}' for cat, action in GOAL_MENU_ITEMS]
+    labels = [f'{i+1:>2}. {cat:<10}{action}' for i, (cat, action) in enumerate(GOAL_MENU_ITEMS)]
     label_to_action = {label.strip(): action for label, (_, action) in zip(labels, GOAL_MENU_ITEMS)}
     while True:
         selection = fzf_on_a_list(labels, prompt=f'{goal.name} (Wk {goal.current_week()}/12)')
@@ -543,8 +546,8 @@ def goal_menu(goal: Goal) -> None:
                 goal = remove_todo(goal)
             case 'Complete to-do':
                 goal = complete_todo(goal)
-            case 'New goal':
-                create_new_goal()
+            case 'Switch/New goal':
+                break
             case 'Settings':
                 edit_settings()
         pause()
@@ -563,9 +566,39 @@ def create_new_goal() -> None:
     goal_menu(goal)
 
 
+def remove_goal() -> None:
+    names = get_stored_goal_names()
+    if not names:
+        print('No goals to remove.')
+        return
+    name = fzf_on_a_list(names, prompt='Remove goal')
+    if not name:
+        return
+    confirm = prompt_input(f'Remove "{name}"? Type "yes" to confirm: ')
+    if not confirm or confirm.lower() != 'yes':
+        print('Cancelled.')
+        return
+    src = OUTPUT_PATH / f'{name}.json'
+    goal = load_goal(name)
+    has_data = goal.tactics or goal.todos
+    if has_data:
+        # Soft delete — move to archive
+        dest = ARCHIVE_PATH / f'{name}.json'
+        src.rename(dest)
+        print(f'\n✓ "{name}" archived (data retained in {ARCHIVE_PATH})')
+    else:
+        src.unlink()
+        print(f'\n✓ "{name}" removed')
+
+
 def main() -> None:
     while True:
         names = get_stored_goal_names()
+
+        if len(names) == 0:
+            print('No goals yet.')
+            create_new_goal()
+            continue
 
         # Auto-load if only one goal exists
         if len(names) == 1:
@@ -579,13 +612,11 @@ def main() -> None:
             case 'New goal':
                 create_new_goal()
             case 'Select goal':
-                if not names:
-                    print('No goals yet. Create one first.')
-                    pause()
-                    continue
                 name = fzf_on_a_list(names, prompt='Select goal')
                 if name:
                     goal_menu(load_goal(name))
+            case 'Remove goal':
+                remove_goal()
 
 
 if __name__ == '__main__':
