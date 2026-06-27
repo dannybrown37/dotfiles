@@ -193,7 +193,7 @@ def fzf_on_a_list(
             f'{prompt}Shift+Tab to unselect > ',
         ]
     else:
-        cmd = ['/usr/bin/fzf', '--prompt', prompt]
+        cmd = ['fzf', '--prompt', prompt]
     result = subprocess.run(  # noqa: S603
         cmd,
         input='\n'.join(items),
@@ -563,7 +563,13 @@ def add_todo(goal: Goal) -> Goal:
     due_iso = None
     if due:
         try:
-            due_iso = dateparser.parse(due, fuzzy=True).isoformat()
+            parsed = dateparser.parse(due, fuzzy=True)
+            if parsed is None:
+                print(
+                    f'Could not parse "{due}", saving without due date.',
+                )
+            else:
+                due_iso = parsed.isoformat()
         except Exception:
             print(
                 f'Could not parse "{due}", saving without due date.',
@@ -651,10 +657,14 @@ def _apply_todo_edits(t: Todo) -> None:
         t.due_date = None
     elif due:
         try:
-            t.due_date = dateparser.parse(
+            parsed = dateparser.parse(
                 due,
                 fuzzy=True,
-            ).isoformat()
+            )
+            if parsed is None:
+                print(f'Could not parse "{due}", due date unchanged.')
+            else:
+                t.due_date = parsed.isoformat()
         except Exception:
             print(f'Could not parse "{due}", due date unchanged.')
 
