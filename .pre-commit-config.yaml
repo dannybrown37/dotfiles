@@ -31,14 +31,14 @@ repos:
 
       - id: ruff-check
         name: Ruff check
-        entry: ruff check --config config/.ruff.toml --fix
+        entry: ruff check --fix
         language: system
         types: [python]
         pass_filenames: true
 
       - id: ruff-format
         name: Ruff format
-        entry: ruff format --config config/.ruff.toml
+        entry: ruff format
         language: system
         types: [python]
         pass_filenames: true
