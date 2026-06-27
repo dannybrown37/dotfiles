@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: project-manager
+Version: 0.1.0
+Summary: Set up a project and run script daily to stay on track with tactical reminders
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic>=2.13.4
+Requires-Dist: python-dateutil>=2.9.0.post0

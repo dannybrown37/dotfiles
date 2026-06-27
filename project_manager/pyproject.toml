@@ -1,0 +1,20 @@
+[project]
+name = "project-manager"
+version = "0.1.0"
+description = "Set up a project and run script daily to stay on track with tactical reminders"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.13.4",
+    "python-dateutil>=2.9.0.post0",
+]
+
+
+[project.scripts]
+pm = "main:main"
+
+
+[tool.ruff]
+line-length = 88
+show-fixes = true
+target-version = "py312"
