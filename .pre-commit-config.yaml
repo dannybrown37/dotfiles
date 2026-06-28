@@ -38,7 +38,7 @@ repos:
 
       - id: ruff-format
         name: Ruff format
-        entry: bash -c 'ruff format "$@" && git add "$@"' --
+        entry: ruff format
         language: system
         types: [python]
         pass_filenames: true
