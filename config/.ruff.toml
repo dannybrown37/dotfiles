@@ -13,6 +13,11 @@ select = [
   "C4",  # https://beta.ruff.rs/docs/rules/#flake8-comprehensions-c4
   "COM",  # https://beta.ruff.rs/docs/rules/#flake8-commas-com
   "C90",  # https://beta.ruff.rs/docs/rules/#mccabe-c90
+  "D200",  # One-line docstring should fit on one line
+  "D201",  # No blank lines allowed before function docstring
+  "D202",  # No blank lines allowed after function docstring
+  "D205",  # 1 blank line required between summary line and description
+  "D212",  # Multi-line docstring summary should start at the first line
   "E",  # default! https://beta.ruff.rs/docs/rules/#error-e
   "EM",  # https://beta.ruff.rs/docs/rules/#flake8-errmsg-em
   "ERA",  # https://beta.ruff.rs/docs/rules/#eradicate-era  # we'd like for this to warn
