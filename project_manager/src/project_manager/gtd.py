@@ -71,6 +71,19 @@ def today() -> None:
 
 
 @cli.command()
+def done() -> None:
+    """Mark a current project as done (archives it)."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        mark_done,
+    )
+
+    try:
+        mark_done()
+    except CancelAction:
+        return
+
+
+@cli.command()
 @click.argument('header', nargs=-1)
 def capture(header: tuple[str, ...]) -> None:
     """Quick-capture an item to the GTD inbox.
@@ -87,12 +100,13 @@ def capture(header: tuple[str, ...]) -> None:
         return
 
 
-def _interactive_menu(verbose: bool) -> None:  # noqa: C901
+def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
     """Launch interactive fzf menu for GTD actions."""
     from project_manager.notion.commands import (  # noqa: PLC0415
         list_entries,
         list_12_week_entries,
         list_today,
+        mark_done,
     )
     from project_manager.notion.capture import (  # noqa: PLC0415
         capture_item,
@@ -117,6 +131,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901
         'View all projects',
         'Triage inbox',
         'Capture new item',
+        'Mark done',
         '12-Week Goals',
         'Filter by context',
     ]
@@ -141,6 +156,8 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901
                     process_triage()
                 case 'Capture new item':
                     capture_item()
+                case 'Mark done':
+                    mark_done()
                 case '12-Week Goals':
                     list_12_week_entries(verbose=verbose)
                     pause()
