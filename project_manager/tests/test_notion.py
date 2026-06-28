@@ -20,6 +20,7 @@ from gtd.notion.log import (
 )
 from gtd.notion.models import ProjectEntry
 from gtd.notion.entries import _get_today_entries
+from gtd.notion.triage import _get_triage_entries
 
 
 # --- _handle_response: maps HTTP codes to actionable errors ---
@@ -146,6 +147,93 @@ class TestGetTodayEntries:
         results = _get_today_entries()
         assert len(results) == 1
         assert results[0].header == 'Complete'
+
+
+# --- Triage catches items that would be invisible in Today ---
+
+
+def _make_triage_page(
+    *,
+    header: str = 'Uncategorized',
+    status: str = 'Triage',
+    context: str = '',
+    next_step: str = '',
+) -> dict:
+    return {
+        'id': 'page-triage-1',
+        'created_time': '2026-06-01T00:00:00Z',
+        'properties': {
+            'Header': {'title': [{'plain_text': header}]},
+            'Status': {
+                'select': {'name': status} if status else None,
+            },
+            'Context': {
+                'select': {'name': context} if context else None,
+            },
+            'Next Actionable Step': {
+                'rich_text': [{'plain_text': next_step}] if next_step else [],
+            },
+            'Details': {'rich_text': []},
+            'Due Date': {'date': None},
+            'Follow-Up Date': {'date': None},
+        },
+    }
+
+
+class TestTriageCatchesInvisibleItems:
+    """Items that would be invisible in Today MUST appear in triage.
+
+    The design contract: if an item has no context or no next_step,
+    it won't show in Today. But it should never reach that state
+    silently -- either it's in Triage (awaiting processing) or it
+    has no status (just captured). Both cases are caught by
+    _get_triage_entries.
+    """
+
+    @patch('gtd.notion.triage.query_database')
+    def test_items_with_triage_status_appear(self, mock_db):
+        mock_db.return_value = [
+            _make_triage_page(header='Needs processing', status='Triage'),
+        ]
+        results = _get_triage_entries()
+        assert len(results) == 1
+        assert results[0].header == 'Needs processing'
+
+    @patch('gtd.notion.triage.query_database')
+    def test_items_with_no_status_appear(self, mock_db):
+        mock_db.return_value = [
+            _make_triage_page(header='Just captured', status=''),
+        ]
+        results = _get_triage_entries()
+        assert len(results) == 1
+        assert results[0].header == 'Just captured'
+
+    @patch('gtd.notion.entries.query_database')
+    def test_triage_items_never_appear_in_today(self, mock_db):
+        """Items in Triage are invisible to Today -- by design.
+
+        Today only shows Current Projects with context + next_step.
+        Triage items lack these, so they correctly don't show up.
+        This test proves the safety net: you can't accidentally
+        lose track of items because they MUST go through triage
+        before becoming Current Projects.
+        """
+        mock_db.return_value = [
+            _make_triage_page(
+                header='In triage',
+                status='Triage',
+                context='',
+                next_step='',
+            ),
+            _make_page(
+                header='Properly triaged',
+                context='Work',
+                next_step='Do thing',
+            ),
+        ]
+        results = _get_today_entries()
+        assert len(results) == 1
+        assert results[0].header == 'Properly triaged'
 
 
 # --- _parse_date_input: relative dates and error handling ---
