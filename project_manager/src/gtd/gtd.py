@@ -5,7 +5,7 @@ import sys
 
 import click
 
-from project_manager.ui import CancelAction
+from gtd.ui import CancelAction
 
 
 @click.group(invoke_without_command=True)
@@ -28,7 +28,7 @@ def cli(ctx: click.Context, verbose: bool) -> None:
 )
 def init(upgrade: bool) -> None:
     """Set up or upgrade the GTD Notion database."""
-    from project_manager.notion.init import init_database  # noqa: PLC0415
+    from gtd.notion.init import init_database  # noqa: PLC0415
 
     try:
         init_database(upgrade=upgrade)
@@ -39,7 +39,7 @@ def init(upgrade: bool) -> None:
 @cli.command()
 def triage() -> None:
     """Interactively process items needing triage."""
-    from project_manager.notion.triage import (  # noqa: PLC0415
+    from gtd.notion.triage import (  # noqa: PLC0415
         process_triage,
     )
 
@@ -53,7 +53,7 @@ def triage() -> None:
 @click.pass_context
 def goals(ctx: click.Context) -> None:
     """Show 12-week goal entries."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         list_12_week_entries,
     )
 
@@ -65,7 +65,7 @@ def goals(ctx: click.Context) -> None:
 @click.pass_context
 def filter_context(ctx: click.Context, context: tuple[str, ...]) -> None:
     """Filter by context name (e.g. gtd filter Phone)."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         list_entries,
     )
 
@@ -79,7 +79,7 @@ def filter_context(ctx: click.Context, context: tuple[str, ...]) -> None:
 @cli.command()
 def today() -> None:
     """Show actionable items for today."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         list_today,
     )
 
@@ -89,7 +89,7 @@ def today() -> None:
 @cli.command()
 def snooze() -> None:
     """Snooze today's items until tomorrow."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         snooze_today,
     )
 
@@ -102,7 +102,7 @@ def snooze() -> None:
 @cli.command(name='log')
 def log_cmd() -> None:
     """Log a note and reschedule a recurring item."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         log_and_reschedule,
     )
 
@@ -115,7 +115,7 @@ def log_cmd() -> None:
 @cli.command()
 def done() -> None:
     """Mark a current project as done (archives it)."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         mark_done,
     )
 
@@ -128,7 +128,7 @@ def done() -> None:
 @cli.command()
 def review() -> None:
     """Run the GTD weekly review ritual."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         weekly_review,
     )
 
@@ -141,7 +141,7 @@ def review() -> None:
 @cli.command()
 def update() -> None:
     """Update fields on an existing project."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         update_entry,
     )
 
@@ -154,7 +154,7 @@ def update() -> None:
 @cli.command()
 def defer() -> None:
     """Defer a project by setting a follow-up date."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         defer_entry,
     )
 
@@ -167,7 +167,7 @@ def defer() -> None:
 @cli.command()
 def someday() -> None:
     """Review Someday/Maybe items — keep, activate, or drop."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         review_someday,
     )
 
@@ -186,7 +186,7 @@ def capture(header: tuple[str, ...]) -> None:
         gtd capture Buy groceries
         gtd capture               (interactive prompt)
     """
-    from project_manager.notion.capture import capture_item  # noqa: PLC0415
+    from gtd.notion.capture import capture_item  # noqa: PLC0415
 
     try:
         capture_item(header=' '.join(header) if header else None)
@@ -197,7 +197,7 @@ def capture(header: tuple[str, ...]) -> None:
 @cli.command()
 def dump() -> None:
     """Rapid-fire brain dump — capture everything, triage later."""
-    from project_manager.notion.commands import brain_dump  # noqa: PLC0415
+    from gtd.notion.commands import brain_dump  # noqa: PLC0415
 
     try:
         brain_dump()
@@ -207,7 +207,7 @@ def dump() -> None:
 
 def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
     """Launch interactive fzf menu for GTD actions."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         brain_dump,
         list_entries,
         list_12_week_entries,
@@ -220,13 +220,13 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
         snooze_today,
         log_and_reschedule,
     )
-    from project_manager.notion.capture import (  # noqa: PLC0415
+    from gtd.notion.capture import (  # noqa: PLC0415
         capture_item,
     )
-    from project_manager.notion.triage import (  # noqa: PLC0415
+    from gtd.notion.triage import (  # noqa: PLC0415
         process_triage,
     )
-    from project_manager.ui import (  # noqa: PLC0415
+    from gtd.ui import (  # noqa: PLC0415
         fzf_on_a_list,
         pause,
     )
@@ -311,7 +311,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
                     list_12_week_entries(verbose=verbose)
                     pause()
                 case 'Filter by context':
-                    from project_manager.notion.client import (  # noqa: PLC0415
+                    from gtd.notion.client import (  # noqa: PLC0415
                         get_select_options,
                     )
 

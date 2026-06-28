@@ -29,12 +29,12 @@ A CLI for personal productivity combining [GTD (Getting Things Done)](https://ge
 ## Installation
 
 ```bash
-cd project_manager
+cd gtd
 uv sync
 uv pip install -e .
 ```
 
-This installs both the `pm` and `gtd` commands.
+This installs the `gtd` command.
 
 ## Usage
 
@@ -73,20 +73,23 @@ gtd init --upgrade   # Add missing properties/options to existing DB
 gtd triage           # Process inbox items
 gtd review           # Guided weekly review ritual
 gtd dump             # Rapid-fire brain dump
-gtd goals         # Show 12-week goal entries
-gtd filter work   # Filter projects by context
-gtd today         # Show today's actionable items
-gtd capture       # Quick-capture to inbox
-gtd done          # Mark a project as done
-gtd update        # Update project fields
-gtd defer         # Defer a project
+gtd goals            # 12-Week Year interactive menu
+gtd goals status     # Print goal progress (no fzf needed)
+gtd goals notion     # Show 12-week goal entries from Notion
+gtd filter work      # Filter projects by context
+gtd today            # Show today's actionable items
+gtd capture          # Quick-capture to inbox
+gtd done             # Mark a project as done
+gtd update           # Update project fields
+gtd defer            # Defer a project
 ```
 
 ### 12-Week Year
 
 ```bash
-pm                # Interactive menu
-pm status         # Quick snapshot (no fzf needed)
+gtd goals            # Interactive menu (scoring, tactics, todos)
+gtd goals status     # Quick snapshot (no fzf needed)
+gtd goals notion     # View Notion items tagged as 12-Week Goals
 ```
 
 ## Updating this README
@@ -100,12 +103,12 @@ python scripts/update_readme.py
 ## Data storage
 
 - **GTD**: Notion database (configured via `gtd init` or `NOTION_NOTES_TOKEN` / `NOTION_PROJECTS_DB_ID` env vars)
-- **12-Week Year**: JSON files in `~/.local/share/project_manager/`
+- **12-Week Year**: JSON files in `~/.local/share/gtd/`
 
 ## Project structure
 
 ```
-src/project_manager/
+src/gtd/
 ├── cli.py           # 12-Week Year menu routing and entry point
 ├── gtd.py           # GTD interactive menu and CLI commands
 ├── models.py        # Pydantic models (Goal, Tactic, Todo)
@@ -115,6 +118,9 @@ src/project_manager/
 ├── actions.py       # Goal actions (scoring, editing, cycling)
 └── notion/
     ├── client.py    # Notion API client
+    ├── config.py    # Config file management (~/.config/gtd/)
+    ├── schema.py    # Database schema definition
+    ├── init.py      # Database creation and upgrades
     ├── models.py    # ProjectEntry dataclass
     ├── commands.py  # GTD command implementations
     ├── capture.py   # Inbox capture

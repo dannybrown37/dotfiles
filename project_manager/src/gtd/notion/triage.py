@@ -2,15 +2,15 @@
 
 from dateutil import parser as dateparser
 
-from project_manager.notion.client import (
+from gtd.notion.client import (
     get_select_options,
     query_database,
     update_page,
     build_property_update,
 )
-from project_manager.notion.models import ProjectEntry
-from project_manager.notion.schema import STATUSES as ALL_STATUSES
-from project_manager.ui import fzf_on_a_list, prompt_input, CancelAction
+from gtd.notion.models import ProjectEntry
+from gtd.notion.schema import STATUSES as ALL_STATUSES
+from gtd.ui import fzf_on_a_list, prompt_input, CancelAction
 
 
 TRIAGE_STATUSES = [s for s in ALL_STATUSES if s != 'Triage']
@@ -125,7 +125,7 @@ def process_triage() -> None:
         f' in Triage\n'
     )
 
-    from project_manager.notion.commands import (  # noqa: PLC0415
+    from gtd.notion.commands import (  # noqa: PLC0415
         select_entry,
     )
 

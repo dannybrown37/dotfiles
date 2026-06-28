@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dateutil import parser as dateparser
 
-from project_manager.models import (
+from gtd.models import (
     Goal,
     Tactic,
     Todo,
@@ -11,14 +11,14 @@ from project_manager.models import (
     TOTAL_WEEKS,
     SCORE_GREEN_THRESHOLD,
 )
-from project_manager.storage import (
+from gtd.storage import (
     save_goal,
     load_config,
     save_config,
     OUTPUT_PATH,
     _safe_filename,
 )
-from project_manager.ui import (
+from gtd.ui import (
     fzf_on_a_list,
     select_tactic_index,
     prompt_input,

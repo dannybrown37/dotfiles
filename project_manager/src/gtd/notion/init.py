@@ -4,10 +4,10 @@ import re
 
 import httpx
 
-from project_manager.notion.client import NOTION_API_URL, NOTION_VERSION
-from project_manager.notion.config import load_config, save_config
-from project_manager.notion.schema import DB_SCHEMA, STATUSES
-from project_manager.ui import prompt_input
+from gtd.notion.client import NOTION_API_URL, NOTION_VERSION
+from gtd.notion.config import load_config, save_config
+from gtd.notion.schema import DB_SCHEMA, STATUSES
+from gtd.ui import prompt_input
 
 _HTTP_OK = 200
 

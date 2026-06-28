@@ -2,8 +2,8 @@ import contextlib
 from datetime import datetime
 import subprocess
 
-from project_manager.models import Goal, TOTAL_WEEKS
-from project_manager.ui import score_indicator, score_pct
+from gtd.models import Goal, TOTAL_WEEKS
+from gtd.ui import score_indicator, score_pct
 
 
 def _tactics_compact_lines(goal: Goal) -> list[str]:

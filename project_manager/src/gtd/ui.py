@@ -1,7 +1,7 @@
 import subprocess
 from typing import Literal, overload
 
-from project_manager.models import (
+from gtd.models import (
     Goal,
     SCORE_GREEN_THRESHOLD,
     SCORE_YELLOW_THRESHOLD,

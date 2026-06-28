@@ -10,7 +10,7 @@ from pathlib import Path
 
 from dateutil import parser as dateparser
 
-from project_manager.notion.client import (
+from gtd.notion.client import (
     archive_page,
     build_property_update,
     get_page_body,
@@ -19,10 +19,10 @@ from project_manager.notion.client import (
     replace_page_body,
     update_page,
 )
-from project_manager.notion.models import ProjectEntry
-from project_manager.notion.display import format_entry_list
-from project_manager.notion.triage import process_triage
-from project_manager.ui import CancelAction, fzf_on_a_list, pause, prompt_input
+from gtd.notion.models import ProjectEntry
+from gtd.notion.display import format_entry_list
+from gtd.notion.triage import process_triage
+from gtd.ui import CancelAction, fzf_on_a_list, pause, prompt_input
 
 
 def list_entries(
@@ -59,7 +59,7 @@ def list_entries(
 
     # Group by status
     if not status:
-        from project_manager.notion.schema import STATUSES  # noqa: PLC0415
+        from gtd.notion.schema import STATUSES  # noqa: PLC0415
 
         for s in STATUSES:
             group = [e for e in entries if e.status == s]
@@ -514,7 +514,7 @@ def _collect_field_updates(  # noqa: C901, PLR0912
             kwargs['context'] = ctx
 
     if 'Status' in fields:
-        from project_manager.notion.schema import STATUSES  # noqa: PLC0415
+        from gtd.notion.schema import STATUSES  # noqa: PLC0415
 
         status = fzf_on_a_list(
             STATUSES,
@@ -778,7 +778,7 @@ def _edit_entry_fields(entry: ProjectEntry) -> None:
 
 def _review_get_clear() -> None:
     """Phase 1: Get Clear — empty inbox."""
-    from project_manager.notion.triage import (  # noqa: PLC0415
+    from gtd.notion.triage import (  # noqa: PLC0415
         _get_triage_entries,
     )
 
@@ -911,7 +911,7 @@ def _review_get_current() -> None:  # noqa: C901, PLR0912, PLR0915
 
 def brain_dump() -> None:
     """Rapid-fire capture loop — get everything out of your head."""
-    from project_manager.notion.capture import capture_item  # noqa: PLC0415
+    from gtd.notion.capture import capture_item  # noqa: PLC0415
 
     print('\n── 🧠 Brain Dump ──')
     print('  Get it all out. Capture everything.\n')
@@ -938,7 +938,7 @@ def _review_get_creative() -> None:
     print('─── Phase 3: Get Creative ───')
     print('  Goal: Brain dump. Any new projects, ideas, or someday/maybes?\n')
 
-    from project_manager.notion.capture import capture_item  # noqa: PLC0415
+    from gtd.notion.capture import capture_item  # noqa: PLC0415
 
     captured = 0
     while True:
