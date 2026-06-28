@@ -97,6 +97,19 @@ def update() -> None:
 
 
 @cli.command()
+def defer() -> None:
+    """Defer a project by setting a follow-up date."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        defer_entry,
+    )
+
+    try:
+        defer_entry()
+    except CancelAction:
+        return
+
+
+@cli.command()
 @click.argument('header', nargs=-1)
 def capture(header: tuple[str, ...]) -> None:
     """Quick-capture an item to the GTD inbox.
@@ -120,6 +133,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
         list_12_week_entries,
         list_today,
         mark_done,
+        defer_entry,
         update_entry,
     )
     from project_manager.notion.capture import (  # noqa: PLC0415
@@ -146,6 +160,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
         'Triage inbox',
         'Capture new item',
         'Update project',
+        'Defer project',
         'Mark done',
         '12-Week Goals',
         'Filter by context',
@@ -173,6 +188,8 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
                     capture_item()
                 case 'Update project':
                     update_entry()
+                case 'Defer project':
+                    defer_entry()
                 case 'Mark done':
                     mark_done()
                 case '12-Week Goals':
