@@ -9,6 +9,7 @@ dependencies = ["click>=8.1.0", "httpx>=0.28.0", "pydantic>=2.13.4", "python-dat
 
 [project.scripts]
 pm = "project_manager.cli:main"
+gtd = "project_manager.gtd:main"
 
 
 [tool.setuptools.packages.find]
