@@ -177,6 +177,39 @@ def mark_done() -> None:
     print(f'✓ "{entry.header}" → Done (archived)')
 
 
+def defer_entry() -> None:
+    """Set a follow-up date on a current project."""
+    pages = query_database(
+        filter_obj={
+            'property': 'Status',
+            'select': {'equals': 'Current Project'},
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+
+    if not entries:
+        print('No current projects.')
+        return
+
+    entry = select_entry(entries, prompt='Defer')
+    if not entry:
+        return
+
+    date_input = prompt_input(
+        'Follow-up date (e.g. Monday, Jul 15, in 3 days): ',
+    )
+    if not date_input:
+        return
+
+    date_str = _parse_date_input(date_input)
+    if not date_str:
+        return
+
+    props = build_property_update(follow_up_date=date_str)
+    update_page(entry.page_id, props)
+    print(f'✓ "{entry.header}" deferred until {date_str}')
+
+
 def _parse_date_input(raw: str) -> str | None:
     """Parse a date string, returning YYYY-MM-DD or None."""
     parsed = dateparser.parse(raw, fuzzy=True)
@@ -270,10 +303,10 @@ def select_entry(
     if not entries:
         return None
 
-    entry_map = {e.header: e for e in entries}
+    entry_map = {e.header.strip(): e for e in entries}
     headers = list(entry_map.keys())
 
-    preview_data = {e.header: _entry_preview_text(e) for e in entries}
+    preview_data = {e.header.strip(): _entry_preview_text(e) for e in entries}
     with tempfile.NamedTemporaryFile(
         mode='w',
         suffix='.json',
