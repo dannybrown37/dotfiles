@@ -71,6 +71,19 @@ def today() -> None:
 
 
 @cli.command()
+def snooze() -> None:
+    """Snooze today's items until tomorrow."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        snooze_today,
+    )
+
+    try:
+        snooze_today()
+    except CancelAction:
+        return
+
+
+@cli.command()
 def done() -> None:
     """Mark a current project as done (archives it)."""
     from project_manager.notion.commands import (  # noqa: PLC0415
@@ -149,6 +162,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
         defer_entry,
         update_entry,
         review_someday,
+        snooze_today,
     )
     from project_manager.notion.capture import (  # noqa: PLC0415
         capture_item,
@@ -170,6 +184,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
 
     menu_items = [
         ('Do', 'Today'),
+        ('Do', 'Snooze until tomorrow'),
         ('Do', 'Capture new item'),
         ('Do', 'Triage inbox'),
         ('Manage', 'Update project'),
@@ -211,6 +226,8 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
                 case 'Today':
                     list_today()
                     pause()
+                case 'Snooze until tomorrow':
+                    snooze_today()
                 case 'View all projects':
                     list_entries(verbose=verbose)
                     pause()
