@@ -92,6 +92,22 @@ def update_page(page_id: str, properties: dict) -> dict:
     return response.json()
 
 
+def get_page_body(page_id: str) -> str:
+    """Fetch the text content from a page's body blocks."""
+    url = f'{NOTION_API_URL}/blocks/{page_id}/children'
+    response = httpx.get(url, headers=_headers())
+    response.raise_for_status()
+    blocks = response.json().get('results', [])
+    lines = []
+    for block in blocks:
+        if block['type'] == 'paragraph':
+            texts = block['paragraph']['rich_text']
+            content = ' '.join(t['plain_text'] for t in texts).strip()
+            if content:
+                lines.append(content)
+    return '\n'.join(lines)
+
+
 def build_property_update(
     *,
     status: str | None = None,
