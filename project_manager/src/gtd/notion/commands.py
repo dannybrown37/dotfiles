@@ -1090,7 +1090,7 @@ def _review_check_goals() -> None:  # noqa: C901, PLR0912, PLR0915
         return
 
     # Show local goals with scoring
-    goals_to_score = []
+    goals_to_score: list[tuple] = []
     for name in local_names:
         goal = load_goal(name)
         week = goal.current_week()
@@ -1105,14 +1105,34 @@ def _review_check_goals() -> None:  # noqa: C901, PLR0912, PLR0915
         else:
             print('     No scores yet')
 
-        wk_key = str(week)
-        unscored = [t for t in goal.tactics if wk_key not in t.weekly_scores]
-        if unscored and not goal.is_complete:
-            print(
-                f'     ⚠ Week {week}/{TOTAL_WEEKS}: '
-                f'{len(unscored)} tactic(s) unscored',
-            )
-            goals_to_score.append((goal, week))
+        if not goal.is_complete:
+            # Check previous week and current week
+            weeks_to_check = []
+            if week > 1:
+                prev_key = str(week - 1)
+                prev_unscored = [
+                    t for t in goal.tactics if prev_key not in t.weekly_scores
+                ]
+                if prev_unscored:
+                    weeks_to_check.append(week - 1)
+                    print(
+                        f'     ⚠ Week {week - 1}/{TOTAL_WEEKS}: '
+                        f'{len(prev_unscored)} tactic(s) unscored',
+                    )
+
+            cur_key = str(week)
+            cur_unscored = [
+                t for t in goal.tactics if cur_key not in t.weekly_scores
+            ]
+            if cur_unscored:
+                weeks_to_check.append(week)
+                print(
+                    f'     ⚠ Week {week}/{TOTAL_WEEKS}: '
+                    f'{len(cur_unscored)} tactic(s) unscored',
+                )
+
+            for w in weeks_to_check:
+                goals_to_score.append((goal, w))
         print()
 
     # Show Notion 12-Week Goal groups
@@ -1129,10 +1149,10 @@ def _review_check_goals() -> None:  # noqa: C901, PLR0912, PLR0915
         return
 
     action = fzf_on_a_list(
-        ['Score current week', 'Skip scoring'],
+        ['Score unscored weeks', 'Skip scoring'],
         prompt='12-Week Goals',
     )
-    if action != 'Score current week':
+    if action != 'Score unscored weeks':
         return
 
     for goal, week in goals_to_score:
