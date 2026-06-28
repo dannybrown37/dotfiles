@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock
 
-from project_manager.ui import CancelAction, fzf_on_a_list, prompt_input, pause
+from gtd.ui import CancelAction, fzf_on_a_list, prompt_input, pause
 
 
 class TestPromptInputCtrlC:
@@ -22,7 +22,7 @@ class TestPauseCtrlC:
 
 
 class TestFzfCtrlC:
-    @patch('project_manager.ui.subprocess.run')
+    @patch('gtd.ui.subprocess.run')
     def test_raises_cancel_action_on_fzf_ctrl_c(self, mock_run):
         mock_run.return_value = MagicMock(returncode=130, stdout='')
         try:
@@ -32,13 +32,13 @@ class TestFzfCtrlC:
             raised = True
         assert raised is True
 
-    @patch('project_manager.ui.subprocess.run')
+    @patch('gtd.ui.subprocess.run')
     def test_returns_none_on_empty_selection(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout='')
         result = fzf_on_a_list(['a', 'b'], prompt='test')
         assert result is None
 
-    @patch('project_manager.ui.subprocess.run')
+    @patch('gtd.ui.subprocess.run')
     def test_returns_selection(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout='b\n')
         result = fzf_on_a_list(['a', 'b'], prompt='test')

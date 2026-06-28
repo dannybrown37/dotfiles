@@ -4,8 +4,8 @@ import sys
 
 import click
 
-from project_manager.models import Goal, TOTAL_WEEKS
-from project_manager.storage import (
+from gtd.models import Goal, TOTAL_WEEKS
+from gtd.storage import (
     ensure_dirs,
     save_goal,
     load_goal,
@@ -14,7 +14,7 @@ from project_manager.storage import (
     OUTPUT_PATH,
     ARCHIVE_PATH,
 )
-from project_manager.ui import (
+from gtd.ui import (
     fzf_on_a_list,
     prompt_input,
     pause,
@@ -22,8 +22,8 @@ from project_manager.ui import (
     score_indicator,
     score_pct,
 )
-from project_manager.views import view_goal, detailed_view
-from project_manager.actions import (
+from gtd.views import view_goal, detailed_view
+from gtd.actions import (
     edit_goal,
     weekly_scorecard,
     view_score_history,

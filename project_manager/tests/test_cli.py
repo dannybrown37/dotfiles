@@ -1,8 +1,8 @@
 from unittest.mock import patch, MagicMock
 
-from project_manager.models import Goal, Tactic
-from project_manager.ui import CancelAction
-from project_manager.cli import goal_menu
+from gtd.models import Goal, Tactic
+from gtd.ui import CancelAction
+from gtd.cli import goal_menu
 
 
 class TestGoalMenuCtrlC:
@@ -17,14 +17,14 @@ class TestGoalMenuCtrlC:
             ],
         )
 
-    @patch('project_manager.cli.fzf_on_a_list', side_effect=CancelAction)
+    @patch('gtd.cli.fzf_on_a_list', side_effect=CancelAction)
     def test_ctrl_c_on_menu_exits_cleanly(self, mock_fzf):
         goal = self._make_goal()
         # Should not raise — just returns
         goal_menu(goal)
 
-    @patch('project_manager.cli.pause')
-    @patch('project_manager.cli.fzf_on_a_list')
+    @patch('gtd.cli.pause')
+    @patch('gtd.cli.fzf_on_a_list')
     def test_ctrl_c_during_action_returns_to_menu(self, mock_fzf, mock_pause):
         goal = self._make_goal()
         # First call: select scorecard, second call: Ctrl-C exits menu
@@ -33,7 +33,7 @@ class TestGoalMenuCtrlC:
             CancelAction,
         ]
         with patch(
-            'project_manager.cli.GOAL_ACTION_MAP',
+            'gtd.cli.GOAL_ACTION_MAP',
             {'Weekly scorecard': MagicMock(side_effect=CancelAction)},
         ):
             goal_menu(goal)

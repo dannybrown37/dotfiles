@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 import re
 
-from project_manager.models import Goal
+from gtd.models import Goal
 
 
-OUTPUT_PATH = Path.home() / '.local' / 'share' / 'project_manager'
+OUTPUT_PATH = Path.home() / '.local' / 'share' / 'gtd'
 ARCHIVE_PATH = OUTPUT_PATH / 'archive'
 CONFIG_PATH = OUTPUT_PATH / 'config.json'
 

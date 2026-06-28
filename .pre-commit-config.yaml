@@ -72,15 +72,15 @@ repos:
         pass_filenames: false
 
       - id: sync-pm-readme
-        name: Sync project_manager README menu
+        name: Sync GTD README menu
         entry: bash -c 'cd "$(git rev-parse --show-toplevel)/project_manager" && uv run python scripts/update_readme.py && git add README.md'
         language: system
-        files: project_manager/(src/project_manager/gtd\.py|README\.md)$
+        files: gtd/(src/gtd/gtd\.py|README\.md)$
         pass_filenames: false
 
       - id: pm-tests
-        name: Project manager tests
+        name: GTD tests
         entry: bash -c 'cd "$(git rev-parse --show-toplevel)/project_manager" && uv run pytest tests/ -q'
         language: system
-        files: project_manager/
+        files: gtd/
         pass_filenames: false

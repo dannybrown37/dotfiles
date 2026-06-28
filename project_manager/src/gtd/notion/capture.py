@@ -4,13 +4,13 @@ from datetime import UTC, datetime
 
 import httpx
 
-from project_manager.notion.client import (
+from gtd.notion.client import (
     get_projects_db_id,
     get_token,
     NOTION_API_URL,
     NOTION_VERSION,
 )
-from project_manager.ui import prompt_input
+from gtd.ui import prompt_input
 
 
 def _create_page(header: str, details: str = '') -> dict:

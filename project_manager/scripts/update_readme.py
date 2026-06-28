@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-GTD_SOURCE = PROJECT_ROOT / 'src' / 'project_manager' / 'gtd.py'
+GTD_SOURCE = PROJECT_ROOT / 'src' / 'gtd' / 'gtd.py'
 README = PROJECT_ROOT / 'README.md'
 
 BEGIN_MARKER = '<!-- BEGIN MENU -->'

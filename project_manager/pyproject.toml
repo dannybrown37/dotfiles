@@ -1,19 +1,23 @@
 [project]
-name = "project-manager"
-version = "0.1.0"
-description = "A CLI Implementation of the 12-Week Year Planning Method"
+name = "gtd"
+version = "0.2.0"
+description = "GTD + 12-Week Year CLI powered by Notion"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["click>=8.1.0", "httpx>=0.28.0", "pydantic>=2.13.4", "python-dateutil>=2.9.0.post0"]
 
 
 [project.scripts]
-pm = "project_manager.cli:main"
-gtd = "project_manager.gtd:main"
+gtd = "gtd.gtd:main"
 
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
 
 
 [tool.ruff]

@@ -1,7 +1,7 @@
 """Display formatting for Notion entries."""
 
-from project_manager.notion.models import ProjectEntry
-from project_manager.notion.schema import STATUS_ICONS
+from gtd.notion.models import ProjectEntry
+from gtd.notion.schema import STATUS_ICONS
 
 
 def format_entry(entry: ProjectEntry, *, verbose: bool = False) -> str:
