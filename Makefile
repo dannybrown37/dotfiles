@@ -1,4 +1,4 @@
-.PHONY: help python deno node golang rust vscode all gnome windows resestkomo pull-ahk pull-bash pull-secrets insert-ahk insert-bash insert-secrets
+.PHONY: help python deno node golang rust vscode all gnome windows komo secrets-save secrets-load
 
 help:
 	@echo "Usage: make [option]"
@@ -18,12 +18,8 @@ help:
 	@echo "  komo            Reset komorebi (useful for after configuration changes)"
 	@echo ""
 	@echo "These commands require GPG keys and secrets:"
-	@echo "  insert-ahk      Push local ahk secrets to password-store"
-	@echo "  insert-bash     Push local bash secrets to password-store"
-	@echo "  insert-secrets  Write all secrets files to password-store"
-	@echo "  pull-ahk        Pull ahk secrets from password-store to local files"
-	@echo "  pull-bash       Pull bash secrets from password-store to local files"
-	@echo "  pull-secrets    Read all secrets files from password-store"
+	@echo "  secrets-save    Save local secrets to password-store"
+	@echo "  secrets-load    Load secrets from password-store to local files"
 
 
 root_dir := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -73,20 +69,12 @@ komo:
 
 # pass secret store
 
-pull-ahk:
-	bash -c "mv $(root_dir)/ahk/secrets.ahk $(root_dir)/ahk/secrets.ahk.bak"
-	bash -c "pass ahk/secrets > $(root_dir)/ahk/secrets.ahk"
-
-pull-bash:
-	bash -c "mv $(root_dir)/config/.secrets $(root_dir)/config/.secrets.bak"
-	bash -c "pass bash/secrets > $(root_dir)/config/.secrets"
-
-pull-secrets: pull-ahk pull-bash
-
-insert-ahk:
+secrets-save:
 	bash -c "pass insert -m ahk/secrets < $(root_dir)/ahk/secrets.ahk"
-
-insert-bash:
 	bash -c "pass insert -m bash/secrets < $(root_dir)/config/.secrets"
 
-insert-secrets: insert-ahk insert-bash
+secrets-load:
+	bash -c "mv $(root_dir)/ahk/secrets.ahk $(root_dir)/ahk/secrets.ahk.bak"
+	bash -c "pass ahk/secrets > $(root_dir)/ahk/secrets.ahk"
+	bash -c "mv $(root_dir)/config/.secrets $(root_dir)/config/.secrets.bak"
+	bash -c "pass bash/secrets > $(root_dir)/config/.secrets"
