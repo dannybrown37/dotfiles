@@ -1,5 +1,4 @@
 import subprocess
-import sys
 from typing import Literal, overload
 
 from project_manager.models import (
@@ -55,7 +54,7 @@ def fzf_on_a_list(
         check=False,
     )
     if result.returncode == FZF_CTRL_C_CODE:
-        sys.exit(0)
+        raise CancelAction
     if not multiple:
         return result.stdout.strip() or None
     return [item.strip() for item in result.stdout.split('\n') if item.strip()]
@@ -76,7 +75,10 @@ def select_tactic_index(
 
 
 def pause() -> None:
-    input('\nPress Enter to go back to menu...')
+    try:
+        input('\nPress Enter to go back to menu...')
+    except KeyboardInterrupt:
+        print()
 
 
 def score_indicator(pct: float) -> str:
@@ -88,13 +90,17 @@ def score_indicator(pct: float) -> str:
     return '🔴'
 
 
+class CancelAction(Exception):  # noqa: N818
+    """Raised when user presses Ctrl+C to abort the current action."""
+
+
 def prompt_input(label: str) -> str | None:
-    """Like input() but Ctrl+C returns None instead of raising."""
+    """Like input() but Ctrl+C raises CancelAction to return to menu."""
     try:
         return input(label).strip()
     except KeyboardInterrupt:
         print()
-        return None
+        raise CancelAction from None
 
 
 def score_pct(executed: int, total: int) -> str:

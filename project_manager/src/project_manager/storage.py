@@ -5,7 +5,7 @@ import re
 from project_manager.models import Goal
 
 
-OUTPUT_PATH = Path.home() / '.local' / 'bin' / 'project_manager'
+OUTPUT_PATH = Path.home() / '.local' / 'share' / 'project_manager'
 ARCHIVE_PATH = OUTPUT_PATH / 'archive'
 CONFIG_PATH = OUTPUT_PATH / 'config.json'
 
