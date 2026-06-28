@@ -173,7 +173,7 @@ end, { desc = "[T]oggle [A]utocomplete" })
 --#region Which-Key prefix mapping
 local wk = require("which-key")
 wk.add({
-	{ "<leader>d", group = "Duck (just for fun)", mode = "n" },
+	{ "<leader>d", group = "Debug / Duck", mode = "n" },
 	{ "<leader>f", group = "Find (LSP)" },
 	{ "<leader>g", group = "Git" },
 	{ "<leader>ga", group = "Git Add" },
