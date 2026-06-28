@@ -189,13 +189,9 @@ fi
 
 PROMPT_COMMAND=git_info_env_vars
 
-export VIRTUAL_ENV_DISABLE_PROMPT=1 # disables (venv) prepending prompt when venv activated, handled in PS1 var below
+export VIRTUAL_ENV_DISABLE_PROMPT=1
 # shellcheck disable=SC2250
-if [[ $(date +%b) == "JunTODO-SOMEDAY-MAYBE" ]]; then
-    export PS1="$(rainbow '┌────')${VIRTUAL_ENV:+$(rainbow "($(basename $VIRTUAL_ENV))$(rainbow '─')")}$(rainbow '< ')${GREEN}\w$(rainbow ' >')$(rainbow '─')$(rainbow '{ ')${CYAN}$DEV_STACK$(rainbow ' }')$(rainbow '─[ ')${YELLOW}$GIT_BRANCH$GIT_ICON$(rainbow ' ]')\n$(rainbow '└─')$(rainbow "$PROMPT_SYMBOL")\[\033[0m\] "
-else
-    export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'─}'$COLOR3'< \w >'$COLOR1'─'$COLOR4'{ $DEV_STACK }'$COLOR1'─[ $GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
-fi
+export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'─}'$COLOR3'< \w >'$COLOR1'─'$COLOR4'{ $DEV_STACK }'$COLOR1'─[ $GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
 
 ##
 ## Functions
@@ -435,7 +431,7 @@ source "$DOTFILES_DIR"/config/.bash_aliases
 ## Language-specific configuration
 ##
 
-. "/home/danny/.deno/env"
+[[ -f "/home/danny/.deno/env" ]] && . "/home/danny/.deno/env"
 
 export GOROOT="/usr/local/go"
 export GOPATH="$HOME/go"
