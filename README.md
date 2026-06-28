@@ -32,12 +32,8 @@ Bootstrap scripts:
   komo            Reset komorebi (useful for after configuration changes)
 
 These commands require GPG keys and secrets:
-  insert-ahk      Push local ahk secrets to password-store
-  insert-bash     Push local bash secrets to password-store
-  insert-secrets  Write all secrets files to password-store
-  pull-ahk        Pull ahk secrets from password-store to local files
-  pull-bash       Pull bash secrets from password-store to local files
-  pull-secrets    Read all secrets files from password-store
+  secrets-save    Save local secrets to password-store
+  secrets-load    Load secrets from password-store to local files
 ```
 
 ## Commands Available
@@ -92,26 +88,11 @@ These commands require GPG keys and secrets:
 Assuming you are properly authorized to do so on the machine in question:
 
 ```bash
-make insert-secrets
+make secrets-save    # local → password-store
+make secrets-load    # password-store → local (backs up existing files first)
 ```
 
-Push `./config/.secrets` and `./ahk/secrets.ahk` into the encrypted `password-store`.
-
-Or push individually:
-
-- `make insert-ahk`
-- `make insert-bash`
-
-```bash
-make pull-secrets
-```
-
-Pull data from the `password-store` into locations at `./config/.secrets` and `./ahk/secrets.ahk`
-
-Or pull individually:
-
-- `make pull-ahk`
-- `make pull-bash`
+Manages `./config/.secrets` and `./ahk/secrets.ahk` via the encrypted `password-store`.
 
 ## Initial Windows Setup Notes
 
