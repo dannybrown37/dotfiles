@@ -75,6 +75,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
+| `tmconf` | Reload tmux config | `config/.bash_aliases` |
 | `tms` | Start or attach to tmux Session | `config/.bash_aliases` |
 | `tree` | Show a tree view of files and directories | `config/.bash_aliases` |
 | `url` | Open a URL in the system browser | `config/.bash_aliases` |
