@@ -57,6 +57,7 @@ Opens the fzf-powered GTD menu:
 | Do | Triage inbox |
 | Manage | Update project |
 | Manage | Defer project until date |
+| Manage | Waiting For |
 | Manage | Mark done |
 | Review | Weekly Review |
 | Review | Review Someday/Maybe |
