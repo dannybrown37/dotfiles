@@ -274,6 +274,12 @@ def main() -> None:
         _print_status()
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == 'notion':
+        from project_manager.notion.commands import notion_command  # noqa: PLC0415
+
+        notion_command(sys.argv[2:])
+        return
+
     if shutil.which('fzf') is None:
         print('Error: fzf is required but not found on PATH.')
         print('Install it: https://github.com/junegunn/fzf#installation')
