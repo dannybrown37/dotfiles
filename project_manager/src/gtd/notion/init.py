@@ -4,7 +4,7 @@ import re
 
 import httpx
 
-from gtd.notion.client import NOTION_API_URL, NOTION_VERSION
+from gtd.notion.client import NOTION_API_URL, NOTION_VERSION, _handle_response
 from gtd.notion.config import load_config, save_config
 from gtd.notion.schema import DB_SCHEMA, STATUSES
 from gtd.ui import prompt_input
@@ -86,7 +86,7 @@ def _create_database(token: str, parent_page_id: str) -> str:
         headers=_auth_headers(token),
         json=payload,
     )
-    response.raise_for_status()
+    _handle_response(response)
     return response.json()['id']
 
 
@@ -94,7 +94,7 @@ def _get_existing_schema(token: str, db_id: str) -> dict:
     """Fetch the current database schema."""
     url = f'{NOTION_API_URL}/databases/{db_id}'
     response = httpx.get(url, headers=_auth_headers(token))
-    response.raise_for_status()
+    _handle_response(response)
     return response.json()
 
 
@@ -140,7 +140,7 @@ def _upgrade_schema(token: str, db_id: str) -> list[str]:
             headers=_auth_headers(token),
             json={'properties': patch_props},
         )
-        response.raise_for_status()
+        _handle_response(response)
 
     return changes
 
