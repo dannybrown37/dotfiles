@@ -17,6 +17,7 @@ def fzf_on_a_list(
     *,
     multiple: Literal[True],
     prompt: str = '',
+    preview: str | None = None,
 ) -> list[str] | None: ...
 
 
@@ -26,6 +27,7 @@ def fzf_on_a_list(
     *,
     multiple: Literal[False] = False,
     prompt: str = '',
+    preview: str | None = None,
 ) -> str | None: ...
 
 
@@ -34,6 +36,7 @@ def fzf_on_a_list(
     *,
     multiple: bool = False,
     prompt: str = '',
+    preview: str | None = None,
 ) -> str | list[str] | None:
     """Run fzf on a list of strings."""
     prompt = f'{prompt}: ' if prompt and not prompt.endswith(': ') else prompt
@@ -46,6 +49,8 @@ def fzf_on_a_list(
         ]
     else:
         cmd = ['fzf', '--prompt', prompt]
+    if preview is not None:
+        cmd.extend(['--preview', preview, '--preview-window', 'up:wrap'])
     result = subprocess.run(  # noqa: S603
         cmd,
         input='\n'.join(items),

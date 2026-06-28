@@ -109,18 +109,25 @@ def process_triage() -> None:
         f' in Triage\n'
     )
 
-    # Let user pick which to process, or do all
-    headers = [e.header for e in entries]
-    headers.insert(0, '▶ Process all in order')
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        select_entry,
+    )
 
-    selection = fzf_on_a_list(headers, prompt='Triage')
-    if not selection:
-        return
-
-    if selection == '▶ Process all in order':
+    if len(entries) == 1:
         items_to_process = entries
     else:
-        items_to_process = [e for e in entries if e.header == selection]
+        process_all = '▶ Process all in order'
+        choices = [process_all, 'Pick one']
+        choice = fzf_on_a_list(choices, prompt='Triage')
+        if not choice:
+            return
+        if choice == process_all:
+            items_to_process = entries
+        else:
+            entry = select_entry(entries, prompt='Triage')
+            if not entry:
+                return
+            items_to_process = [entry]
 
     processed = 0
     for entry in items_to_process:

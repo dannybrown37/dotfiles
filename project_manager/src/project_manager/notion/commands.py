@@ -1,16 +1,23 @@
 """CLI commands for Notion integration."""
 
+import json as json_mod
+import tempfile
 from datetime import datetime
+from pathlib import Path
+
+from dateutil import parser as dateparser
 
 from project_manager.notion.client import (
     archive_page,
+    build_property_update,
     get_select_options,
     query_database,
+    update_page,
 )
 from project_manager.notion.models import ProjectEntry
 from project_manager.notion.display import format_entry_list
 from project_manager.notion.triage import process_triage
-from project_manager.ui import CancelAction, fzf_on_a_list
+from project_manager.ui import CancelAction, fzf_on_a_list, prompt_input
 
 
 def list_entries(
@@ -162,14 +169,190 @@ def mark_done() -> None:
         print('No current projects.')
         return
 
-    headers = [e.header for e in entries]
-    selection = fzf_on_a_list(headers, prompt='Mark done')
-    if not selection:
+    entry = select_entry(entries, prompt='Mark done')
+    if not entry:
         return
 
-    entry = next(e for e in entries if e.header == selection)
     archive_page(entry.page_id)
     print(f'✓ "{entry.header}" → Done (archived)')
+
+
+def _parse_date_input(raw: str) -> str | None:
+    """Parse a date string, returning YYYY-MM-DD or None."""
+    parsed = dateparser.parse(raw, fuzzy=True)
+    if parsed:
+        return parsed.strftime('%Y-%m-%d')
+    print(f'  Could not parse "{raw}", skipping.')
+    return None
+
+
+def _collect_field_updates(  # noqa: C901, PLR0912
+    entry: ProjectEntry,
+    fields: list[str],
+) -> dict:
+    """Prompt for updated values for the selected fields."""
+    kwargs: dict = {}
+
+    if 'Next actionable step' in fields:
+        step = prompt_input(
+            f'Next step (current: {entry.next_step or "none"}): ',
+        )
+        if step is not None:
+            kwargs['next_step'] = step
+
+    if 'Context' in fields:
+        contexts = get_select_options('Context')
+        ctx = fzf_on_a_list(
+            contexts,
+            prompt=f'"{entry.header}" → Context',
+        )
+        if ctx:
+            kwargs['context'] = ctx
+
+    if 'Status' in fields:
+        status = fzf_on_a_list(
+            ['Current Project', 'Someday/Maybe'],
+            prompt=f'"{entry.header}" → Status',
+        )
+        if status:
+            kwargs['status'] = status
+
+    if 'Due date' in fields:
+        due = prompt_input(
+            'Due date (blank to clear, e.g. Jul 15): ',
+        )
+        if due is not None:
+            if due == '':
+                kwargs['due_date'] = ''
+            else:
+                result = _parse_date_input(due)
+                if result:
+                    kwargs['due_date'] = result
+
+    if 'Follow-up date' in fields:
+        fup = prompt_input('Follow-up date (blank to clear): ')
+        if fup is not None:
+            if fup == '':
+                kwargs['follow_up_date'] = ''
+            else:
+                result = _parse_date_input(fup)
+                if result:
+                    kwargs['follow_up_date'] = result
+
+    return kwargs
+
+
+def _escape_for_shell(text: str) -> str:
+    """Escape text for use in single-quoted shell strings."""
+    return text.replace("'", "'\\''")
+
+
+def _entry_preview_text(entry: ProjectEntry) -> str:
+    """Build a preview string for an entry."""
+    lines = [
+        f'Status:    {entry.status}',
+        f'Context:   {entry.context or "(none)"}',
+        f'Next step: {entry.next_step or "(none)"}',
+        f'Due:       {entry.due_date or "(none)"}',
+        f'Follow-up: {entry.follow_up_date or "(none)"}',
+    ]
+    if entry.details:
+        lines.append(f'Details:   {entry.details}')
+    return '\n'.join(lines)
+
+
+def select_entry(
+    entries: list[ProjectEntry],
+    *,
+    prompt: str = 'Select',
+) -> ProjectEntry | None:
+    """Show an fzf picker with preview for a list of entries."""
+    if not entries:
+        return None
+
+    entry_map = {e.header: e for e in entries}
+    headers = list(entry_map.keys())
+
+    preview_data = {e.header: _entry_preview_text(e) for e in entries}
+    with tempfile.NamedTemporaryFile(
+        mode='w',
+        suffix='.json',
+        delete=False,
+    ) as f:
+        json_mod.dump(preview_data, f)
+        preview_file = f.name
+
+    try:
+        selection = fzf_on_a_list(
+            headers,
+            prompt=prompt,
+            preview=(
+                f'python3 -c "'
+                f'import json,sys;'
+                f"d=json.load(open('{preview_file}'));"
+                f"print(d.get(sys.argv[1],''))"
+                f'" {{}}'
+            ),
+        )
+    finally:
+        Path(preview_file).unlink()
+
+    if not selection:
+        return None
+    return entry_map[selection]
+
+
+def update_entry() -> None:
+    """Interactively update fields on an existing project."""
+    pages = query_database(
+        filter_obj={
+            'or': [
+                {
+                    'property': 'Status',
+                    'select': {'equals': 'Current Project'},
+                },
+                {
+                    'property': 'Status',
+                    'select': {'equals': 'Someday/Maybe'},
+                },
+            ],
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+
+    if not entries:
+        print('No projects to update.')
+        return
+
+    entry = select_entry(entries, prompt='Update')
+    if not entry:
+        return
+
+    preview = _escape_for_shell(_entry_preview_text(entry))
+
+    fields = fzf_on_a_list(
+        [
+            'Next actionable step',
+            'Context',
+            'Status',
+            'Due date',
+            'Follow-up date',
+        ],
+        multiple=True,
+        prompt=f'"{entry.header}" → Edit fields',
+        preview=f"echo '{preview}'",
+    )
+    if not fields:
+        return
+
+    kwargs = _collect_field_updates(entry, fields)
+    if not kwargs:
+        print('  Nothing to update.')
+        return
+
+    props = build_property_update(**kwargs)
+    update_page(entry.page_id, props)
+    print(f'  ✓ "{entry.header}" updated')
 
 
 def notion_command(args: list[str]) -> None:
