@@ -139,7 +139,7 @@ def capture(header: tuple[str, ...]) -> None:
         return
 
 
-def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
+def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
     """Launch interactive fzf menu for GTD actions."""
     from project_manager.notion.commands import (  # noqa: PLC0415
         list_entries,
@@ -169,28 +169,45 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
         sys.exit(1)
 
     menu_items = [
-        'Today',
-        'View all projects',
-        'Triage inbox',
-        'Capture new item',
-        'Update project',
-        'Defer project',
-        'Mark done',
-        'Review Someday/Maybe',
-        '12-Week Goals',
-        'Filter by context',
+        ('Do', 'Today'),
+        ('Do', 'Capture new item'),
+        ('Do', 'Triage inbox'),
+        ('Manage', 'Update project'),
+        ('Manage', 'Defer project'),
+        ('Manage', 'Mark done'),
+        ('Review', 'Review Someday/Maybe'),
+        ('View', 'View all projects'),
+        ('View', '12-Week Goals'),
+        ('View', 'Filter by context'),
     ]
+
+    labels = [
+        f'{i + 1:>2}. {cat:<10}{action}'
+        for i, (cat, action) in enumerate(menu_items)
+    ]
+    label_to_action = {
+        label.strip(): action
+        for label, (_, action) in zip(
+            labels,
+            menu_items,
+            strict=True,
+        )
+    }
 
     while True:
         try:
-            selection = fzf_on_a_list(menu_items, prompt='GTD')
+            selection = fzf_on_a_list(labels, prompt='GTD')
         except CancelAction:
             break
         if not selection:
             break
 
+        action = label_to_action.get(selection)
+        if not action:
+            continue
+
         try:
-            match selection:
+            match action:
                 case 'Today':
                     list_today()
                     pause()
