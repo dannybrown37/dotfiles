@@ -7,7 +7,6 @@ return -- LSP Configuration & Plugins
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
 		{ "j-hui/fidget.nvim", opts = {} },
 		{ "folke/neodev.nvim", opts = {} },
-		"jose-elias-alvarez/null-ls.nvim",
 	},
 
 	config = function() --  This function gets run when an LSP attaches to a particular buffer.
@@ -32,8 +31,6 @@ return -- LSP Configuration & Plugins
 				lspMap("<leader>a", vim.lsp.buf.code_action, "Code [A]ction (try with cursor on top of error)")
 				lspMap("D", vim.lsp.buf.hover, "Hover [D]ocumentation")
 
-				-- When you move your cursor, the highlights will be cleared (the second autocommand).
-				--    See `:help CursorHold` for information about when this is executed
 				local client = vim.lsp.get_client_by_id(event.data.client_id)
 				if client and client.server_capabilities.documentHighlightProvider then
 					local highlight_augroup = vim.api.nvim_create_augroup("kickstart-lsp-highlight", { clear = false })
@@ -58,9 +55,6 @@ return -- LSP Configuration & Plugins
 					})
 				end
 
-				-- The following autocommand is used to enable inlay hints in your
-				-- code, if the language server you are using supports them
-				-- This may be unwanted, since they displace some of your code
 				if client and client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
 					lspMap("<leader>th", function()
 						vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({}))
@@ -69,10 +63,6 @@ return -- LSP Configuration & Plugins
 			end,
 		})
 
-		-- LSP servers and clients are able to communicate to each other what features they support.
-		--  By default, Neovim doesn't support everything that is in the LSP specification.
-		--  When you add nvim-cmp, luasnip, etc. Neovim now has *more* capabilities.
-		--  So, we create new capabilities with nvim cmp, and then broadcast that to the servers.
 		local capabilities = vim.lsp.protocol.make_client_capabilities()
 		capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
 
@@ -103,23 +93,13 @@ return -- LSP Configuration & Plugins
 		require("mason").setup()
 		local ensure_installed = vim.tbl_keys(servers or {})
 		vim.list_extend(ensure_installed, {
-			"stylua", -- lua styler
-			"pyright", -- LSP for Python
-			"ruff", -- Python linter
-			"taplo", -- LSP for toml
+			"stylua",
+			"pyright",
+			"ruff",
+			"taplo",
 			"shellcheck",
 			"eslint-lsp",
 			"prettier",
-		})
-
-		local null_ls = require("null-ls")
-
-		null_ls.setup({
-			sources = {
-				null_ls.builtins.formatting.prettier.with({
-					filetypes = { "html", "css", "javascript", "typescript", "json", "yaml", "markdown" },
-				}),
-			},
 		})
 
 		require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
