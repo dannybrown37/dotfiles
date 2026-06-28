@@ -43,6 +43,7 @@ fi
 
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 export NOTES_DIR="${HOME}/notes"
+export EDITOR="nvim"
 
 LS_IGNORE_PATTERNS=(
     ".git"
