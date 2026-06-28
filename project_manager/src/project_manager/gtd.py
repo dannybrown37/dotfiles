@@ -271,7 +271,6 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
             match action:
                 case 'Today':
                     list_today()
-                    pause()
                 case 'Log & Reschedule':
                     log_and_reschedule()
                 case 'Snooze until tomorrow':
