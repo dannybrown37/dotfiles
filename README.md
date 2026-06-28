@@ -42,34 +42,36 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 
 <!-- @doc:commands:start -->
 
+| Command | Description | Source |
+| --- | --- | --- |
 
-- `ahk`: Run all AutoHotKey scripts
-- `beep`: Play a beep sound
-- `cb`: Copy stdin to clipboard
-- `cdp`: Cd to any project directory from anywhere (with tab autocomplete)
-- `cht`: Query cht.sh for info on many technologies
-- `epoch_timestamp`: Print the current epoch timestamp in milliseconds, copy to clipboard
-- `gb`: Fuzzy-find and checkout a git branch
-- `gem`: Ask Gemini a question from the terminal
-- `google`: Pop open a browser to google search results type in command line
-- `gpup`: Push branch and open PR in browser
-- `komo`: Reset komorebi window manager
-- `llmedit`: Edit LLM rules in Neovim
-- `llmrules`: Copy LLM rules to clipboard
-- `mk`: Create a directory and cd into it
-- `note`: Create a note file from the command line
-- `noteion`: Create Notion pages from the terminal
-- `notes`: Open a note file from the command line from $NOTES_DIR using fzf
-- `open_url_in_browser`: Open a URL in the browser, system-agnostic
-- `pcb`: Print clipboard contents
-- `push`: Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message>
-- `push_to_topic`: Push a message to ntfy.sh at a topic | push_to_topic <topic> <message>
-- `src`: Reload bash configuration
-- `tms`: Start or attach to tmux Session
-- `url`: Open a URL in the system browser
-- `utc_timestamp`: Print the current UTC timestamp in ISO format with microseconds, copy to clipboard
-- `vc`: Vim cheatsheet fuzzy finder
-- `vsi`: Fuzzy find files and open in Neovim
+| `ahk` | Run all AutoHotKey scripts | `config/.bash_aliases` |
+| `beep` | Play a beep sound | `config/.bash_aliases` |
+| `cb` | Copy stdin to clipboard | `config/.bash_aliases` |
+| `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
+| `cht` | Query cht.sh for info on many technologies | `config/.bashrc` |
+| `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `config/.bashrc` |
+| `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
+| `gem` | Ask Gemini a question from the terminal | `bin/gem.sh` |
+| `google` | Pop open a browser to google search results type in command line | `config/.bashrc` |
+| `gpup` | Push branch and open PR in browser | `config/.bash_aliases` |
+| `komo` | Reset komorebi window manager | `config/.bash_aliases` |
+| `llmedit` | Edit LLM rules in Neovim | `config/.bash_aliases` |
+| `llmrules` | Copy LLM rules to clipboard | `config/.bash_aliases` |
+| `mk` | Create a directory and cd into it | `config/.bashrc` |
+| `note` | Create a note file from the command line | `config/.bashrc` |
+| `noteion` | Create Notion pages from the terminal | `bin/noteion.sh` |
+| `notes` | Open a note file from the command line from $NOTES_DIR using fzf | `config/.bashrc` |
+| `open_url_in_browser` | Open a URL in the browser, system-agnostic | `config/.bashrc` |
+| `pcb` | Print clipboard contents | `config/.bash_aliases` |
+| `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
+| `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
+| `src` | Reload bash configuration | `config/.bash_aliases` |
+| `tms` | Start or attach to tmux Session | `config/.bash_aliases` |
+| `url` | Open a URL in the system browser | `config/.bash_aliases` |
+| `utc_timestamp` | Print the current UTC timestamp in ISO format with microseconds, copy to clipboard | `config/.bashrc` |
+| `vc` | Vim cheatsheet fuzzy finder | `config/.bash_aliases` |
+| `vsi` | Fuzzy find files and open in Neovim | `config/.bash_aliases` |
 <!-- @doc:commands:end -->
 
 ### Directory Structure

@@ -4,8 +4,6 @@ set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
 README="${ROOT}/README.md"
-ALIASES="${ROOT}/config/.bash_aliases"
-BASHRC="${ROOT}/config/.bashrc"
 BIN_DIR="${ROOT}/bin"
 SCRIPTS_DIR="${ROOT}/scripts"
 
@@ -14,39 +12,36 @@ MARKER_END="<!-- @doc:commands:end -->"
 
 docs=""
 
-while IFS= read -r line; do
-    if [[ "$line" =~ ^[[:space:]]*alias[[:space:]]+([a-zA-Z0-9_-]+)=.*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
-        name="${BASH_REMATCH[1]}"
-        desc="${BASH_REMATCH[2]}"
-        docs+="- \`${name}\`: ${desc}"$'\n'
-    elif [[ "$line" =~ ^[[:space:]]*(function[[:space:]]+)?([a-zA-Z0-9_-]+)\(\).*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
-        name="${BASH_REMATCH[2]}"
-        desc="${BASH_REMATCH[3]}"
-        docs+="- \`${name}\`: ${desc}"$'\n'
-    fi
-done < "$ALIASES"
+scan_sourced_file() {
+    local filepath="$1"
+    local source_label="$2"
 
-while IFS= read -r line; do
-    if [[ "$line" =~ ^[[:space:]]*alias[[:space:]]+([a-zA-Z0-9_-]+)=.*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
-        name="${BASH_REMATCH[1]}"
-        desc="${BASH_REMATCH[2]}"
-        docs+="- \`${name}\`: ${desc}"$'\n'
-    elif [[ "$line" =~ ^[[:space:]]*(function[[:space:]]+)?([a-zA-Z0-9_-]+)\(\).*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
-        name="${BASH_REMATCH[2]}"
-        desc="${BASH_REMATCH[3]}"
-        docs+="- \`${name}\`: ${desc}"$'\n'
-    fi
-done < "$BASHRC"
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^[[:space:]]*alias[[:space:]]+([a-zA-Z0-9_-]+)=.*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
+            local name="${BASH_REMATCH[1]}"
+            local desc="${BASH_REMATCH[2]}"
+            docs+="| \`${name}\` | ${desc} | \`${source_label}\` |"$'\n'
+        elif [[ "$line" =~ ^[[:space:]]*(function[[:space:]]+)?([a-zA-Z0-9_-]+)\(\).*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
+            local name="${BASH_REMATCH[2]}"
+            local desc="${BASH_REMATCH[3]}"
+            docs+="| \`${name}\` | ${desc} | \`${source_label}\` |"$'\n'
+        fi
+    done < "$filepath"
+}
+
+scan_sourced_file "${ROOT}/config/.bash_aliases" "config/.bash_aliases"
+scan_sourced_file "${ROOT}/config/.bashrc" "config/.bashrc"
 
 for dir in "$BIN_DIR" "$SCRIPTS_DIR"; do
     [[ -d "$dir" ]] || continue
     for file in "$dir"/*; do
         [[ -f "$file" ]] || continue
-        name=$(basename "$file" .sh)
+        local_name=$(basename "$file" .sh)
+        source_label="${dir#"${ROOT}"/}/$(basename "$file")"
         while IFS= read -r line; do
             if [[ "$line" =~ ^#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
                 desc="${BASH_REMATCH[1]}"
-                docs+="- \`${name}\`: ${desc}"$'\n'
+                docs+="| \`${local_name}\` | ${desc} | \`${source_label}\` |"$'\n'
             fi
         done < "$file"
     done
@@ -65,6 +60,8 @@ fi
 {
     head -n "$start_line" "$README"
     echo ""
+    echo "| Command | Description | Source |"
+    echo "| --- | --- | --- |"
     echo "$docs"
     tail -n +"$end_line" "$README"
 } > "${README}.tmp"
