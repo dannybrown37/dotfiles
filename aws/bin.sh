@@ -4,31 +4,6 @@
 ## Various utility functions using the AWS CLI
 ##
 
-
-
-conditional_aws_azure_login_any_profile() {
-    check_aws_credentials() {
-        aws sts get-caller-identity > /dev/null 2>&1
-        return $?
-    }
-    check_aws_credentials
-    local exit_code=$?
-    if [ $exit_code -ne 0 ]; then
-        echo "AWS credentials are expired or invalid. Renewing credentials..."
-        aws-azure-login -f --all-profiles --no-prompt
-        check_aws_credentials
-        if [ $? -eq 0 ]; then
-            echo "AWS credentials successfully renewed."
-        else
-            echo "Failed to renew AWS credentials."
-            exit 1
-        fi
-    else
-        echo "AWS credentials are valid."
-    fi
-}
-
-
 _conditional_aws_azure_login() {
     get_all_profiles() {
         grep '^\[profile ' ~/.aws/config | sed 's/\[profile \(.*\)\]/\1/' | tr -d ' '
