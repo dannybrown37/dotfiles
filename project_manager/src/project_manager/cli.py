@@ -285,62 +285,6 @@ def status() -> None:
     _print_status()
 
 
-@cli.group(invoke_without_command=True)
-@click.option('-v', '--verbose', is_flag=True, help='Show details')
-@click.pass_context
-def notion(ctx: click.Context, verbose: bool) -> None:
-    """Notion GTD integration."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
-        list_entries,
-    )
-
-    ctx.ensure_object(dict)
-    ctx.obj['verbose'] = verbose
-
-    if ctx.invoked_subcommand is None:
-        list_entries(verbose=verbose)
-
-
-@notion.command()
-def triage() -> None:
-    """Interactively process items needing triage."""
-    from project_manager.notion.triage import (  # noqa: PLC0415
-        process_triage,
-    )
-
-    try:
-        process_triage()
-    except CancelAction:
-        return
-
-
-@notion.command()
-@click.pass_context
-def goals(ctx: click.Context) -> None:
-    """Show 12-week goal entries."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
-        list_12_week_entries,
-    )
-
-    list_12_week_entries(verbose=ctx.obj.get('verbose', False))
-
-
-@notion.command(name='filter')
-@click.argument('context', nargs=-1, required=True)
-@click.pass_context
-def filter_context(ctx: click.Context, context: tuple[str, ...]) -> None:
-    """Filter by context name (e.g. pm notion filter Phone)."""
-    from project_manager.notion.commands import (  # noqa: PLC0415
-        list_entries,
-    )
-
-    context_str = ' '.join(context)
-    list_entries(
-        context=context_str,
-        verbose=ctx.obj.get('verbose', False),
-    )
-
-
 def _interactive() -> None:
     """Launch the interactive fzf-based TUI."""
     if shutil.which('fzf') is None:
