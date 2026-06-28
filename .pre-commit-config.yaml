@@ -11,7 +11,6 @@ repos:
       - id: check-xml
       - id: check-yaml
       - id: destroyed-symlinks
-      - id: end-of-file-fixer
       - id: mixed-line-ending
 
   - repo: https://github.com/scop/pre-commit-shfmt
