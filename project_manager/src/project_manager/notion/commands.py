@@ -488,6 +488,20 @@ def _collect_field_updates(  # noqa: C901, PLR0912
         )
         if status:
             kwargs['status'] = status
+            if status == 'Waiting For':
+                waiting_on = prompt_input(
+                    'Who/what are you waiting on? '
+                    f'(current: {entry.next_step or "none"}): ',
+                )
+                if waiting_on is not None:
+                    kwargs['next_step'] = waiting_on
+                followup = prompt_input(
+                    'Follow-up date (e.g. Friday, in 3 days): ',
+                )
+                if followup:
+                    parsed = _parse_date_input(followup)
+                    if parsed:
+                        kwargs['follow_up_date'] = parsed
 
     if 'Due date' in fields:
         due = prompt_input(
@@ -643,14 +657,18 @@ def select_entry(
 
 def update_entry() -> None:
     """Interactively update fields on an existing project."""
-    from project_manager.notion.schema import STATUSES  # noqa: PLC0415
+    active_statuses = [
+        s for s in get_select_options('Status') if s != 'Triage'
+    ]
+    if not active_statuses:
+        print('No statuses configured.')
+        return
 
     pages = query_database(
         filter_obj={
             'or': [
                 {'property': 'Status', 'select': {'equals': s}}
-                for s in STATUSES
-                if s != 'Triage'
+                for s in active_statuses
             ],
         },
     )
