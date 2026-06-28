@@ -1,3 +1,4 @@
+; @doc chrome_focus: Ctrl+Shift+C - Cycle through open Chrome windows
 #SingleInstance Force
 #NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
 #Warn ; Enable warnings to assist with detecting common errors.
@@ -6,7 +7,6 @@
 ; Initialize a global variable to keep track of the current window
 global currentWindowIndex := 1
 
-; Ctrl+Shift+C to cycle through open Chrome windows
 ^+c::
 {
     ; Get a list of all Chrome windows

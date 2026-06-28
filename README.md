@@ -47,9 +47,10 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `ahk` | Run all AutoHotKey scripts (Windows only) | `config/.bash_aliases` |
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
 | `beep` | Play a beep sound (Windows only) | `config/.bash_aliases` |
-| `cb` | Copy stdin to clipboard. Usage: <command> | cb | `config/.bash_aliases` |
+| `cb` | Copy stdin to clipboard. <command> | cb | `config/.bash_aliases` |
 | `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
+| `chrome_focus` | Ctrl+Shift+C - Cycle through open Chrome windows | `ahk/chrome_focus.ahk` |
 | `cht` | Query cht.sh for info on many technologies | `config/.bashrc` |
 | `crocinstall` | Install Croc | `config/.bash_aliases` |
 | `crocsend` | Send a file via a Croc server | croc send <file> | `config/.bash_aliases` |
@@ -74,7 +75,9 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
+| `quick_google` | Ctrl+Shift+G - Search Google for selected text | `ahk/quick_google.ahk` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
+| `teams_toggle` | Ctrl+Shift+D - Toggle Microsoft Teams focus | `ahk/teams_toggle.ahk` |
 | `tmconf` | Reload tmux config | `config/.bash_aliases` |
 | `tms` | Start or attach to tmux Session | `config/.bash_aliases` |
 | `tree` | Show a tree view of files and directories | `config/.bash_aliases` |
@@ -83,7 +86,9 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `utc_timestamp` | Print the current UTC timestamp in ISO format with microseconds, copy to clipboard | `config/.bashrc` |
 | `uuid` | Generate a random UUID and put it in the clipboard | `config/.bash_aliases` |
 | `vc` | Vim cheatsheet fuzzy finder | `config/.bash_aliases` |
+| `vscode_toggle` | Ctrl+Shift+X - Toggle VS Code focus | `ahk/vscode_toggle.ahk` |
 | `vsi` | Fuzzy find files and open in Neovim | `config/.bash_aliases` |
+| `windows_terminal_toggle` | Ctrl+Shift+Z - Toggle Windows Terminal focus | `ahk/windows_terminal_toggle.ahk` |
 <!-- @doc:commands:end -->
 
 ### Directory Structure

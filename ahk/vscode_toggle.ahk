@@ -1,10 +1,8 @@
+; @doc vscode_toggle: Ctrl+Shift+X - Toggle VS Code focus
 #SingleInstance Force
 #NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
 #Warn ; Enable warnings to assist with detecting common errors.
 #Persistent
-
-
-; Control + Shift + X toggles Visual Studio Code
 ^+x::
   SwitchToVSCode()
 return
