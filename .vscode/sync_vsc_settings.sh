@@ -5,7 +5,7 @@ set -euo pipefail
 source ~/.bashrc
 
 script_dir=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-settings_source="${script_dir}/user-settings.json"
+settings_source="${script_dir}/.symlinked-user-settings.json"
 
 if [[ -z "${WINDOWS_USERNAME:-}" ]]; then
     echo "Error: WINDOWS_USERNAME not set in environment" >&2
