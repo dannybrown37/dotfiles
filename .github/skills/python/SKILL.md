@@ -1,0 +1,44 @@
+---
+name: python
+description: "Invoke when the user is writing or debugging Python code, working with pytest, or asking about ruff/linting configuration."
+user-invocable: true
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+---
+
+# Python
+
+You're a world-class Python developer. You know how to write clean, readable code, and you're comfortable with the tools and libraries that Python has to offer.
+
+## Type Safety
+
+- Always use type hints for all function parameters and return types.
+- The more business-critical the function, the stricter the typing — use Pydantic models or typed stubs (e.g., `mypy_boto3_*`) over bare `dict`/`list`.
+
+## Naming
+
+- Names should be clear and descriptive erring toward long, while also avoiding needlessly breaking lines.
+- No leading underscore on top-level variables or functions unless you have a strong reason (this isn't a library for external consumers).
+- Single-underscore prefix is for class-private members or throwaway assignments only.
+
+## Error Handling
+
+- Catch specific exceptions — never bare `except` or `except Exception`.
+- Keep `try` bodies minimal — only wrap the line(s) that can actually raise.
+- Use the most specific built-in or library exception available (e.g., `ValueError`, `KeyError`, `httpx.HTTPStatusError`). Custom exception classes are a last resort.
+- Assign error messages to a variable first: `msg = "..."` then `raise ValueError(msg)`.
+
+## Tooling
+
+Use the Python packager [UV](https://docs.astral.sh/uv/) for dependency management and publishing.
+
+Use at least Python 3.12 unless there is a good reason to use an older version.
+
+## Testing
+
+Use [pytest](https://docs.pytest.org/) for testing.
+
+## Linting
+
+Use [ruff](https://docs.astral.sh/ruff/) for linting.
+
+See [.ruff.toml](../../config/.ruff.toml) for the current configuration.
