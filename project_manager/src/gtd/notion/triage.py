@@ -13,7 +13,7 @@ from gtd.notion.schema import STATUSES as ALL_STATUSES
 from gtd.ui import fzf_on_a_list, prompt_input, CancelAction
 
 
-TRIAGE_STATUSES = [s for s in ALL_STATUSES if s != 'Triage']
+TRIAGE_STATUSES = [s for s in ALL_STATUSES if s != 'Triage'] + ['Delete']
 
 
 def _get_triage_entries() -> list[ProjectEntry]:
@@ -31,17 +31,33 @@ def _get_triage_entries() -> list[ProjectEntry]:
 
 def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0912
     """Process one triage item. Returns True if processed, False if skipped."""
-    print(f'\n  ── Processing: {entry.header} ──')
-    if entry.details:
-        print(f'  Details: {entry.details}')
-    print()
+    from gtd.notion.client import get_page_body  # noqa: PLC0415
+    from gtd.notion.entries import (  # noqa: PLC0415
+        _entry_preview_text,
+        _escape_for_shell,
+    )
+
+    body = get_page_body(entry.page_id)
+    preview = _escape_for_shell(_entry_preview_text(entry, body))
 
     # Status
     status = fzf_on_a_list(
         TRIAGE_STATUSES,
         prompt=f'"{entry.header}" → Status',
+        preview=f"echo '{preview}'",
     )
     if not status:
+        return False
+
+    if status == 'Delete':
+        from gtd.notion.client import archive_page  # noqa: PLC0415
+
+        confirm = prompt_input(f'  Delete "{entry.header.strip()}"? (y/N): ')
+        if confirm and confirm.lower() == 'y':
+            archive_page(entry.page_id)
+            print(f'  ✓ "{entry.header.strip()}" deleted')
+            return True
+        print('  Cancelled.')
         return False
 
     # Context
