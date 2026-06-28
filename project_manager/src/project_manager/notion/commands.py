@@ -211,7 +211,7 @@ def defer_entry() -> None:
     print(f'✓ "{entry.header}" deferred until {date_str}')
 
 
-def review_someday() -> None:
+def review_someday() -> None:  # noqa: C901
     """Review Someday/Maybe items — keep, activate, or drop each."""
     pages = query_database(
         filter_obj={
@@ -232,22 +232,30 @@ def review_someday() -> None:
     # Fetch bodies one at a time as we go (one per item reviewed)
     activated = 0
     dropped = 0
+    total = len(entries)
 
-    for entry in entries:
+    for i, entry in enumerate(entries, 1):
         body = get_page_body(entry.page_id)
         preview = _escape_for_shell(
             _entry_preview_text(entry, body),
         )
 
         action = fzf_on_a_list(
-            ['Keep', 'Activate (→ Current Project)', 'Drop (archive)'],
-            prompt=f'"{entry.header.strip()}"',
+            [
+                'Keep',
+                'Update',
+                'Activate (→ Current Project)',
+                'Drop (archive)',
+            ],
+            prompt=f'[{i}/{total}] "{entry.header.strip()}"',
             preview=f"echo '{preview}'",
         )
         if not action:
             break
 
-        if action.startswith('Activate'):
+        if action == 'Update':
+            update_entry_by_ref(entry)
+        elif action.startswith('Activate'):
             props = build_property_update(status='Current Project')
             update_page(entry.page_id, props)
             print(f'  ✓ Activated: {entry.header.strip()}')
@@ -483,6 +491,16 @@ def update_entry() -> None:
     if not entry:
         return
 
+    _edit_entry_fields(entry)
+
+
+def update_entry_by_ref(entry: ProjectEntry) -> None:
+    """Update fields on a specific entry (no picker)."""
+    _edit_entry_fields(entry)
+
+
+def _edit_entry_fields(entry: ProjectEntry) -> None:
+    """Prompt for field edits and push to Notion."""
     body = get_page_body(entry.page_id)
     preview = _escape_for_shell(_entry_preview_text(entry, body))
 
@@ -495,7 +513,7 @@ def update_entry() -> None:
             'Follow-up date',
         ],
         multiple=True,
-        prompt=f'"{entry.header}" → Edit fields',
+        prompt=f'"{entry.header.strip()}" → Edit fields',
         preview=f"echo '{preview}'",
     )
     if not fields:
@@ -508,7 +526,7 @@ def update_entry() -> None:
 
     props = build_property_update(**kwargs)
     update_page(entry.page_id, props)
-    print(f'  ✓ "{entry.header}" updated')
+    print(f'  ✓ "{entry.header.strip()}" updated')
 
 
 def notion_command(args: list[str]) -> None:
