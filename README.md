@@ -44,19 +44,28 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 
 | Command | Description | Source |
 | --- | --- | --- |
-| `ahk` | Run all AutoHotKey scripts | `config/.bash_aliases` |
-| `beep` | Play a beep sound | `config/.bash_aliases` |
-| `cb` | Copy stdin to clipboard | `config/.bash_aliases` |
+| `ahk` | Run all AutoHotKey scripts (Windows only) | `config/.bash_aliases` |
+| `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
+| `beep` | Play a beep sound (Windows only) | `config/.bash_aliases` |
+| `cb` | Copy stdin to clipboard. Usage: <command> | cb | `config/.bash_aliases` |
+| `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
 | `cht` | Query cht.sh for info on many technologies | `config/.bashrc` |
+| `crocinstall` | Install Croc | `config/.bash_aliases` |
+| `crocsend` | Send a file via a Croc server | croc send <file> | `config/.bash_aliases` |
+| `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
+| `epoch` | Alias for epoch_timestamp | `config/.bash_aliases` |
 | `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `config/.bashrc` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini a question from the terminal | `bin/gem.sh` |
+| `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
+| `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
+| `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
 | `google` | Pop open a browser to google search results type in command line | `config/.bashrc` |
-| `gpup` | Push branch and open PR in browser | `config/.bash_aliases` |
-| `komo` | Reset komorebi window manager | `config/.bash_aliases` |
+| `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
+| `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
 | `llmedit` | Edit LLM rules in Neovim | `config/.bash_aliases` |
-| `llmrules` | Copy LLM rules to clipboard | `config/.bash_aliases` |
+| `llmrules` | Copy LLM rules to clipboard for chatbot copy-paste | `config/.bash_aliases` |
 | `mk` | Create a directory and cd into it | `config/.bashrc` |
 | `note` | Create a note file from the command line | `config/.bashrc` |
 | `noteion` | Create Notion pages from the terminal | `bin/noteion.sh` |
@@ -67,8 +76,11 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
 | `tms` | Start or attach to tmux Session | `config/.bash_aliases` |
+| `tree` | Show a tree view of files and directories | `config/.bash_aliases` |
 | `url` | Open a URL in the system browser | `config/.bash_aliases` |
+| `utc` | Alias for utc_timestamp | `config/.bash_aliases` |
 | `utc_timestamp` | Print the current UTC timestamp in ISO format with microseconds, copy to clipboard | `config/.bashrc` |
+| `uuid` | Generate a random UUID and put it in the clipboard | `config/.bash_aliases` |
 | `vc` | Vim cheatsheet fuzzy finder | `config/.bash_aliases` |
 | `vsi` | Fuzzy find files and open in Neovim | `config/.bash_aliases` |
 <!-- @doc:commands:end -->

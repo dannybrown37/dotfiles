@@ -1,15 +1,15 @@
 ## Misc. Aliases
 
-alias awsconfig='nvim ~/.aws/config'
-alias cb='tee >(xclip -selection clipboard)' # @doc Copy stdin to clipboard
-alias du='du -h | sort -h'
-alias epoch='epoch_timestamp'
-alias llmrules='pcat ~/projects/dotfiles/bin/llm_rules.txt | cb >/dev/null && echo "Copied to clipboard"' # @doc Copy LLM rules to clipboard
+alias awsconfig='nvim ~/.aws/config'  # @doc Edit AWS config file in Neovim
+alias cb='tee >(xclip -selection clipboard)' # @doc Copy stdin to clipboard. Usage: <command> | cb
+alias du='du -h | sort -h'  # @doc Disk usage sorted and human-readable
+alias epoch='epoch_timestamp'  # @doc Alias for epoch_timestamp
+alias llmrules='pcat ~/projects/dotfiles/bin/llm_rules.txt | cb >/dev/null && echo "Copied to clipboard"' # @doc Copy LLM rules to clipboard for chatbot copy-paste
 alias llmedit='nvim ~/projects/dotfiles/bin/llm_rules.txt' # @doc Edit LLM rules in Neovim
 alias pcb='xclip -selection clipboard -o' # @doc Print clipboard contents
 alias url='open_url_in_browser' # @doc Open a URL in the system browser
-alias utc='utc_timestamp'
-alias uuid='generate_random_uuid_and_put_in_clipboard'
+alias utc='utc_timestamp'  # @doc Alias for utc_timestamp
+alias uuid='generate_random_uuid_and_put_in_clipboard'  # @doc Generate a random UUID and put it in the clipboard
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # @doc Vim cheatsheet fuzzy finder
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim "{}"' # @doc Fuzzy find files and open in Neovim
 
@@ -17,15 +17,15 @@ alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r 
 
 alias cinrec='asciinema rec session.cast'
 alias cinplay='asciinema play session.cast'
-alias crocsend='croc send'
-alias crocinstall='curl https://getcroc.schollz.com | bash'
+alias crocsend='croc send'  # @doc Send a file via a Croc server | croc send <file>
+alias crocinstall='curl https://getcroc.schollz.com | bash'  # @doc Install Croc
 
 # Cargo package aliases
 
 if [[ -n "${ON_WINDOWS}" ]]; then
-    alias ahk='${DOTFILES_DIR}/ahk/ahk.sh' # @doc Run all AutoHotKey scripts
-    alias beep='powershell.exe -c "[console]::beep(261, 300)"'  # @doc Play a beep sound
-    alias komo='make -C "${DOTFILES_DIR}" komo' # @doc Reset komorebi window manager
+    alias ahk='${DOTFILES_DIR}/ahk/ahk.sh' # @doc Run all AutoHotKey scripts (Windows only)
+    alias beep='powershell.exe -c "[console]::beep(261, 300)"'  # @doc Play a beep sound (Windows only)
+    alias komo='make -C "${DOTFILES_DIR}" komo' # @doc Reset komorebi window manager (Windows only)
 fi
 
 if [[ -f "${HOME}/.local/bin/zoxide" ]]; then
@@ -37,7 +37,7 @@ if command -v eza &>/dev/null; then
     alias ll="eza -alh --ignore-glob=\${LS_IGNORE_GLOBS}"
     alias lsa="eza -alh"
     alias ls=ll
-    alias tree="eza --tree -la --ignore-glob=\${LS_IGNORE_GLOBS}"
+    alias tree="eza --tree -la --ignore-glob=\${LS_IGNORE_GLOBS}"  # @doc Show a tree view of files and directories
 fi
 
 if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then
@@ -49,7 +49,7 @@ fi
 
 # dotfiles
 alias idf='sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash'
-alias cdf='code ~/projects/dotfiles'
+alias cdf='code ~/projects/dotfiles'  # @doc Code Dot Files: Open the dotfiles repo in VSCode
 
 # npm
 alias ni='npm install'
@@ -90,7 +90,7 @@ alias gcr='git commit --amend --no-edit'
 alias gcuemail='git config --global user.email "dannybrown37@gmail.com"'
 alias gcuname='git config --global user.name "Danny Brown"'
 unalias gitpurge 2>/dev/null
-gitpurge() {
+gitpurge() {  # @doc Delete all local branches except main, develop, and the current branch
     local current
     current=$(git rev-parse --abbrev-ref HEAD)
     git branch | sed 's/^[*+ ]*//' | while IFS= read -r branch; do
@@ -101,13 +101,12 @@ gitpurge() {
     done
 }
 alias gl='git log'
-alias glinecount='git ls-files | xargs wc -l'
-alias glines=glinecount
-alias glo='git log -1 --pretty=%B'
+alias gitlines='git ls-files | xargs wc -l'  # @doc Count lines of code in all files from curren branch
+alias glo='git log -1 --pretty=%B'  # @doc Show last commit message (Git Log One-Line)
 alias gp='git push'
 alias gpf='git push -f'
 alias gpo='git push -u origin'
-alias gpup='git push -u origin HEAD && git open' # @doc Push branch and open PR in browser
+alias gpup='git push -u origin HEAD && git open' # @doc Push new branch and open PR in browser
 alias gpr='git pull rebase'
 alias gra='git rebase --abort'
 alias grc='git rebase --continue'
