@@ -392,10 +392,10 @@ fi
 
 tmux source-file ~/.tmux.conf 2>/dev/null
 
-AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh
-if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
-    source "$AUTOENV_ACTIVATE_SCRIPT"
-fi
+# AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh
+# if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
+#     source "$AUTOENV_ACTIVATE_SCRIPT"
+# fi
 
 # Remove duplicates from $PATH and then export. Do not export PATH anywhere else!
 PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
