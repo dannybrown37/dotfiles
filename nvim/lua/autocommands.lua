@@ -31,7 +31,13 @@ vim.api.nvim_create_autocmd("BufEnter", {
 vim.api.nvim_create_autocmd("CursorHold", {
 	desc = "Highlight word under cursor",
 	callback = function()
-		vim.cmd("match Search /\\V\\<" .. vim.fn.expand("<cword>") .. "\\>/")
+		local word = vim.fn.expand("<cword>")
+		if word == "" then
+			vim.cmd("match none")
+			return
+		end
+		word = vim.fn.escape(word, "\\/")
+		vim.cmd("match Search /\\V\\<" .. word .. "\\>/")
 	end,
 })
 

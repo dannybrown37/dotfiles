@@ -206,7 +206,7 @@ done
 # source aws-specific functions from aws/bin.sh
 source "$DOTFILES_DIR"/aws/bin.sh
 
-function cht() {
+function cht() {  # @doc: Query cht.sh for info on many technologies
     local technologies=$(curl -s cht.sh/:list)
     local selected=$(printf '%s\n' "${technologies[@]}" | fzf)
     if [[ -z $selected ]]; then
