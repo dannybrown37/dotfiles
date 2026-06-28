@@ -1,7 +1,7 @@
 ## Misc. Aliases
 
 alias awsconfig='nvim ~/.aws/config'  # @doc Edit AWS config file in Neovim
-alias cb='tee >(xclip -selection clipboard)' # @doc Copy stdin to clipboard. Usage: <command> | cb
+alias cb='tee >(xclip -selection clipboard)' # @doc Copy stdin to clipboard. <command> | cb
 alias du='du -h | sort -h'  # @doc Disk usage sorted and human-readable
 alias epoch='epoch_timestamp'  # @doc Alias for epoch_timestamp
 alias llmrules='pcat ~/projects/dotfiles/bin/llm_rules.txt | cb >/dev/null && echo "Copied to clipboard"' # @doc Copy LLM rules to clipboard for chatbot copy-paste

@@ -47,6 +47,21 @@ for dir in "$BIN_DIR" "$SCRIPTS_DIR"; do
     done
 done
 
+AHK_DIR="${ROOT}/ahk"
+if [[ -d "$AHK_DIR" ]]; then
+    for file in "$AHK_DIR"/*.ahk; do
+        [[ -f "$file" ]] || continue
+        source_label="ahk/$(basename "$file")"
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^";"[[:space:]]*"@doc"[[:space:]]+(.*) ]]; then
+                local_name="${BASH_REMATCH[1]%%:*}"
+                desc="${BASH_REMATCH[1]#*: }"
+                docs+="| \`${local_name}\` | ${desc} | \`${source_label}\` |"$'\n'
+            fi
+        done < "$file"
+    done
+fi
+
 docs=$(echo "$docs" | sort | sed '/^$/d')
 
 start_line=$(grep -n "$MARKER_START" "$README" | head -1 | cut -d: -f1)

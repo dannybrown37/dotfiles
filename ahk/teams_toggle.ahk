@@ -1,9 +1,8 @@
+; @doc teams_toggle: Ctrl+Shift+D - Toggle Microsoft Teams focus
 #SingleInstance Force
 #NoEnv
 #Warn
 #Persistent
-
-; Ctrl+Shift+D to toggle Microsoft Teams ("Deams")
 ^+d::
 {
     if WinExist("ahk_class TeamsWebView")

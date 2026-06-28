@@ -1,10 +1,8 @@
+; @doc windows_terminal_toggle: Ctrl+Shift+Z - Toggle Windows Terminal focus
 #SingleInstance Force
 #NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
 #Warn ; Enable warnings to assist with detecting common errors.
 #Persistent
-
-
-; Control + Shift + Z toggles Windows terminal
 SwitchToWindowsTerminal()
 {
   windowHandleId := WinExist("ahk_exe WindowsTerminal.exe")
