@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# @doc Ask Gemini a question from the terminal
 function ask_gemini_a_question {
     if [ -z "$GOOGLE_API_KEY" ]; then
         echo "Please set the GOOGLE_API_KEY environment variable."

@@ -43,6 +43,13 @@ repos:
         types: [python]
         pass_filenames: true
 
+      - id: sync-readme-commands
+        name: Sync README @doc commands
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bash scripts/sync-readme-commands.sh && git add README.md'
+        language: system
+        files: (config/\.bash_aliases|bin/.*\.sh|scripts/.*\.sh|README\.md)$
+        pass_filenames: false
+
       - id: sync-readme-make
         name: Sync README make output
         entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bash scripts/sync-readme-make.sh && git add README.md'

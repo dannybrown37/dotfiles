@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Notion API endpoint and token
+# @doc Create Notion pages from the terminal
 NOTION_API_URL="https://api.notion.com/v1/pages"
 NOTION_VERSION="2022-06-28"
 PROJECTS_TABLE_ID="${NOTION_PROJECTS_DB_ID}"

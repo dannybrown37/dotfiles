@@ -40,29 +40,29 @@ These commands require GPG keys and secrets:
   pull-secrets    Read all secrets files from password-store
 ```
 
-## Commands Available (Incomplete)
+## Commands Available
 
-- `ahk`: run all AutoHotKey scripts in the `./ahk` directory from WSL or Git Bash in the Windows environment
-- `ahk help`: feed all available hotstrings into `fzf` for review (not selection)
-- `ahk kill`: kill all running autohotkey processes
-- `ahk open`: open ahk/hotstrings.ahk in VSCode
-- `ahk secrets`: open ahk/secrets.ahk in VSCode
-- `buildlogs`: see the latest build logs for configured AWS CodePipeline stack
-- `cdp`: move directly to any directory in ~/projects (with tab autocomplete)
-- `cf`: use fzf to open one or more (with tab) files in VS Code
-- `cht`: curl cht.sh for commonly used tools/languages. Add new ones as needed in cht/.cht_sh_index
-- `cpw`: copy files from WSL to Windows easily, defaults to Downloads folder (with tab autocomplete)
-- `ff`: Fuzzy find current folder with a preview panel.
-- `fh`: Run bash history into `fzf` and select command to run from there.
-- `gg/google`: google something from the terminal, no quotes needed, pops open a web browser
-- `lopen`: open to the monitoring tab of a specific AWS Lambda
-- `mk`: mkdir and cd into it
-- `node_project_init`: spin up a git repo, gitignore file, and package.json for a Node project
-- `nvi`: use fzf to open one or more (with tab) files in Neovim
-- `pip_project_init`: spin up a Python package starter set of files via `cookiecutter` and [my configuration for it](https://github.com/dannybrown37/pip_package_cookiecutter)
-- `push`: Send a push alert to your phone
-- `push_to_topic`: Send a push alert to a custom topic
-- `url`: Open up a URL directly using the system browser
+<!-- @doc:commands:start -->
+
+
+- `ahk`: Run all AutoHotKey scripts
+- `beep`: Play a beep sound
+- `cb`: Copy stdin to clipboard
+- `cdp`: Cd to any project directory from anywhere (with tab autocomplete)
+- `gb`: Fuzzy-find and checkout a git branch
+- `gem`: Ask Gemini a question from the terminal
+- `gpup`: Push branch and open PR in browser
+- `komo`: Reset komorebi window manager
+- `llmedit`: Edit LLM rules in Neovim
+- `llmrules`: Copy LLM rules to clipboard
+- `noteion`: Create Notion pages from the terminal
+- `pcb`: Print clipboard contents
+- `src`: Reload bash configuration
+- `tms`: Start or attach to tmux Session
+- `url`: Open a URL in the system browser
+- `vc`: Vim cheatsheet fuzzy finder
+- `vsi`: Fuzzy find files and open in Neovim
+<!-- @doc:commands:end -->
 
 ### Config Options
 
