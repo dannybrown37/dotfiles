@@ -121,3 +121,12 @@ def build_property_update(
         else:
             props['Follow-Up Date'] = {'date': {'start': follow_up_date}}
     return props
+
+
+def archive_page(page_id: str) -> dict:
+    """Move a Notion page to trash."""
+    url = f'{NOTION_API_URL}/pages/{page_id}'
+    payload = {'in_trash': True}
+    response = httpx.patch(url, headers=_headers(), json=payload)
+    response.raise_for_status()
+    return response.json()

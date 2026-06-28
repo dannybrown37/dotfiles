@@ -3,13 +3,14 @@
 from datetime import datetime
 
 from project_manager.notion.client import (
+    archive_page,
     get_select_options,
     query_database,
 )
 from project_manager.notion.models import ProjectEntry
 from project_manager.notion.display import format_entry_list
 from project_manager.notion.triage import process_triage
-from project_manager.ui import CancelAction
+from project_manager.ui import CancelAction, fzf_on_a_list
 
 
 def list_entries(
@@ -145,6 +146,30 @@ def list_today() -> None:
             print(f'    • {e.header}{due}')
             print(f'      → {e.next_step}')
         print()
+
+
+def mark_done() -> None:
+    """Interactively select a Current Project to mark as done."""
+    pages = query_database(
+        filter_obj={
+            'property': 'Status',
+            'select': {'equals': 'Current Project'},
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+
+    if not entries:
+        print('No current projects.')
+        return
+
+    headers = [e.header for e in entries]
+    selection = fzf_on_a_list(headers, prompt='Mark done')
+    if not selection:
+        return
+
+    entry = next(e for e in entries if e.header == selection)
+    archive_page(entry.page_id)
+    print(f'✓ "{entry.header}" → Done (archived)')
 
 
 def notion_command(args: list[str]) -> None:
