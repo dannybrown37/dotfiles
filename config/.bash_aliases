@@ -32,13 +32,12 @@ if [[ -f "${HOME}/.local/bin/zoxide" ]]; then
     eval "$(zoxide init bash --cmd cd)" # essentially alias cd=z
 fi
 
-if dpkg-query -W -f='${Status}' exa eza 2>/dev/null | grep -q "ok installed"; then
-    # https://the.exa.website/features/filtering
-    alias l="exa --ignore-glob=\${LS_IGNORE_GLOBS}"
-    alias ll="exa -alh --ignore-glob=\${LS_IGNORE_GLOBS}"
-    alias lsa="exa -alh"
+if command -v eza &>/dev/null; then
+    alias l="eza --ignore-glob=\${LS_IGNORE_GLOBS}"
+    alias ll="eza -alh --ignore-glob=\${LS_IGNORE_GLOBS}"
+    alias lsa="eza -alh"
     alias ls=ll
-    alias tree="exa --tree -la --ignore-glob=\${LS_IGNORE_GLOBS}"
+    alias tree="eza --tree -la --ignore-glob=\${LS_IGNORE_GLOBS}"
 fi
 
 if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then

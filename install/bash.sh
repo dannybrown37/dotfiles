@@ -57,22 +57,6 @@ else
 fi
 
 ##
-## Install eza (modern ls replacement, community fork of exa)
-## Not in default Debian/Ubuntu repos; requires the gierens apt repo
-##
-
-if ! command -v eza &>/dev/null; then
-    sudo mkdir -p /etc/apt/keyrings
-    wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
-    sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-    sudo apt update
-    sudo apt install -y eza
-else
-    echo "eza is already installed on this system"
-fi
-
-##
 ## Install zoxide, per creator, Debian/Ubuntu have old versions in apt
 ## https://github.com/ajeetdsouza/zoxide/issues/694#issuecomment-1946069618
 ##
