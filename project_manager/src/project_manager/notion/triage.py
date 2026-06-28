@@ -29,7 +29,7 @@ def _get_triage_entries() -> list[ProjectEntry]:
     return [ProjectEntry.from_page(p) for p in pages]
 
 
-def _process_single_entry(entry: ProjectEntry) -> bool:
+def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0912
     """Process one triage item. Returns True if processed, False if skipped."""
     print(f'\n  ── Processing: {entry.header} ──')
     if entry.details:
@@ -54,7 +54,12 @@ def _process_single_entry(entry: ProjectEntry) -> bool:
         return False
 
     # Next Actionable Step
-    next_step = prompt_input('Next actionable step: ')
+    if status == 'Waiting For':
+        next_step = prompt_input(
+            'Who/what are you waiting on? ',
+        )
+    else:
+        next_step = prompt_input('Next actionable step: ')
     if next_step is None:
         return False
 
@@ -70,10 +75,15 @@ def _process_single_entry(entry: ProjectEntry) -> bool:
         else:
             print(f'  Could not parse "{due_date_input}", skipping due date.')
 
-    # Optional Follow-Up Date
-    follow_up_input = prompt_input(
-        'Follow-up date (blank to skip): ',
-    )
+    # Follow-Up Date (required for Waiting For)
+    if status == 'Waiting For':
+        follow_up_input = prompt_input(
+            'Follow-up date (e.g. Friday, in 3 days): ',
+        )
+    else:
+        follow_up_input = prompt_input(
+            'Follow-up date (blank to skip): ',
+        )
     follow_up_iso: str | None = None
     if follow_up_input:
         parsed = dateparser.parse(follow_up_input, fuzzy=True)
@@ -84,6 +94,11 @@ def _process_single_entry(entry: ProjectEntry) -> bool:
                 f'  Could not parse "{follow_up_input}", '
                 f'skipping follow-up date.',
             )
+    elif status == 'Waiting For':
+        print(
+            "  ⚠ No follow-up date set — item won't "
+            'appear in Today until one is added.'
+        )
 
     # Build and send update
     props = build_property_update(
