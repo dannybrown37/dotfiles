@@ -207,22 +207,18 @@ def add_todo(goal: Goal) -> Goal:
 
 
 def complete_todo(goal: Goal) -> Goal:
-    open_todos = [t for t in goal.todos if not t.completed]
+    open_todos = [(i, t) for i, t in enumerate(goal.todos) if not t.completed]
     if not open_todos:
         print('No open to-dos.')
         return goal
-    selection = fzf_on_a_list(
-        [t.description for t in open_todos],
-        prompt='Mark complete',
-    )
+    labels = [f'{i}: {t.description}' for i, t in open_todos]
+    selection = fzf_on_a_list(labels, prompt='Mark complete')
     if not selection:
         return goal
-    for t in goal.todos:
-        if t.description == selection and not t.completed:
-            t.completed = True
-            break
+    idx = int(selection.split(':', 1)[0])
+    goal.todos[idx].completed = True
     save_goal(goal)
-    print(f'\n✓ "{selection}" marked complete')
+    print(f'\n✓ "{goal.todos[idx].description}" marked complete')
     return goal
 
 
@@ -230,15 +226,14 @@ def remove_todo(goal: Goal) -> Goal:
     if not goal.todos:
         print('No to-dos.')
         return goal
-    selection = fzf_on_a_list(
-        [t.description for t in goal.todos],
-        prompt='Remove to-do',
-    )
+    labels = [f'{i}: {t.description}' for i, t in enumerate(goal.todos)]
+    selection = fzf_on_a_list(labels, prompt='Remove to-do')
     if not selection:
         return goal
-    goal.todos = [t for t in goal.todos if t.description != selection]
+    idx = int(selection.split(':', 1)[0])
+    removed = goal.todos.pop(idx)
     save_goal(goal)
-    print(f'\n✓ Removed: {selection}')
+    print(f'\n✓ Removed: {removed.description}')
     return goal
 
 
@@ -299,16 +294,12 @@ def edit_todo(goal: Goal) -> Goal:
     if not goal.todos:
         print('No to-dos yet.')
         return goal
-    selection = fzf_on_a_list(
-        [t.description for t in goal.todos],
-        prompt='Select to-do to edit',
-    )
+    labels = [f'{i}: {t.description}' for i, t in enumerate(goal.todos)]
+    selection = fzf_on_a_list(labels, prompt='Select to-do to edit')
     if not selection:
         return goal
-    for t in goal.todos:
-        if t.description == selection:
-            _apply_todo_edits(t)
-            break
+    idx = int(selection.split(':', 1)[0])
+    _apply_todo_edits(goal.todos[idx])
     save_goal(goal)
     print('\n✓ To-do updated')
     return goal
