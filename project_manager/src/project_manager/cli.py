@@ -2,6 +2,8 @@ import json
 import shutil
 import sys
 
+import click
+
 from project_manager.models import Goal, TOTAL_WEEKS
 from project_manager.storage import (
     ensure_dirs,
@@ -269,20 +271,83 @@ def _print_status() -> None:
         print()
 
 
-def main() -> None:
-    if len(sys.argv) > 1 and sys.argv[1] == 'status':
-        _print_status()
+@click.group(invoke_without_command=True)
+@click.pass_context
+def cli(ctx: click.Context) -> None:
+    """pm — 12-Week Year CLI with Notion GTD integration."""
+    if ctx.invoked_subcommand is None:
+        _interactive()
+
+
+@cli.command()
+def status() -> None:
+    """Print all goals' progress to stdout."""
+    _print_status()
+
+
+@cli.group(invoke_without_command=True)
+@click.option('-v', '--verbose', is_flag=True, help='Show details')
+@click.pass_context
+def notion(ctx: click.Context, verbose: bool) -> None:
+    """Notion GTD integration."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        list_entries,
+    )
+
+    ctx.ensure_object(dict)
+    ctx.obj['verbose'] = verbose
+
+    if ctx.invoked_subcommand is None:
+        list_entries(verbose=verbose)
+
+
+@notion.command()
+def triage() -> None:
+    """Interactively process items needing triage."""
+    from project_manager.notion.triage import (  # noqa: PLC0415
+        process_triage,
+    )
+
+    try:
+        process_triage()
+    except CancelAction:
         return
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'notion':
-        from project_manager.notion.commands import notion_command  # noqa: PLC0415
 
-        notion_command(sys.argv[2:])
-        return
+@notion.command()
+@click.pass_context
+def goals(ctx: click.Context) -> None:
+    """Show 12-week goal entries."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        list_12_week_entries,
+    )
 
+    list_12_week_entries(verbose=ctx.obj.get('verbose', False))
+
+
+@notion.command(name='filter')
+@click.argument('context', nargs=-1, required=True)
+@click.pass_context
+def filter_context(ctx: click.Context, context: tuple[str, ...]) -> None:
+    """Filter by context name (e.g. pm notion filter Phone)."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        list_entries,
+    )
+
+    context_str = ' '.join(context)
+    list_entries(
+        context=context_str,
+        verbose=ctx.obj.get('verbose', False),
+    )
+
+
+def _interactive() -> None:
+    """Launch the interactive fzf-based TUI."""
     if shutil.which('fzf') is None:
-        print('Error: fzf is required but not found on PATH.')
-        print('Install it: https://github.com/junegunn/fzf#installation')
+        click.echo(
+            'Error: fzf is required but not found on PATH.\n'
+            'Install it: https://github.com/junegunn/fzf#installation',
+        )
         sys.exit(1)
 
     ensure_dirs()
@@ -309,3 +374,8 @@ def main() -> None:
         if not action:
             break
         _handle_top_menu_action(action, names)
+
+
+def main() -> None:
+    """Entry point."""
+    cli()

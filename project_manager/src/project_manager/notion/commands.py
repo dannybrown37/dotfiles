@@ -1,8 +1,13 @@
 """CLI commands for Notion integration."""
 
-from project_manager.notion.client import query_database
+from project_manager.notion.client import (
+    get_select_options,
+    query_database,
+)
 from project_manager.notion.models import ProjectEntry
 from project_manager.notion.display import format_entry_list
+from project_manager.notion.triage import process_triage
+from project_manager.ui import CancelAction
 
 
 def list_entries(
@@ -53,7 +58,31 @@ def list_entries(
 
 def list_12_week_entries(*, verbose: bool = False) -> None:
     """List only 12-Week Goal entries."""
-    list_entries(context='12-Week Goal', verbose=verbose)
+    contexts = get_select_options('Context')
+    goal_contexts = [c for c in contexts if c.startswith('12-Week Goal')]
+
+    if not goal_contexts:
+        print('No 12-Week Goal contexts found.')
+        return
+
+    if len(goal_contexts) == 1:
+        list_entries(context=goal_contexts[0], verbose=verbose)
+    else:
+        # Multiple goal contexts — query with OR filter
+        filter_obj = {
+            'or': [
+                {'property': 'Context', 'select': {'equals': c}}
+                for c in goal_contexts
+            ],
+        }
+        pages = query_database(filter_obj=filter_obj)
+        entries = [ProjectEntry.from_page(p) for p in pages]
+        for ctx in goal_contexts:
+            group = [e for e in entries if e.context == ctx]
+            if group:
+                print(f'\n── {ctx} ({len(group)}) ──')
+                print(format_entry_list(group, verbose=verbose))
+        print()
 
 
 def show_triage(*, verbose: bool = False) -> None:
@@ -67,6 +96,7 @@ def notion_command(args: list[str]) -> None:
     Usage:
         pm notion             — list all entries grouped by status
         pm notion triage      — show items needing triage
+        pm notion process     — interactively process triage items
         pm notion goals       — show 12-week goal entries
         pm notion <context>   — filter by context name
         pm notion -v [...]    — verbose output (show details)
@@ -78,6 +108,11 @@ def notion_command(args: list[str]) -> None:
         list_entries(verbose=verbose)
     elif args[0] == 'triage':
         show_triage(verbose=verbose)
+    elif args[0] == 'process':
+        try:
+            process_triage()
+        except CancelAction:
+            return
     elif args[0] == 'goals':
         list_12_week_entries(verbose=verbose)
     elif args[0] == 'help':
