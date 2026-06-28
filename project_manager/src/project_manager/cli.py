@@ -1,4 +1,6 @@
 import json
+import shutil
+import sys
 
 from project_manager.models import Goal, TOTAL_WEEKS
 from project_manager.storage import (
@@ -10,7 +12,14 @@ from project_manager.storage import (
     OUTPUT_PATH,
     ARCHIVE_PATH,
 )
-from project_manager.ui import fzf_on_a_list, prompt_input, pause, CancelAction
+from project_manager.ui import (
+    fzf_on_a_list,
+    prompt_input,
+    pause,
+    CancelAction,
+    score_indicator,
+    score_pct,
+)
 from project_manager.views import view_goal, detailed_view
 from project_manager.actions import (
     edit_goal,
@@ -25,6 +34,7 @@ from project_manager.actions import (
     remove_todo,
     complete_todo,
     edit_settings,
+    start_new_cycle,
 )
 
 
@@ -72,7 +82,18 @@ GOAL_ACTION_MAP = {
 }
 
 
-def goal_menu(goal: Goal) -> None:
+def goal_menu(goal: Goal) -> None:  # noqa: C901
+    if goal.is_complete:
+        try:
+            new_goal = start_new_cycle(goal)
+        except CancelAction:
+            return
+        if new_goal is None:
+            view_goal(goal)
+            pause()
+            return
+        goal = new_goal
+
     labels = [
         f'{i + 1:>2}. {cat:<10}{action}'
         for i, (cat, action) in enumerate(GOAL_MENU_ITEMS)
@@ -210,7 +231,54 @@ def _handle_top_menu_action(action: str, names: list[str]) -> None:
         return
 
 
+def _print_status() -> None:
+    """Print all goals' status to stdout (no fzf required)."""
+    ensure_dirs()
+    names = get_stored_goal_names()
+    if not names:
+        print('No goals configured.')
+        return
+
+    for name in names:
+        goal = load_goal(name)
+        week = goal.current_week()
+        weeks_left = goal.weeks_remaining()
+        status = (
+            'COMPLETE'
+            if goal.is_complete
+            else (
+                f'Week {week}/{TOTAL_WEEKS}'
+                f'  •  {weeks_left} week{"s" if weeks_left != 1 else ""} left'
+            )
+        )
+        print(f'{goal.name}')
+        print(f'  {goal.progress_bar()}')
+        print(f'  {status}')
+
+        ex, tot = goal.overall_score()
+        if tot > 0:
+            pct = score_pct(ex, tot)
+            indicator = score_indicator(ex / tot)
+            print(f'  {indicator} Execution: {pct} ({ex}/{tot})')
+
+        open_todos = [t for t in goal.todos if not t.completed]
+        if open_todos:
+            count = len(open_todos)
+            suffix = 's' if count != 1 else ''
+            print(f'  {count} open to-do{suffix}')
+        print()
+
+
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] == 'status':
+        _print_status()
+        return
+
+    if shutil.which('fzf') is None:
+        print('Error: fzf is required but not found on PATH.')
+        print('Install it: https://github.com/junegunn/fzf#installation')
+        sys.exit(1)
+
     ensure_dirs()
     first_run = True
     while True:

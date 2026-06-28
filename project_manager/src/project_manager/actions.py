@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from dateutil import parser as dateparser
@@ -324,3 +324,67 @@ def edit_settings() -> None:
         )
     save_config(config)
     print('\n✓ Settings updated')
+
+
+def start_new_cycle(goal: Goal) -> Goal | None:
+    """Offer to start a new 12-week cycle from a completed goal."""
+    ex, tot = goal.overall_score()
+    pct = score_pct(ex, tot)
+    indicator = score_indicator(ex / tot) if tot > 0 else ''
+
+    print(f'\n  ── 12-Week Cycle Complete: {goal.name} ──')
+    print(f'  {indicator} Final score: {pct} ({ex}/{tot})')
+    print()
+
+    choice = fzf_on_a_list(
+        [
+            'Start new cycle (carry over tactics)',
+            'Start fresh cycle (no carry-over)',
+            'Just view the completed goal',
+        ],
+        prompt='Cycle complete',
+    )
+    if not choice or choice.startswith('Just view'):
+        return None
+
+    now = datetime.now()
+    carry_tactics = choice.startswith('Start new cycle')
+
+    new_tactics = []
+    if carry_tactics:
+        for t in goal.tactics:
+            new_tactics.append(
+                Tactic(
+                    description=t.description,
+                    reminder_cadence=t.reminder_cadence,
+                ),
+            )
+
+    open_todos = [
+        Todo(description=t.description, due_date=t.due_date)
+        for t in goal.todos
+        if not t.completed
+    ]
+
+    new_goal = Goal(
+        name=goal.name,
+        description=goal.description,
+        start_date=now.isoformat(),
+        end_date=(now + timedelta(weeks=TOTAL_WEEKS)).isoformat(),
+        tactics=new_tactics,
+        todos=open_todos,
+    )
+    save_goal(new_goal)
+
+    carried = []
+    if new_tactics:
+        carried.append(f'{len(new_tactics)} tactics')
+    if open_todos:
+        carried.append(f'{len(open_todos)} open to-dos')
+    carry_msg = f' (carried: {", ".join(carried)})' if carried else ''
+
+    print(
+        f'\n✓ New cycle started for "{new_goal.name}"{carry_msg}',
+    )
+    print(f'  {new_goal.date_range_display()}')
+    return new_goal
