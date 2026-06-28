@@ -234,6 +234,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
         list_today,
         mark_done,
         defer_entry,
+        set_waiting_for,
         update_entry,
         review_someday,
         weekly_review,
@@ -267,6 +268,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
         ('Do', 'Triage inbox'),
         ('Manage', 'Update project'),
         ('Manage', 'Defer project until date'),
+        ('Manage', 'Waiting For'),
         ('Manage', 'Mark done'),
         ('Review', 'Weekly Review'),
         ('Review', 'Review Someday/Maybe'),
@@ -321,6 +323,8 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
                     update_entry()
                 case 'Defer project until date':
                     defer_entry()
+                case 'Waiting For':
+                    set_waiting_for()
                 case 'Mark done':
                     mark_done()
                 case 'Weekly Review':

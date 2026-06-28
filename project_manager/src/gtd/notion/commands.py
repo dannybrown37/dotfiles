@@ -141,7 +141,7 @@ def _get_today_entries() -> list[ProjectEntry]:
     return [e for e in entries if e.context and e.next_step]
 
 
-def list_today() -> None:  # noqa: C901
+def list_today() -> None:  # noqa: C901, PLR0912, PLR0915
     """Interactive today view — pick items and take action."""
     actionable = _get_today_entries()
 
@@ -165,6 +165,7 @@ def list_today() -> None:  # noqa: C901
             [
                 'Log & Reschedule',
                 'Snooze until tomorrow',
+                'Waiting For',
                 'Update fields',
                 'Mark done (moves to trash)',
                 'Back to list',
@@ -190,6 +191,28 @@ def list_today() -> None:  # noqa: C901
                 update_page(entry.page_id, props)
                 print(
                     f'  ✓ "{entry.header.strip()}" snoozed until {tomorrow}',
+                )
+                actionable = [
+                    e for e in actionable if e.page_id != entry.page_id
+                ]
+            case 'Waiting For':
+                waiting_on = prompt_input(
+                    'Who/what are you waiting on? ',
+                )
+                followup = prompt_input(
+                    'Follow-up date (e.g. Friday, in 3 days): ',
+                )
+                kwargs: dict = {'status': 'Waiting For'}
+                if waiting_on:
+                    kwargs['next_step'] = waiting_on
+                if followup:
+                    parsed = _parse_date_input(followup)
+                    if parsed:
+                        kwargs['follow_up_date'] = parsed
+                props = build_property_update(**kwargs)
+                update_page(entry.page_id, props)
+                print(
+                    f'  ✓ "{entry.header.strip()}" → Waiting For',
                 )
                 actionable = [
                     e for e in actionable if e.page_id != entry.page_id
@@ -274,6 +297,50 @@ def defer_entry() -> None:
     props = build_property_update(follow_up_date=date_str)
     update_page(entry.page_id, props)
     print(f'✓ "{entry.header}" deferred until {date_str}')
+
+
+def set_waiting_for() -> None:
+    """Move a current project to Waiting For status."""
+    pages = query_database(
+        filter_obj={
+            'property': 'Status',
+            'select': {'equals': 'Current Project'},
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+
+    if not entries:
+        print('No current projects.')
+        return
+
+    entry = select_entry(entries, prompt='Waiting For')
+    if not entry:
+        return
+
+    waiting_on = prompt_input(
+        'Who/what are you waiting on? '
+        f'(current: {entry.next_step or "none"}): ',
+    )
+    if waiting_on is None:
+        return
+
+    followup = prompt_input(
+        'Follow-up date (e.g. Friday, in 3 days): ',
+    )
+    follow_up_date = _parse_date_input(followup) if followup else None
+
+    kwargs: dict = {'status': 'Waiting For'}
+    if waiting_on:
+        kwargs['next_step'] = waiting_on
+    if follow_up_date:
+        kwargs['follow_up_date'] = follow_up_date
+
+    props = build_property_update(**kwargs)
+    update_page(entry.page_id, props)
+    msg = f'✓ "{entry.header.strip()}" → Waiting For'
+    if follow_up_date:
+        msg += f' (follow up {follow_up_date})'
+    print(msg)
 
 
 def snooze_today() -> None:
