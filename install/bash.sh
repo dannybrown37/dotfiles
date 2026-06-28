@@ -39,17 +39,22 @@ apt_packages=(
 sudo apt -y update
 sudo apt -y upgrade
 
-if [[ "${WSL_DISTRO_NAME}" = 'kali-linux' ]]; then
-    apt_packages+=(eza)
-else
-    apt_packages+=(exa)
-fi
-
 for package in "${apt_packages[@]}"; do
     if ! dpkg -s "${package}" >/dev/null 2>&1; then
         sudo apt install -y "${package}"
     fi
 done
+
+##
+## Install eza (modern ls replacement, community fork of exa)
+## Not in default Debian/Ubuntu repos; install via cargo
+##
+
+if ! command -v eza &>/dev/null; then
+    cargo install eza
+else
+    echo "eza is already installed on this system"
+fi
 
 ##
 ## Install eza (modern ls replacement, community fork of exa)
