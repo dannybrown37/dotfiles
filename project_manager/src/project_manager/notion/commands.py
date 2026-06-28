@@ -10,6 +10,7 @@ from dateutil import parser as dateparser
 from project_manager.notion.client import (
     archive_page,
     build_property_update,
+    get_page_body,
     get_select_options,
     query_database,
     update_page,
@@ -210,6 +211,66 @@ def defer_entry() -> None:
     print(f'✓ "{entry.header}" deferred until {date_str}')
 
 
+def review_someday() -> None:
+    """Review Someday/Maybe items — keep, activate, or drop each."""
+    pages = query_database(
+        filter_obj={
+            'property': 'Status',
+            'select': {'equals': 'Someday/Maybe'},
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+
+    if not entries:
+        print('No Someday/Maybe items. 🎉')
+        return
+
+    print(
+        f'\n  ── Someday/Maybe Review ({len(entries)} items) ──\n',
+    )
+
+    # Fetch bodies one at a time as we go (one per item reviewed)
+    activated = 0
+    dropped = 0
+
+    for entry in entries:
+        body = get_page_body(entry.page_id)
+        preview = _escape_for_shell(
+            _entry_preview_text(entry, body),
+        )
+
+        action = fzf_on_a_list(
+            ['Keep', 'Activate (→ Current Project)', 'Drop (archive)'],
+            prompt=f'"{entry.header.strip()}"',
+            preview=f"echo '{preview}'",
+        )
+        if not action:
+            break
+
+        if action.startswith('Activate'):
+            props = build_property_update(status='Current Project')
+            update_page(entry.page_id, props)
+            print(f'  ✓ Activated: {entry.header.strip()}')
+            activated += 1
+        elif action.startswith('Drop'):
+            archive_page(entry.page_id)
+            print(f'  ✓ Dropped: {entry.header.strip()}')
+            dropped += 1
+
+        print()
+
+    parts = []
+    if activated:
+        parts.append(f'{activated} activated')
+    if dropped:
+        parts.append(f'{dropped} dropped')
+    kept = len(entries) - activated - dropped
+    if kept:
+        parts.append(f'{kept} kept')
+    if parts:
+        print(f'  Review complete: {", ".join(parts)}')
+
+
 def _parse_date_input(raw: str) -> str | None:
     """Parse a date string, returning YYYY-MM-DD or None."""
     parsed = dateparser.parse(raw, fuzzy=True)
@@ -280,9 +341,14 @@ def _escape_for_shell(text: str) -> str:
     return text.replace("'", "'\\''")
 
 
-def _entry_preview_text(entry: ProjectEntry) -> str:
+def _entry_preview_text(
+    entry: ProjectEntry,
+    body: str = '',
+) -> str:
     """Build a preview string for an entry."""
     lines = [
+        f'── {entry.header.strip()} ──',
+        '',
         f'Status:    {entry.status}',
         f'Context:   {entry.context or "(none)"}',
         f'Next step: {entry.next_step or "(none)"}',
@@ -291,6 +357,11 @@ def _entry_preview_text(entry: ProjectEntry) -> str:
     ]
     if entry.details:
         lines.append(f'Details:   {entry.details}')
+    if body:
+        lines.append('')
+        lines.append('── Notes ──')
+        for line in body.split('\n'):
+            lines.append(f'  {line}')
     return '\n'.join(lines)
 
 
@@ -298,6 +369,7 @@ def select_entry(
     entries: list[ProjectEntry],
     *,
     prompt: str = 'Select',
+    include_body: bool = True,
 ) -> ProjectEntry | None:
     """Show an fzf picker with preview for a list of entries."""
     if not entries:
@@ -306,29 +378,79 @@ def select_entry(
     entry_map = {e.header.strip(): e for e in entries}
     headers = list(entry_map.keys())
 
-    preview_data = {e.header.strip(): _entry_preview_text(e) for e in entries}
-    with tempfile.NamedTemporaryFile(
-        mode='w',
-        suffix='.json',
-        delete=False,
-    ) as f:
-        json_mod.dump(preview_data, f)
-        preview_file = f.name
+    # Properties + page IDs; body fetched lazily by preview script
+    preview_data = {
+        e.header.strip(): {
+            'props': _entry_preview_text(e),
+            'page_id': e.page_id if include_body else None,
+            'body': None,
+        }
+        for e in entries
+    }
+
+    fd, data_path = tempfile.mkstemp(suffix='.json')
+    with open(fd, 'w') as f:  # noqa: PTH123
+        f.write(json_mod.dumps(preview_data))
+
+    # Preview script: show props, lazy-fetch + cache body in the JSON
+    fd2, script_path = tempfile.mkstemp(suffix='.py')
+    with open(fd2, 'w') as f:  # noqa: PTH123
+        f.write(
+            'import json, sys, os, fcntl\n'
+            f'DATA = "{data_path}"\n'
+            'key = sys.argv[1]\n'
+            'with open(DATA) as f:\n'
+            '    fcntl.flock(f, fcntl.LOCK_SH)\n'
+            '    d = json.load(f)\n'
+            'entry = d.get(key, {})\n'
+            'if not entry:\n'
+            '    sys.exit(0)\n'
+            'print(entry["props"])\n'
+            'page_id = entry.get("page_id")\n'
+            'if not page_id:\n'
+            '    sys.exit(0)\n'
+            'body = entry.get("body")\n'
+            'if body is None:\n'
+            '    import httpx\n'
+            '    token = os.environ.get("NOTION_NOTES_TOKEN", "")\n'
+            '    url = f"https://api.notion.com/v1/blocks/{page_id}'
+            '/children"\n'
+            '    h = {"Authorization": f"Bearer {token}",'
+            ' "Notion-Version": "2022-06-28"}\n'
+            '    try:\n'
+            '        resp = httpx.get(url, headers=h)\n'
+            '        blocks = resp.json().get("results", [])\n'
+            '        lines = []\n'
+            '        for b in blocks:\n'
+            '            if b["type"] == "paragraph":\n'
+            '                texts = b["paragraph"]["rich_text"]\n'
+            '                c = " ".join('
+            't["plain_text"] for t in texts).strip()\n'
+            '                if c:\n'
+            '                    lines.append(c)\n'
+            '        body = chr(10).join(lines)\n'
+            '    except Exception:\n'
+            '        body = ""\n'
+            '    d[key]["body"] = body\n'
+            '    with open(DATA, "w") as f:\n'
+            '        fcntl.flock(f, fcntl.LOCK_EX)\n'
+            '        json.dump(d, f)\n'
+            'if body and body.strip():\n'
+            '    print()\n'
+            '    print("── Notes ──")\n'
+            '    for line in body.split(chr(10)):\n'
+            '        print(f"  {line}")\n',
+        )
 
     try:
         selection = fzf_on_a_list(
             headers,
             prompt=prompt,
-            preview=(
-                f'python3 -c "'
-                f'import json,sys;'
-                f"d=json.load(open('{preview_file}'));"
-                f"print(d.get(sys.argv[1],''))"
-                f'" {{}}'
-            ),
+            preview=f'python3 {script_path} {{}}',
         )
     finally:
-        Path(preview_file).unlink()
+        Path(data_path).unlink(missing_ok=True)
+        Path(script_path).unlink(missing_ok=True)
 
     if not selection:
         return None
@@ -361,7 +483,8 @@ def update_entry() -> None:
     if not entry:
         return
 
-    preview = _escape_for_shell(_entry_preview_text(entry))
+    body = get_page_body(entry.page_id)
+    preview = _escape_for_shell(_entry_preview_text(entry, body))
 
     fields = fzf_on_a_list(
         [

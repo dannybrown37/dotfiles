@@ -110,6 +110,19 @@ def defer() -> None:
 
 
 @cli.command()
+def someday() -> None:
+    """Review Someday/Maybe items — keep, activate, or drop."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        review_someday,
+    )
+
+    try:
+        review_someday()
+    except CancelAction:
+        return
+
+
+@cli.command()
 @click.argument('header', nargs=-1)
 def capture(header: tuple[str, ...]) -> None:
     """Quick-capture an item to the GTD inbox.
@@ -135,6 +148,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
         mark_done,
         defer_entry,
         update_entry,
+        review_someday,
     )
     from project_manager.notion.capture import (  # noqa: PLC0415
         capture_item,
@@ -162,6 +176,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
         'Update project',
         'Defer project',
         'Mark done',
+        'Review Someday/Maybe',
         '12-Week Goals',
         'Filter by context',
     ]
@@ -192,6 +207,8 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912
                     defer_entry()
                 case 'Mark done':
                     mark_done()
+                case 'Review Someday/Maybe':
+                    review_someday()
                 case '12-Week Goals':
                     list_12_week_entries(verbose=verbose)
                     pause()
