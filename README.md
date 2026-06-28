@@ -44,7 +44,6 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 
 | Command | Description | Source |
 | --- | --- | --- |
-
 | `ahk` | Run all AutoHotKey scripts | `config/.bash_aliases` |
 | `beep` | Play a beep sound | `config/.bash_aliases` |
 | `cb` | Copy stdin to clipboard | `config/.bash_aliases` |
