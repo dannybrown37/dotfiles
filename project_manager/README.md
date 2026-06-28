@@ -1,20 +1,30 @@
 # Project Manager
 
-A CLI implementation of the [12-Week Year](https://12weekyear.com/) planning method.
+A CLI for personal productivity combining [GTD (Getting Things Done)](https://gettingthingsdone.com/) with the [12-Week Year](https://12weekyear.com/) planning method.
 
 ## What it does
+
+### GTD (`gtd` command) — Notion-backed
+
+- Capture items to an inbox and triage them into projects
+- Track projects with contexts, next actions, and follow-up dates
+- Log completions and auto-reschedule recurring items
+- Defer, snooze, and review Someday/Maybe lists
+- Filter by context for focused work sessions
+
+### 12-Week Year (`pm` command) — local JSON
 
 - Create goals with a 12-week time horizon
 - Define tactics (recurring actions) with cadences like daily, weekly, 2x/week
 - Score tactics weekly on a 1–10 scale to track execution
 - Manage to-dos with optional due dates
 - View progress bars, score history, and overall execution percentage
-- Archive completed goals and start new cycles carrying over tactics/todos
 
 ## Requirements
 
 - Python 3.12+
 - [fzf](https://github.com/junegunn/fzf) (for interactive menus)
+- A [Notion integration token](https://developers.notion.com/) (for `gtd`)
 
 ## Installation
 
@@ -24,53 +34,86 @@ uv sync
 uv pip install -e .
 ```
 
-This installs the `pm` command.
+This installs both the `pm` and `gtd` commands.
 
 ## Usage
 
-### Interactive mode
+### GTD interactive mode
 
 ```bash
-pm
+gtd
 ```
 
-Opens the fzf-powered menu. Navigate goals, score tactics, manage to-dos.
+Opens the fzf-powered GTD menu:
 
-### Quick status (no fzf needed)
+<!-- BEGIN MENU -->
+| Category | Action |
+| --- | --- |
+| Do | Today |
+| Do | Log & Reschedule |
+| Do | Snooze until tomorrow |
+| Do | Capture new item |
+| Do | Triage inbox |
+| Manage | Update project |
+| Manage | Defer project |
+| Manage | Mark done |
+| Review | Review Someday/Maybe |
+| View | View all projects |
+| View | 12-Week Goals |
+| View | Filter by context |
+<!-- END MENU -->
+
+### GTD subcommands
 
 ```bash
-pm status
+gtd triage        # Process inbox items
+gtd goals         # Show 12-week goal entries
+gtd filter work   # Filter projects by context
+gtd today         # Show today's actionable items
+gtd capture       # Quick-capture to inbox
+gtd done          # Mark a project as done
+gtd update        # Update project fields
+gtd defer         # Defer a project
 ```
 
-Prints a snapshot of all goals to stdout — useful for scripts, tmux status bars, or a quick glance.
+### 12-Week Year
 
-### Workflow
+```bash
+pm                # Interactive menu
+pm status         # Quick snapshot (no fzf needed)
+```
 
-1. **Create a goal** — give it a name and description, it auto-sets a 12-week window
-2. **Add tactics** — the recurring actions that drive the goal (e.g. "Write 500 words daily")
-3. **Score weekly** — at the end of each week, rate each tactic 1–10
-4. **Track to-dos** — one-off tasks with optional due dates
-5. **Review** — watch your execution % and adjust tactics that aren't working
-6. **Cycle** — when the 12 weeks end, start a new cycle (optionally carrying over tactics)
+## Updating this README
 
-### Key concepts from the 12-Week Year
+Menu options are extracted from source. After changing menu items in `gtd.py`:
 
-- **85% execution = success** — the green threshold. You don't need perfection.
-- **Weekly scoring** — the core accountability mechanism. Score honestly.
-- **Tactics ≠ to-dos** — tactics are recurring habits; to-dos are one-off tasks.
+```bash
+python scripts/update_readme.py
+```
 
 ## Data storage
 
-Goals are stored as JSON files in `~/.local/share/project_manager/`. They're human-readable and easy to back up.
+- **GTD**: Notion database (configured via `NOTION_TOKEN` and `NOTION_DATABASE_ID` env vars)
+- **12-Week Year**: JSON files in `~/.local/share/project_manager/`
 
 ## Project structure
 
 ```
 src/project_manager/
-├── models.py    # Pydantic models (Goal, Tactic, Todo)
-├── storage.py   # File I/O and path management
-├── ui.py        # fzf helpers, prompts, formatting
-├── views.py     # Display builders (headers, progress bars)
-├── actions.py   # Goal actions (scoring, editing, cycling)
-└── cli.py       # Menu routing and entry point
+├── cli.py           # 12-Week Year menu routing and entry point
+├── gtd.py           # GTD interactive menu and CLI commands
+├── models.py        # Pydantic models (Goal, Tactic, Todo)
+├── storage.py       # File I/O and path management
+├── ui.py            # fzf helpers, prompts, formatting
+├── views.py         # Display builders (headers, progress bars)
+├── actions.py       # Goal actions (scoring, editing, cycling)
+└── notion/
+    ├── client.py    # Notion API client
+    ├── models.py    # ProjectEntry dataclass
+    ├── commands.py  # GTD command implementations
+    ├── capture.py   # Inbox capture
+    ├── triage.py    # Triage processing
+    └── display.py   # Entry formatting
+scripts/
+└── update_readme.py # Auto-update README menu section
 ```
