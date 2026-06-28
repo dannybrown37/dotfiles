@@ -6,53 +6,25 @@ from datetime import datetime, timedelta
 __all__ = ['list_today', 'snooze_today']
 
 from gtd.notion.client import (
+    archive_page,
     build_property_update,
     get_page_body,
-    query_database,
     update_page,
 )
-from gtd.notion.models import ProjectEntry
+from gtd.notion.entries import (
+    _edit_entry_fields,
+    _entry_preview_text,
+    _escape_for_shell,
+    _get_today_entries,
+    _parse_date_input,
+    select_entry,
+)
+from gtd.notion.log import _confirm_delete, _log_and_reschedule_entry
 from gtd.ui import fzf_on_a_list, prompt_input
-
-
-def _today_filter() -> dict:
-    """Build the Notion filter for today's actionable items."""
-    today = datetime.now().strftime('%Y-%m-%d')
-    return {
-        'and': [
-            {'property': 'Status', 'select': {'equals': 'Current Project'}},
-            {
-                'or': [
-                    {
-                        'property': 'Follow-Up Date',
-                        'date': {'on_or_before': today},
-                    },
-                    {
-                        'property': 'Follow-Up Date',
-                        'date': {'is_empty': True},
-                    },
-                ],
-            },
-        ],
-    }
-
-
-def _get_today_entries() -> list[ProjectEntry]:
-    """Fetch and filter today's actionable entries."""
-    pages = query_database(filter_obj=_today_filter())
-    entries = [ProjectEntry.from_page(p) for p in pages]
-    return [e for e in entries if e.context and e.next_step]
 
 
 def list_today() -> None:  # noqa: C901, PLR0912
     """Interactive today view — pick items and take action."""
-    from gtd.notion.entries import (  # noqa: PLC0415
-        _entry_preview_text,
-        _escape_for_shell,
-        select_entry,
-    )
-    from gtd.notion.log import _log_and_reschedule_entry  # noqa: PLC0415
-
     actionable = _get_today_entries()
 
     if not actionable:
@@ -113,10 +85,6 @@ def list_today() -> None:  # noqa: C901, PLR0912
                     followup = prompt_input(
                         'Follow-up date (e.g. Friday, in 3 days): ',
                     )
-                    from gtd.notion.entries import (  # noqa: PLC0415
-                        _parse_date_input,
-                    )
-
                     follow_date = (
                         _parse_date_input(followup) if followup else None
                     )
@@ -135,19 +103,8 @@ def list_today() -> None:  # noqa: C901, PLR0912
                         e for e in actionable if e.page_id != entry.page_id
                     ]
             case 'Update fields':
-                from gtd.notion.entries import (  # noqa: PLC0415
-                    _edit_entry_fields,
-                )
-
                 _edit_entry_fields(entry)
             case 'Mark done (moves to trash)':
-                from gtd.notion.log import (  # noqa: PLC0415
-                    _confirm_delete,
-                )
-                from gtd.notion.client import (  # noqa: PLC0415
-                    archive_page,
-                )
-
                 if _confirm_delete(entry):
                     archive_page(entry.page_id)
                     print(f'  ✓ "{entry.header.strip()}" → deleted')

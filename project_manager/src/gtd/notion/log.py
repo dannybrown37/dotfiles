@@ -15,6 +15,11 @@ from gtd.notion.client import (
     replace_page_body,
     update_page,
 )
+from gtd.notion.entries import (
+    _get_today_entries,
+    _parse_date_input,
+    select_entry,
+)
 from gtd.notion.models import ProjectEntry
 from gtd.ui import prompt_input
 
@@ -90,8 +95,6 @@ def _log_and_reschedule_entry(entry: ProjectEntry) -> None:
             f'  Rescheduling in {inferred_days} day{suffix} ({next_date})',
         )
     else:
-        from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
-
         date_input = prompt_input(
             'Reschedule to (e.g. tomorrow, Monday, Jul 15): ',
         )
@@ -108,9 +111,6 @@ def _log_and_reschedule_entry(entry: ProjectEntry) -> None:
 
 def log_and_reschedule() -> None:
     """Log a note and reschedule recurring items."""
-    from gtd.notion.entries import select_entry  # noqa: PLC0415
-    from gtd.notion.today import _get_today_entries  # noqa: PLC0415
-
     actionable = _get_today_entries()
 
     if not actionable:

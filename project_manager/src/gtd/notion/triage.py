@@ -3,14 +3,21 @@
 from dateutil import parser as dateparser
 
 from gtd.notion.client import (
+    archive_page,
+    build_property_update,
+    get_page_body,
     get_select_options,
     query_database,
     update_page,
-    build_property_update,
+)
+from gtd.notion.entries import (
+    _entry_preview_text,
+    _escape_for_shell,
+    select_entry,
 )
 from gtd.notion.models import ProjectEntry
 from gtd.notion.schema import STATUSES as ALL_STATUSES
-from gtd.ui import fzf_on_a_list, prompt_input, CancelAction
+from gtd.ui import CancelAction, fzf_on_a_list, prompt_input
 
 
 TRIAGE_STATUSES = [s for s in ALL_STATUSES if s != 'Triage'] + ['Delete']
@@ -31,12 +38,6 @@ def _get_triage_entries() -> list[ProjectEntry]:
 
 def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0912
     """Process one triage item. Returns True if processed, False if skipped."""
-    from gtd.notion.client import get_page_body  # noqa: PLC0415
-    from gtd.notion.entries import (  # noqa: PLC0415
-        _entry_preview_text,
-        _escape_for_shell,
-    )
-
     body = get_page_body(entry.page_id)
     preview = _escape_for_shell(_entry_preview_text(entry, body))
 
@@ -50,8 +51,6 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0912
         return False
 
     if status == 'Delete':
-        from gtd.notion.client import archive_page  # noqa: PLC0415
-
         confirm = prompt_input(f'  Delete "{entry.header.strip()}"? (y/N): ')
         if confirm and confirm.lower() == 'y':
             archive_page(entry.page_id)
@@ -139,10 +138,6 @@ def process_triage() -> None:
     print(
         f'\n  {len(entries)} item{"s" if len(entries) != 1 else ""}'
         f' in Triage\n'
-    )
-
-    from gtd.notion.commands import (  # noqa: PLC0415
-        select_entry,
     )
 
     if len(entries) == 1:

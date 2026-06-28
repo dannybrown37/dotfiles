@@ -30,6 +30,7 @@ from gtd.notion.client import (
 )
 from gtd.notion.display import format_entry_list
 from gtd.notion.models import ProjectEntry
+from gtd.notion.schema import STATUSES
 from gtd.ui import fzf_on_a_list, prompt_input
 
 
@@ -54,6 +55,35 @@ def _parse_date_input(raw: str) -> str | None:
         return parsed.strftime('%Y-%m-%d')
     print(f'  Could not parse "{raw}", skipping.')
     return None
+
+
+def _today_filter() -> dict:
+    """Build the Notion filter for today's actionable items."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    return {
+        'and': [
+            {'property': 'Status', 'select': {'equals': 'Current Project'}},
+            {
+                'or': [
+                    {
+                        'property': 'Follow-Up Date',
+                        'date': {'on_or_before': today},
+                    },
+                    {
+                        'property': 'Follow-Up Date',
+                        'date': {'is_empty': True},
+                    },
+                ],
+            },
+        ],
+    }
+
+
+def _get_today_entries() -> list[ProjectEntry]:
+    """Fetch and filter today's actionable entries."""
+    pages = query_database(filter_obj=_today_filter())
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    return [e for e in entries if e.context and e.next_step]
 
 
 def _escape_for_shell(text: str) -> str:
@@ -232,8 +262,6 @@ def _collect_field_updates(  # noqa: C901, PLR0912
             kwargs['context'] = ctx
 
     if 'Status' in fields:
-        from gtd.notion.schema import STATUSES  # noqa: PLC0415
-
         status = fzf_on_a_list(
             STATUSES,
             prompt=f'"{entry.header}" → Status',
@@ -386,8 +414,6 @@ def list_entries(
     entries = [ProjectEntry.from_page(p) for p in pages]
 
     if not status:
-        from gtd.notion.schema import STATUSES  # noqa: PLC0415
-
         for s in STATUSES:
             group = [e for e in entries if e.status == s]
             if group:
