@@ -228,7 +228,7 @@ function current_git_branch() {
     fi
 }
 
-function epoch_timestamp() {
+function epoch_timestamp() {  # @doc: Print the current epoch timestamp in milliseconds, copy to clipboard
     echo $(($(date +%s%N) / 1000000)) | cb
 }
 
@@ -260,7 +260,7 @@ function git_info_env_vars() {
     export GIT_ICON=$(git_icon)
 }
 
-function google() {
+function google() { # @doc: Pop open a browser to google search results type in command line
     if [[ $# -eq 0 ]]; then
         read -p "Enter you Google query: " query
     else
@@ -270,50 +270,7 @@ function google() {
     url "https://www.google.com/search?q=${query// /+}"
 }
 
-function node_project_init() {
-    if [[ -n "$(ls -A)" ]]; then
-        echo "WARNING: Current working directory is not empty, see the contents:"
-        ls -A
-        read -r -p "Directory name to create in ~/projects/ (leave blank to proceed in cwd): " project_name
-        if [[ -n "${project_name}" ]]; then
-            local location="${HOME}/projects/${project_name}"
-            mkdir -p "${location}"
-            echo "Project directory created at: ${location}"
-            cd "${location}" || exit
-        fi
-    fi
-    if [[ $(pwd) = "${HOME}/projects" || $(pwd) = "${HOME}" ]]; then
-        echo "ERROR: Don't run this script in ${HOME} or ${HOME}/projects"
-        return
-    fi
-    if [[ -d ".git" ]]; then
-        echo "ERROR: A .git folder already exists in the current working directory"
-        return
-    fi
-    yes | npx gitignore node
-    npm init -y
-    npm i --save-dev typescript
-    git init
-    mkdir src
-    touch src/index.ts
-
-    tsconfig_content=$(
-        cat <<EOF
-{
-    "compilerOptions": {
-        "target": "es6",
-        "module": "commonjs",
-        "outDir": "./dist",
-        "rootDir": "./src",
-        "strict": true
-    }
-}
-EOF
-    )
-    echo "${tsconfig_content}" > tsconfig.json
-}
-
-function note() {
+function note() {  # @doc: Create a note file from the command line
     ## Create notes files from the command line
     ##
     ## 0 args -- will prompt for title and content
@@ -349,7 +306,7 @@ function note() {
     echo "Note saved to: $note_path"
 }
 
-function notes() {
+function notes() { # @doc: Open a note file from the command line from $NOTES_DIR using fzf
     local selected_file
     cd "$NOTES_DIR" || return
     selected_file=$(
@@ -363,24 +320,15 @@ function notes() {
     cd - || return
 }
 
-function pip_project_init() {
-    python -m venv .tempvenv
-    source .tempvenv/bin/activate
-    pip install cookiecutter
-    cookiecutter https://www.github.com/dannybrown37/pip_package_cookiecutter
-    deactivate
-    rm -rf .tempvenv
-}
-
-function mk() {
+function mk() {  # @doc: Create a directory and cd into it
     mkdir -p "$@" && cd "$@" || exit
 }
 
-function push() {
+function push() {  # @doc: Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message>
     http POST ntfy.sh/"${PERSONAL_ALERT_TOPIC}" alert="$*"
 }
 
-function push_to_topic() {
+function push_to_topic() {  # @doc: Push a message to ntfy.sh at a topic | push_to_topic <topic> <message>
     local topic=$1
     shift
     local message=$*
@@ -388,7 +336,7 @@ function push_to_topic() {
     http POST ntfy.sh/"${topic}" alert="${message}"
 }
 
-function open_url_in_browser() {
+function open_url_in_browser() {  # @doc: Open a URL in the browser, system-agnostic
     case $(uname -s) in
     Darwin) open='open' ;;
     MINGW*) open='start' ;;
@@ -412,7 +360,7 @@ function open_url_in_browser() {
     ${BROWSER:-"${open}"} "${URL}" || xdg-open "${URL}"
 }
 
-function utc_timestamp() {
+function utc_timestamp() {  # @doc: Print the current UTC timestamp in ISO format with microseconds, copy to clipboard
     date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
 }
 
