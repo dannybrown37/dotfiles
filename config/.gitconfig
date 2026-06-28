@@ -5,9 +5,29 @@
     sort = -committerdate
 [core]
     editor = nvim
+    pager = less -F
     excludesfile = ${HOME}/.gitignore_global
 [init]
     defaultBranch = main
+[pull]
+    ff = only
+[push]
+    default = current
+[fetch]
+    prune = true
+[rebase]
+    autostash = true
+[commit]
+    verbose = true
+[merge]
+    conflictStyle = diff3
+[diff]
+    tool = difftastic
+    colorMoved = default
+[difftool]
+    prompt = false
+[difftool "difftastic"]
+    cmd = difft "$LOCAL" "$REMOTE"
 [credential "https://github.com"]
     helper = !/usr/bin/gh auth git-credential
 [credential "https://gist.github.com"]
