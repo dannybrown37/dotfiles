@@ -50,6 +50,13 @@ repos:
         files: (config/\.bash_aliases|bin/.*\.sh|scripts/.*\.sh|README\.md)$
         pass_filenames: false
 
+      - id: sync-readme-structure
+        name: Sync README directory structure
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bash scripts/sync-readme-structure.sh && git add README.md'
+        language: system
+        files: (\.dirdesc|README\.md)$
+        pass_filenames: false
+
       - id: sync-readme-make
         name: Sync README make output
         entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bash scripts/sync-readme-make.sh && git add README.md'

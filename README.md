@@ -64,24 +64,23 @@ These commands require GPG keys and secrets:
 - `vsi`: Fuzzy find files and open in Neovim
 <!-- @doc:commands:end -->
 
-### Config Options
+### Directory Structure
 
-- In the `ahk/` directory, set up any number of AutoHotKey scripts:
-  - `hotstrings.ahk` for generalized shortcuts
-  - `secrets.ahk` for non-public shortcuts not to be committed
-  - etc.
-- In the `bin/` directory, configure scripts that use dynamic data and need to invoke other functions outside of the main function
-- In the `config/` directory, configure a Bash profile based on various settings:
-  - `.bashrc` holds a full config file that is symlinked to `~`
-  - `.gitconfig` holds git config info that is symlinked to `~`
-  - `.inputrc` for Bash prompt customizations
-  - `.ruff.toml` holds Python linting rules symlinked to `~` for global use
-  - `.secrets` holds data not for committing to git
-- In the `./nvim` directory, configure a Neovim profile.
-- In the `./.vscode` directory:
-  - `settings.json` for VS Code user settings
-  - `extensions.txt` for essential VS Code extensions
-- In the `./wsl/` directory, configure WSL-only settings and functions
+<!-- @doc:structure:start -->
+| Directory | Description |
+| --- | --- |
+| `ahk/` | AutoHotKey scripts for Windows (hotstrings, secrets) |
+| `aws/` | AWS helper scripts and configuration |
+| `bin/` | Sourced shell scripts loaded into the current session |
+| `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
+| `install/` | Bootstrap install scripts invoked via Make targets |
+| `nvim/` | Neovim configuration (lazy.nvim, Lua) |
+| `pass/` | password-store (pass) configuration and GPG setup |
+| `project_manager/` | Python CLI for GTD and 12-Week Year planning |
+| `scripts/` | Non-sourced standalone executable scripts |
+| `wsl/` | WSL-specific settings, functions, and komorebi config |
+
+<!-- @doc:structure:end -->
 
 ### Bash Customizations
 
