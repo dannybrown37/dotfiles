@@ -19,7 +19,7 @@ from gtd.notion.log import (
     _is_recurring,
 )
 from gtd.notion.models import ProjectEntry
-from gtd.notion.today import _get_today_entries
+from gtd.notion.entries import _get_today_entries
 
 
 # --- _handle_response: maps HTTP codes to actionable errors ---
@@ -135,7 +135,7 @@ def _make_page(
 
 
 class TestGetTodayEntries:
-    @patch('gtd.notion.today.query_database')
+    @patch('gtd.notion.entries.query_database')
     def test_excludes_incomplete_entries(self, mock_db):
         """Items missing context or next_step are filtered out client-side."""
         mock_db.return_value = [

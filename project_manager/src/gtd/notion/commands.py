@@ -1,12 +1,4 @@
-"""CLI commands for Notion integration.
-
-This module re-exports all public command functions for backward
-compatibility. The implementations live in submodules:
-  - entries.py: listing, selection, field editing
-  - today.py: today view and snooze
-  - log.py: logging and rescheduling
-  - review.py: weekly review, someday/maybe, brain dump
-"""
+"""Manage commands: mark done, defer, waiting for, notion dispatch."""
 
 from gtd.notion.client import (
     archive_page,
@@ -22,9 +14,7 @@ from gtd.notion.entries import (
     select_entry,
     show_triage,
 )
-from gtd.notion.log import (
-    _confirm_delete,
-)
+from gtd.notion.log import _confirm_delete
 from gtd.notion.models import ProjectEntry
 from gtd.notion.triage import process_triage
 from gtd.ui import CancelAction, prompt_input

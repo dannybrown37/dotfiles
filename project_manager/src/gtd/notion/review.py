@@ -2,6 +2,8 @@
 
 __all__ = ['brain_dump', 'review_someday', 'weekly_review']
 
+from gtd.models import TOTAL_WEEKS, Goal, Tactic
+from gtd.notion.capture import capture_item
 from gtd.notion.client import (
     archive_page,
     build_property_update,
@@ -18,8 +20,20 @@ from gtd.notion.entries import (
 )
 from gtd.notion.log import _confirm_delete, _infer_cadence
 from gtd.notion.models import ProjectEntry
-from gtd.notion.triage import process_triage
-from gtd.ui import fzf_on_a_list, pause, prompt_input
+from gtd.notion.triage import _get_triage_entries, process_triage
+from gtd.storage import (
+    ensure_dirs,
+    get_stored_goal_names,
+    load_goal,
+    save_goal,
+)
+from gtd.ui import (
+    fzf_on_a_list,
+    pause,
+    prompt_input,
+    score_indicator,
+    score_pct,
+)
 
 
 def review_someday() -> None:  # noqa: C901
@@ -94,8 +108,6 @@ def review_someday() -> None:  # noqa: C901
 
 def brain_dump() -> None:
     """Rapid-fire capture loop — get everything out of your head."""
-    from gtd.notion.capture import capture_item  # noqa: PLC0415
-
     print('\n── 🧠 Brain Dump ──')
     print('  Get it all out. Capture everything.\n')
 
@@ -118,10 +130,6 @@ def brain_dump() -> None:
 
 def _review_get_clear() -> None:
     """Phase 1: Get Clear — empty inbox."""
-    from gtd.notion.triage import (  # noqa: PLC0415
-        _get_triage_entries,
-    )
-
     print('─── Phase 1: Get Clear ───')
     print('  Goal: Empty your inbox. Process every item.\n')
 
@@ -254,8 +262,6 @@ def _review_get_creative() -> None:
     print('─── Phase 3: Get Creative ───')
     print('  Goal: Brain dump. Any new projects, ideas, or someday/maybes?\n')
 
-    from gtd.notion.capture import capture_item  # noqa: PLC0415
-
     captured = 0
     while True:
         action = fzf_on_a_list(
@@ -275,18 +281,6 @@ def _review_get_creative() -> None:
 
 def _review_check_goals() -> None:  # noqa: C901, PLR0912, PLR0915
     """Phase 0: Check 12-Week Year goals — local + Notion."""
-    from gtd.models import TOTAL_WEEKS, Goal, Tactic  # noqa: PLC0415
-    from gtd.storage import (  # noqa: PLC0415
-        ensure_dirs,
-        get_stored_goal_names,
-        load_goal,
-        save_goal,
-    )
-    from gtd.ui import (  # noqa: PLC0415
-        score_indicator,
-        score_pct,
-    )
-
     print('─── Phase 0: Check Goals ───')
     print('  Goal: Review 12-Week Year execution. Score if needed.\n')
 
