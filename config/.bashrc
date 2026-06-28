@@ -435,10 +435,6 @@ source "$DOTFILES_DIR"/config/.bash_aliases
 ## Language-specific configuration
 ##
 
-NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
 . "/home/danny/.deno/env"
 
 export GOROOT="/usr/local/go"

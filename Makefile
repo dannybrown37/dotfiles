@@ -6,7 +6,7 @@ help:
 	@echo "Bootstrap scripts:"
 	@echo "  bash            Install Bash profile (tmux, apt packages, etc.)"
 	@echo "  python          Install Python environment (uv, select uv tools)"
-	@echo "  node            Install Node.js environment (nvm, Node 22, select global packages)"
+	@echo "  node            Install Node.js environment (n, Node 22, select global packages)"
 	@echo "  deno            Install Deno 2"
 	@echo "  golang          Install Go environment (latest Golang version)"
 	@echo "  rust            Install Rust environment (latest Rust version, select global packages)"
