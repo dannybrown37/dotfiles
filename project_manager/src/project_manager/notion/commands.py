@@ -1,6 +1,7 @@
 """CLI commands for Notion integration."""
 
 import json as json_mod
+import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -8,6 +9,7 @@ from pathlib import Path
 from dateutil import parser as dateparser
 
 from project_manager.notion.client import (
+    append_page_note,
     archive_page,
     build_property_update,
     get_page_body,
@@ -425,17 +427,22 @@ def select_entry(
             '/children"\n'
             '    h = {"Authorization": f"Bearer {token}",'
             ' "Notion-Version": "2022-06-28"}\n'
+            '    prefixes = {"paragraph": "", '
+            '"bulleted_list_item": "• ",'
+            ' "numbered_list_item": "· ",'
+            ' "to_do": "☐ "}\n'
             '    try:\n'
             '        resp = httpx.get(url, headers=h)\n'
             '        blocks = resp.json().get("results", [])\n'
             '        lines = []\n'
             '        for b in blocks:\n'
-            '            if b["type"] == "paragraph":\n'
-            '                texts = b["paragraph"]["rich_text"]\n'
+            '            bt = b["type"]\n'
+            '            if bt in prefixes:\n'
+            '                texts = b[bt].get("rich_text", [])\n'
             '                c = " ".join('
             't["plain_text"] for t in texts).strip()\n'
             '                if c:\n'
-            '                    lines.append(c)\n'
+            '                    lines.append(prefixes[bt] + c)\n'
             '        body = chr(10).join(lines)\n'
             '    except Exception:\n'
             '        body = ""\n'
@@ -451,10 +458,11 @@ def select_entry(
         )
 
     try:
+        python = sys.executable
         selection = fzf_on_a_list(
             headers,
             prompt=prompt,
-            preview=f'python3 {script_path} {{}}',
+            preview=f'{python} {script_path} {{}}',
         )
     finally:
         Path(data_path).unlink(missing_ok=True)
@@ -507,6 +515,7 @@ def _edit_entry_fields(entry: ProjectEntry) -> None:
     fields = fzf_on_a_list(
         [
             'Next actionable step',
+            'Add a note',
             'Context',
             'Status',
             'Due date',
@@ -519,9 +528,18 @@ def _edit_entry_fields(entry: ProjectEntry) -> None:
     if not fields:
         return
 
-    kwargs = _collect_field_updates(entry, fields)
+    if 'Add a note' in fields:
+        note = prompt_input('Note: ')
+        if note:
+            append_page_note(entry.page_id, note)
+            print(f'  ✓ Note added to "{entry.header.strip()}"')
+
+    prop_fields = [f for f in fields if f != 'Add a note']
+    if not prop_fields:
+        return
+
+    kwargs = _collect_field_updates(entry, prop_fields)
     if not kwargs:
-        print('  Nothing to update.')
         return
 
     props = build_property_update(**kwargs)

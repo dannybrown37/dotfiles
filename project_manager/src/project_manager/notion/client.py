@@ -92,6 +92,27 @@ def update_page(page_id: str, properties: dict) -> dict:
     return response.json()
 
 
+BLOCK_PREFIXES = {
+    'paragraph': '',
+    'bulleted_list_item': '• ',
+    'numbered_list_item': '· ',
+    'to_do': '☐ ',
+}
+
+
+def _extract_block_text(block: dict) -> str | None:
+    """Extract text from a supported block type."""
+    btype = block['type']
+    prefix = BLOCK_PREFIXES.get(btype)
+    if prefix is None:
+        return None
+    texts = block[btype].get('rich_text', [])
+    content = ' '.join(t['plain_text'] for t in texts).strip()
+    if not content:
+        return None
+    return f'{prefix}{content}'
+
+
 def get_page_body(page_id: str) -> str:
     """Fetch the text content from a page's body blocks."""
     url = f'{NOTION_API_URL}/blocks/{page_id}/children'
@@ -100,12 +121,29 @@ def get_page_body(page_id: str) -> str:
     blocks = response.json().get('results', [])
     lines = []
     for block in blocks:
-        if block['type'] == 'paragraph':
-            texts = block['paragraph']['rich_text']
-            content = ' '.join(t['plain_text'] for t in texts).strip()
-            if content:
-                lines.append(content)
+        text = _extract_block_text(block)
+        if text is not None:
+            lines.append(text)
     return '\n'.join(lines)
+
+
+def append_page_note(page_id: str, text: str) -> dict:
+    """Append a paragraph block to a page's body."""
+    url = f'{NOTION_API_URL}/blocks/{page_id}/children'
+    payload = {
+        'children': [
+            {
+                'object': 'block',
+                'type': 'paragraph',
+                'paragraph': {
+                    'rich_text': [{'text': {'content': text}}],
+                },
+            },
+        ],
+    }
+    response = httpx.patch(url, headers=_headers(), json=payload)
+    response.raise_for_status()
+    return response.json()
 
 
 def build_property_update(
