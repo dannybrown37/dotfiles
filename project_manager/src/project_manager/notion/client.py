@@ -60,3 +60,64 @@ def query_database(
             payload['start_cursor'] = data['next_cursor']
 
     return all_results
+
+
+def get_database_schema(
+    *,
+    database_id: str | None = None,
+) -> dict:
+    """Fetch database schema (properties and their options)."""
+    if database_id is None:
+        database_id = get_projects_db_id()
+    url = f'{NOTION_API_URL}/databases/{database_id}'
+    response = httpx.get(url, headers=_headers())
+    response.raise_for_status()
+    return response.json()
+
+
+def get_select_options(property_name: str) -> list[str]:
+    """Get available options for a select property."""
+    schema = get_database_schema()
+    prop = schema['properties'].get(property_name, {})
+    options = prop.get('select', {}).get('options', [])
+    return [o['name'] for o in options]
+
+
+def update_page(page_id: str, properties: dict) -> dict:
+    """Update a Notion page's properties."""
+    url = f'{NOTION_API_URL}/pages/{page_id}'
+    payload = {'properties': properties}
+    response = httpx.patch(url, headers=_headers(), json=payload)
+    response.raise_for_status()
+    return response.json()
+
+
+def build_property_update(
+    *,
+    status: str | None = None,
+    context: str | None = None,
+    next_step: str | None = None,
+    due_date: str | None = None,
+    follow_up_date: str | None = None,
+) -> dict:
+    """Build a properties dict for a page update."""
+    props: dict = {}
+    if status is not None:
+        props['Status'] = {'select': {'name': status}}
+    if context is not None:
+        props['Context'] = {'select': {'name': context}}
+    if next_step is not None:
+        props['Next Actionable Step'] = {
+            'rich_text': [{'text': {'content': next_step}}],
+        }
+    if due_date is not None:
+        if due_date == '':
+            props['Due Date'] = {'date': None}
+        else:
+            props['Due Date'] = {'date': {'start': due_date}}
+    if follow_up_date is not None:
+        if follow_up_date == '':
+            props['Follow-Up Date'] = {'date': None}
+        else:
+            props['Follow-Up Date'] = {'date': {'start': follow_up_date}}
+    return props
