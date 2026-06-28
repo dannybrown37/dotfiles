@@ -378,6 +378,8 @@ if [[ -f "$HOME/.cargo/env" ]]; then
     . "$HOME/.cargo/env"
 fi
 
+bind -f "${HOME}/.inputrc"
+
 if [[ -f "$HOME/.atuin/bin/env" ]]; then
     . "$HOME/.atuin/bin/env"
     [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
@@ -392,8 +394,6 @@ fi
 ##
 ## Bespoke environmental stuff
 ##
-
-bind -f "${HOME}/.inputrc"
 
 tmux source-file ~/.tmux.conf 2>/dev/null
 
