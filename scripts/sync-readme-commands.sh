@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 README="${ROOT}/README.md"
 ALIASES="${ROOT}/config/.bash_aliases"
+BASHRC="${ROOT}/config/.bashrc"
 BIN_DIR="${ROOT}/bin"
 SCRIPTS_DIR="${ROOT}/scripts"
 
@@ -24,6 +25,18 @@ while IFS= read -r line; do
         docs+="- \`${name}\`: ${desc}"$'\n'
     fi
 done < "$ALIASES"
+
+while IFS= read -r line; do
+    if [[ "$line" =~ ^[[:space:]]*alias[[:space:]]+([a-zA-Z0-9_-]+)=.*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
+        name="${BASH_REMATCH[1]}"
+        desc="${BASH_REMATCH[2]}"
+        docs+="- \`${name}\`: ${desc}"$'\n'
+    elif [[ "$line" =~ ^[[:space:]]*(function[[:space:]]+)?([a-zA-Z0-9_-]+)\(\).*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
+        name="${BASH_REMATCH[2]}"
+        desc="${BASH_REMATCH[3]}"
+        docs+="- \`${name}\`: ${desc}"$'\n'
+    fi
+done < "$BASHRC"
 
 for dir in "$BIN_DIR" "$SCRIPTS_DIR"; do
     [[ -d "$dir" ]] || continue
