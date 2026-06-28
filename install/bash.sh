@@ -9,7 +9,6 @@ apt_packages=(
     bash-completion
     bat
     cowsay
-    cron
     curl
     faker
     fortune
@@ -51,16 +50,6 @@ for package in "${apt_packages[@]}"; do
         sudo apt install -y "${package}"
     fi
 done
-
-##
-## Set up cron and cron jobs from repo
-##
-
-sudo systemctl enable cron
-crontab "$HOME/projects/dotfiles/cron/jobs.crontab"
-echo "Cron jobs have been set up from dotfiles."
-crontab -l
-mkdir "$HOME/cron_logs"
 
 ##
 ## Install zoxide, per creator, Debian/Ubuntu have old versions in apt
