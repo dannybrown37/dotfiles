@@ -55,6 +55,7 @@ nvim:
 
 vscode:
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
+	bash -c ". $(root_dir)/.vscode/sync_vsc_settings.sh"
 
 all: bash python deno node golang rust nvim vscode
 
