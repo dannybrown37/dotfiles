@@ -82,24 +82,29 @@ def list_12_week_entries(*, verbose: bool = False) -> None:
         print('No 12-Week Goal contexts found.')
         return
 
+    filter_obj: dict
     if len(goal_contexts) == 1:
-        list_entries(context=goal_contexts[0], verbose=verbose)
+        filter_obj = {
+            'property': 'Context',
+            'select': {'equals': goal_contexts[0]},
+        }
     else:
-        # Multiple goal contexts — query with OR filter
         filter_obj = {
             'or': [
                 {'property': 'Context', 'select': {'equals': c}}
                 for c in goal_contexts
             ],
         }
-        pages = query_database(filter_obj=filter_obj)
-        entries = [ProjectEntry.from_page(p) for p in pages]
-        for ctx in goal_contexts:
-            group = [e for e in entries if e.context == ctx]
-            if group:
-                print(f'\n── {ctx} ({len(group)}) ──')
-                print(format_entry_list(group, verbose=verbose))
-        print()
+
+    pages = query_database(filter_obj=filter_obj)
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    for ctx in sorted(goal_contexts):
+        group = [e for e in entries if e.context == ctx]
+        if group:
+            goal_name = ctx.removeprefix('12-Week Goal:').strip()
+            print(f'\n── 🎯 {goal_name} ({len(group)}) ──')
+            print(format_entry_list(group, verbose=verbose))
+    print()
 
 
 def show_triage(*, verbose: bool = False) -> None:
@@ -957,12 +962,136 @@ def _review_get_creative() -> None:
         print('  No new items captured.\n')
 
 
+def _review_check_goals() -> None:  # noqa: C901, PLR0912, PLR0915
+    """Phase 0: Check 12-Week Year goals — local + Notion."""
+    from gtd.models import TOTAL_WEEKS  # noqa: PLC0415
+    from gtd.storage import (  # noqa: PLC0415
+        ensure_dirs,
+        get_stored_goal_names,
+        load_goal,
+        save_goal,
+    )
+    from gtd.ui import (  # noqa: PLC0415
+        score_indicator,
+        score_pct,
+    )
+
+    print('─── Phase 0: Check Goals ───')
+    print('  Goal: Review 12-Week Year execution. Score if needed.\n')
+
+    ensure_dirs()
+    local_names = get_stored_goal_names()
+
+    # Fetch Notion items whose Context starts with "12-Week Goal:"
+    notion_goal_groups: dict[str, list[ProjectEntry]] = {}
+    try:
+        contexts = get_select_options('Context')
+        goal_contexts = [c for c in contexts if c.startswith('12-Week Goal')]
+        if goal_contexts:
+            pages = query_database(
+                filter_obj={
+                    'or': [
+                        {
+                            'property': 'Context',
+                            'select': {'equals': c},
+                        }
+                        for c in goal_contexts
+                    ],
+                },
+            )
+            for p in pages:
+                entry = ProjectEntry.from_page(p)
+                notion_goal_groups.setdefault(
+                    entry.context,
+                    [],
+                ).append(entry)
+    except SystemExit:
+        pass
+    except Exception as exc:
+        print(f'  (Notion query failed: {exc})\n')
+
+    if not local_names and not notion_goal_groups:
+        print('  No 12-Week Year goals configured.\n')
+        return
+
+    # Show local goals with scoring
+    goals_to_score = []
+    for name in local_names:
+        goal = load_goal(name)
+        week = goal.current_week()
+        print(f'  📊 {goal.name}')
+        print(f'     {goal.progress_bar()}')
+
+        ex, tot = goal.overall_score()
+        if tot > 0:
+            pct = score_pct(ex, tot)
+            indicator = score_indicator(ex / tot)
+            print(f'     {indicator} Execution: {pct} ({ex}/{tot})')
+        else:
+            print('     No scores yet')
+
+        wk_key = str(week)
+        unscored = [t for t in goal.tactics if wk_key not in t.weekly_scores]
+        if unscored and not goal.is_complete:
+            print(
+                f'     ⚠ Week {week}/{TOTAL_WEEKS}: '
+                f'{len(unscored)} tactic(s) unscored',
+            )
+            goals_to_score.append((goal, week))
+        print()
+
+    # Show Notion 12-Week Goal groups
+    for ctx, entries in sorted(notion_goal_groups.items()):
+        goal_name = ctx.removeprefix('12-Week Goal:').strip()
+        print(f'  🎯 {goal_name} (Notion, {len(entries)} items)')
+        for entry in entries:
+            due = f' (due {entry.due_date})' if entry.due_date else ''
+            print(f'     • {entry.header.strip()}{due}')
+        print()
+
+    # Offer to score local goals
+    if not goals_to_score:
+        return
+
+    action = fzf_on_a_list(
+        ['Score current week', 'Skip scoring'],
+        prompt='12-Week Goals',
+    )
+    if action != 'Score current week':
+        return
+
+    for goal, week in goals_to_score:
+        wk_key = str(week)
+        print(f'\n  ── {goal.name} (Week {week}) ──\n')
+        max_len = max(len(t.description) for t in goal.tactics)
+        for tactic in goal.tactics:
+            current = tactic.weekly_scores.get(wk_key)
+            if current is not None:
+                continue
+            padded = tactic.description.ljust(max_len)
+            answer = prompt_input(
+                f'  {padded}  | score 1-10: ',
+            )
+            if answer and answer.isdigit():
+                score = max(1, min(10, int(answer)))
+                tactic.weekly_scores[wk_key] = score
+        save_goal(goal)
+
+        sc, mx = goal.week_score(week)
+        if mx > 0:
+            pct = score_pct(sc, mx)
+            print(f'\n  Week {week}: {pct} ({sc}/{mx})')
+    print()
+
+
 def weekly_review() -> None:
-    """Guided GTD weekly review: Get Clear → Get Current → Get Creative."""
+    """Guided weekly review: Goals → Clear → Current → Creative."""
     print('\n══════════════════════════════════')
     print('       📋 GTD Weekly Review')
     print('══════════════════════════════════\n')
 
+    _review_check_goals()
+    pause('Press Enter to continue to next step...')
     _review_get_clear()
     pause('Press Enter to continue to next step...')
     _review_get_current()
