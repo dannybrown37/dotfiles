@@ -412,6 +412,15 @@ def _infer_reschedule_days(header: str) -> int | None:
     return None
 
 
+def _infer_cadence(header: str) -> str:
+    """Infer cadence string from header prefix, default 'weekly'."""
+    lowered = header.lower().strip()
+    for cadence in _CADENCE_DAYS:
+        if lowered.startswith(f'{cadence}:'):
+            return cadence
+    return 'weekly'
+
+
 def _is_recurring(entry: ProjectEntry) -> bool:
     """Check if an entry is a recurring item."""
     return _infer_reschedule_days(entry.header) is not None
@@ -1039,7 +1048,7 @@ def _review_get_creative() -> None:
 
 def _review_check_goals() -> None:  # noqa: C901, PLR0912, PLR0915
     """Phase 0: Check 12-Week Year goals — local + Notion."""
-    from gtd.models import TOTAL_WEEKS  # noqa: PLC0415
+    from gtd.models import TOTAL_WEEKS, Goal, Tactic  # noqa: PLC0415
     from gtd.storage import (  # noqa: PLC0415
         ensure_dirs,
         get_stored_goal_names,
@@ -1136,12 +1145,58 @@ def _review_check_goals() -> None:  # noqa: C901, PLR0912, PLR0915
         print()
 
     # Show Notion 12-Week Goal groups
+    # Auto-create local goals for Notion groups that don't exist locally
+    local_set = {n.lower() for n in local_names}
     for ctx, entries in sorted(notion_goal_groups.items()):
         goal_name = ctx.removeprefix('12-Week Goal:').strip()
+        if goal_name.lower() in local_set:
+            continue
+
         print(f'  🎯 {goal_name} (Notion, {len(entries)} items)')
         for entry in entries:
             due = f' (due {entry.due_date})' if entry.due_date else ''
             print(f'     • {entry.header.strip()}{due}')
+
+        print(f'\n  ⚠ No local scoring file for "{goal_name}"')
+        create = fzf_on_a_list(
+            ['Create local goal for scoring', 'Skip'],
+            prompt=f'"{goal_name}"',
+        )
+        if create and create.startswith('Create'):
+            tactics = []
+            for entry in entries:
+                header = entry.header.strip()
+                cadence = _infer_cadence(header)
+                tactics.append(
+                    Tactic(
+                        description=header,
+                        reminder_cadence=cadence,
+                    )
+                )
+
+            # Sync dates with existing local goals if any
+            if local_names:
+                ref = load_goal(local_names[0])
+                goal = Goal(
+                    name=goal_name,
+                    description=ctx,
+                    start_date=ref.start_date,
+                    end_date=ref.end_date,
+                    tactics=tactics,
+                )
+            else:
+                goal = Goal.new(
+                    name=goal_name,
+                    description=ctx,
+                )
+                goal.tactics = tactics
+
+            save_goal(goal)
+            week = goal.current_week()
+            print(
+                f'  ✓ Created "{goal_name}" with {len(tactics)} tactic(s)',
+            )
+            goals_to_score.append((goal, week))
         print()
 
     # Offer to score local goals
