@@ -259,29 +259,104 @@ def snooze_today() -> None:
     count = 0
     for entry in actionable:
         if entry.header.strip() in selected_set:
-            edit = prompt_input(
-                f'  Edit notes for "{entry.header.strip()}"? (y/N): ',
-            )
-            if edit and edit.lower().startswith('y'):
-                body = get_page_body(entry.page_id)
-                editor = os.environ.get('EDITOR', 'nvim')
-                fd, tmp_path = tempfile.mkstemp(suffix='.md')
-                with open(fd, 'w') as f:  # noqa: PTH123
-                    f.write(body)
-                subprocess.run(  # noqa: S603
-                    [editor, tmp_path],
-                    check=False,
-                )
-                new_body = Path(tmp_path).read_text()
-                Path(tmp_path).unlink(missing_ok=True)
-                if new_body != body:
-                    replace_page_body(entry.page_id, new_body)
             props = build_property_update(follow_up_date=tomorrow)
             update_page(entry.page_id, props)
             count += 1
 
     suffix = 's' if count != 1 else ''
     print(f'✓ Snoozed {count} item{suffix} until {tomorrow}')
+
+
+_CADENCE_DAYS = {
+    'daily': 1,
+    'weekly': 7,
+    '2x/week': 3,
+    '3x/week': 2,
+}
+
+
+def _infer_reschedule_days(header: str) -> int | None:
+    """Infer reschedule interval from header prefix like 'Daily:' etc."""
+    lowered = header.lower().strip()
+    for cadence, days in _CADENCE_DAYS.items():
+        if lowered.startswith(f'{cadence}:'):
+            return days
+    return None
+
+
+def log_and_reschedule() -> None:
+    """Log a note and reschedule recurring items."""
+    today_str = datetime.now().strftime('%Y-%m-%d')
+
+    filter_obj = {
+        'and': [
+            {'property': 'Status', 'select': {'equals': 'Current Project'}},
+            {
+                'or': [
+                    {
+                        'property': 'Follow-Up Date',
+                        'date': {'on_or_before': today_str},
+                    },
+                    {
+                        'property': 'Follow-Up Date',
+                        'date': {'is_empty': True},
+                    },
+                ],
+            },
+        ],
+    }
+
+    pages = query_database(filter_obj=filter_obj)
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    actionable = [e for e in entries if e.context and e.next_step]
+
+    if not actionable:
+        print('Nothing actionable today.')
+        return
+
+    entry = select_entry(actionable, prompt='Log & Reschedule')
+    if not entry:
+        return
+
+    # Open editor for the note
+    body = get_page_body(entry.page_id)
+    editor = os.environ.get('EDITOR', 'nvim')
+    fd, tmp_path = tempfile.mkstemp(suffix='.md')
+    with open(fd, 'w') as f:  # noqa: PTH123
+        f.write(body)
+    subprocess.run(  # noqa: S603
+        [editor, tmp_path],
+        check=False,
+    )
+    new_body = Path(tmp_path).read_text()
+    Path(tmp_path).unlink(missing_ok=True)
+    if new_body != body:
+        replace_page_body(entry.page_id, new_body)
+        print(f'  ✓ Notes updated for "{entry.header.strip()}"')
+
+    # Infer or ask for reschedule date
+    inferred_days = _infer_reschedule_days(entry.header)
+    if inferred_days:
+        next_date = (datetime.now() + timedelta(days=inferred_days)).strftime(
+            '%Y-%m-%d'
+        )
+        suffix = 's' if inferred_days != 1 else ''
+        print(
+            f'  Rescheduling in {inferred_days} day{suffix} ({next_date})',
+        )
+    else:
+        date_input = prompt_input(
+            'Reschedule to (e.g. tomorrow, Monday, Jul 15): ',
+        )
+        if not date_input:
+            return
+        next_date = _parse_date_input(date_input)
+        if not next_date:
+            return
+
+    props = build_property_update(follow_up_date=next_date)
+    update_page(entry.page_id, props)
+    print(f'  ✓ "{entry.header.strip()}" → {next_date}')
 
 
 def review_someday() -> None:  # noqa: C901
