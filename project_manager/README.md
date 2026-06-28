@@ -67,8 +67,10 @@ Opens the fzf-powered GTD menu:
 ### GTD subcommands
 
 ```bash
-gtd triage        # Process inbox items
-gtd review        # Guided weekly review ritual
+gtd init             # Set up a new GTD Notion database
+gtd init --upgrade   # Add missing properties/options to existing DB
+gtd triage           # Process inbox items
+gtd review           # Guided weekly review ritual
 gtd goals         # Show 12-week goal entries
 gtd filter work   # Filter projects by context
 gtd today         # Show today's actionable items
@@ -95,7 +97,7 @@ python scripts/update_readme.py
 
 ## Data storage
 
-- **GTD**: Notion database (configured via `NOTION_TOKEN` and `NOTION_DATABASE_ID` env vars)
+- **GTD**: Notion database (configured via `gtd init` or `NOTION_NOTES_TOKEN` / `NOTION_PROJECTS_DB_ID` env vars)
 - **12-Week Year**: JSON files in `~/.local/share/project_manager/`
 
 ## Project structure

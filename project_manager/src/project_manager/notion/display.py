@@ -1,13 +1,7 @@
 """Display formatting for Notion entries."""
 
 from project_manager.notion.models import ProjectEntry
-
-
-STATUS_ICONS = {
-    'Current Project': '🟢',
-    'Triage': '🟣',
-    'Someday/Maybe': '💭',
-}
+from project_manager.notion.schema import STATUS_ICONS
 
 
 def format_entry(entry: ProjectEntry, *, verbose: bool = False) -> str:

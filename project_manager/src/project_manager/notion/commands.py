@@ -59,7 +59,9 @@ def list_entries(
 
     # Group by status
     if not status:
-        for s in ('Current Project', 'Triage', 'Someday/Maybe'):
+        from project_manager.notion.schema import STATUSES  # noqa: PLC0415
+
+        for s in STATUSES:
             group = [e for e in entries if e.status == s]
             if group:
                 print(f'\n── {s} ({len(group)}) ──')
@@ -478,8 +480,10 @@ def _collect_field_updates(  # noqa: C901, PLR0912
             kwargs['context'] = ctx
 
     if 'Status' in fields:
+        from project_manager.notion.schema import STATUSES  # noqa: PLC0415
+
         status = fzf_on_a_list(
-            ['Current Project', 'Someday/Maybe'],
+            STATUSES,
             prompt=f'"{entry.header}" → Status',
         )
         if status:
@@ -639,17 +643,14 @@ def select_entry(
 
 def update_entry() -> None:
     """Interactively update fields on an existing project."""
+    from project_manager.notion.schema import STATUSES  # noqa: PLC0415
+
     pages = query_database(
         filter_obj={
             'or': [
-                {
-                    'property': 'Status',
-                    'select': {'equals': 'Current Project'},
-                },
-                {
-                    'property': 'Status',
-                    'select': {'equals': 'Someday/Maybe'},
-                },
+                {'property': 'Status', 'select': {'equals': s}}
+                for s in STATUSES
+                if s != 'Triage'
             ],
         },
     )
