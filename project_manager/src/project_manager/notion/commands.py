@@ -1,5 +1,7 @@
 """CLI commands for Notion integration."""
 
+from datetime import datetime
+
 from project_manager.notion.client import (
     get_select_options,
     query_database,
@@ -88,6 +90,61 @@ def list_12_week_entries(*, verbose: bool = False) -> None:
 def show_triage(*, verbose: bool = False) -> None:
     """Show items in Triage status."""
     list_entries(status='Triage', verbose=verbose)
+
+
+def list_today() -> None:
+    """Show actionable items for today.
+
+    Criteria: Current Project, has a context, has a next actionable step,
+    and Follow-Up Date is not in the future (or not set).
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    # Get Current Projects whose follow-up is today or earlier (or empty)
+    filter_obj = {
+        'and': [
+            {'property': 'Status', 'select': {'equals': 'Current Project'}},
+            {
+                'or': [
+                    {
+                        'property': 'Follow-Up Date',
+                        'date': {'on_or_before': today},
+                    },
+                    {
+                        'property': 'Follow-Up Date',
+                        'date': {'is_empty': True},
+                    },
+                ],
+            },
+        ],
+    }
+
+    pages = query_database(filter_obj=filter_obj)
+    entries = [ProjectEntry.from_page(p) for p in pages]
+
+    # Filter for items with both a context and a next step
+    actionable = [e for e in entries if e.context and e.next_step]
+
+    if not actionable:
+        print('\n  Nothing actionable today. Nice! 🎉\n')
+        return
+
+    # Group by context
+    contexts: dict[str, list[ProjectEntry]] = {}
+    for e in actionable:
+        contexts.setdefault(e.context, []).append(e)
+
+    print(
+        f'\n── Today ({len(actionable)} actionable) ──\n',
+    )
+    for ctx in sorted(contexts):
+        items = contexts[ctx]
+        print(f'  [{ctx}]')
+        for e in items:
+            due = f'  (due {e.due_date})' if e.due_date else ''
+            print(f'    • {e.header}{due}')
+            print(f'      → {e.next_step}')
+        print()
 
 
 def notion_command(args: list[str]) -> None:

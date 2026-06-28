@@ -61,6 +61,16 @@ def filter_context(ctx: click.Context, context: tuple[str, ...]) -> None:
 
 
 @cli.command()
+def today() -> None:
+    """Show actionable items for today."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        list_today,
+    )
+
+    list_today()
+
+
+@cli.command()
 @click.argument('header', nargs=-1)
 def capture(header: tuple[str, ...]) -> None:
     """Quick-capture an item to the GTD inbox.
@@ -82,6 +92,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901
     from project_manager.notion.commands import (  # noqa: PLC0415
         list_entries,
         list_12_week_entries,
+        list_today,
     )
     from project_manager.notion.capture import (  # noqa: PLC0415
         capture_item,
@@ -102,6 +113,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901
         sys.exit(1)
 
     menu_items = [
+        'Today',
         'View all projects',
         'Triage inbox',
         'Capture new item',
@@ -119,6 +131,9 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901
 
         try:
             match selection:
+                case 'Today':
+                    list_today()
+                    pause()
                 case 'View all projects':
                     list_entries(verbose=verbose)
                     pause()
