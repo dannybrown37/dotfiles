@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import httpx
 
 from gtd.notion.client import (
+    _handle_response,
     get_projects_db_id,
     get_token,
     NOTION_API_URL,
@@ -49,7 +50,7 @@ def _create_page(header: str, details: str = '') -> dict:
     }
 
     response = httpx.post(url, headers=headers, json=payload)
-    response.raise_for_status()
+    _handle_response(response)
     return response.json()
 
 

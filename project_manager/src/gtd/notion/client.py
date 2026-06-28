@@ -1,5 +1,6 @@
 import os
 import sys
+from http import HTTPStatus
 
 import httpx
 
@@ -8,6 +9,52 @@ from gtd.notion.config import get_config_value
 
 NOTION_API_URL = 'https://api.notion.com/v1'
 NOTION_VERSION = '2022-06-28'
+
+
+class NotionAPIError(Exception):
+    """Raised when a Notion API call fails with an actionable message."""
+
+    def __init__(self, message: str, status_code: int) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
+def _handle_response(response: httpx.Response) -> None:
+    """Check response and raise NotionAPIError with actionable messages."""
+    if response.is_success:
+        return
+    code = response.status_code
+    body = response.text
+    match code:
+        case HTTPStatus.UNAUTHORIZED:
+            msg = (
+                'Notion token is invalid or expired. '
+                'Run `gtd init` or check NOTION_NOTES_TOKEN.'
+            )
+        case HTTPStatus.FORBIDDEN:
+            msg = (
+                'Notion integration lacks permission for this resource. '
+                "Check your integration's capabilities and page sharing."
+            )
+        case HTTPStatus.NOT_FOUND:
+            msg = (
+                'Notion resource not found — it may have been deleted '
+                'or the integration lacks access. '
+                'Check NOTION_PROJECTS_DB_ID.'
+            )
+        case HTTPStatus.CONFLICT:
+            msg = (
+                'Conflict — the page was modified by another process. '
+                'Try again.'
+            )
+        case HTTPStatus.TOO_MANY_REQUESTS:
+            retry_after = response.headers.get('Retry-After', '?')
+            msg = f'Notion rate limit hit. Retry after {retry_after}s.'
+        case _ if code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+            msg = f'Notion server error ({code}). Try again later.'
+        case _:
+            msg = f'Notion API error {code}: {body[:200]}'
+    raise NotionAPIError(msg, code)
 
 
 def get_token() -> str:
@@ -58,7 +105,7 @@ def query_database(
     has_more = True
     while has_more:
         response = httpx.post(url, headers=_headers(), json=payload)
-        response.raise_for_status()
+        _handle_response(response)
         data = response.json()
         all_results.extend(data['results'])
         has_more = data.get('has_more', False)
@@ -77,7 +124,7 @@ def get_database_schema(
         database_id = get_projects_db_id()
     url = f'{NOTION_API_URL}/databases/{database_id}'
     response = httpx.get(url, headers=_headers())
-    response.raise_for_status()
+    _handle_response(response)
     return response.json()
 
 
@@ -94,7 +141,7 @@ def update_page(page_id: str, properties: dict) -> dict:
     url = f'{NOTION_API_URL}/pages/{page_id}'
     payload = {'properties': properties}
     response = httpx.patch(url, headers=_headers(), json=payload)
-    response.raise_for_status()
+    _handle_response(response)
     return response.json()
 
 
@@ -123,7 +170,7 @@ def get_page_body(page_id: str) -> str:
     """Fetch the text content from a page's body blocks."""
     url = f'{NOTION_API_URL}/blocks/{page_id}/children'
     response = httpx.get(url, headers=_headers())
-    response.raise_for_status()
+    _handle_response(response)
     blocks = response.json().get('results', [])
     lines = []
     for block in blocks:
@@ -148,7 +195,7 @@ def append_page_note(page_id: str, text: str) -> dict:
         ],
     }
     response = httpx.patch(url, headers=_headers(), json=payload)
-    response.raise_for_status()
+    _handle_response(response)
     return response.json()
 
 
@@ -156,7 +203,7 @@ def _delete_block(block_id: str) -> None:
     """Delete a single block."""
     url = f'{NOTION_API_URL}/blocks/{block_id}'
     response = httpx.delete(url, headers=_headers())
-    response.raise_for_status()
+    _handle_response(response)
 
 
 def _update_block_text(block_id: str, text: str) -> None:
@@ -168,7 +215,7 @@ def _update_block_text(block_id: str, text: str) -> None:
         },
     }
     response = httpx.patch(url, headers=_headers(), json=payload)
-    response.raise_for_status()
+    _handle_response(response)
 
 
 def replace_page_body(page_id: str, text: str) -> None:
@@ -179,7 +226,7 @@ def replace_page_body(page_id: str, text: str) -> None:
     """
     url = f'{NOTION_API_URL}/blocks/{page_id}/children'
     response = httpx.get(url, headers=_headers())
-    response.raise_for_status()
+    _handle_response(response)
     old_blocks = response.json().get('results', [])
 
     new_lines = text.split('\n') if text.strip() else []
@@ -215,11 +262,12 @@ def replace_page_body(page_id: str, text: str) -> None:
         ]
         for i in range(0, len(children), 100):
             batch = children[i : i + 100]
-            httpx.patch(
+            resp = httpx.patch(
                 url,
                 headers=_headers(),
                 json={'children': batch},
-            ).raise_for_status()
+            )
+            _handle_response(resp)
 
 
 def build_property_update(
@@ -261,5 +309,5 @@ def archive_page(page_id: str) -> dict:
     url = f'{NOTION_API_URL}/pages/{page_id}'
     payload = {'in_trash': True}
     response = httpx.patch(url, headers=_headers(), json=payload)
-    response.raise_for_status()
+    _handle_response(response)
     return response.json()
