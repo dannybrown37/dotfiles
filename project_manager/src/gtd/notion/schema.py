@@ -40,9 +40,6 @@ DB_SCHEMA: dict = {
     'Next Actionable Step': {
         'rich_text': {},
     },
-    'Details': {
-        'rich_text': {},
-    },
     'Due Date': {
         'date': {},
     },

@@ -14,7 +14,6 @@ class ProjectEntry:
     header: str
     status: str
     context: str
-    details: str
     next_step: str
     due_date: str | None
     follow_up_date: str | None
@@ -28,7 +27,6 @@ class ProjectEntry:
             header=_get_title(props.get('Header', {})),
             status=_get_select(props.get('Status', {})),
             context=_get_select(props.get('Context', {})),
-            details=_get_rich_text(props.get('Details', {})),
             next_step=_get_rich_text(
                 props.get('Next Actionable Step', {}),
             ),

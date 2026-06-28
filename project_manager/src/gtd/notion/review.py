@@ -140,8 +140,7 @@ def _review_get_clear() -> None:
             '',
         ]
         for item in triage_items:
-            detail = f'  {item.details}' if item.details else ''
-            summary_lines.append(f'  • {item.header.strip()}{detail}')
+            summary_lines.append(f'  • {item.header.strip()}')
         preview = _escape_for_shell('\n'.join(summary_lines))
 
         print(f'  ⚠ {len(triage_items)} item(s) in Triage\n')

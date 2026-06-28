@@ -105,8 +105,6 @@ def _entry_preview_text(
         f'Due:       {entry.due_date or "(none)"}',
         f'Follow-up: {entry.follow_up_date or "(none)"}',
     ]
-    if entry.details:
-        lines.append(f'Details:   {entry.details}')
     if body:
         lines.append('')
         lines.append('── Notes ──')

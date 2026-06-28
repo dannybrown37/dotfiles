@@ -128,7 +128,6 @@ def _make_page(
             'Next Actionable Step': {
                 'rich_text': [{'plain_text': next_step}] if next_step else [],
             },
-            'Details': {'rich_text': []},
             'Due Date': {'date': None},
             'Follow-Up Date': {'date': None},
         },
@@ -173,7 +172,6 @@ def _make_triage_page(
             'Next Actionable Step': {
                 'rich_text': [{'plain_text': next_step}] if next_step else [],
             },
-            'Details': {'rich_text': []},
             'Due Date': {'date': None},
             'Follow-Up Date': {'date': None},
         },
@@ -285,7 +283,6 @@ class TestCadenceInference:
             header='Daily: Meditate',
             status='Current Project',
             context='Home',
-            details='',
             next_step='Sit',
             due_date=None,
             follow_up_date=None,

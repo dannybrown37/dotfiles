@@ -14,7 +14,7 @@ from gtd.notion.client import (
 from gtd.ui import prompt_input
 
 
-def _create_page(header: str, details: str = '') -> dict:
+def _create_page(header: str) -> dict:
     """Create a new page in the Projects database with Triage status."""
     db_id = get_projects_db_id()
     url = f'{NOTION_API_URL}/pages'
@@ -39,10 +39,6 @@ def _create_page(header: str, details: str = '') -> dict:
             },
         },
     }
-    if details:
-        properties['Details'] = {
-            'rich_text': [{'text': {'content': details}}],
-        }
 
     payload = {
         'parent': {'database_id': db_id},
@@ -62,7 +58,5 @@ def capture_item(header: str | None = None) -> None:
             print('Nothing to capture.')
             return
 
-    details = prompt_input('Details (blank to skip): ') or ''
-
-    _create_page(header, details)
+    _create_page(header)
     print(f'✓ Captured: "{header}" → Triage')

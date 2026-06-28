@@ -12,8 +12,6 @@ def format_entry(entry: ProjectEntry, *, verbose: bool = False) -> str:
 
     if entry.next_step:
         lines.append(f'    Next: {entry.next_step}')
-    if verbose and entry.details:
-        lines.append(f'    Details: {entry.details[:80]}')
     if entry.due_date:
         lines.append(f'    Due: {entry.due_date}')
     if verbose and entry.follow_up_date:
