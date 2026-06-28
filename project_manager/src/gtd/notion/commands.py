@@ -299,6 +299,26 @@ def defer_entry() -> None:
     print(f'✓ "{entry.header}" deferred until {date_str}')
 
 
+def _edit_notes(entry: ProjectEntry) -> None:
+    """Open the editor to edit a page's notes."""
+    body = get_page_body(entry.page_id)
+    editor = os.environ.get('EDITOR', 'nvim')
+    fd, tmp_path = tempfile.mkstemp(suffix='.md')
+    with open(fd, 'w') as f:  # noqa: PTH123
+        f.write(body)
+    subprocess.run(  # noqa: S603
+        [editor, tmp_path],
+        check=False,
+    )
+    new_body = Path(tmp_path).read_text()
+    Path(tmp_path).unlink(missing_ok=True)
+    if new_body != body:
+        replace_page_body(entry.page_id, new_body)
+        print(f'  ✓ Notes updated for "{entry.header.strip()}"')
+    else:
+        print('  (no changes)')
+
+
 def set_waiting_for() -> None:
     """Move a current project to Waiting For status."""
     pages = query_database(
@@ -341,6 +361,8 @@ def set_waiting_for() -> None:
     if follow_up_date:
         msg += f' (follow up {follow_up_date})'
     print(msg)
+
+    _edit_notes(entry)
 
 
 def snooze_today() -> None:
@@ -819,21 +841,7 @@ def _edit_entry_fields(entry: ProjectEntry) -> None:
         return
 
     if 'Edit notes' in fields:
-        editor = os.environ.get('EDITOR', 'nvim')
-        fd, tmp_path = tempfile.mkstemp(suffix='.md')
-        with open(fd, 'w') as f:  # noqa: PTH123
-            f.write(body)
-        subprocess.run(  # noqa: S603
-            [editor, tmp_path],
-            check=False,
-        )
-        new_body = Path(tmp_path).read_text()
-        Path(tmp_path).unlink(missing_ok=True)
-        if new_body != body:
-            replace_page_body(entry.page_id, new_body)
-            print(f'  ✓ Notes updated for "{entry.header.strip()}"')
-        else:
-            print('  (no changes)')
+        _edit_notes(entry)
 
     prop_fields = [f for f in fields if f != 'Edit notes']
     if not prop_fields:
