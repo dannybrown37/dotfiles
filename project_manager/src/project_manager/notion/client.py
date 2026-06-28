@@ -218,6 +218,7 @@ def replace_page_body(page_id: str, text: str) -> None:
 
 def build_property_update(
     *,
+    name: str | None = None,
     status: str | None = None,
     context: str | None = None,
     next_step: str | None = None,
@@ -226,6 +227,8 @@ def build_property_update(
 ) -> dict:
     """Build a properties dict for a page update."""
     props: dict = {}
+    if name is not None:
+        props['Header'] = {'title': [{'text': {'content': name}}]}
     if status is not None:
         props['Status'] = {'select': {'name': status}}
     if context is not None:

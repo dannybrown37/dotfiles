@@ -454,6 +454,13 @@ def _collect_field_updates(  # noqa: C901, PLR0912
     """Prompt for updated values for the selected fields."""
     kwargs: dict = {}
 
+    if 'Name' in fields:
+        new_name = prompt_input(
+            f'Name (current: {entry.header.strip()}): ',
+        )
+        if new_name is not None:
+            kwargs['name'] = new_name
+
     if 'Next actionable step' in fields:
         step = prompt_input(
             f'Next step (current: {entry.next_step or "none"}): ',
@@ -671,6 +678,7 @@ def _edit_entry_fields(entry: ProjectEntry) -> None:
 
     fields = fzf_on_a_list(
         [
+            'Name',
             'Next actionable step',
             'Edit notes',
             'Context',
