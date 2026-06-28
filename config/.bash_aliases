@@ -1,17 +1,17 @@
 ## Misc. Aliases
 
 alias awsconfig='nvim ~/.aws/config'
-alias cb='tee >(xclip -selection clipboard)' # clip board
+alias cb='tee >(xclip -selection clipboard)' # @doc Copy stdin to clipboard
 alias du='du -h | sort -h'
 alias epoch='epoch_timestamp'
-alias llmrules='pcat ~/projects/dotfiles/bin/llm_rules.txt | cb >/dev/null && echo "Copied to clipboard"'
-alias llmedit='nvim ~/projects/dotfiles/bin/llm_rules.txt'
-alias pcb='xclip -selection clipboard -o' # print clip board
-alias url='open_url_in_browser'
+alias llmrules='pcat ~/projects/dotfiles/bin/llm_rules.txt | cb >/dev/null && echo "Copied to clipboard"' # @doc Copy LLM rules to clipboard
+alias llmedit='nvim ~/projects/dotfiles/bin/llm_rules.txt' # @doc Edit LLM rules in Neovim
+alias pcb='xclip -selection clipboard -o' # @doc Print clipboard contents
+alias url='open_url_in_browser' # @doc Open a URL in the system browser
 alias utc='utc_timestamp'
 alias uuid='generate_random_uuid_and_put_in_clipboard'
-alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # vim cheat
-alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim "{}"' # vim search interactive
+alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # @doc Vim cheatsheet fuzzy finder
+alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim "{}"' # @doc Fuzzy find files and open in Neovim
 
 # Tools I'm trying out
 
@@ -23,9 +23,9 @@ alias crocinstall='curl https://getcroc.schollz.com | bash'
 # Cargo package aliases
 
 if [[ -n "${ON_WINDOWS}" ]]; then
-    alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
-    alias beep='powershell.exe -c "[console]::beep(261, 300)"'  # c4
-    alias komo='make -C "${DOTFILES_DIR}" komo'
+    alias ahk='${DOTFILES_DIR}/ahk/ahk.sh' # @doc Run all AutoHotKey scripts
+    alias beep='powershell.exe -c "[console]::beep(261, 300)"'  # @doc Play a beep sound
+    alias komo='make -C "${DOTFILES_DIR}" komo' # @doc Reset komorebi window manager
 fi
 
 if [[ -f "${HOME}/.local/bin/zoxide" ]]; then
@@ -65,7 +65,7 @@ alias drp='deno run pytest'
 alias drpk='deno run pytest -k'
 
 # Bash
-alias src='source ~/.bashrc'
+alias src='source ~/.bashrc' # @doc Reload bash configuration
 
 # venv
 alias pmv='python -m venv .venv && source .venv/bin/activate'
@@ -77,7 +77,7 @@ alias newdotenv='echo "source .venv/bin/activate" >> .env && echo "echo \"$(base
 alias ga='git add'
 alias gaa='git add .'
 alias gap='git add -p'
-alias gb='git branch --sort=-committerdate | fzf | xargs git checkout'
+alias gb='git branch --sort=-committerdate | fzf | xargs git checkout' # @doc Fuzzy-find and checkout a git branch
 alias gc='git commit -m'
 alias gca='git commit --amend -m'
 alias gcb='git checkout -b'
@@ -108,7 +108,7 @@ alias glo='git log -1 --pretty=%B'
 alias gp='git push'
 alias gpf='git push -f'
 alias gpo='git push -u origin'
-alias gpup='git push -u origin HEAD && git open'
+alias gpup='git push -u origin HEAD && git open' # @doc Push branch and open PR in browser
 alias gpr='git pull rebase'
 alias gra='git rebase --abort'
 alias grc='git rebase --continue'
@@ -179,7 +179,7 @@ function ghpr() {
 alias editwslconf='sudo vi /etc/wsl.conf'
 
 # Tmux
-alias tms='tmux new -s Session || tmux attach -t Session'
+alias tms='tmux new -s Session || tmux attach -t Session' # @doc Start or attach to tmux Session
 alias tmd='tmux detach'
 alias tml='tmux ls'
 alias tmconf='tmux source-file ~/.tmux.conf'

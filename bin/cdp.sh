@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Cd to any file in ~/projects from anywhere
+# @doc Cd to any project directory from anywhere (with tab autocomplete)
 
 # Get a list of all directories in ~/projects and store them in an array
 PROJECTS_DIR="${HOME}/projects"
