@@ -36,7 +36,10 @@ def _parse_date_input(raw: str) -> str | None:
     if lowered in _RELATIVE_DAYS:
         result = datetime.now() + timedelta(days=_RELATIVE_DAYS[lowered])
         return result.strftime('%Y-%m-%d')
-    parsed = dateparser.parse(raw, fuzzy=True)
+    try:
+        parsed = dateparser.parse(raw, fuzzy=True)
+    except (ValueError, OverflowError):
+        parsed = None
     if parsed:
         return parsed.strftime('%Y-%m-%d')
     print(f'  Could not parse "{raw}", skipping.')
