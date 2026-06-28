@@ -25,6 +25,7 @@ alias crocinstall='curl https://getcroc.schollz.com | bash'
 if [[ -n "${ON_WINDOWS}" ]]; then
     alias ahk='${DOTFILES_DIR}/ahk/ahk.sh'
     alias beep='powershell.exe -c "[console]::beep(261, 300)"'  # c4
+    alias komo='make -C "${DOTFILES_DIR}" komo'
 fi
 
 if [[ -f "${HOME}/.local/bin/zoxide" ]]; then
