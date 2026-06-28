@@ -3,6 +3,9 @@
 from dataclasses import dataclass
 
 
+__all__ = ['ProjectEntry']
+
+
 @dataclass
 class ProjectEntry:
     """A single entry from the GTD Projects table."""

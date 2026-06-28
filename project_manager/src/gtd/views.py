@@ -2,6 +2,9 @@ import contextlib
 from datetime import datetime
 import subprocess
 
+
+__all__ = ['detailed_view', 'view_goal']
+
 from gtd.models import Goal, TOTAL_WEEKS
 from gtd.ui import score_indicator, score_pct
 

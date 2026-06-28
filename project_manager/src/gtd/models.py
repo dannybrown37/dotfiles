@@ -3,6 +3,16 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 
 
+__all__ = [
+    'SCORE_GREEN_THRESHOLD',
+    'SCORE_YELLOW_THRESHOLD',
+    'TOTAL_WEEKS',
+    'Goal',
+    'Tactic',
+    'Todo',
+    'Update',
+]
+
 TOTAL_WEEKS = 12
 SCORE_GREEN_THRESHOLD = 0.85
 SCORE_YELLOW_THRESHOLD = 0.65
