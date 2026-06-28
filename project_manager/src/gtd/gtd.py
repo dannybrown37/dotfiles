@@ -49,10 +49,31 @@ def triage() -> None:
         return
 
 
-@cli.command()
+@cli.group(invoke_without_command=True)
 @click.pass_context
 def goals(ctx: click.Context) -> None:
-    """Show 12-week goal entries."""
+    """12-Week Year goal tracking and scoring."""
+    if ctx.invoked_subcommand is None:
+        from gtd.cli import _interactive  # noqa: PLC0415
+
+        try:
+            _interactive()
+        except CancelAction:
+            return
+
+
+@goals.command(name='status')
+def goals_status() -> None:
+    """Print all goals' progress to stdout (no fzf needed)."""
+    from gtd.cli import _print_status  # noqa: PLC0415
+
+    _print_status()
+
+
+@goals.command(name='notion')
+@click.pass_context
+def goals_notion(ctx: click.Context) -> None:
+    """Show 12-week goal entries from Notion."""
     from gtd.notion.commands import (  # noqa: PLC0415
         list_12_week_entries,
     )
@@ -210,7 +231,6 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
     from gtd.notion.commands import (  # noqa: PLC0415
         brain_dump,
         list_entries,
-        list_12_week_entries,
         list_today,
         mark_done,
         defer_entry,
@@ -308,8 +328,9 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
                 case 'Review Someday/Maybe':
                     review_someday()
                 case '12-Week Goals':
-                    list_12_week_entries(verbose=verbose)
-                    pause()
+                    from gtd.cli import _interactive as goals_menu  # noqa: PLC0415
+
+                    goals_menu()
                 case 'Filter by context':
                     from gtd.notion.client import (  # noqa: PLC0415
                         get_select_options,
