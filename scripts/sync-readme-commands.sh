@@ -47,7 +47,7 @@ for dir in "$BIN_DIR" "$SCRIPTS_DIR"; do
     done
 done
 
-docs=$(echo "$docs" | sort)
+docs=$(echo "$docs" | sort | sed '/^$/d')
 
 start_line=$(grep -n "$MARKER_START" "$README" | head -1 | cut -d: -f1)
 end_line=$(grep -n "$MARKER_END" "$README" | head -1 | cut -d: -f1)
@@ -62,7 +62,8 @@ fi
     echo ""
     echo "| Command | Description | Source |"
     echo "| --- | --- | --- |"
-    echo "$docs"
+    printf "%s" "$docs"
+    echo ""
     tail -n +"$end_line" "$README"
 } > "${README}.tmp"
 
