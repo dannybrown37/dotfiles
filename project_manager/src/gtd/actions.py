@@ -32,13 +32,19 @@ def edit_goal(goal: Goal) -> Goal:
     name = prompt_input('New name (Enter to keep): ')
     print(f'  Current description: {goal.description}')
     desc = prompt_input('New description (Enter to keep): ')
+    old_path = (
+        OUTPUT_PATH / f'{_safe_filename(goal.name)}.json' if name else None
+    )
     if name:
-        old_path = OUTPUT_PATH / f'{_safe_filename(goal.name)}.json'
         goal.name = name
-        old_path.unlink(missing_ok=True)
     if desc:
         goal.description = desc
     save_goal(goal)
+    if (
+        old_path
+        and old_path != OUTPUT_PATH / f'{_safe_filename(goal.name)}.json'
+    ):
+        old_path.unlink(missing_ok=True)
     print('\n✓ Goal updated')
     return goal
 
