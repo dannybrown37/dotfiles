@@ -28,6 +28,8 @@ Bootstrap scripts:
   vscode          Install VS Code extensions and settings
   all             Install all of the above
   gnome           Install Gnome extensions
+  windows         Install Windows extensions (NerdFonts and Komorebi)
+  komo            Reset komorebi (useful for after configuration changes)
 
 These commands require GPG keys and secrets:
   insert-ahk      Push local ahk secrets to password-store
