@@ -192,10 +192,7 @@ def list_today() -> None:  # noqa: C901
             case 'Update fields':
                 _edit_entry_fields(entry)
             case _ if action.startswith('Mark done'):
-                confirm = prompt_input(
-                    f'  Delete "{entry.header.strip()}"? (y/N): ',
-                )
-                if confirm and confirm.lower() == 'y':
+                if _confirm_delete(entry):
                     archive_page(entry.page_id)
                     print(
                         f'  ✓ "{entry.header.strip()}" → deleted',
@@ -233,11 +230,7 @@ def mark_done() -> None:
     if not entry:
         return
 
-    confirm = prompt_input(
-        f'  Delete "{entry.header.strip()}"? '
-        "This moves it to Notion's trash. (y/N): ",
-    )
-    if not confirm or confirm.lower() != 'y':
+    if not _confirm_delete(entry):
         print('  Cancelled.')
         return
 
@@ -323,6 +316,24 @@ def _infer_reschedule_days(header: str) -> int | None:
         if lowered.startswith(f'{cadence}:'):
             return days
     return None
+
+
+def _is_recurring(entry: ProjectEntry) -> bool:
+    """Check if an entry is a recurring item."""
+    return _infer_reschedule_days(entry.header) is not None
+
+
+def _confirm_delete(entry: ProjectEntry) -> bool:
+    """Prompt for delete confirmation. Stricter for recurring items."""
+    name = entry.header.strip()
+    if _is_recurring(entry):
+        print(f'  ⚠ "{name}" is a recurring item!')
+        confirm = prompt_input(
+            '  Type YES to permanently delete: ',
+        )
+        return confirm == 'YES'
+    confirm = prompt_input(f'  Delete "{name}"? (y/N): ')
+    return bool(confirm and confirm.lower() == 'y')
 
 
 def _log_and_reschedule_entry(entry: ProjectEntry) -> None:
@@ -431,10 +442,7 @@ def review_someday() -> None:  # noqa: C901
             print(f'  ✓ Activated: {entry.header.strip()}')
             activated += 1
         elif action.startswith('Drop'):
-            confirm = prompt_input(
-                f'  Delete "{entry.header.strip()}"? (y/N): ',
-            )
-            if confirm and confirm.lower() == 'y':
+            if _confirm_delete(entry):
                 archive_page(entry.page_id)
                 print(f'  ✓ Dropped: {entry.header.strip()}')
                 dropped += 1
@@ -850,10 +858,7 @@ def _review_get_current() -> None:  # noqa: C901, PLR0912, PLR0915
                     _edit_entry_fields(entry)
                     updated += 1
                 case 'Mark done':
-                    confirm = prompt_input(
-                        f'  Delete "{entry.header.strip()}"? (y/N): ',
-                    )
-                    if confirm and confirm.lower() == 'y':
+                    if _confirm_delete(entry):
                         archive_page(entry.page_id)
                         print(
                             f'  ✓ "{entry.header.strip()}" → deleted',
