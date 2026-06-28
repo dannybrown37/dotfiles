@@ -146,6 +146,76 @@ def append_page_note(page_id: str, text: str) -> dict:
     return response.json()
 
 
+def _delete_block(block_id: str) -> None:
+    """Delete a single block."""
+    url = f'{NOTION_API_URL}/blocks/{block_id}'
+    response = httpx.delete(url, headers=_headers())
+    response.raise_for_status()
+
+
+def _update_block_text(block_id: str, text: str) -> None:
+    """Update a paragraph block's text content."""
+    url = f'{NOTION_API_URL}/blocks/{block_id}'
+    payload = {
+        'paragraph': {
+            'rich_text': [{'text': {'content': text}}],
+        },
+    }
+    response = httpx.patch(url, headers=_headers(), json=payload)
+    response.raise_for_status()
+
+
+def replace_page_body(page_id: str, text: str) -> None:
+    """Replace a page's body with new text, minimizing API calls.
+
+    Only updates blocks that changed, appends new ones, and
+    deletes extras.
+    """
+    url = f'{NOTION_API_URL}/blocks/{page_id}/children'
+    response = httpx.get(url, headers=_headers())
+    response.raise_for_status()
+    old_blocks = response.json().get('results', [])
+
+    new_lines = text.split('\n') if text.strip() else []
+
+    # Extract old block texts for comparison
+    old_texts = []
+    for block in old_blocks:
+        extracted = _extract_block_text(block)
+        old_texts.append(extracted or '')
+
+    # Update existing blocks that changed
+    for i, block in enumerate(old_blocks):
+        if i < len(new_lines):
+            if old_texts[i] != new_lines[i]:
+                _update_block_text(block['id'], new_lines[i])
+        else:
+            # Extra old blocks — delete
+            _delete_block(block['id'])
+
+    # Append new blocks beyond old length
+    if len(new_lines) > len(old_blocks):
+        children = [
+            {
+                'object': 'block',
+                'type': 'paragraph',
+                'paragraph': {
+                    'rich_text': [
+                        {'text': {'content': line}},
+                    ],
+                },
+            }
+            for line in new_lines[len(old_blocks) :]
+        ]
+        for i in range(0, len(children), 100):
+            batch = children[i : i + 100]
+            httpx.patch(
+                url,
+                headers=_headers(),
+                json={'children': batch},
+            ).raise_for_status()
+
+
 def build_property_update(
     *,
     status: str | None = None,

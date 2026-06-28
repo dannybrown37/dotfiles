@@ -1,20 +1,22 @@
 """CLI commands for Notion integration."""
 
 import json as json_mod
+import os
+import subprocess
 import sys
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from dateutil import parser as dateparser
 
 from project_manager.notion.client import (
-    append_page_note,
     archive_page,
     build_property_update,
     get_page_body,
     get_select_options,
     query_database,
+    replace_page_body,
     update_page,
 )
 from project_manager.notion.models import ProjectEntry
@@ -213,6 +215,75 @@ def defer_entry() -> None:
     print(f'✓ "{entry.header}" deferred until {date_str}')
 
 
+def snooze_today() -> None:
+    """Snooze today's actionable items until tomorrow."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+
+    filter_obj = {
+        'and': [
+            {'property': 'Status', 'select': {'equals': 'Current Project'}},
+            {
+                'or': [
+                    {
+                        'property': 'Follow-Up Date',
+                        'date': {'on_or_before': today},
+                    },
+                    {
+                        'property': 'Follow-Up Date',
+                        'date': {'is_empty': True},
+                    },
+                ],
+            },
+        ],
+    }
+
+    pages = query_database(filter_obj=filter_obj)
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    actionable = [e for e in entries if e.context and e.next_step]
+
+    if not actionable:
+        print('Nothing to snooze — no actionable items today.')
+        return
+
+    headers = [e.header.strip() for e in actionable]
+    selections = fzf_on_a_list(
+        headers,
+        multiple=True,
+        prompt='Snooze until tomorrow',
+    )
+    if not selections:
+        return
+
+    selected_set = set(selections)
+    count = 0
+    for entry in actionable:
+        if entry.header.strip() in selected_set:
+            edit = prompt_input(
+                f'  Edit notes for "{entry.header.strip()}"? (y/N): ',
+            )
+            if edit and edit.lower().startswith('y'):
+                body = get_page_body(entry.page_id)
+                editor = os.environ.get('EDITOR', 'nvim')
+                fd, tmp_path = tempfile.mkstemp(suffix='.md')
+                with open(fd, 'w') as f:  # noqa: PTH123
+                    f.write(body)
+                subprocess.run(  # noqa: S603
+                    [editor, tmp_path],
+                    check=False,
+                )
+                new_body = Path(tmp_path).read_text()
+                Path(tmp_path).unlink(missing_ok=True)
+                if new_body != body:
+                    replace_page_body(entry.page_id, new_body)
+            props = build_property_update(follow_up_date=tomorrow)
+            update_page(entry.page_id, props)
+            count += 1
+
+    suffix = 's' if count != 1 else ''
+    print(f'✓ Snoozed {count} item{suffix} until {tomorrow}')
+
+
 def review_someday() -> None:  # noqa: C901
     """Review Someday/Maybe items — keep, activate, or drop each."""
     pages = query_database(
@@ -281,8 +352,19 @@ def review_someday() -> None:  # noqa: C901
         print(f'  Review complete: {", ".join(parts)}')
 
 
+_RELATIVE_DAYS = {
+    'today': 0,
+    'tomorrow': 1,
+    'yesterday': -1,
+}
+
+
 def _parse_date_input(raw: str) -> str | None:
     """Parse a date string, returning YYYY-MM-DD or None."""
+    lowered = raw.lower().strip()
+    if lowered in _RELATIVE_DAYS:
+        result = datetime.now() + timedelta(days=_RELATIVE_DAYS[lowered])
+        return result.strftime('%Y-%m-%d')
     parsed = dateparser.parse(raw, fuzzy=True)
     if parsed:
         return parsed.strftime('%Y-%m-%d')
@@ -515,7 +597,7 @@ def _edit_entry_fields(entry: ProjectEntry) -> None:
     fields = fzf_on_a_list(
         [
             'Next actionable step',
-            'Add a note',
+            'Edit notes',
             'Context',
             'Status',
             'Due date',
@@ -528,13 +610,24 @@ def _edit_entry_fields(entry: ProjectEntry) -> None:
     if not fields:
         return
 
-    if 'Add a note' in fields:
-        note = prompt_input('Note: ')
-        if note:
-            append_page_note(entry.page_id, note)
-            print(f'  ✓ Note added to "{entry.header.strip()}"')
+    if 'Edit notes' in fields:
+        editor = os.environ.get('EDITOR', 'nvim')
+        fd, tmp_path = tempfile.mkstemp(suffix='.md')
+        with open(fd, 'w') as f:  # noqa: PTH123
+            f.write(body)
+        subprocess.run(  # noqa: S603
+            [editor, tmp_path],
+            check=False,
+        )
+        new_body = Path(tmp_path).read_text()
+        Path(tmp_path).unlink(missing_ok=True)
+        if new_body != body:
+            replace_page_body(entry.page_id, new_body)
+            print(f'  ✓ Notes updated for "{entry.header.strip()}"')
+        else:
+            print('  (no changes)')
 
-    prop_fields = [f for f in fields if f != 'Add a note']
+    prop_fields = [f for f in fields if f != 'Edit notes']
     if not prop_fields:
         return
 
