@@ -110,6 +110,19 @@ def done() -> None:
 
 
 @cli.command()
+def review() -> None:
+    """Run the GTD weekly review ritual."""
+    from project_manager.notion.commands import (  # noqa: PLC0415
+        weekly_review,
+    )
+
+    try:
+        weekly_review()
+    except CancelAction:
+        return
+
+
+@cli.command()
 def update() -> None:
     """Update fields on an existing project."""
     from project_manager.notion.commands import (  # noqa: PLC0415
@@ -175,6 +188,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
         defer_entry,
         update_entry,
         review_someday,
+        weekly_review,
         snooze_today,
         log_and_reschedule,
     )
@@ -205,6 +219,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
         ('Manage', 'Update project'),
         ('Manage', 'Defer project until date'),
         ('Manage', 'Mark done'),
+        ('Review', 'Weekly Review'),
         ('Review', 'Review Someday/Maybe'),
         ('View', 'View all projects'),
         ('View', '12-Week Goals'),
@@ -258,6 +273,8 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
                     defer_entry()
                 case 'Mark done':
                     mark_done()
+                case 'Weekly Review':
+                    weekly_review()
                 case 'Review Someday/Maybe':
                     review_someday()
                 case '12-Week Goals':

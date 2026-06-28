@@ -79,9 +79,9 @@ def select_tactic_index(
     return descriptions.index(selection)
 
 
-def pause() -> None:
+def pause(label: str = 'Press Enter to go back to menu...') -> None:
     try:
-        input('\nPress Enter to go back to menu...')
+        input(f'\n{label}')
     except KeyboardInterrupt:
         print()
 
