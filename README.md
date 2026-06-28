@@ -30,7 +30,6 @@ Bootstrap scripts:
   gnome           Install Gnome extensions
 
 These commands require GPG keys and secrets:
-  sync-secrets    Attempt to sync local secrets and password-store
   insert-ahk      Push local ahk secrets to password-store
   insert-bash     Push local bash secrets to password-store
   insert-secrets  Write all secrets files to password-store
@@ -112,14 +111,6 @@ Or pull individually:
 
 - `make pull-ahk`
 - `make pull-bash`
-
-```bash
-make sync-secrets
-```
-
-Attempt to sync data between `password-store` and local secrets files. Because this may
-have unintended consequences, local secrets files are backed up first (`password-store`
-would require a commit to truly overwrite).
 
 ## Initial Windows Setup Notes
 

@@ -1,4 +1,4 @@
-.PHONY: help python deno node golang rust vscode all gnome windows resestkomo sync-secrets pull-ahk pull-bash pull-secrets insert-ahk insert-bash insert-secrets
+.PHONY: help python deno node golang rust vscode all gnome windows resestkomo pull-ahk pull-bash pull-secrets insert-ahk insert-bash insert-secrets
 
 help:
 	@echo "Usage: make [option]"
@@ -18,7 +18,6 @@ help:
 	@echo "  komo       Reset komorebi (useful for after configuration changes)"
 	@echo ""
 	@echo "These commands require GPG keys and secrets:"
-	@echo "  sync-secrets    Attempt to sync local secrets and password-store"
 	@echo "  insert-ahk      Push local ahk secrets to password-store"
 	@echo "  insert-bash     Push local bash secrets to password-store"
 	@echo "  insert-secrets  Write all secrets files to password-store"
@@ -73,9 +72,6 @@ komo:
 	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/reset_komo.ps1"
 
 # pass secret store
-
-sync-secrets:
-	bash -c ". $(root_dir)/bin/sync-secrets.sh && sync-secrets"
 
 pull-ahk:
 	bash -c "mv $(root_dir)/ahk/secrets.ahk $(root_dir)/ahk/secrets.ahk.bak"
