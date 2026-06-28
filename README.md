@@ -52,6 +52,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
 | `chrome_focus` | Ctrl+Shift+C - Cycle through open Chrome windows | `ahk/chrome_focus.ahk` |
 | `cht` | Query cht.sh for info on many technologies | `config/.bashrc` |
+| `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
 | `crocinstall` | Install Croc | `config/.bash_aliases` |
 | `crocsend` | Send a file via a Croc server | croc send <file> | `config/.bash_aliases` |
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
