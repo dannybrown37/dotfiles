@@ -220,12 +220,9 @@ function cht() {  # @doc Query cht.sh for info on many technologies
     fi
 }
 
-function current_git_branch() {
-    local gitBranch=$(git branch 2>/dev/null | grep '\*' | sed -e 's/* //')
-    if [[ $gitBranch ]]; then
-        echo "$gitBranch"
-        return
-    fi
+function git_info_env_vars() {
+    export GIT_BRANCH=$(git branch --show-current 2>/dev/null)
+    export GIT_ICON=$(git_icon)
 }
 
 function epoch_timestamp() {  # @doc Print the current epoch timestamp in milliseconds, copy to clipboard
@@ -238,26 +235,18 @@ function generate_random_uuid_and_put_in_clipboard() {
 }
 
 function git_icon() {
-    local gitBranch="$(current_git_branch)"
-    if [[ $gitBranch ]]; then
-        local statusCheck=$(git status 2>/dev/null)
-        if [[ $statusCheck =~ 'Untracked files' ]]; then
-            echo ❓ # untracked files
-        elif [[ $statusCheck =~ 'Changes not staged for commit' ]]; then
-            echo 🛠️ # changes made, need git add
-        elif [[ $statusCheck =~ 'Changes to be committed' ]]; then
-            echo ✏️  # changes added, need git commit
-        elif [[ $statusCheck =~ 'Your branch is ahead' ]]; then
-            echo 🚀 # staged, need git push
-        elif [[ $statusCheck =~ 'working tree clean' ]]; then
-            echo ✅ # in sync with remote branch
-        fi
+    git rev-parse --git-dir &>/dev/null || return
+    if [[ -n $(git ls-files --others --exclude-standard | head -1) ]]; then
+        echo ❓
+    elif ! git diff --quiet 2>/dev/null; then
+        echo 🛠️
+    elif ! git diff --cached --quiet 2>/dev/null; then
+        echo ✏️
+    elif [[ $(git rev-list --count @{upstream}..HEAD 2>/dev/null) -gt 0 ]]; then
+        echo 🚀
+    else
+        echo ✅
     fi
-}
-
-function git_info_env_vars() {
-    export GIT_BRANCH=$(current_git_branch)
-    export GIT_ICON=$(git_icon)
 }
 
 function google() { # @doc Pop open a browser to google search results type in command line
