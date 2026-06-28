@@ -38,6 +38,8 @@ These commands require GPG keys and secrets:
 
 ## Commands Available
 
+Commmands are auto-documented with a # @doc comment on the same line as the command definition.
+
 <!-- @doc:commands:start -->
 
 
@@ -45,17 +47,27 @@ These commands require GPG keys and secrets:
 - `beep`: Play a beep sound
 - `cb`: Copy stdin to clipboard
 - `cdp`: Cd to any project directory from anywhere (with tab autocomplete)
+- `cht`: Query cht.sh for info on many technologies
+- `epoch_timestamp`: Print the current epoch timestamp in milliseconds, copy to clipboard
 - `gb`: Fuzzy-find and checkout a git branch
 - `gem`: Ask Gemini a question from the terminal
+- `google`: Pop open a browser to google search results type in command line
 - `gpup`: Push branch and open PR in browser
 - `komo`: Reset komorebi window manager
 - `llmedit`: Edit LLM rules in Neovim
 - `llmrules`: Copy LLM rules to clipboard
+- `mk`: Create a directory and cd into it
+- `note`: Create a note file from the command line
 - `noteion`: Create Notion pages from the terminal
+- `notes`: Open a note file from the command line from $NOTES_DIR using fzf
+- `open_url_in_browser`: Open a URL in the browser, system-agnostic
 - `pcb`: Print clipboard contents
+- `push`: Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message>
+- `push_to_topic`: Push a message to ntfy.sh at a topic | push_to_topic <topic> <message>
 - `src`: Reload bash configuration
 - `tms`: Start or attach to tmux Session
 - `url`: Open a URL in the system browser
+- `utc_timestamp`: Print the current UTC timestamp in ISO format with microseconds, copy to clipboard
 - `vc`: Vim cheatsheet fuzzy finder
 - `vsi`: Fuzzy find files and open in Neovim
 <!-- @doc:commands:end -->
