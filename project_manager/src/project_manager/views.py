@@ -1,3 +1,4 @@
+import contextlib
 from datetime import datetime
 import subprocess
 
@@ -147,10 +148,11 @@ def detailed_view(goal: Goal) -> Goal:
     lines.append(f'{"─" * 55}')
 
     output = '\n'.join(lines)
-    subprocess.run(
-        ['/usr/bin/less', '-R'],
-        input=output,
-        text=True,
-        check=False,
-    )
+    with contextlib.suppress(KeyboardInterrupt):
+        subprocess.run(
+            ['/usr/bin/less', '-R'],
+            input=output,
+            text=True,
+            check=False,
+        )
     return goal

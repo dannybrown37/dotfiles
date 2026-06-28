@@ -10,7 +10,7 @@ from project_manager.storage import (
     OUTPUT_PATH,
     ARCHIVE_PATH,
 )
-from project_manager.ui import fzf_on_a_list, prompt_input, pause
+from project_manager.ui import fzf_on_a_list, prompt_input, pause, CancelAction
 from project_manager.views import view_goal, detailed_view
 from project_manager.actions import (
     edit_goal,
@@ -86,10 +86,15 @@ def goal_menu(goal: Goal) -> None:
         )
     }
     while True:
-        selection = fzf_on_a_list(
-            labels,
-            prompt=(f'{goal.name} (Wk {goal.current_week()}/{TOTAL_WEEKS})'),
-        )
+        try:
+            selection = fzf_on_a_list(
+                labels,
+                prompt=(
+                    f'{goal.name} (Wk {goal.current_week()}/{TOTAL_WEEKS})'
+                ),
+            )
+        except CancelAction:
+            break
         if not selection:
             break
         action = label_to_action.get(selection)
@@ -98,9 +103,15 @@ def goal_menu(goal: Goal) -> None:
         if action == 'Other goals':
             break
         if action == 'Settings':
-            edit_settings()
+            try:
+                edit_settings()
+            except CancelAction:
+                continue
         elif action in GOAL_ACTION_MAP:
-            goal = GOAL_ACTION_MAP[action](goal)
+            try:
+                goal = GOAL_ACTION_MAP[action](goal)
+            except CancelAction:
+                continue
         pause()
 
 
@@ -180,20 +191,23 @@ def restore_archived_goal() -> None:
 
 def _handle_top_menu_action(action: str, names: list[str]) -> None:
     """Dispatch a top-level menu action."""
-    match action:
-        case 'New goal':
-            create_new_goal()
-        case 'Select goal':
-            name = fzf_on_a_list(names, prompt='Select goal')
-            if name:
-                goal_menu(load_goal(name))
-        case 'Remove goal':
-            remove_goal()
-        case 'View archived goals':
-            view_archived_goals()
-            pause()
-        case 'Restore archived goal':
-            restore_archived_goal()
+    try:
+        match action:
+            case 'New goal':
+                create_new_goal()
+            case 'Select goal':
+                name = fzf_on_a_list(names, prompt='Select goal')
+                if name:
+                    goal_menu(load_goal(name))
+            case 'Remove goal':
+                remove_goal()
+            case 'View archived goals':
+                view_archived_goals()
+                pause()
+            case 'Restore archived goal':
+                restore_archived_goal()
+    except CancelAction:
+        return
 
 
 def main() -> None:
@@ -214,7 +228,10 @@ def main() -> None:
             continue
 
         first_run = False
-        action = fzf_on_a_list(TOP_MENU, prompt='12 Week Year')
+        try:
+            action = fzf_on_a_list(TOP_MENU, prompt='12 Week Year')
+        except CancelAction:
+            break
         if not action:
             break
         _handle_top_menu_action(action, names)
