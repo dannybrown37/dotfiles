@@ -42,7 +42,7 @@ def save_goal(goal: Goal) -> None:
 
 
 def load_goal(name: str) -> Goal:
-    path = OUTPUT_PATH / f'{name}.json'
+    path = OUTPUT_PATH / f'{_safe_filename(name)}.json'
     with path.open() as f:
         data = json.load(f)
     return Goal.model_validate(data)

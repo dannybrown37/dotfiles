@@ -13,6 +13,7 @@ from gtd.storage import (
     get_archived_goal_names,
     OUTPUT_PATH,
     ARCHIVE_PATH,
+    _safe_filename,
 )
 from gtd.ui import (
     fzf_on_a_list,
@@ -169,7 +170,7 @@ def remove_goal() -> None:
     if not confirm or confirm.lower() != 'yes':
         print('Cancelled.')
         return
-    src = OUTPUT_PATH / f'{name}.json'
+    src = OUTPUT_PATH / f'{_safe_filename(name)}.json'
     goal = load_goal(name)
     has_data = goal.tactics or goal.todos
     if has_data:
