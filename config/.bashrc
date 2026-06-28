@@ -91,8 +91,8 @@ if [[ -f /etc/os-release && $(grep -i 'debian' /etc/os-release) ]] && [[ "$XDG_C
 fi
 
 
-# https://the.exa.website/docs/colour-themes
-EXA_COLORS_ARRAY=(
+# https://github.com/eza-community/eza/blob/main/docs/Colour-Themes.md
+EZA_COLORS_ARRAY=(
     "package.json=30;47"
     "pyproject.toml=30;47"
     "serverless.yml=30;47"
@@ -118,7 +118,7 @@ EXA_COLORS_ARRAY=(
     "package-lock.json=30;40;1"
     "*secrets*=30;40;1"
 )
-export EXA_COLORS="$(tr ' ' ':' <<<"${EXA_COLORS_ARRAY[*]}")"
+export EZA_COLORS="$(tr ' ' ':' <<<"${EZA_COLORS_ARRAY[*]}")"
 
 
 ##
