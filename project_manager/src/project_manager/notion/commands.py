@@ -107,16 +107,10 @@ def show_triage(*, verbose: bool = False) -> None:
     list_entries(status='Triage', verbose=verbose)
 
 
-def list_today() -> None:
-    """Show actionable items for today.
-
-    Criteria: Current Project, has a context, has a next actionable step,
-    and Follow-Up Date is not in the future (or not set).
-    """
+def _today_filter() -> dict:
+    """Build the Notion filter for today's actionable items."""
     today = datetime.now().strftime('%Y-%m-%d')
-
-    # Get Current Projects whose follow-up is today or earlier (or empty)
-    filter_obj = {
+    return {
         'and': [
             {'property': 'Status', 'select': {'equals': 'Current Project'}},
             {
@@ -134,32 +128,91 @@ def list_today() -> None:
         ],
     }
 
-    pages = query_database(filter_obj=filter_obj)
-    entries = [ProjectEntry.from_page(p) for p in pages]
 
-    # Filter for items with both a context and a next step
-    actionable = [e for e in entries if e.context and e.next_step]
+def _get_today_entries() -> list[ProjectEntry]:
+    """Fetch and filter today's actionable entries."""
+    pages = query_database(filter_obj=_today_filter())
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    return [e for e in entries if e.context and e.next_step]
+
+
+def list_today() -> None:  # noqa: C901
+    """Interactive today view — pick items and take action."""
+    actionable = _get_today_entries()
 
     if not actionable:
         print('\n  Nothing actionable today. Nice! 🎉\n')
         return
 
-    # Group by context
-    contexts: dict[str, list[ProjectEntry]] = {}
-    for e in actionable:
-        contexts.setdefault(e.context, []).append(e)
+    while actionable:
+        entry = select_entry(
+            actionable,
+            prompt='Today',
+            include_body=False,
+        )
+        if not entry:
+            break
 
-    print(
-        f'\n── Today ({len(actionable)} actionable) ──\n',
-    )
-    for ctx in sorted(contexts):
-        items = contexts[ctx]
-        print(f'  [{ctx}]')
-        for e in items:
-            due = f'  (due {e.due_date})' if e.due_date else ''
-            print(f'    • {e.header}{due}')
-            print(f'      → {e.next_step}')
+        body = get_page_body(entry.page_id)
+        preview = _escape_for_shell(_entry_preview_text(entry, body))
+
+        action = fzf_on_a_list(
+            [
+                'Log & Reschedule',
+                'Snooze until tomorrow',
+                'Update fields',
+                'Mark done (moves to trash)',
+                'Back to list',
+            ],
+            prompt=f'"{entry.header.strip()}"',
+            preview=f"echo '{preview}'",
+        )
+        if not action or action == 'Back to list':
+            continue
+
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+
+        match action:
+            case 'Log & Reschedule':
+                _log_and_reschedule_entry(entry)
+                actionable = [
+                    e for e in actionable if e.page_id != entry.page_id
+                ]
+            case 'Snooze until tomorrow':
+                props = build_property_update(
+                    follow_up_date=tomorrow,
+                )
+                update_page(entry.page_id, props)
+                print(
+                    f'  ✓ "{entry.header.strip()}" snoozed until {tomorrow}',
+                )
+                actionable = [
+                    e for e in actionable if e.page_id != entry.page_id
+                ]
+            case 'Update fields':
+                _edit_entry_fields(entry)
+            case _ if action.startswith('Mark done'):
+                confirm = prompt_input(
+                    f'  Delete "{entry.header.strip()}"? (y/N): ',
+                )
+                if confirm and confirm.lower() == 'y':
+                    archive_page(entry.page_id)
+                    print(
+                        f'  ✓ "{entry.header.strip()}" → deleted',
+                    )
+                    actionable = [
+                        e for e in actionable if e.page_id != entry.page_id
+                    ]
+                else:
+                    print('  Cancelled.')
+
         print()
+
+    remaining = len(actionable)
+    if remaining:
+        print(f'  {remaining} item(s) remaining for today.\n')
+    else:
+        print('  All done for today! 🎉\n')
 
 
 def mark_done() -> None:
@@ -180,8 +233,16 @@ def mark_done() -> None:
     if not entry:
         return
 
+    confirm = prompt_input(
+        f'  Delete "{entry.header.strip()}"? '
+        "This moves it to Notion's trash. (y/N): ",
+    )
+    if not confirm or confirm.lower() != 'y':
+        print('  Cancelled.')
+        return
+
     archive_page(entry.page_id)
-    print(f'✓ "{entry.header}" → Done (archived)')
+    print(f'✓ "{entry.header}" → deleted')
 
 
 def defer_entry() -> None:
@@ -219,30 +280,8 @@ def defer_entry() -> None:
 
 def snooze_today() -> None:
     """Snooze today's actionable items until tomorrow."""
-    today = datetime.now().strftime('%Y-%m-%d')
     tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
-
-    filter_obj = {
-        'and': [
-            {'property': 'Status', 'select': {'equals': 'Current Project'}},
-            {
-                'or': [
-                    {
-                        'property': 'Follow-Up Date',
-                        'date': {'on_or_before': today},
-                    },
-                    {
-                        'property': 'Follow-Up Date',
-                        'date': {'is_empty': True},
-                    },
-                ],
-            },
-        ],
-    }
-
-    pages = query_database(filter_obj=filter_obj)
-    entries = [ProjectEntry.from_page(p) for p in pages]
-    actionable = [e for e in entries if e.context and e.next_step]
+    actionable = _get_today_entries()
 
     if not actionable:
         print('Nothing to snooze — no actionable items today.')
@@ -286,41 +325,8 @@ def _infer_reschedule_days(header: str) -> int | None:
     return None
 
 
-def log_and_reschedule() -> None:
-    """Log a note and reschedule recurring items."""
-    today_str = datetime.now().strftime('%Y-%m-%d')
-
-    filter_obj = {
-        'and': [
-            {'property': 'Status', 'select': {'equals': 'Current Project'}},
-            {
-                'or': [
-                    {
-                        'property': 'Follow-Up Date',
-                        'date': {'on_or_before': today_str},
-                    },
-                    {
-                        'property': 'Follow-Up Date',
-                        'date': {'is_empty': True},
-                    },
-                ],
-            },
-        ],
-    }
-
-    pages = query_database(filter_obj=filter_obj)
-    entries = [ProjectEntry.from_page(p) for p in pages]
-    actionable = [e for e in entries if e.context and e.next_step]
-
-    if not actionable:
-        print('Nothing actionable today.')
-        return
-
-    entry = select_entry(actionable, prompt='Log & Reschedule')
-    if not entry:
-        return
-
-    # Open editor for the note
+def _log_and_reschedule_entry(entry: ProjectEntry) -> None:
+    """Log a note and reschedule a specific entry."""
     body = get_page_body(entry.page_id)
     editor = os.environ.get('EDITOR', 'nvim')
     fd, tmp_path = tempfile.mkstemp(suffix='.md')
@@ -336,7 +342,6 @@ def log_and_reschedule() -> None:
         replace_page_body(entry.page_id, new_body)
         print(f'  ✓ Notes updated for "{entry.header.strip()}"')
 
-    # Infer or ask for reschedule date
     inferred_days = _infer_reschedule_days(entry.header)
     if inferred_days:
         next_date = (datetime.now() + timedelta(days=inferred_days)).strftime(
@@ -359,6 +364,21 @@ def log_and_reschedule() -> None:
     props = build_property_update(follow_up_date=next_date)
     update_page(entry.page_id, props)
     print(f'  ✓ "{entry.header.strip()}" → {next_date}')
+
+
+def log_and_reschedule() -> None:
+    """Log a note and reschedule recurring items."""
+    actionable = _get_today_entries()
+
+    if not actionable:
+        print('Nothing actionable today.')
+        return
+
+    entry = select_entry(actionable, prompt='Log & Reschedule')
+    if not entry:
+        return
+
+    _log_and_reschedule_entry(entry)
 
 
 def review_someday() -> None:  # noqa: C901
@@ -411,9 +431,15 @@ def review_someday() -> None:  # noqa: C901
             print(f'  ✓ Activated: {entry.header.strip()}')
             activated += 1
         elif action.startswith('Drop'):
-            archive_page(entry.page_id)
-            print(f'  ✓ Dropped: {entry.header.strip()}')
-            dropped += 1
+            confirm = prompt_input(
+                f'  Delete "{entry.header.strip()}"? (y/N): ',
+            )
+            if confirm and confirm.lower() == 'y':
+                archive_page(entry.page_id)
+                print(f'  ✓ Dropped: {entry.header.strip()}')
+                dropped += 1
+            else:
+                print('  Kept.')
 
         print()
 
@@ -775,7 +801,7 @@ def _review_get_clear() -> None:
         print('  ✓ Inbox zero! 🎉\n')
 
 
-def _review_get_current() -> None:  # noqa: C901, PLR0912
+def _review_get_current() -> None:  # noqa: C901, PLR0912, PLR0915
     """Phase 2: Get Current — review active projects and Someday/Maybe."""
     print('─── Phase 2: Get Current ───')
     print('  Goal: Review every active project. Is the next action right?\n')
@@ -824,8 +850,16 @@ def _review_get_current() -> None:  # noqa: C901, PLR0912
                     _edit_entry_fields(entry)
                     updated += 1
                 case 'Mark done':
-                    archive_page(entry.page_id)
-                    print(f'  ✓ "{entry.header.strip()}" → Done (archived)')
+                    confirm = prompt_input(
+                        f'  Delete "{entry.header.strip()}"? (y/N): ',
+                    )
+                    if confirm and confirm.lower() == 'y':
+                        archive_page(entry.page_id)
+                        print(
+                            f'  ✓ "{entry.header.strip()}" → deleted',
+                        )
+                    else:
+                        print('  Cancelled.')
                 case 'Move to Someday/Maybe':
                     props = build_property_update(status='Someday/Maybe')
                     update_page(entry.page_id, props)
