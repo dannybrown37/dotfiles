@@ -203,7 +203,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
         ('Do', 'Capture new item'),
         ('Do', 'Triage inbox'),
         ('Manage', 'Update project'),
-        ('Manage', 'Defer project'),
+        ('Manage', 'Defer project until date'),
         ('Manage', 'Mark done'),
         ('Review', 'Review Someday/Maybe'),
         ('View', 'View all projects'),
@@ -254,7 +254,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
                     capture_item()
                 case 'Update project':
                     update_entry()
-                case 'Defer project':
+                case 'Defer project until date':
                     defer_entry()
                 case 'Mark done':
                     mark_done()
