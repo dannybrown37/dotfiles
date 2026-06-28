@@ -206,7 +206,7 @@ done
 # source aws-specific functions from aws/bin.sh
 source "$DOTFILES_DIR"/aws/bin.sh
 
-function cht() {  # @doc: Query cht.sh for info on many technologies
+function cht() {  # @doc Query cht.sh for info on many technologies
     local technologies=$(curl -s cht.sh/:list)
     local selected=$(printf '%s\n' "${technologies[@]}" | fzf)
     if [[ -z $selected ]]; then
@@ -228,7 +228,7 @@ function current_git_branch() {
     fi
 }
 
-function epoch_timestamp() {  # @doc: Print the current epoch timestamp in milliseconds, copy to clipboard
+function epoch_timestamp() {  # @doc Print the current epoch timestamp in milliseconds, copy to clipboard
     echo $(($(date +%s%N) / 1000000)) | cb
 }
 
@@ -260,7 +260,7 @@ function git_info_env_vars() {
     export GIT_ICON=$(git_icon)
 }
 
-function google() { # @doc: Pop open a browser to google search results type in command line
+function google() { # @doc Pop open a browser to google search results type in command line
     if [[ $# -eq 0 ]]; then
         read -p "Enter you Google query: " query
     else
@@ -270,7 +270,7 @@ function google() { # @doc: Pop open a browser to google search results type in 
     url "https://www.google.com/search?q=${query// /+}"
 }
 
-function note() {  # @doc: Create a note file from the command line
+function note() {  # @doc Create a note file from the command line
     ## Create notes files from the command line
     ##
     ## 0 args -- will prompt for title and content
@@ -306,7 +306,7 @@ function note() {  # @doc: Create a note file from the command line
     echo "Note saved to: $note_path"
 }
 
-function notes() { # @doc: Open a note file from the command line from $NOTES_DIR using fzf
+function notes() { # @doc Open a note file from the command line from $NOTES_DIR using fzf
     local selected_file
     cd "$NOTES_DIR" || return
     selected_file=$(
@@ -320,15 +320,15 @@ function notes() { # @doc: Open a note file from the command line from $NOTES_DI
     cd - || return
 }
 
-function mk() {  # @doc: Create a directory and cd into it
+function mk() {  # @doc Create a directory and cd into it
     mkdir -p "$@" && cd "$@" || exit
 }
 
-function push() {  # @doc: Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message>
+function push() {  # @doc Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message>
     http POST ntfy.sh/"${PERSONAL_ALERT_TOPIC}" alert="$*"
 }
 
-function push_to_topic() {  # @doc: Push a message to ntfy.sh at a topic | push_to_topic <topic> <message>
+function push_to_topic() {  # @doc Push a message to ntfy.sh at a topic | push_to_topic <topic> <message>
     local topic=$1
     shift
     local message=$*
@@ -336,7 +336,7 @@ function push_to_topic() {  # @doc: Push a message to ntfy.sh at a topic | push_
     http POST ntfy.sh/"${topic}" alert="${message}"
 }
 
-function open_url_in_browser() {  # @doc: Open a URL in the browser, system-agnostic
+function open_url_in_browser() {  # @doc Open a URL in the browser, system-agnostic
     case $(uname -s) in
     Darwin) open='open' ;;
     MINGW*) open='start' ;;
@@ -360,7 +360,7 @@ function open_url_in_browser() {  # @doc: Open a URL in the browser, system-agno
     ${BROWSER:-"${open}"} "${URL}" || xdg-open "${URL}"
 }
 
-function utc_timestamp() {  # @doc: Print the current UTC timestamp in ISO format with microseconds, copy to clipboard
+function utc_timestamp() {  # @doc Print the current UTC timestamp in ISO format with microseconds, copy to clipboard
     date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
 }
 
