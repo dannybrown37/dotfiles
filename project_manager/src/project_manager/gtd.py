@@ -194,9 +194,21 @@ def capture(header: tuple[str, ...]) -> None:
         return
 
 
+@cli.command()
+def dump() -> None:
+    """Rapid-fire brain dump — capture everything, triage later."""
+    from project_manager.notion.commands import brain_dump  # noqa: PLC0415
+
+    try:
+        brain_dump()
+    except CancelAction:
+        return
+
+
 def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
     """Launch interactive fzf menu for GTD actions."""
     from project_manager.notion.commands import (  # noqa: PLC0415
+        brain_dump,
         list_entries,
         list_12_week_entries,
         list_today,
@@ -231,6 +243,7 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
         ('Do', 'Log & Reschedule'),
         ('Do', 'Snooze until tomorrow'),
         ('Do', 'Capture new item'),
+        ('Do', 'Brain dump'),
         ('Do', 'Triage inbox'),
         ('Manage', 'Update project'),
         ('Manage', 'Defer project until date'),
@@ -282,6 +295,8 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
                     process_triage()
                 case 'Capture new item':
                     capture_item()
+                case 'Brain dump':
+                    brain_dump()
                 case 'Update project':
                     update_entry()
                 case 'Defer project until date':

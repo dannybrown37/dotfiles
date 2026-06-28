@@ -53,6 +53,7 @@ Opens the fzf-powered GTD menu:
 | Do | Log & Reschedule |
 | Do | Snooze until tomorrow |
 | Do | Capture new item |
+| Do | Brain dump |
 | Do | Triage inbox |
 | Manage | Update project |
 | Manage | Defer project until date |
@@ -71,6 +72,7 @@ gtd init             # Set up a new GTD Notion database
 gtd init --upgrade   # Add missing properties/options to existing DB
 gtd triage           # Process inbox items
 gtd review           # Guided weekly review ritual
+gtd dump             # Rapid-fire brain dump
 gtd goals         # Show 12-week goal entries
 gtd filter work   # Filter projects by context
 gtd today         # Show today's actionable items

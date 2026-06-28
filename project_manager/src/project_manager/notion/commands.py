@@ -909,12 +909,36 @@ def _review_get_current() -> None:  # noqa: C901, PLR0912, PLR0915
             print()
 
 
-def _review_get_creative() -> None:
-    """Phase 3: Get Creative — brain dump new ideas."""
+def brain_dump() -> None:
+    """Rapid-fire capture loop — get everything out of your head."""
     from project_manager.notion.capture import capture_item  # noqa: PLC0415
 
+    print('\n── 🧠 Brain Dump ──')
+    print('  Get it all out. Capture everything.\n')
+
+    captured = 0
+    while True:
+        action = fzf_on_a_list(
+            ['Capture an idea', 'Done brainstorming'],
+            prompt='Brain dump',
+        )
+        if not action or action == 'Done brainstorming':
+            break
+        capture_item()
+        captured += 1
+
+    if captured:
+        print(f'  ✓ Captured {captured} new item(s) → Triage\n')
+    else:
+        print('  No new items captured.\n')
+
+
+def _review_get_creative() -> None:
+    """Phase 3: Get Creative — brain dump new ideas."""
     print('─── Phase 3: Get Creative ───')
     print('  Goal: Brain dump. Any new projects, ideas, or someday/maybes?\n')
+
+    from project_manager.notion.capture import capture_item  # noqa: PLC0415
 
     captured = 0
     while True:
