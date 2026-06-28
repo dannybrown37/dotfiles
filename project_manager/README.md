@@ -57,6 +57,7 @@ Opens the fzf-powered GTD menu:
 | Manage | Update project |
 | Manage | Defer project until date |
 | Manage | Mark done |
+| Review | Weekly Review |
 | Review | Review Someday/Maybe |
 | View | View all projects |
 | View | 12-Week Goals |
@@ -67,6 +68,7 @@ Opens the fzf-powered GTD menu:
 
 ```bash
 gtd triage        # Process inbox items
+gtd review        # Guided weekly review ritual
 gtd goals         # Show 12-week goal entries
 gtd filter work   # Filter projects by context
 gtd today         # Show today's actionable items
