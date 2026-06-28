@@ -15,6 +15,7 @@ from gtd.notion.client import (
     update_page,
 )
 from gtd.notion.entries import (
+    _edit_notes,
     _parse_date_input,
     list_12_week_entries,
     list_entries,
@@ -130,8 +131,6 @@ def set_waiting_for() -> None:
     if follow_up_date:
         msg += f' (follow up {follow_up_date})'
     print(msg)
-
-    from gtd.notion.entries import _edit_notes  # noqa: PLC0415
 
     _edit_notes(entry)
 

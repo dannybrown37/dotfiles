@@ -63,7 +63,7 @@ def list_today() -> None:  # noqa: C901, PLR0912
         entry = select_entry(
             actionable,
             prompt='Today',
-            include_body=False,
+            include_body=True,
         )
         if not entry:
             break
