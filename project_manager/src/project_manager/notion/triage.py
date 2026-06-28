@@ -9,10 +9,11 @@ from project_manager.notion.client import (
     build_property_update,
 )
 from project_manager.notion.models import ProjectEntry
+from project_manager.notion.schema import STATUSES as ALL_STATUSES
 from project_manager.ui import fzf_on_a_list, prompt_input, CancelAction
 
 
-STATUSES = ['Current Project', 'Someday/Maybe']
+TRIAGE_STATUSES = [s for s in ALL_STATUSES if s != 'Triage']
 
 
 def _get_triage_entries() -> list[ProjectEntry]:
@@ -37,7 +38,7 @@ def _process_single_entry(entry: ProjectEntry) -> bool:
 
     # Status
     status = fzf_on_a_list(
-        STATUSES,
+        TRIAGE_STATUSES,
         prompt=f'"{entry.header}" → Status',
     )
     if not status:

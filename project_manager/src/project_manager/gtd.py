@@ -21,6 +21,22 @@ def cli(ctx: click.Context, verbose: bool) -> None:
 
 
 @cli.command()
+@click.option(
+    '--upgrade',
+    is_flag=True,
+    help='Upgrade existing database schema',
+)
+def init(upgrade: bool) -> None:
+    """Set up or upgrade the GTD Notion database."""
+    from project_manager.notion.init import init_database  # noqa: PLC0415
+
+    try:
+        init_database(upgrade=upgrade)
+    except CancelAction:
+        return
+
+
+@cli.command()
 def triage() -> None:
     """Interactively process items needing triage."""
     from project_manager.notion.triage import (  # noqa: PLC0415

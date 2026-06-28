@@ -3,25 +3,31 @@ import sys
 
 import httpx
 
+from project_manager.notion.config import get_config_value
+
 
 NOTION_API_URL = 'https://api.notion.com/v1'
 NOTION_VERSION = '2022-06-28'
 
 
 def get_token() -> str:
-    """Get Notion token from environment."""
-    token = os.environ.get('NOTION_NOTES_TOKEN')
+    """Get Notion token from config file or environment."""
+    token = get_config_value('token') or os.environ.get('NOTION_NOTES_TOKEN')
     if not token:
-        print('Error: NOTION_NOTES_TOKEN is not set.')
+        print('Error: Notion token not configured.')
+        print('Run `gtd init` to set up, or set NOTION_NOTES_TOKEN.')
         sys.exit(1)
     return token
 
 
 def get_projects_db_id() -> str:
-    """Get GTD Projects database ID from environment."""
-    db_id = os.environ.get('NOTION_PROJECTS_DB_ID')
+    """Get GTD Projects database ID from config file or environment."""
+    db_id = get_config_value('database_id') or os.environ.get(
+        'NOTION_PROJECTS_DB_ID',
+    )
     if not db_id:
-        print('Error: NOTION_PROJECTS_DB_ID is not set.')
+        print('Error: GTD database not configured.')
+        print('Run `gtd init` to set up, or set NOTION_PROJECTS_DB_ID.')
         sys.exit(1)
     return db_id
 
