@@ -6,15 +6,17 @@ clip() {  # @doc Copy a screen recording to OneDrive with fzf selection: clip [-
     local config_dir="${HOME}/.config/screen-recording-mover"
     local config_file="${config_dir}/config"
     local onedrive_config="${config_dir}/onedrive-root"
-    local win_user win_home recordings_dir
 
-    win_user="$(/mnt/c/Windows/System32/cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')"
-    win_home="/mnt/c/Users/${win_user}"
-    recordings_dir="${win_home}/Videos/Screen Recordings"
+    if [[ -z "${CLIP_DEST:-}" ]]; then
+        echo "CLIP_DEST is not set (Windows path to destination folder)" >&2
+        echo "e.g. export CLIP_DEST='C:\\Users\\me\\whelen.com\\Recordings'" >&2
+        return 1
+    fi
 
     if [[ "${1:-}" == "--help" ]]; then
         echo "Usage: clip [--reset]"
-        echo "Select a screen recording via fzf, optionally rename, copy to OneDrive."
+        echo "Select a screen recording via fzf, optionally rename, copy to CLIP_DEST."
+        echo "Set CLIP_SHAREPOINT_BASE_URL to auto-open the SharePoint link after copy."
         return 0
     fi
 
@@ -24,15 +26,15 @@ clip() {  # @doc Copy a screen recording to OneDrive with fzf selection: clip [-
         return 0
     fi
 
-    if [[ ! -d "${recordings_dir}" ]]; then
-        echo "Screen Recordings folder not found: ${recordings_dir}" >&2
-        return 1
-    fi
+    local win_user
+    win_user="$(/mnt/c/Windows/System32/cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')"
+    local win_home="C:\\Users\\${win_user}"
+    local recordings_dir="${win_home}\\Videos\\Screen Recordings"
 
     local recording
-    recording="$(find "${recordings_dir}" -maxdepth 1 -type f -printf '%T@ %f\n' \
-        | sort -rn \
-        | cut -d' ' -f2- \
+    recording="$(powershell.exe -NoProfile -Command \
+        "Get-ChildItem '${recordings_dir}' -File | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name" \
+        2>/dev/null | tr -d '\r' \
         | fzf --prompt="Screen recording: " --height=40%)" || { return 0; }
 
     local extension="${recording##*.}"
@@ -42,34 +44,10 @@ clip() {  # @doc Copy a screen recording to OneDrive with fzf selection: clip [-
     local final_name="${new_name:+${new_name}.${extension}}"
     final_name="${final_name:-${recording}}"
 
-    local onedrive_root
-    if [[ -f "${onedrive_config}" ]] && [[ -d "$(cat "${onedrive_config}")" ]]; then
-        onedrive_root="$(cat "${onedrive_config}")"
-    else
-        onedrive_root="$(find "${win_home}" -maxdepth 1 -type d -name "OneDrive*" 2>/dev/null \
-            | fzf --prompt="OneDrive root: " --height=40%)" || { return 0; }
-        mkdir -p "${config_dir}"
-        echo "${onedrive_root}" > "${onedrive_config}"
-    fi
+    local src="${recordings_dir}\\${recording}"
+    local dst="${CLIP_DEST}\\${final_name}"
 
-    local destination
-    if [[ -f "${config_file}" ]] && [[ -d "$(cat "${config_file}")" ]]; then
-        destination="$(cat "${config_file}")"
-    else
-        local selected
-        selected="$(find "${onedrive_root}" -maxdepth 1 -type d 2>/dev/null \
-            | sed "s|${onedrive_root}/||" \
-            | sed '/^$/d' \
-            | fzf --prompt="OneDrive destination: " --height=40%)" || { return 0; }
-        destination="${onedrive_root}/${selected}"
-        mkdir -p "${config_dir}"
-        echo "${destination}" > "${config_file}"
-    fi
-
-    local src="${recordings_dir}/${recording}"
-    local dst="${destination}/${final_name}"
-
-    if [[ -f "${dst}" ]]; then
+    if powershell.exe -NoProfile -Command "Test-Path '${dst}'" 2>/dev/null | grep -qi true; then
         local confirm
         read -r -p "File already exists. Overwrite? [y/N]: " confirm
         if [[ "${confirm}" != [yY] ]]; then
@@ -78,6 +56,15 @@ clip() {  # @doc Copy a screen recording to OneDrive with fzf selection: clip [-
         fi
     fi
 
-    cp "${src}" "${dst}"
-    echo "Copied: ${final_name} -> ${destination##*/}/"
+    powershell.exe -NoProfile -Command "Copy-Item '${src}' '${dst}' -Force" 2>/dev/null
+    echo "Copied: ${final_name} -> ${CLIP_DEST##*\\}"
+
+    if [[ -n "${CLIP_SHAREPOINT_BASE_URL:-}" ]]; then
+        local encoded_name
+        encoded_name="$(powershell.exe -NoProfile -Command \
+            "[uri]::EscapeDataString('${final_name}')" 2>/dev/null | tr -d '\r')"
+        local remote_url="${CLIP_SHAREPOINT_BASE_URL}/${encoded_name}"
+        echo -n "${remote_url}" | clip.exe
+        echo "URL copied to clipboard."
+    fi
 }
