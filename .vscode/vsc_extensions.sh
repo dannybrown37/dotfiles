@@ -49,7 +49,6 @@ extensions_to_install=(
     # infrastructure
     42crunch.vscode-openapi
     github.vscode-github-actions
-    hashicorp.terraform
 
     # jupyter
     ms-toolsai.jupyter
