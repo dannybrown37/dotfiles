@@ -11,6 +11,7 @@ apt_packages=(
     cowsay
     curl
     faker
+    fd-find
     fortune
     fzf
     git
@@ -54,6 +55,51 @@ if ! command -v eza &>/dev/null; then
     cargo install eza
 else
     echo "eza is already installed on this system"
+fi
+
+##
+## Install tokei (code stats) -- v12 is last release with pre-built binaries
+##
+
+if ! command -v tokei &>/dev/null; then
+    tmp_dir=$(mktemp -d)
+    curl -sLo "${tmp_dir}/tokei.tar.gz" \
+        "https://github.com/XAMPPRocky/tokei/releases/download/v12.1.2/tokei-x86_64-unknown-linux-gnu.tar.gz"
+    tar -xf "${tmp_dir}/tokei.tar.gz" -C "${tmp_dir}"
+    sudo install "${tmp_dir}/tokei" /usr/local/bin/tokei
+    rm -rf "${tmp_dir}"
+else
+    echo "tokei is already installed on this system"
+fi
+
+##
+## Install hyperfine (benchmarking tool)
+##
+
+if ! command -v hyperfine &>/dev/null; then
+    hf_version=$(curl -s https://api.github.com/repos/sharkdp/hyperfine/releases/latest | jq -r '.tag_name' | sed 's/v//')
+    tmp_deb=$(mktemp --suffix=.deb)
+    curl -sLo "${tmp_deb}" \
+        "https://github.com/sharkdp/hyperfine/releases/download/v${hf_version}/hyperfine_${hf_version}_amd64.deb"
+    sudo dpkg -i "${tmp_deb}"
+    rm "${tmp_deb}"
+else
+    echo "hyperfine is already installed on this system"
+fi
+
+##
+## Install glow (markdown renderer)
+##
+
+if ! command -v glow &>/dev/null; then
+    glow_version=$(curl -s https://api.github.com/repos/charmbracelet/glow/releases/latest | jq -r '.tag_name' | sed 's/v//')
+    tmp_deb=$(mktemp --suffix=.deb)
+    curl -sLo "${tmp_deb}" \
+        "https://github.com/charmbracelet/glow/releases/download/v${glow_version}/glow_${glow_version}_amd64.deb"
+    sudo dpkg -i "${tmp_deb}"
+    rm "${tmp_deb}"
+else
+    echo "glow is already installed on this system"
 fi
 
 ##
