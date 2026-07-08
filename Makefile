@@ -1,4 +1,4 @@
-.PHONY: help python deno node golang rust vscode all gnome windows komo wsl-fonts secrets-save secrets-load
+.PHONY: help python deno node golang rust vscode all gnome windows komo wsl-fonts secrets-save secrets-load lazygit
 
 help:
 	@echo "Usage: make [option]"
@@ -11,6 +11,7 @@ help:
 	@echo "  golang          Install Go environment (latest Golang version)"
 	@echo "  rust            Install Rust environment (latest Rust version, select global packages)"
 	@echo "  nvim            Install Neovim"
+	@echo "  lazygit         Install lazygit TUI git client"
 	@echo "  vscode          Install VS Code extensions and settings"
 	@echo "  all             Install all of the above"
 	@echo "  gnome           Install Gnome extensions"
@@ -54,11 +55,14 @@ rust:
 nvim:
 	bash -c ". $(root_dir)/install/nvim.sh"
 
+lazygit:
+	bash -c ". $(root_dir)/install/lazygit.sh"
+
 vscode:
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
 	bash -c ". $(root_dir)/.vscode/sync_vsc_settings.sh"
 
-all: bash python deno node golang rust nvim vscode
+all: bash python deno node golang rust nvim lazygit vscode
 
 gnome:
 	bash -c ". $(root_dir)/install/gnome.sh"

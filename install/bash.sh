@@ -166,3 +166,13 @@ if [ ! -L "${HOME}/.config/starship.toml" ]; then
 else
     echo "starship.toml has already been symlinked"
 fi
+
+lazygit_config_dir="${HOME}/.config/lazygit"
+lazygit_config_dest="${lazygit_config_dir}/config.yml"
+if [ ! -L "${lazygit_config_dest}" ]; then
+    mkdir -p "${lazygit_config_dir}"
+    ln -s ~/projects/dotfiles/config/lazygit.yml "${lazygit_config_dest}" &&
+        echo "Symlinked lazygit config to ${lazygit_config_dest}"
+else
+    echo "lazygit config has already been symlinked"
+fi

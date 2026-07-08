@@ -12,6 +12,7 @@ alias utc='utc_timestamp'  # @doc Alias for utc_timestamp
 alias uuid='generate_random_uuid_and_put_in_clipboard'  # @doc Generate a random UUID and put it in the clipboard
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # @doc Vim cheatsheet fuzzy finder
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim "{}"' # @doc Fuzzy find files and open in Neovim
+alias lg='lazygit'  # @doc Open lazygit TUI
 
 # Tools I'm trying out
 
