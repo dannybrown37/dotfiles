@@ -21,6 +21,9 @@
     enabled = true
 [commit]
     verbose = true
+[log]
+    abbrevCommit = true
+    date = relative
 [merge]
     conflictStyle = diff3
 [diff]

@@ -64,9 +64,13 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `gem` | Ask Gemini a question from the terminal | `bin/gem.sh` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
 | `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
+| `glog` | Graph log of all branches | `config/.bash_aliases` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
 | `google` | Pop open a browser to google search results type in command line | `config/.bashrc` |
 | `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
+| `gsl` | Git stash list | `config/.bash_aliases` |
+| `gsp` | Git stash pop | `config/.bash_aliases` |
+| `gss` | Git stash save | `config/.bash_aliases` |
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
 | `llmedit` | Edit LLM rules in Neovim | `config/.bash_aliases` |
