@@ -44,6 +44,20 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux 
 2. Add a Make target in `Makefile` wired to that script.
 3. If the tool needs shell aliases/functions, add them to `config/.bash_aliases` or a new file in `bin/`.
 4. Update the `.PHONY` list in `Makefile`.
+5. Add a passthrough stub to `bin/stubs.sh` so the tool appears in `cmds` with documentation (see below).
+
+## Third-Party Tool Stubs
+
+All third-party CLI tools must have a passthrough stub in `bin/stubs.sh`. This is the canonical way to document installed tools so they show up in `cmds`. Do not use aliases for this purpose.
+
+```bash
+# Pattern: one line per tool, inline @doc comment
+mytool() { command mytool "$@"; }  # @doc Brief description | mytool <usage>
+```
+
+- Use `command mytool` (not just `mytool`) to avoid infinite recursion.
+- If the installed binary name differs from the logical name (e.g. `fdfind` → `fd`), handle it in the stub.
+- Keep descriptions short: what it does, and the most common invocation after `|`.
 
 ## Adding a New Shell Command
 
@@ -56,7 +70,6 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux 
 Managed via `.pre-commit-config.yaml`. Active hooks:
 
 - **shfmt** — shell formatting (4-space indent)
-- **bashate** — shell linting (ignores E006 line length, E042 local usage)
 - **ruff check + format** — Python linting and formatting
 - **sync-readme-make** — keeps README install options in sync with `make help` output
 - Standard pre-commit-hooks (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)

@@ -39,4 +39,4 @@ You're an expert shell scripter who writes securrity-concious cross-platform scr
 
 ## Linting
 
-- All shell scripts must pass linting with `shellcheck` and `bashate` with no errors.
+- All shell scripts must pass `shellcheck` and `shfmt` with no errors.
