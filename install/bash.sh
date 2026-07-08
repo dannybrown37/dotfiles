@@ -92,6 +92,21 @@ else
 fi
 
 ##
+## Install delta (syntax-highlighting git pager)
+##
+
+if ! command -v delta &>/dev/null; then
+    delta_version=$(curl -s https://api.github.com/repos/dandavison/delta/releases/latest | jq -r '.tag_name')
+    tmp_deb=$(mktemp --suffix=.deb)
+    curl -sLo "${tmp_deb}" \
+        "https://github.com/dandavison/delta/releases/download/${delta_version}/git-delta_${delta_version}_amd64.deb"
+    sudo dpkg -i "${tmp_deb}"
+    rm "${tmp_deb}"
+else
+    echo "delta already installed: $(delta --version)"
+fi
+
+##
 ## misc installs
 ##
 
