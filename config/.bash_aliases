@@ -83,6 +83,7 @@ alias gcb='git checkout -b'
 alias gcd='git checkout develop'
 alias gcdf='git clone https://www.github.com/dannybrown37/dotfiles'
 alias gcl='git checkout -'
+alias gds='git diff --staged'
 alias gcm='git checkout main'
 alias gco='git checkout'
 __git_complete gco _git_checkout
