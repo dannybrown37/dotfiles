@@ -16,10 +16,8 @@ alias lg='lazygit'  # @doc Open lazygit TUI
 
 # Tools I'm trying out
 
-alias cinrec='asciinema rec session.cast'
-alias cinplay='asciinema play session.cast'
-alias crocsend='croc send'  # @doc Send a file via a Croc server | croc send <file>
-alias crocinstall='curl https://getcroc.schollz.com | bash'  # @doc Install Croc
+alias cinrec='asciinema rec session.cast'  # @doc Record terminal session to session.cast
+alias cinplay='asciinema play session.cast'  # @doc Replay session.cast recording
 
 # Cargo package aliases
 
