@@ -1,0 +1,71 @@
+# Lazygit config -- catppuccin latte theme + custom keybinds
+# Docs: https://github.com/jesseduffield/lazygit/blob/master/docs/Config.md
+
+gui:
+  theme:
+    activeBorderColor:
+      - "#1e66f5" # blue
+      - bold
+    inactiveBorderColor:
+      - "#8c8fa1" # overlay1
+    optionsTextColor:
+      - "#1e66f5" # blue
+    selectedLineBgColor:
+      - "#ccd0da" # surface0
+    selectedRangeBgColor:
+      - "#ccd0da" # surface0
+    cherryPickedCommitBgColor:
+      - "#ea76cb" # pink
+    cherryPickedCommitFgColor:
+      - "#1e66f5" # blue
+    unstagedChangesColor:
+      - "#d20f39" # red
+    defaultFgColor:
+      - "#4c4f69" # text
+  nerdFontsVersion: "3"
+  showFileTree: true
+  expandFocusedSidePanel: true
+  mouseEvents: true
+git:
+  pagers:
+    - colorArg: always
+      pager: delta --dark --paging=never
+  commit:
+    signOff: false
+  branchLogCmd: "git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName}} --"
+  overrideGpg: false
+  parseEmoji: true
+# Custom keybindings
+keybinding:
+  universal:
+    quit: q
+    return: "<esc>"
+    togglePanel: "<tab>"
+    prevItem: "<up>"
+    nextItem: "<down>"
+  commits:
+    squashDown: s
+    rewordCommit: r
+    renameCommit: R
+    viewResetOptions: g
+    markAsBaseCommit: B
+  branches:
+    createPullRequest: o
+customCommands:
+  # Push and open PR with gh
+  - key: "P"
+    context: "localBranches"
+    command: "gh pr create --web"
+    description: "Open PR creation in browser via gh"
+    loadingText: "Opening GitHub..."
+  # Copy branch name to clipboard
+  - key: "y"
+    context: "localBranches"
+    command: "git branch --show-current | tr -d '\n' | xclip -selection clipboard"
+    description: "Copy branch name to clipboard"
+  # Undo last commit (keep changes staged)
+  - key: "U"
+    context: "commits"
+    command: "git reset --soft HEAD~1"
+    description: "Undo last commit (keep staged)"
+    loadingText: "Undoing..."

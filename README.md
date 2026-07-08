@@ -25,6 +25,7 @@ Bootstrap scripts:
   golang          Install Go environment (latest Golang version)
   rust            Install Rust environment (latest Rust version, select global packages)
   nvim            Install Neovim
+  lazygit         Install lazygit TUI git client
   vscode          Install VS Code extensions and settings
   all             Install all of the above
   gnome           Install Gnome extensions
@@ -67,6 +68,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `google` | Pop open a browser to google search results type in command line | `config/.bashrc` |
 | `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
+| `lg` | Open lazygit TUI | `config/.bash_aliases` |
 | `llmedit` | Edit LLM rules in Neovim | `config/.bash_aliases` |
 | `llmrules` | Copy LLM rules to clipboard for chatbot copy-paste | `config/.bash_aliases` |
 | `mk` | Create a directory and cd into it | `config/.bashrc` |
