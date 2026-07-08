@@ -1,0 +1,44 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+format = """
+$directory$git_branch$git_status$python$nodejs$cmd_duration
+$character"""
+
+[directory]
+style = "bold cyan"
+truncation_length = 3
+truncate_to_repo = true
+format = "[$path]($style) "
+
+[git_branch]
+format = "[$symbol$branch]($style) "
+symbol = " "
+style = "bold purple"
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+style = "bold yellow"
+
+[python]
+format = '[${symbol}${version}( \($virtualenv\))]($style) '
+symbol = "🐍 "
+style = "yellow"
+detect_extensions = ["py"]
+detect_files = ["pyproject.toml", "requirements.txt", ".python-version", "Pipfile", "setup.py", "setup.cfg"]
+detect_folders = [".venv", "venv"]
+
+[nodejs]
+format = "[$symbol$version]($style) "
+symbol = "⬢ "
+style = "bold green"
+detect_extensions = ["js", "ts", "mjs", "cjs"]
+detect_files = ["package.json", ".nvmrc", ".node-version"]
+
+[cmd_duration]
+min_time = 2000
+format = "[⏱ $duration]($style) "
+style = "yellow"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"

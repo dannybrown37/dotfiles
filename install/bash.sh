@@ -159,3 +159,10 @@ if [ ! -L "${HOME}/.config/nvim" ]; then
 else
     echo "nvim config has already been symlinked"
 fi
+
+if [ ! -L "${HOME}/.config/starship.toml" ]; then
+    ln -s ~/projects/dotfiles/config/starship.toml ~/.config/starship.toml &&
+        echo "Symlinked starship.toml to ~/.config/starship.toml"
+else
+    echo "starship.toml has already been symlinked"
+fi
