@@ -30,21 +30,6 @@ sudo install "${tmp_dir}/lazygit" /usr/local/bin/lazygit
 echo "lazygit ${latest_version} installed at $(command -v lazygit)"
 
 ##
-## Install delta (syntax-highlighting pager for git/lazygit)
-##
-
-if ! command -v delta &>/dev/null; then
-    echo "Installing delta..."
-    delta_version=$(curl -s https://api.github.com/repos/dandavison/delta/releases/latest | jq -r '.tag_name')
-    curl -sLo "${tmp_dir}/delta.deb" \
-        "https://github.com/dandavison/delta/releases/download/${delta_version}/git-delta_${delta_version}_amd64.deb"
-    sudo dpkg -i "${tmp_dir}/delta.deb"
-    echo "delta ${delta_version} installed at $(command -v delta)"
-else
-    echo "delta already installed: $(delta --version)"
-fi
-
-##
 ## Symlink lazygit config
 ##
 
