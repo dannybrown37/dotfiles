@@ -29,6 +29,7 @@ Bootstrap scripts:
   all             Install all of the above
   gnome           Install Gnome extensions
   windows         Install Windows extensions (NerdFonts and Komorebi)
+  wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
   komo            Reset komorebi (useful for after configuration changes)
 
 These commands require GPG keys and secrets:

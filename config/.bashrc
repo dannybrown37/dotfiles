@@ -187,11 +187,14 @@ elif [[ "${MSYSTEM}" = "MINGW64" ]]; then
     PROMPT_SYMBOL=🪟
 fi
 
-PROMPT_COMMAND=git_info_env_vars
-
-export VIRTUAL_ENV_DISABLE_PROMPT=1
-# shellcheck disable=SC2250
-export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'─}'$COLOR3'< \w >'$COLOR1'─'$COLOR4'{ $DEV_STACK }'$COLOR1'─[ $GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
+if ! command -v starship >/dev/null 2>&1; then
+    PROMPT_COMMAND=git_info_env_vars
+    export VIRTUAL_ENV_DISABLE_PROMPT=1
+    # shellcheck disable=SC2250
+    export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'─}'$COLOR3'< \w >'$COLOR1'─'$COLOR4'{ $DEV_STACK }'$COLOR1'─[ $GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
+else
+    eval "$(starship init bash)"
+fi
 
 ##
 ## Functions
@@ -400,6 +403,13 @@ tmux source-file ~/.tmux.conf 2>/dev/null
 # Remove duplicates from $PATH and then export. Do not export PATH anywhere else!
 PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
 export PATH
+
+
+export NVM_DIR="$HOME/.nvm"
+# shellcheck disable=SC1091
+[[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
+# shellcheck disable=SC1091
+[[ -s "$NVM_DIR/bash_completion" ]] && \. "$NVM_DIR/bash_completion"
 
 # Profiling
 # set +x

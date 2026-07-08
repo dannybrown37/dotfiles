@@ -1,4 +1,4 @@
-.PHONY: help python deno node golang rust vscode all gnome windows komo secrets-save secrets-load
+.PHONY: help python deno node golang rust vscode all gnome windows komo wsl-fonts secrets-save secrets-load
 
 help:
 	@echo "Usage: make [option]"
@@ -15,6 +15,7 @@ help:
 	@echo "  all             Install all of the above"
 	@echo "  gnome           Install Gnome extensions"
 	@echo "  windows         Install Windows extensions (NerdFonts and Komorebi)"
+	@echo "  wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)"
 	@echo "  komo            Reset komorebi (useful for after configuration changes)"
 	@echo ""
 	@echo "These commands require GPG keys and secrets:"
@@ -64,6 +65,9 @@ gnome:
 
 windows:
 	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/windows.ps1"
+
+wsl-fonts:
+	bash -c ". $(root_dir)/install/wsl_fonts.sh"
 
 komo:
 	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/reset_komo.ps1"
