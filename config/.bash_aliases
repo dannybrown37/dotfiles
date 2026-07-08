@@ -103,8 +103,12 @@ gitpurge() {  # @doc Delete all local branches except main, develop, and the cur
     done
 }
 alias gl='git log'
+alias glog='git log --oneline --graph --decorate --all'  # @doc Graph log of all branches
 alias gitlines='git ls-files | xargs wc -l'  # @doc Count lines of code in all files from curren branch
 alias glo='git log -1 --pretty=%B'  # @doc Show last commit message (Git Log One-Line)
+alias gss='git stash'  # @doc Git stash save
+alias gsp='git stash pop'  # @doc Git stash pop
+alias gsl='git stash list'  # @doc Git stash list
 alias gp='git push'
 alias gpf='git push -f'
 alias gpo='git push -u origin'

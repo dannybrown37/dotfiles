@@ -21,8 +21,8 @@ esac
 HISTCONTROL=ignoreboth:erasedups
 shopt -s histappend
 shopt -s expand_aliases
-HISTSIZE=1000
-HISTFILESIZE=2000
+HISTSIZE=100000
+HISTFILESIZE=200000
 export HISTIGNORE="history:ls:pwd:exit:date:clear:,,*"
 
 shopt -s checkwinsize
@@ -44,6 +44,7 @@ fi
 export DOTFILES_DIR="${HOME}/projects/dotfiles"
 export NOTES_DIR="${HOME}/notes"
 export EDITOR="nvim"
+export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
 LS_IGNORE_PATTERNS=(
     ".git"
