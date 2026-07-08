@@ -48,7 +48,6 @@ export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
 LS_IGNORE_PATTERNS=(
     ".git"
-    ".github"
     "node_modules"
     "__pycache__"
     "*.pyc"
