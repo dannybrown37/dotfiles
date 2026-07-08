@@ -18,6 +18,16 @@ style = "bold purple"
 [git_status]
 format = '([$all_status$ahead_behind]($style) )'
 style = "bold yellow"
+untracked = "❓ "
+modified = "🛠️ "
+staged = "✏️ "
+ahead = "🚀 "
+behind = "⬇️  "
+diverged = "🚀 ⬇️  "
+stashed = "💲"
+conflicted = "⚡️ "
+renamed = ""
+deleted = "🗑️ "
 
 [python]
 format = '[${symbol}${version}( \($virtualenv\))]($style) '
