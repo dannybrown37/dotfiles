@@ -40,7 +40,7 @@ if command -v eza &>/dev/null; then
     alias tree="eza --tree -la --ignore-glob=\${LS_IGNORE_GLOBS}"  # @doc Show a tree view of files and directories
 fi
 
-if dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -q "ok installed"; then
+if command -v batcat &>/dev/null; then
     alias cat="batcat"
     alias bat="batcat"
     alias pcat="batcat -p"
