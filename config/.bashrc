@@ -63,8 +63,6 @@ LS_IGNORE_PATTERNS=(
 export LS_IGNORE_GLOBS=$(IFS='|'; echo "${LS_IGNORE_PATTERNS[*]}")
 # shellcheck disable=SC2016
 export FZF_DEFAULT_COMMAND='rg --hidden --no-ignore -l "" | grep -Ev "$(echo $LS_IGNORE_GLOBS | tr "|" "\n")" | while IFS= read -r f; do [[ "$f" == *.js && -f "${f%.js}.ts" ]] || echo "$f"; done'
-touch "${DOTFILES_DIR}/config/.secrets"
-source "${DOTFILES_DIR}/config/.secrets"
 
 PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 
@@ -81,6 +79,9 @@ if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     source "${DOTFILES_DIR}/wsl/bin.sh"
     PATH="${DOTFILES_DIR}/wsl:${PATH}"
 fi
+
+touch "${DOTFILES_DIR}/config/.secrets"
+source "${DOTFILES_DIR}/config/.secrets"
 
 ##
 ## GNOME Specific Setup
