@@ -95,6 +95,7 @@ alias gds='git diff --staged'
 alias gcm='git checkout main'
 alias gco='git checkout'
 __git_complete gco _git_checkout
+__git_complete gcb _git_checkout
 alias gcr='git commit --amend --no-edit'
 alias gcuemail='git config --global user.email "dannybrown37@gmail.com"'
 alias gcuname='git config --global user.name "Danny Brown"'
@@ -120,7 +121,7 @@ alias gp='git push'
 alias gpf='git push -f'
 alias gpo='git push -u origin'
 alias gpup='git push -u origin HEAD && git open' # @doc Push new branch and open PR in browser
-alias gpr='git pull rebase'
+alias gpr='git pull --rebase'
 alias gra='git rebase --abort'
 alias grc='git rebase --continue'
 alias grd='git rebase develop'
@@ -132,7 +133,7 @@ alias gs='git status'
 # alias gsu='git submodule update'
 
 # GitHub CLI
-alias ghd="BROWSER='cmd.exe /c start chrome' && export BROWSER && gh dash"
+alias ghd='BROWSER="cmd.exe /c start chrome" gh dash'
 function ghpr() {
     gh pr list --limit 100 --json number,title,updatedAt,author --template \
         '{{range .}}{{tablerow .number .title .author.name (timeago .updatedAt)}}{{end}}' |

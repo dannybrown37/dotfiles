@@ -11,8 +11,10 @@
     defaultBranch = main
 [pull]
     ff = only
+    rebase = true
 [push]
     default = current
+    autoSetupRemote = true
 [fetch]
     prune = true
 [rebase]
@@ -26,6 +28,10 @@
     date = relative
 [merge]
     conflictStyle = diff3
+[column]
+    ui = auto
+[help]
+    autocorrect = prompt
 [diff]
     colorMoved = default
 [interactive]

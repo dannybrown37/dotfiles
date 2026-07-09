@@ -23,6 +23,7 @@ shopt -s expand_aliases
 HISTSIZE=100000
 HISTFILESIZE=200000
 export HISTIGNORE="history:ls:pwd:exit:date:clear:,,*"
+export HISTTIMEFORMAT="%F %T  "
 
 shopt -s checkwinsize
 
