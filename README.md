@@ -97,6 +97,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `config/.bashrc` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
+| `prg` | ripgrep across all ~/projects | prg <pattern> [rg options] | `bin/prg.sh` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
 | `quick_google` | Ctrl+Shift+G - Search Google for selected text | `ahk/quick_google.ahk` |

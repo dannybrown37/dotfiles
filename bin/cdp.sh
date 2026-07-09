@@ -20,12 +20,15 @@ cdp() {
     local partial_name="$1"
     local selected_project
 
-    selected_project=$(printf '%s\n' "${PROJECTS_LIST[@]}" \
-        | grep -E --color=never "^${partial_name}")
-
     if [[ -z "${partial_name}" ]]; then
-        echo "Usage: cdp <project_name>"
-    elif [[ -n "${selected_project}" ]]; then
+        selected_project=$(printf '%s\n' "${PROJECTS_LIST[@]}" \
+            | fzf --prompt="Project> " --height=40%)
+    else
+        selected_project=$(printf '%s\n' "${PROJECTS_LIST[@]}" \
+            | grep -E --color=never "^${partial_name}")
+    fi
+
+    if [[ -n "${selected_project}" ]]; then
         cd "${PROJECTS_DIR}/${selected_project}" || return
     else
         echo "Project not found."
