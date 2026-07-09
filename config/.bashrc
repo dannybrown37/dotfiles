@@ -409,11 +409,23 @@ export PATH
 
 
 export NVM_DIR="$HOME/.nvm"
-# shellcheck disable=SC1091
-[[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
-# shellcheck disable=SC1091
-[[ -s "$NVM_DIR/bash_completion" ]] && \. "$NVM_DIR/bash_completion"
+_load_nvm() {
+    unset -f nvm node npm npx
+    # shellcheck disable=SC1091
+    [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
+    # shellcheck disable=SC1091
+    [[ -s "$NVM_DIR/bash_completion" ]] && \. "$NVM_DIR/bash_completion"
+}
+nvm()  { _load_nvm; nvm  "$@"; }
+node() { _load_nvm; node "$@"; }
+npm()  { _load_nvm; npm  "$@"; }
+npx()  { _load_nvm; npx  "$@"; }
 
 # Profiling
 # set +x
 # exec 2>&3 3>&-
+
+# Between-enters timer: uncomment both blocks to measure prompt lag
+# PS0='$(echo "$EPOCHREALTIME" > /tmp/_bt_$$)'
+# _bt_show() { local f="/tmp/_bt_$$"; [[ -f "$f" ]] && awk "BEGIN{printf \"  \033[2m%.0fms\033[0m\n\",($EPOCHREALTIME-$(< "$f"))*1000}" && rm -f "$f"; }
+# PROMPT_COMMAND="_bt_show;${PROMPT_COMMAND}"
