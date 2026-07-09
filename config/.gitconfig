@@ -27,12 +27,7 @@
 [merge]
     conflictStyle = diff3
 [diff]
-    tool = difftastic
     colorMoved = default
-[difftool]
-    prompt = false
-[difftool "difftastic"]
-    cmd = difft "$LOCAL" "$REMOTE"
 [interactive]
     diffFilter = delta --color-only
 [delta]
