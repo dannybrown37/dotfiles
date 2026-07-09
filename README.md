@@ -72,6 +72,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
+| `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
@@ -80,6 +81,8 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
 | `google` | Pop open a browser to google search results type in command line | `config/.bashrc` |
 | `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
+| `grl` | List recent CI runs on current branch | `config/.bash_aliases` |
+| `grw` | Watch CI run for current branch live | grw | `config/.bash_aliases` |
 | `gsl` | Git stash list | `config/.bash_aliases` |
 | `gsp` | Git stash pop | `config/.bash_aliases` |
 | `gss` | Git stash save | `config/.bash_aliases` |

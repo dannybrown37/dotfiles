@@ -134,13 +134,18 @@ alias gs='git status'
 
 # GitHub CLI
 alias ghd='BROWSER="cmd.exe /c start chrome" gh dash'
-function ghpr() {
-    gh pr list --limit 100 --json number,title,updatedAt,author --template \
-        '{{range .}}{{tablerow .number .title .author.name (timeago .updatedAt)}}{{end}}' |
-        fzf --height 25% --reverse |
-        cut -f1 -d ' ' |
-        xargs gh pr checkout
+
+function ghpr() {  # @doc Push branch and open GitHub PR creation page in browser | ghprc [--draft]
+    local branch
+    branch=$(git branch --show-current)
+    git push
+    local draft_param=""
+    [[ "${1:-}" == "--draft" ]] && draft_param="?expand=1&draft=1" || draft_param="?expand=1"
+    gh pr view --web 2>/dev/null || open_url_in_browser "$(gh repo view --json url -q .url)/compare/${branch}${draft_param}"
 }
+
+alias grw='gh run watch'  # @doc Watch CI run for current branch live | grw
+alias grl='gh run list --limit 10 --branch "$(git branch --show-current)"'  # @doc List recent CI runs on current branch
 
 # Terraform
 # alias tf='terraform'
