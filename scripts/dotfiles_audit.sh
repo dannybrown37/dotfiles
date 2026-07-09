@@ -103,7 +103,7 @@ fi
 
 section "Apt Packages"
 apt_packages=(
-    asciinema bash-completion bat cowsay curl faker fd-find fzf git gh
+    asciinema bash-completion bat cowsay curl direnv faker fd-find fzf git gh
     httpie jq make man-db lolcat neofetch openssh-server pass pipx rename
     ripgrep shellcheck shfmt tldr tmux unzip wget xclip zip
 )

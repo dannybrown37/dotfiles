@@ -400,6 +400,11 @@ tmux source-file ~/.tmux.conf 2>/dev/null
 #     source "$AUTOENV_ACTIVATE_SCRIPT"
 # fi
 
+# direnv — per-directory environment variables via .envrc
+if command -v direnv &>/dev/null; then
+    eval "$(direnv hook bash)"
+fi
+
 # Remove duplicates from $PATH and then export. Do not export PATH anywhere else!
 PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
 export PATH
