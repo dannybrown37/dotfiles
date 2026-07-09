@@ -75,7 +75,23 @@ Managed via `.pre-commit-config.yaml`. Active hooks:
 - **sync-readme-make** — keeps README install options in sync with `make help` output
 - Standard pre-commit-hooks (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
 
-## Gotchas
+## Shell Startup Performance
+
+**Lazy-load anything that isn't needed in every shell.** This is the single most important rule for keeping startup fast.
+
+- **Pattern:** wrap the expensive source/eval in a stub function that replaces itself on first call:
+  ```bash
+  mytool() {
+      unset -f mytool
+      source /path/to/mytool/init.sh   # or: eval "$(mytool init bash)"
+      mytool "$@"
+  }
+  ```
+- **When to lazy-load:** any `eval "$(tool init bash)"`, large sourced files, language version managers (nvm, rbenv, pyenv), or anything that calls an external binary at source time.
+- **When to eager-load:** tools used in every session that are already fast (<5ms) — e.g. starship, atuin, direnv, zoxide.
+- **Glob over find:** for single-level directory listing, use `for dir in path/*/;` (bash builtin, no fork) instead of `find -maxdepth 1`.
+- **Guard repeated env setup:** use `[[ -z "${VAR:-}" ]]` before any subprocess that sets an env var, so sourcing the same file twice (e.g. via `.secrets` → work aliases) doesn't repeat expensive calls.
+- **Measure:** `hyperfine --warmup 3 'bash -i -c exit'` for startup; uncomment the `_bt_show` lines at the bottom of `.bashrc` for prompt lag.
 
 - Config files use relative symlinks — don't move them without updating the bash install script.
 - The `project_manager/` directory is a standalone Python package with its own `pyproject.toml` and venv.
