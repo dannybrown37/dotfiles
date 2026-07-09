@@ -45,6 +45,7 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux 
 3. If the tool needs shell aliases/functions, add them to `config/.bash_aliases` or a new file in `bin/`.
 4. Update the `.PHONY` list in `Makefile`.
 5. Add a passthrough stub to `bin/stubs.sh` so the tool appears in `cmds` with documentation (see below).
+6. **Add the tool to `scripts/dotfiles_audit.sh`** — every installed dependency must have a corresponding check so the audit stays the source of truth for what's installed and why.
 
 ## Third-Party Tool Stubs
 
