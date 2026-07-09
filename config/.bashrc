@@ -75,7 +75,7 @@ PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
     export ON_WINDOWS=true
     # shellcheck disable=SC2016
-    export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
+    [[ -z "${WINDOWS_USERNAME:-}" ]] && export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
     # source "${DOTFILES_DIR}/ahk/ahk.sh"  # Choosing not to source this given the time to run, use ahk alias
     source "${DOTFILES_DIR}/wsl/cpw.sh"
     source "${DOTFILES_DIR}/wsl/bin.sh"
@@ -392,11 +392,6 @@ fi
 ##
 ## Bespoke environmental stuff
 ##
-
-# Only reload tmux config when inside a tmux session
-if [[ -n "${TMUX:-}" ]]; then
-    tmux source-file ~/.tmux.conf 2>/dev/null
-fi
 
 # AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh
 # if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
