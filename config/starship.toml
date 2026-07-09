@@ -1,7 +1,7 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
 format = """
-$directory$git_branch$git_status$python$nodejs$cmd_duration
+$directory$git_branch$git_status$python$nodejs$cmd_duration${custom.aws_session}${custom.aws_logged_out}
 $character"""
 
 [directory]
@@ -52,3 +52,17 @@ style = "yellow"
 [character]
 success_symbol = "[❯](bold green)"
 error_symbol = "[❯](bold red)"
+
+[custom.aws_session]
+command = "$HOME/projects/dotfiles/scripts/aws-starship.sh"
+when = "$HOME/projects/dotfiles/scripts/aws-starship.sh"
+style = "bold yellow"
+format = "[$output]($style) "
+shell = ["bash", "--noprofile", "--norc"]
+
+[custom.aws_logged_out]
+command = "echo '✗'"
+when = "! $HOME/projects/dotfiles/scripts/aws-starship.sh"
+style = "bold red"
+format = "[$output]($style) "
+shell = ["bash", "--noprofile", "--norc"]
