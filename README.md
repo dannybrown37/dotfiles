@@ -47,6 +47,8 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | Command | Description | Source |
 | --- | --- | --- |
 | `ahk` | Run all AutoHotKey scripts (Windows only) | `config/.bash_aliases` |
+| `asciinema` | Record and replay terminal sessions | asciinema rec session.cast | `bin/stubs.sh` |
+| `atuin` | Shell history search/sync (replaces Ctrl+R) | atuin search | `bin/stubs.sh` |
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
 | `beep` | Play a beep sound (Windows only) | `config/.bash_aliases` |
 | `cb` | Copy stdin to clipboard. <command> | cb | `config/.bash_aliases` |
@@ -56,24 +58,35 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `cht` | Query cht.sh for info on many technologies | `config/.bashrc` |
 | `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
 | `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
+| `clip` | Copy a screen recording to OneDrive with fzf selection: clip [--reset] | `bin/clip.sh` |
 | `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
+| `croc` | Send files between machines securely | croc send <file> | `bin/stubs.sh` |
+| `delta` | Syntax-highlighting pager for git diffs (replaces less) | `bin/stubs.sh` |
 | `dotaudit` | Audit system for dotfile setup compliance | `config/.bash_aliases` |
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
 | `epoch` | Alias for epoch_timestamp | `config/.bash_aliases` |
 | `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `config/.bashrc` |
+| `eza` | Modern ls replacement with git status and icons | `bin/stubs.sh` |
+| `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
+| `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini a question from the terminal | `bin/gem.sh` |
+| `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
 | `gitopen` | Open current repo in browser | `config/.bash_aliases` |
 | `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
+| `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
 | `google` | Pop open a browser to google search results type in command line | `config/.bashrc` |
 | `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
 | `gsl` | Git stash list | `config/.bash_aliases` |
 | `gsp` | Git stash pop | `config/.bash_aliases` |
 | `gss` | Git stash save | `config/.bash_aliases` |
+| `gwt` | git-worktree: gwt <add|list|rm|cd> [branch] [options] | `bin/gwt.sh` |
+| `hyperfine` | Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2' | `bin/stubs.sh` |
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
+| `lazygit` | TUI git client | lg (alias) | `bin/stubs.sh` |
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
 | `llmedit` | Edit LLM rules in Neovim | `config/.bash_aliases` |
 | `llmrules` | Copy LLM rules to clipboard for chatbot copy-paste | `config/.bash_aliases` |
@@ -82,14 +95,20 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `noteion` | Create Notion pages from the terminal | `bin/noteion.sh` |
 | `notes` | Open a note file from the command line from $NOTES_DIR using fzf | `config/.bashrc` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `config/.bashrc` |
+| `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
 | `quick_google` | Ctrl+Shift+G - Search Google for selected text | `ahk/quick_google.ahk` |
+| `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
+| `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
 | `teams_toggle` | Ctrl+Shift+D - Toggle Microsoft Teams focus | `ahk/teams_toggle.ahk` |
+| `tldr` | Simplified man pages with practical examples | tldr <cmd> | `bin/stubs.sh` |
 | `tmconf` | Reload tmux config | `config/.bash_aliases` |
 | `tms` | Start or attach to tmux Session | `config/.bash_aliases` |
+| `tmux` | Terminal multiplexer -- sessions, windows, panes | `bin/stubs.sh` |
+| `tokei` | Count lines of code by language in current repo | `bin/stubs.sh` |
 | `tree` | Show a tree view of files and directories | `config/.bash_aliases` |
 | `url` | Open a URL in the system browser | `config/.bash_aliases` |
 | `utc` | Alias for utc_timestamp | `config/.bash_aliases` |
@@ -99,6 +118,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `vscode_toggle` | Ctrl+Shift+X - Toggle VS Code focus | `ahk/vscode_toggle.ahk` |
 | `vsi` | Fuzzy find files and open in Neovim | `config/.bash_aliases` |
 | `windows_terminal_toggle` | Ctrl+Shift+Z - Toggle Windows Terminal focus | `ahk/windows_terminal_toggle.ahk` |
+| `zoxide` | Smarter cd that learns your most-used directories (alias: cd) | `bin/stubs.sh` |
 <!-- @doc:commands:end -->
 
 ### Directory Structure

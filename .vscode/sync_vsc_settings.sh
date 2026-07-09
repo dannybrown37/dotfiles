@@ -35,3 +35,20 @@ powershell.exe -Command "Start-Process powershell -Verb RunAs -Wait -ArgumentLis
 }
 
 echo "VS Code settings symlinked to dotfiles"
+
+# Symlink keybindings
+keybindings_source="${script_dir}/keybindings.json"
+keybindings_target="/mnt/c/Users/${WINDOWS_USERNAME}/AppData/Roaming/Code/User/keybindings.json"
+keybindings_target_win=$(wslpath -w "${keybindings_target}")
+keybindings_wsl_source=$(wslpath -w "${keybindings_source}")
+
+if [[ -L "${keybindings_target}" ]]; then
+    echo "Keybindings symlink already exists"
+else
+    [[ -f "${keybindings_target}" ]] && cp "${keybindings_target}" "${keybindings_target}.bak" && rm "${keybindings_target}"
+    powershell.exe -Command "Start-Process powershell -Verb RunAs -Wait -ArgumentList \"-Command New-Item -ItemType SymbolicLink -Path '${keybindings_target_win}' -Target '${keybindings_wsl_source}'\"" || {
+        echo "ERROR: Keybindings symlink creation failed." >&2
+        exit 1
+    }
+    echo "VS Code keybindings symlinked to dotfiles"
+fi
