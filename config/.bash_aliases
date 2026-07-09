@@ -11,7 +11,15 @@ alias url='open_url_in_browser' # @doc Open a URL in the system browser
 alias utc='utc_timestamp'  # @doc Alias for utc_timestamp
 alias uuid='generate_random_uuid_and_put_in_clipboard'  # @doc Generate a random UUID and put it in the clipboard
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # @doc Vim cheatsheet fuzzy finder
-alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim "{}"' # @doc Fuzzy find files and open in Neovim
+unalias vsi 2>/dev/null || true
+vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
+    local files
+    files=$(
+        { git ls-files --cached --others --exclude-standard 2>/dev/null || find . -type f; } \
+            | fzf -m --info=hidden --preview="batcat --color=always {}"
+    )
+    [[ -n "$files" ]] && nvim $(echo "$files")
+}
 alias lg='lazygit'  # @doc Open lazygit TUI
 alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 

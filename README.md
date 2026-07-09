@@ -116,7 +116,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `uuid` | Generate a random UUID and put it in the clipboard | `config/.bash_aliases` |
 | `vc` | Vim cheatsheet fuzzy finder | `config/.bash_aliases` |
 | `vscode_toggle` | Ctrl+Shift+X - Toggle VS Code focus | `ahk/vscode_toggle.ahk` |
-| `vsi` | Fuzzy find files and open in Neovim | `config/.bash_aliases` |
+| `vsi` | Fuzzy find files and open in Neovim (git-aware) | `config/.bash_aliases` |
 | `windows_terminal_toggle` | Ctrl+Shift+Z - Toggle Windows Terminal focus | `ahk/windows_terminal_toggle.ahk` |
 | `zoxide` | Smarter cd that learns your most-used directories (alias: cd) | `bin/stubs.sh` |
 <!-- @doc:commands:end -->
