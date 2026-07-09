@@ -73,6 +73,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `gem` | Ask Gemini a question from the terminal | `bin/gem.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
+| `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitopen` | Open current repo in browser | `config/.bash_aliases` |
 | `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |

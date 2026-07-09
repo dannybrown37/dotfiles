@@ -17,4 +17,6 @@ fi
 ## Install global npm packages
 ##
 
+npm install --global git-open
+
 echo "Node $(node --version) ready"
