@@ -426,7 +426,21 @@ npx()  { _load_nvm; npx  "$@"; }
 # set +x
 # exec 2>&3 3>&-
 
-# Between-enters timer: uncomment both blocks to measure prompt lag
-# PS0='$(echo "$EPOCHREALTIME" > /tmp/_bt_$$)'
-# _bt_show() { local f="/tmp/_bt_$$"; [[ -f "$f" ]] && awk "BEGIN{printf \"  \033[2m%.0fms\033[0m\n\",($EPOCHREALTIME-$(< "$f"))*1000}" && rm -f "$f"; }
-# PROMPT_COMMAND="_bt_show;${PROMPT_COMMAND}"
+# Between-enters timer
+PS0='$(echo "$EPOCHREALTIME" > /tmp/_bt_$$)'
+
+_bt_pc_mark() { _bt_pc_start=$EPOCHREALTIME; }
+
+_bt_show() {
+    local now=$EPOCHREALTIME
+    local f="/tmp/_bt_$$"
+    if [[ -f "$f" ]]; then
+        awk "BEGIN{printf \"  \033[2m%.0fms\033[0m\n\",($now-$(< "$f"))*1000}"
+        rm -f "$f"
+    elif [[ -n "${_bt_pc_start:-}" ]]; then
+        awk "BEGIN{printf \"  \033[2m%.0fms\033[0m\n\",($now-${_bt_pc_start})*1000}"
+    fi
+}
+
+[[ "${PROMPT_COMMAND[*]}" != *_bt_pc_mark* ]] && PROMPT_COMMAND=("_bt_pc_mark" "${PROMPT_COMMAND[@]}")
+[[ "${PROMPT_COMMAND[*]}" != *_bt_show* ]] && PROMPT_COMMAND+=($'\n''_bt_show')
