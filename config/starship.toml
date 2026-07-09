@@ -1,8 +1,13 @@
 "$schema" = 'https://starship.rs/config-schema.json'
+command_timeout = 500
 
 format = """
-$directory$git_branch$git_status$python$nodejs$cmd_duration
+$directory$git_branch$git_status$env_var$python$nodejs$cmd_duration
 $character"""
+
+[env_var.DEV_STACK]
+format = "{ $env_value } "
+style = "bold blue"
 
 [directory]
 style = "bold cyan"
