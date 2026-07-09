@@ -16,7 +16,7 @@ vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
     local files
     files=$(
         { git ls-files --cached --others --exclude-standard 2>/dev/null || find . -type f; } \
-            | fzf -m --info=hidden --preview="batcat --color=always {}"
+            | fzf -m --info=hidden --preview="batcat --color=always {}" --preview-window='right:60%:wrap'
     )
     [[ -n "$files" ]] && nvim $(echo "$files")
 }

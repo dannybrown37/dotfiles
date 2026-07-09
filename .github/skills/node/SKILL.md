@@ -40,4 +40,4 @@ Logs should be one line when possible.
 
 Use [npm](https://www.npmjs.com/) for package management.
 
-Consider [Deno 2](https://deno.land/) or [Bun](https://bun.sh/) for new standalone projects.
+Consider [Deno 2](https://deno.land/) for new standalone projects.
