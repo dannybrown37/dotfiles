@@ -2,22 +2,26 @@
 
 # @doc Cd to any project directory from anywhere (with tab autocomplete)
 
-# Get a list of all directories in ~/projects and store them in an array
 PROJECTS_DIR="${HOME}/projects"
 PROJECTS_LIST=()
-while IFS= read -r -d '' dir; do
-    PROJECTS_LIST+=("$(basename "${dir}")")
-done < <(find "${PROJECTS_DIR}" -maxdepth 1 -type d -print0)
+_projects_loaded=0
 
-# Define a function to change directories and enable tab auto-completion
+_load_projects_list() {
+    [[ $_projects_loaded -eq 1 ]] && return
+    PROJECTS_LIST=()
+    for dir in "${PROJECTS_DIR}"/*/; do
+        [[ -d "$dir" ]] && PROJECTS_LIST+=("$(basename "$dir")")
+    done
+    _projects_loaded=1
+}
+
 cdp() {
+    _load_projects_list
     local partial_name="$1"
     local selected_project
 
-    # Using grep with --color=never to enable tab auto-completion
-    selected_project=$(echo "${PROJECTS_LIST[@]}" \
-                                | tr ' ' '\n' \
-                                | grep -E --color=never "^$partial_name")
+    selected_project=$(printf '%s\n' "${PROJECTS_LIST[@]}" \
+        | grep -E --color=never "^${partial_name}")
 
     if [[ -z "${partial_name}" ]]; then
         echo "Usage: cdp <project_name>"
@@ -28,8 +32,8 @@ cdp() {
     fi
 }
 
-# Set up bash-completion for cdp command
 _cdp_completion() {
+    _load_projects_list
     COMPREPLY=("$(compgen -W "${PROJECTS_LIST[*]}" -- "$2")")
 }
 complete -F _cdp_completion cdp
