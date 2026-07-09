@@ -10,9 +10,9 @@ apt_packages=(
     bat
     cowsay
     curl
+    direnv
     faker
     fd-find
-    fortune
     fzf
     git
     gh
