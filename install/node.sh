@@ -17,21 +17,4 @@ fi
 ## Install global npm packages
 ##
 
-global_npm_packages=(
-    git-open
-    typescript
-    ts-node
-    fast-pr
-    '@hyperupcall/autoenv'
-)
-
-installed=$(npm list --global --depth=0 2>/dev/null)
-
-for package in "${global_npm_packages[@]}"; do
-    if ! echo "${installed}" | grep -q "${package}"; then
-        echo "Installing ${package}..."
-        npm install --global "${package}"
-    fi
-done
-
-echo "Node $(node --version) ready, all global packages installed"
+echo "Node $(node --version) ready"

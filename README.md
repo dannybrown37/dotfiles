@@ -57,12 +57,14 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
 | `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
 | `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
+| `dotaudit` | Audit system for dotfile setup compliance | `config/.bash_aliases` |
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
 | `epoch` | Alias for epoch_timestamp | `config/.bash_aliases` |
 | `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `config/.bashrc` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini a question from the terminal | `bin/gem.sh` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
+| `gitopen` | Open current repo in browser | `config/.bash_aliases` |
 | `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |

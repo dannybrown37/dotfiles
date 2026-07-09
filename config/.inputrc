@@ -4,3 +4,6 @@
 "\C-p": previous-history
 "\C-k": previous-history
 "\e": "\C-u"
+
+# Wrap pastes in escape sequences so the shell treats them as literal text
+set enable-bracketed-paste on
