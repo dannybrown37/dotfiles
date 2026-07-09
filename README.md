@@ -92,7 +92,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `llmrules` | Copy LLM rules to clipboard for chatbot copy-paste | `config/.bash_aliases` |
 | `mk` | Create a directory and cd into it | `config/.bashrc` |
 | `note` | Create a note file from the command line | `config/.bashrc` |
-| `noteion` | Create Notion pages from the terminal | `bin/noteion.sh` |
+| `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `notes` | Open a note file from the command line from $NOTES_DIR using fzf | `config/.bashrc` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `config/.bashrc` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
