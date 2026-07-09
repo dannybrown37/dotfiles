@@ -10,6 +10,7 @@ eza() { command eza "$@"; }              # @doc Modern ls replacement with git s
 fd() { command fdfind "$@"; }            # @doc Fast find that respects .gitignore | fd <pattern>
 fzf() { command fzf "$@"; }              # @doc Interactive fuzzy finder for any list
 gh() { command gh "$@"; }               # @doc GitHub CLI -- PRs, issues, workflows, and more
+git-open() { command git-open "$@"; }   # @doc Open current repo/branch in browser | git-open [remote] [branch]
 glow() { command glow "$@"; }            # @doc Render markdown in the terminal | glow <file>
 hyperfine() { command hyperfine "$@"; }  # @doc Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2'
 lazygit() { command lazygit "$@"; }      # @doc TUI git client | lg (alias)

@@ -191,6 +191,16 @@ if [[ -n "$NODE_VER" && "$NODE_VER" != "22" ]]; then
     warn "node version" "expected v22, got v${NODE_VER} — run: sudo n 22"
 fi
 
+npm_globals=(git-open)
+for pkg in "${npm_globals[@]}"; do
+    if npm list --global --depth=0 "$pkg" &>/dev/null; then
+        ver=$(npm list --global --depth=0 "$pkg" 2>/dev/null | grep "$pkg" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+        ok "npm global: $pkg" "${ver:-installed}"
+    else
+        fail "npm global: $pkg" "npm install --global $pkg"
+    fi
+done
+
 # ── Python / uv ───────────────────────────────────────────────────────────────
 
 section "Python / uv"
