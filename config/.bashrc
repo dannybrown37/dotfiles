@@ -6,8 +6,7 @@
 # set -x
 
 # skip .bashrc if parent is copilot
-parent=$(ps -h -p $PPID -ocmd)
-if [ "${parent:0:7}" = "copilot" ]; then
+if [[ -r "/proc/${PPID}/comm" && $(<"/proc/${PPID}/comm") == "copilot"* ]]; then
     return
 fi
 
