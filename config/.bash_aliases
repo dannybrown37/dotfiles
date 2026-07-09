@@ -13,6 +13,7 @@ alias uuid='generate_random_uuid_and_put_in_clipboard'  # @doc Generate a random
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/nvim/notes.txt\" | sort | fzf" # @doc Vim cheatsheet fuzzy finder
 alias vsi='fzf -m --info=hidden --preview="batcat --color=always {}" | xargs -r nvim "{}"' # @doc Fuzzy find files and open in Neovim
 alias lg='lazygit'  # @doc Open lazygit TUI
+alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 
 # Tools I'm trying out
 
@@ -110,7 +111,8 @@ alias gsl='git stash list'  # @doc Git stash list
 alias gp='git push'
 alias gpf='git push -f'
 alias gpo='git push -u origin'
-alias gpup='git push -u origin HEAD && git open' # @doc Push new branch and open PR in browser
+alias gpup='git push -u origin HEAD && gh repo view --web' # @doc Push new branch and open PR in browser
+alias gitopen='gh repo view --web'  # @doc Open current repo in browser
 alias gpr='git pull rebase'
 alias gra='git rebase --abort'
 alias grc='git rebase --continue'
