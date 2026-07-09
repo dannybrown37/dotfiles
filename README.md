@@ -70,7 +70,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
-| `gem` | Ask Gemini a question from the terminal | `bin/gem.sh` |
+| `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
