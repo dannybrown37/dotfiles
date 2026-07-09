@@ -1,0 +1,19 @@
+[
+    {
+        "key": "shift+enter",
+        "command": "workbench.action.terminal.sendSequence",
+        "when": "terminalFocus",
+        "args": {
+            "text": "\u001b\r"
+        }
+    },
+    {
+        "key": "ctrl+v",
+        "command": "-workbench.action.terminal.paste",
+        "when": "terminalFocus"
+    },
+    {
+        "key": "alt+`",
+        "command": "workbench.action.toggleMaximizedPanel"
+    }
+]

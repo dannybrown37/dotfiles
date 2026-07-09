@@ -42,6 +42,10 @@ for dir in "$BIN_DIR" "$SCRIPTS_DIR"; do
             if [[ "$line" =~ ^#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
                 desc="${BASH_REMATCH[1]}"
                 docs+="| \`${local_name}\` | ${desc} | \`${source_label}\` |"$'\n'
+            elif [[ "$line" =~ ^[[:space:]]*(function[[:space:]]+)?([a-zA-Z0-9_-]+)\(\).*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
+                stub_name="${BASH_REMATCH[2]}"
+                stub_desc="${BASH_REMATCH[3]}"
+                docs+="| \`${stub_name}\` | ${stub_desc} | \`${source_label}\` |"$'\n'
             fi
         done < "$file"
     done
