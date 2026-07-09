@@ -2,6 +2,8 @@
 
 # @doc Create Notion pages from the terminal (lazy-loaded on first use)
 
+unalias add_book add_theater triage 2>/dev/null || true
+
 _load_noteion() {
     unset -f _load_noteion noteion triage add_book add_theater \
              update_books_table update_theater_table \

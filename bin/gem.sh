@@ -2,6 +2,9 @@
 
 # @doc Ask Gemini questions from the terminal (lazy-loaded on first use)
 
+# Clear any aliases from a previous shell state that would break function definitions
+unalias gem pokemon 2>/dev/null || true
+
 _load_gem() {
     unset -f _load_gem gem ask_gemini_a_question lgtm pokemon
 
@@ -35,7 +38,7 @@ if any:'
     _pokemon_prompt="${_lgtm_prompt} Choose a random number between 1 and 151 and make the acronym the corresponding pokemon!"
 
     lgtm()    { ask_gemini_a_question "${_lgtm_prompt} $1" | cowsay | lolcat | cb; }
-    pokemon() { ask_gemini_a_question "${_pokemon_prompt}" | cb | cowsay | lolcat | cb; }
+    pokemon() { ask_gemini_a_question "${_pokemon_prompt}" | cowsay | lolcat | cb; }
 }
 
 gem()                   { _load_gem; gem "$@"; }
