@@ -40,3 +40,7 @@ You're an expert shell scripter who writes securrity-concious cross-platform scr
 ## Linting
 
 - All shell scripts must pass `shellcheck` and `shfmt` with no errors.
+
+## Sourced Script Gotchas
+
+- **Alias/function conflicts:** If a name was previously an alias, bash expands it before parsing `()`, causing `syntax error near unexpected token '('`. Add `unalias foo 2>/dev/null || true` at the top of any `bin/` file before defining functions that may shadow old aliases.
