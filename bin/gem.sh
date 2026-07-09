@@ -41,4 +41,4 @@ function lgtm {
     ask_gemini_a_question "${lgtm_prompt} $1" | cowsay | lolcat | cb
 }
 
-alias pokemon='ask_gemini_a_question "${pokemon}" | cb'
+alias pokemon='ask_gemini_a_question "${pokemon}" | cb | cowsay | lolcat | cb'
