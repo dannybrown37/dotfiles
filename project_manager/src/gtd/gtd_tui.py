@@ -1021,10 +1021,10 @@ class TodayContent(BaseEntryContent):
         tactic_focused = self._current_tactic_item() is not None
         if action in self._HABIT_ACTIONS:
             return habit_focused
-        if action in self._GTD_ACTIONS and (tactic_focused or habit_focused):
-            return False
-        if action in self._TACTIC_ACTIONS and not tactic_focused:
-            return False
+        if action in self._TACTIC_ACTIONS:
+            return tactic_focused
+        if action in self._GTD_ACTIONS:
+            return not (tactic_focused or habit_focused)
         return None
 
     @work
