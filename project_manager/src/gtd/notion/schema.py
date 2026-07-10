@@ -3,12 +3,14 @@
 STATUSES = [
     'Triage',
     'Current Project',
+    'Recurring',
     'Waiting For',
     'Someday/Maybe',
 ]
 
 STATUS_ICONS = {
     'Current Project': '🟢',
+    'Recurring': '🔄',
     'Triage': '🟣',
     'Waiting For': '🔵',
     'Someday/Maybe': '💭',

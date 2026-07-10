@@ -1,5 +1,6 @@
 """Database initialization and schema management for GTD CLI."""
 
+import os
 import re
 
 import httpx
@@ -146,8 +147,8 @@ def _upgrade_schema(token: str, db_id: str) -> list[str]:
 
 
 def _resolve_token(config: dict) -> str | None:
-    """Get token from config or prompt."""
-    token = config.get('token')
+    """Get token from config, env var, or prompt."""
+    token = config.get('token') or os.environ.get('NOTION_NOTES_TOKEN')
     if token:
         return token
     return prompt_input('Notion integration token: ')
@@ -155,7 +156,9 @@ def _resolve_token(config: dict) -> str | None:
 
 def _run_upgrade(config: dict) -> None:
     """Upgrade an existing database schema."""
-    db_id = config.get('database_id')
+    db_id = config.get('database_id') or os.environ.get(
+        'NOTION_PROJECTS_DB_ID'
+    )
     if not db_id:
         print('No existing database configured. Run `gtd init` first.')
         return

@@ -254,6 +254,74 @@ async def _shared_edit_notes(
         refresh_cb()
 
 
+async def _shared_log_and_reschedule(
+    app: App,
+    entry: ProjectEntry,
+    notes_cache: dict[str, str],
+) -> str | None:
+    """Open editor, save notes, prompt/infer next follow-up.
+
+    Returns the new follow-up date string, or None if cancelled.
+    """
+    from gtd.notion.client import (  # noqa: PLC0415
+        get_page_body,
+        replace_page_body,
+    )
+
+    loop = asyncio.get_running_loop()
+    try:
+        body = await loop.run_in_executor(None, get_page_body, entry.page_id)
+    except Exception as e:
+        app.notify(f'Error: {e}', severity='error')
+        return None
+
+    fd, tmp_path = tempfile.mkstemp(suffix='.md')
+    with open(fd, 'w') as f:  # noqa: PTH123
+        f.write(body)
+    editor = os.environ.get('EDITOR', 'nvim')
+    with app.suspend():
+        subprocess.run([editor, tmp_path], check=False)  # noqa: S603
+
+    new_body = Path(tmp_path).read_text()
+    Path(tmp_path).unlink(missing_ok=True)
+    if new_body != body:
+        await loop.run_in_executor(
+            None, replace_page_body, entry.page_id, new_body
+        )
+        notes_cache[entry.page_id] = new_body
+        app.notify('Notes saved')
+
+    from gtd.notion.log import _infer_reschedule_days  # noqa: PLC0415
+
+    inferred = _infer_reschedule_days(entry.header)
+    if inferred:
+        next_date = (datetime.now() + timedelta(days=inferred)).strftime(
+            '%Y-%m-%d'
+        )
+    else:
+        date_str = await app.push_screen_wait(
+            InputModal('Reschedule to', 'e.g. tomorrow, Monday, Jul 15')
+        )
+        if not date_str:
+            return None
+        from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
+
+        next_date = _parse_date_input(date_str)
+        if not next_date:
+            app.notify('Could not parse date', severity='warning')
+            return None
+
+    from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+
+    await loop.run_in_executor(
+        None,
+        update_page,
+        entry.page_id,
+        build_property_update(follow_up_date=next_date),
+    )
+    return next_date
+
+
 # ── Base entry content ───────────────────────────────────────────────────────
 
 
@@ -403,12 +471,34 @@ class BaseEntryContent(Vertical):
             return
         from gtd.notion.log import _is_recurring  # noqa: PLC0415
 
-        question = (
-            f'⚠ "{entry.header.strip()}" is recurring! Really delete?'
-            if _is_recurring(entry)
-            else f'Mark done: "{entry.header.strip()}"?'
-        )
-        confirmed = await self.app.push_screen_wait(ConfirmModal(question))
+        if _is_recurring(entry):
+            choice = await self.app.push_screen_wait(
+                SelectModal(
+                    f'⚠ "{entry.header.strip()}" is recurring',
+                    ['Reschedule', 'Permanently complete'],
+                )
+            )
+            if choice == 'Reschedule':
+                next_date = await _shared_log_and_reschedule(
+                    self.app, entry, self._notes
+                )
+                if next_date:
+                    self._remove_entry(entry.page_id)
+                    self.app.notify(
+                        f'✓ "{entry.header.strip()}" → {next_date}'
+                    )
+                return
+            if choice != 'Permanently complete':
+                return
+            confirmed = await self.app.push_screen_wait(
+                ConfirmModal(
+                    f'⚠ Permanently complete "{entry.header.strip()}"?'
+                )
+            )
+        else:
+            confirmed = await self.app.push_screen_wait(
+                ConfirmModal(f'Mark done: "{entry.header.strip()}"?')
+            )
         if not confirmed:
             return
         self._done_worker(entry.page_id)
@@ -420,6 +510,18 @@ class BaseEntryContent(Vertical):
         from gtd.notion.client import archive_page  # noqa: PLC0415
 
         archive_page(page_id)
+
+    @work
+    async def action_log_and_reschedule(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        next_date = await _shared_log_and_reschedule(
+            self.app, entry, self._notes
+        )
+        if next_date:
+            self._update_detail()
+            self.app.notify(f'✓ "{entry.header.strip()}" → {next_date}')
 
     @work
     async def action_drop_entry(self) -> None:
@@ -634,70 +736,12 @@ class TodayContent(BaseEntryContent):
         entry = self._current_entry()
         if not entry:
             return
-
-        loop = asyncio.get_running_loop()
-
-        from gtd.notion.client import get_page_body, replace_page_body  # noqa: PLC0415
-
-        self.query_one('#entry-detail', Static).update(
-            '[dim]Fetching notes...[/dim]'
+        next_date = await _shared_log_and_reschedule(
+            self.app, entry, self._notes
         )
-        try:
-            body = await loop.run_in_executor(
-                None, get_page_body, entry.page_id
-            )
-        except Exception as e:
-            self.app.notify(f'Error: {e}', severity='error')
-            self._update_detail()
-            return
-
-        fd, tmp_path = tempfile.mkstemp(suffix='.md')
-        with open(fd, 'w') as f:  # noqa: PTH123
-            f.write(body)
-        editor = os.environ.get('EDITOR', 'nvim')
-        with self.app.suspend():
-            subprocess.run([editor, tmp_path], check=False)  # noqa: S603
-
-        new_body = Path(tmp_path).read_text()
-        Path(tmp_path).unlink(missing_ok=True)
-
-        if new_body != body:
-            await loop.run_in_executor(
-                None, replace_page_body, entry.page_id, new_body
-            )
-            self._notes[entry.page_id] = new_body
-            self.app.notify('Notes saved')
-
-        from gtd.notion.log import _infer_reschedule_days  # noqa: PLC0415
-
-        inferred = _infer_reschedule_days(entry.header)
-
-        if inferred:
-            next_date = (datetime.now() + timedelta(days=inferred)).strftime(
-                '%Y-%m-%d'
-            )
-        else:
-            date_str = await self.app.push_screen_wait(
-                InputModal('Reschedule to', 'e.g. tomorrow, Monday, Jul 15')
-            )
-            if not date_str:
-                self._update_detail()
-                return
-            from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
-
-            next_date = _parse_date_input(date_str)
-            if not next_date:
-                self.app.notify('Could not parse date', severity='warning')
-                self._update_detail()
-                return
-
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
-
-        props = build_property_update(follow_up_date=next_date)
-        await loop.run_in_executor(None, update_page, entry.page_id, props)
-
-        self._remove_entry(entry.page_id)
-        self.app.notify(f'✓ "{entry.header.strip()}" → {next_date}')
+        if next_date:
+            self._remove_entry(entry.page_id)
+            self.app.notify(f'✓ "{entry.header.strip()}" → {next_date}')
 
     async def action_snooze(self) -> None:
         entry = self._current_entry()
@@ -1051,6 +1095,26 @@ class ProjectsContent(BaseEntryContent):
         }
 
 
+# ── Recurring content ────────────────────────────────────────────────────────
+
+
+class RecurringContent(BaseEntryContent):
+    """All recurring tasks — habits and repeating actions."""
+
+    TITLE: ClassVar[str] = 'Recurring'
+    EMPTY_MSG: ClassVar[str] = 'No recurring tasks.'
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('L', 'log_and_reschedule', 'Log'),
+        Binding('U', 'update_entry', 'Update'),
+        Binding('E', 'edit_notes', 'Edit notes'),
+        Binding('D', 'drop_entry', 'Drop'),
+    ]
+
+    def _build_filter(self) -> dict:
+        return {'property': 'Status', 'select': {'equals': 'Recurring'}}
+
+
 # ── Waiting For content ──────────────────────────────────────────────────────
 
 
@@ -1162,6 +1226,8 @@ class GTDApp(App[None]):
                 yield InboxContent()
             with TabPane('Projects', id='tab-projects'):
                 yield ProjectsContent()
+            with TabPane('Recurring', id='tab-recurring'):
+                yield RecurringContent()
             with TabPane('Waiting For', id='tab-waiting'):
                 yield WaitingForContent()
             with TabPane('Snoozed', id='tab-snoozed'):
