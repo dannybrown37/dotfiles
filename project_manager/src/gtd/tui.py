@@ -507,6 +507,7 @@ class VimListView(ListView):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('j', 'cursor_down', show=False),
         Binding('k', 'cursor_up_or_tabs', show=False),
+        Binding('up', 'cursor_up_or_tabs', show=False),
         Binding('G', 'scroll_end', show=False),
         Binding('g', 'scroll_home', show=False),
     ]
