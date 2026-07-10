@@ -435,10 +435,10 @@ _bt_show() {
     local now=$EPOCHREALTIME
     local f="/tmp/_bt_$$"
     if [[ -f "$f" ]]; then
-        awk "BEGIN{printf \"  \033[2m%.0fms\033[0m\n\",($now-$(< "$f"))*1000}"
+        awk "BEGIN{printf \"  \033[2m%.3fs\033[0m\n\",($now-$(< "$f"))}"
         rm -f "$f"
     elif [[ -n "${_bt_pc_start:-}" ]]; then
-        awk "BEGIN{printf \"  \033[2m%.0fms\033[0m\n\",($now-${_bt_pc_start})*1000}"
+        awk "BEGIN{printf \"  \033[2m%.3fs\033[0m\n\",($now-${_bt_pc_start})}"
     fi
 }
 
