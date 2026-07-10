@@ -126,10 +126,10 @@ class TodayContent(Vertical):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('L', 'log', 'Log'),
-        Binding('s', 'snooze', 'Snooze'),
-        Binding('w', 'waiting_for', 'Waiting For'),
-        Binding('u', 'update_entry', 'Update'),
-        Binding('d', 'mark_done', 'Done'),
+        Binding('S', 'snooze', 'Snooze'),
+        Binding('W', 'waiting_for', 'Waiting For'),
+        Binding('U', 'update_entry', 'Update'),
+        Binding('D', 'mark_done', 'Done'),
     ]
 
     DEFAULT_CSS = """
@@ -614,9 +614,9 @@ class InboxContent(Vertical):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('T', 'triage_all', 'Triage all'),
-        Binding('e', 'update_entry', 'Update'),
+        Binding('U', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit notes'),
-        Binding('d', 'drop_entry', 'Drop'),
+        Binding('D', 'drop_entry', 'Drop'),
     ]
 
     DEFAULT_CSS = """
@@ -880,10 +880,10 @@ class ProjectsContent(Vertical):
     """All active projects — Current Project and Waiting For."""
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('e', 'update_entry', 'Update'),
+        Binding('U', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit notes'),
-        Binding('d', 'mark_done', 'Done'),
-        Binding('s', 'move_someday', 'Someday'),
+        Binding('D', 'mark_done', 'Done'),
+        Binding('S', 'move_someday', 'Someday'),
     ]
 
     DEFAULT_CSS = """
@@ -1096,10 +1096,10 @@ class SomedayContent(Vertical):
     """Someday/Maybe — ideas parked for later review."""
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('a', 'activate', 'Activate'),
-        Binding('e', 'update_entry', 'Update'),
+        Binding('A', 'activate', 'Activate'),
+        Binding('U', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit notes'),
-        Binding('d', 'drop_entry', 'Drop'),
+        Binding('D', 'drop_entry', 'Drop'),
     ]
 
     DEFAULT_CSS = """
@@ -1300,11 +1300,11 @@ class GTDApp(App[None]):
         Binding('l', 'tab_right', 'tab→', priority=True),
         Binding('j', 'focus_list', show=False),
         Binding('down', 'focus_list', show=False),
-        Binding('c', 'capture', 'Capture'),
-        Binding('r', 'refresh', 'Refresh'),
-        Binding('m', 'gtd_menu', 'GTD menu'),
+        Binding('C', 'capture', 'Capture'),
+        Binding('R', 'refresh', 'Refresh'),
+        Binding('M', 'gtd_menu', 'GTD menu'),
         Binding('q', 'quit', 'Quit', priority=True),
-        Binding('escape', 'quit', show=False, priority=True),
+        Binding('escape', 'quit', show=False),
     ]
 
     DEFAULT_CSS = """

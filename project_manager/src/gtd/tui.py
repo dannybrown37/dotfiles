@@ -199,9 +199,7 @@ class InputModal(ModalScreen[str | None]):
     """
     )
 
-    BINDINGS: ClassVar[list[Binding]] = [
-        Binding('escape', 'cancel', 'Cancel', show=False)
-    ]
+    BINDINGS: ClassVar[list[Binding]] = [Binding('escape', 'cancel', 'Cancel')]
 
     def __init__(
         self, title: str, placeholder: str = '', initial: str = ''
@@ -219,24 +217,16 @@ class InputModal(ModalScreen[str | None]):
                 placeholder=self._placeholder,
                 id='the-input',
             )
-            with Horizontal(classes='modal-buttons'):
-                yield Button('OK', variant='primary', id='ok')
-                yield Button('Cancel', id='cancel')
 
     def on_mount(self) -> None:
         self.query_one('#the-input', Input).focus()
 
-    @on(Button.Pressed, '#ok')
-    def confirm(self) -> None:
-        self.dismiss(self.query_one('#the-input', Input).value.strip() or None)
-
-    @on(Button.Pressed, '#cancel')
     def action_cancel(self) -> None:
         self.dismiss(None)
 
     @on(Input.Submitted)
     def submitted(self) -> None:
-        self.confirm()
+        self.dismiss(self.query_one('#the-input', Input).value.strip() or None)
 
 
 class TwoFieldModal(ModalScreen[tuple[str, str] | None]):
@@ -324,7 +314,7 @@ class SelectModal(ModalScreen[str | None]):
     )
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('escape', 'cancel', 'Cancel', show=False),
+        Binding('escape', 'cancel', 'Cancel'),
         Binding('j', 'cursor_down', show=False),
         Binding('k', 'cursor_up', show=False),
     ]
@@ -338,9 +328,6 @@ class SelectModal(ModalScreen[str | None]):
         with Vertical(classes='modal-box'):
             yield Label(self._title, classes='modal-title')
             yield ListView(*[ListItem(Label(item)) for item in self._items])
-            with Horizontal(classes='modal-buttons'):
-                yield Button('Select', variant='primary', id='ok')
-                yield Button('Cancel', id='cancel')
 
     def on_mount(self) -> None:
         self.query_one(ListView).focus()
@@ -357,16 +344,6 @@ class SelectModal(ModalScreen[str | None]):
         if idx is not None and idx < len(self._items):
             self.dismiss(self._items[idx])
 
-    @on(Button.Pressed, '#ok')
-    def confirm(self) -> None:
-        idx = self.query_one(ListView).index
-        self.dismiss(
-            self._items[idx]
-            if idx is not None and idx < len(self._items)
-            else None
-        )
-
-    @on(Button.Pressed, '#cancel')
     def action_cancel(self) -> None:
         self.dismiss(None)
 
@@ -383,7 +360,9 @@ class ConfirmModal(ModalScreen[bool]):
     )
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('escape', 'cancel', 'Cancel', show=False)
+        Binding('escape', 'cancel', 'Cancel'),
+        Binding('y', 'yes', show=False),
+        Binding('n', 'cancel', show=False),
     ]
 
     def __init__(self, question: str) -> None:
@@ -394,11 +373,14 @@ class ConfirmModal(ModalScreen[bool]):
         with Vertical(classes='modal-box'):
             yield Label(self._question, classes='modal-title')
             with Horizontal(classes='modal-buttons'):
-                yield Button('Yes', variant='warning', id='yes')
-                yield Button('No', variant='primary', id='no')
+                yield Button('Yes (y)', variant='warning', id='yes')
+                yield Button('No (n/esc)', variant='primary', id='no')
 
     def on_mount(self) -> None:
         self.query_one('#no', Button).focus()
+
+    def action_yes(self) -> None:
+        self.dismiss(result=True)
 
     @on(Button.Pressed, '#yes')
     def yes(self) -> None:
@@ -539,14 +521,14 @@ class GoalsContent(Widget):
     """Goals pane — can be embedded in a tab or used standalone."""
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('n', 'new_goal', 'New'),
-        Binding('s', 'score_week', 'Score week'),
-        Binding('a', 'add_tactic', 'Add tactic'),
-        Binding('u', 'log_update', 'Log update'),
-        Binding('t', 'add_todo', 'Add to-do'),
-        Binding('c', 'complete_todo', 'Complete to-do'),
-        Binding('e', 'edit_goal', 'Edit'),
-        Binding('h', 'score_history', 'History'),
+        Binding('N', 'new_goal', 'New'),
+        Binding('S', 'score_week', 'Score week'),
+        Binding('A', 'add_tactic', 'Add tactic'),
+        Binding('U', 'log_update', 'Log update'),
+        Binding('T', 'add_todo', 'Add to-do'),
+        Binding('C', 'complete_todo', 'Complete to-do'),
+        Binding('E', 'edit_goal', 'Edit'),
+        Binding('H', 'score_history', 'History'),
         Binding('D', 'delete_goal', 'Delete', show=False),
         Binding('r', 'refresh_goals', 'Refresh', show=False),
     ]
