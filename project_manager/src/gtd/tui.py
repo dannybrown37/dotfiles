@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import contextlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, ClassVar
 
 from dateutil import parser as dateparser
@@ -54,6 +54,13 @@ def _tactic_score_color(score: int) -> str:
     if score >= _SCORE_YELLOW:
         return 'yellow'
     return 'red'
+
+
+def _week_date_range(goal: Goal, week_num: int) -> str:
+    """Return 'Mon Jul 7 - Sun Jul 13' label for a goal week number."""
+    start = goal.week_start_date(week_num).date()
+    end = start + timedelta(days=6)
+    return f'{start:%b %-d} - {end:%b %-d}'
 
 
 def _render_tactics_section(goal: Goal, week: int) -> list[str]:
@@ -108,13 +115,16 @@ def _render_todos_section(goal: Goal) -> list[str]:
 def _render_goal_detail(goal: Goal) -> str:
     week = goal.current_week()
     weeks_left = goal.weeks_remaining()
+    week_range = _week_date_range(goal, week)
     lines: list[str] = []
 
     lines.append(f'[bold cyan]{goal.name}[/bold cyan]')
-    lines.append(f'[dim]{goal.date_range_display()}[/dim]')
+    start_d = datetime.fromisoformat(goal.start_date).date()
+    end_d = datetime.fromisoformat(goal.end_date).date()
+    lines.append(f'[dim]{start_d:%b %-d, %Y} - {end_d:%b %-d, %Y}[/dim]')
     lines.append(goal.progress_bar())
     lines.append(
-        f'[dim]Week {week}/{TOTAL_WEEKS}  •  '
+        f'[dim]Week {week}/{TOTAL_WEEKS}  ({week_range})  •  '
         f'{weeks_left} week{"s" if weeks_left != 1 else ""} left[/dim]'
     )
     if goal.description:
@@ -143,6 +153,7 @@ def _render_score_history(goal: Goal) -> str:
     lines = [f'[bold]Score History: {goal.name}[/bold]\n']
     for w in range(1, min(week, TOTAL_WEEKS) + 1):
         ex, tot = goal.week_score(w)
+        date_range = _week_date_range(goal, w)
         if tot == 0:
             bar = '[dim](not scored)[/dim]'
         else:
@@ -153,7 +164,9 @@ def _render_score_history(goal: Goal) -> str:
             pct_str = score_pct(ex, tot)
             bar = f'{ind} [{bar_str}] [bold]{pct_str:>4}[/bold] ({ex}/{tot})'
         current = ' [green]◀ current[/green]' if w == week else ''
-        lines.append(f'  Week {w:>2}: {bar}{current}')
+        lines.append(
+            f'  Week {w:>2} [dim]({date_range})[/dim]: {bar}{current}'
+        )
 
     ex_tot, tot_tot = goal.overall_score()
     if tot_tot > 0:

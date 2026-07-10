@@ -2,6 +2,8 @@ import pytest
 from datetime import datetime, timedelta
 
 from gtd.gtd_tui import (
+    _current_sprint_label,
+    _current_week_label,
     _is_sprint_cadence,
     _parse_cadence_per_week,
     _render_entry_detail,
@@ -362,3 +364,129 @@ class TestRenderTacticDetail:
         result = _render_tactic_detail('My Goal', t, g)
         assert 'Week' in result
         assert '/12' in result
+
+    def test_with_goal_shows_week_date_range(self) -> None:
+        t = _tactic()
+        g = _goal('My Goal')
+        result = _render_tactic_detail('My Goal', t, g)
+        # Should contain a month abbreviation for the week range
+        months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+        ]
+        assert any(m in result for m in months)
+
+    def test_with_goal_shows_goal_date_range(self) -> None:
+        t = _tactic()
+        g = _goal('My Goal')
+        result = _render_tactic_detail('My Goal', t, g)
+        # Goal spans 12 weeks, so the year should appear
+        assert str(datetime.now().year) in result
+
+
+# ── Date label helpers ───────────────────────────────────────────────────────
+
+
+class TestCurrentWeekLabel:
+    def test_returns_string_with_month(self) -> None:
+        label = _current_week_label()
+        months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+        ]
+        assert any(m in label for m in months)
+
+    def test_contains_day_numbers(self) -> None:
+        label = _current_week_label()
+        today = datetime.now().date()
+        monday = today - timedelta(days=today.weekday())
+        assert str(monday.day) in label
+
+    def test_contains_hyphen_separator(self) -> None:
+        assert '-' in _current_week_label()
+
+
+class TestCurrentSprintLabel:
+    def test_returns_string_with_month(self) -> None:
+        label = _current_sprint_label()
+        months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+        ]
+        assert any(m in label for m in months)
+
+    def test_contains_hyphen_separator(self) -> None:
+        assert '-' in _current_sprint_label()
+
+
+class TestStatusLineIncludesDates:
+    def test_weekly_due_includes_week_range(self) -> None:
+        result = _tactic_status_line(_tactic('weekly'))
+        months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+        ]
+        assert any(m in result for m in months)
+
+    def test_daily_due_includes_date(self) -> None:
+        result = _tactic_status_line(_tactic('daily'))
+        today = datetime.now().date()
+        assert str(today.day) in result
+
+    def test_sprint_due_includes_date_range(self) -> None:
+        result = _tactic_status_line(_tactic('sprint'))
+        months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+        ]
+        assert any(m in result for m in months)
