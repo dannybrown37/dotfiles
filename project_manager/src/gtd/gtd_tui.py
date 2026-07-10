@@ -130,8 +130,6 @@ class TodayContent(Vertical):
         Binding('w', 'waiting_for', 'Waiting For'),
         Binding('u', 'update_entry', 'Update'),
         Binding('d', 'mark_done', 'Done'),
-        Binding('c', 'capture', 'Capture'),
-        Binding('r', 'refresh_today', 'Refresh'),
     ]
 
     DEFAULT_CSS = """
@@ -619,8 +617,6 @@ class InboxContent(Vertical):
         Binding('e', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit notes'),
         Binding('d', 'drop_entry', 'Drop'),
-        Binding('c', 'capture', 'Capture'),
-        Binding('r', 'refresh', 'Refresh'),
     ]
 
     DEFAULT_CSS = """
@@ -888,8 +884,6 @@ class ProjectsContent(Vertical):
         Binding('E', 'edit_notes', 'Edit notes'),
         Binding('d', 'mark_done', 'Done'),
         Binding('s', 'move_someday', 'Someday'),
-        Binding('c', 'capture', 'Capture'),
-        Binding('r', 'refresh', 'Refresh'),
     ]
 
     DEFAULT_CSS = """
@@ -1106,8 +1100,6 @@ class SomedayContent(Vertical):
         Binding('e', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit notes'),
         Binding('d', 'drop_entry', 'Drop'),
-        Binding('c', 'capture', 'Capture'),
-        Binding('r', 'refresh', 'Refresh'),
     ]
 
     DEFAULT_CSS = """
@@ -1307,6 +1299,9 @@ class GTDApp(App[None]):
         Binding('h', 'tab_left', '←tab', priority=True),
         Binding('l', 'tab_right', 'tab→', priority=True),
         Binding('j', 'focus_list', show=False),
+        Binding('down', 'focus_list', show=False),
+        Binding('c', 'capture', 'Capture'),
+        Binding('r', 'refresh', 'Refresh'),
         Binding('m', 'gtd_menu', 'GTD menu'),
         Binding('q', 'quit', 'Quit', priority=True),
         Binding('escape', 'quit', show=False, priority=True),
@@ -1358,6 +1353,36 @@ class GTDApp(App[None]):
         if list_id:
             with contextlib.suppress(Exception):
                 self.query_one(list_id, VimListView).focus()
+
+    def action_capture(self) -> None:
+        """Capture a new item — available from anywhere in the app."""
+        tc = self.query_one('#tabs', TabbedContent)
+        active = tc.active or ''
+        with contextlib.suppress(Exception):
+            if active == 'tab-today':
+                self.query_one(TodayContent).action_capture()
+            elif active == 'tab-inbox':
+                self.query_one(InboxContent).action_capture()
+            elif active == 'tab-projects':
+                self.query_one(ProjectsContent).action_capture()
+            elif active == 'tab-someday':
+                self.query_one(SomedayContent).action_capture()
+
+    def action_refresh(self) -> None:
+        """Reload the active tab's list."""
+        tc = self.query_one('#tabs', TabbedContent)
+        active = tc.active or ''
+        with contextlib.suppress(Exception):
+            if active == 'tab-today':
+                self.query_one(TodayContent).action_refresh_today()
+            elif active == 'tab-inbox':
+                self.query_one(InboxContent).action_refresh()
+            elif active == 'tab-projects':
+                self.query_one(ProjectsContent).action_refresh()
+            elif active == 'tab-someday':
+                self.query_one(SomedayContent).action_refresh()
+            elif active == 'tab-goals':
+                self.query_one(GoalsContent).action_refresh()
 
     def action_tab_right(self) -> None:
         tc = self.query_one('#tabs', TabbedContent)
