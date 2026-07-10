@@ -1344,10 +1344,15 @@ class GTDApp(App[None]):
     def on_focus_tab_bar(self) -> None:
         self.query_one(Tabs).focus()
 
+    @on(TabbedContent.TabActivated)
+    def on_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+        list_id = self._TAB_LIST_IDS.get(event.tab.id or '')
+        if list_id:
+            with contextlib.suppress(Exception):
+                self.query_one(list_id, VimListView).focus()
+
     def action_focus_list(self) -> None:
         """Drop focus from tab bar back to active tab's list."""
-        if not self.query_one(Tabs).has_focus:
-            return
         tc = self.query_one('#tabs', TabbedContent)
         list_id = self._TAB_LIST_IDS.get(tc.active or '')
         if list_id:

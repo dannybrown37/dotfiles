@@ -24,12 +24,17 @@ TRIAGE_STATUSES = [s for s in ALL_STATUSES if s != 'Triage'] + ['Delete']
 
 
 def _get_triage_entries() -> list[ProjectEntry]:
-    """Fetch all items in Triage status or with no status set."""
+    """Fetch items needing triage: no/Triage status, or missing fields."""
     pages = query_database(
         filter_obj={
             'or': [
                 {'property': 'Status', 'select': {'equals': 'Triage'}},
                 {'property': 'Status', 'select': {'is_empty': True}},
+                {'property': 'Context', 'select': {'is_empty': True}},
+                {
+                    'property': 'Next Actionable Step',
+                    'rich_text': {'is_empty': True},
+                },
             ],
         },
     )
