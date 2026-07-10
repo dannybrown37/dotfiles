@@ -355,6 +355,14 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
             continue
 
 
+@cli.command()
+def tui() -> None:
+    """Launch the interactive TUI (Today + Goals)."""
+    from gtd.gtd_tui import run_gtd_tui  # noqa: PLC0415
+
+    run_gtd_tui()
+
+
 def main() -> None:
     """Entry point for gtd command."""
     cli()
