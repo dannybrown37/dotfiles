@@ -1207,7 +1207,6 @@ class GTDApp(App[None]):
         Binding('down', 'focus_list', show=False),
         Binding('C', 'capture', 'Capture'),
         Binding('R', 'refresh', 'Refresh'),
-        Binding('M', 'gtd_menu', 'FZF menu'),
         Binding('q', 'quit', 'Quit', priority=True),
         Binding('escape', 'quit', show=False),
     ]
@@ -1293,12 +1292,6 @@ class GTDApp(App[None]):
             tc.active = tab_ids[(idx - 1) % len(tab_ids)]
         except (ValueError, KeyError):
             pass
-
-    @work
-    async def action_gtd_menu(self) -> None:
-        """Suspend the TUI and open the full fzf GTD menu."""
-        with self.suspend():
-            subprocess.run(['gtd'], check=False)  # noqa: S607
 
 
 def run_gtd_tui() -> None:
