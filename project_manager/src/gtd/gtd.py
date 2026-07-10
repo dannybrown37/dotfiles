@@ -17,7 +17,9 @@ def cli(ctx: click.Context, verbose: bool) -> None:
     ctx.obj['verbose'] = verbose
 
     if ctx.invoked_subcommand is None:
-        _interactive_menu(verbose)
+        from gtd.gtd_tui import run_gtd_tui  # noqa: PLC0415
+
+        run_gtd_tui()
 
 
 @cli.command()
@@ -353,6 +355,12 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
                         pause()
         except CancelAction:
             continue
+
+
+@cli.command()
+def fzf() -> None:
+    """Launch the legacy fzf-based interactive GTD menu."""
+    _interactive_menu(verbose=False)
 
 
 @cli.command()
