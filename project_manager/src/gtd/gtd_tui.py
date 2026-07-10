@@ -156,7 +156,18 @@ class TodayContent(Vertical):
         Binding('U', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit notes'),
         Binding('D', 'mark_done', 'Done'),
+        Binding('N', 'log_tactic', 'Log update'),
     ]
+
+    _GTD_ACTIONS: ClassVar[set[str]] = {
+        'log',
+        'snooze',
+        'waiting_for',
+        'update_entry',
+        'edit_notes',
+        'mark_done',
+    }
+    _TACTIC_ACTIONS: ClassVar[set[str]] = {'log_tactic'}
 
     DEFAULT_CSS = """
     TodayContent { layout: horizontal; height: 1fr; }
@@ -248,6 +259,7 @@ class TodayContent(Vertical):
     @on(ListView.Highlighted, '#today-list')
     def on_list_highlighted(self) -> None:
         self._update_detail()
+        self.app.refresh_bindings()
 
     def _current_entry(self) -> ProjectEntry | None:
         idx = self.query_one('#today-list', VimListView).index
@@ -599,6 +611,46 @@ class TodayContent(Vertical):
         self.query_one('#today-list', VimListView).clear()
         self.query_one('#today-detail', Static).update('')
         self._load_entries()
+
+    def check_action(
+        self,
+        action: str,
+        parameters: tuple[object, ...],  # noqa: ARG002
+    ) -> bool | None:
+        tactic_focused = self._current_tactic_item() is not None
+        if action in self._GTD_ACTIONS and tactic_focused:
+            return False
+        return not (action in self._TACTIC_ACTIONS and not tactic_focused)
+
+    @work
+    async def action_log_tactic(self) -> None:
+        tactic = self._current_tactic_item()
+        if not tactic:
+            return
+        note = await self.app.push_screen_wait(
+            InputModal('Log update', f'{tactic.tactic_description}')
+        )
+        if not note:
+            return
+        from gtd.storage import get_stored_goal_names, load_goal, save_goal  # noqa: PLC0415
+        from gtd.models import Update  # noqa: PLC0415
+        from datetime import datetime  # noqa: PLC0415
+
+        for name in get_stored_goal_names():
+            if name != tactic.goal_name:
+                continue
+            goal = load_goal(name)
+            for t in goal.tactics:
+                if t.description == tactic.tactic_description:
+                    t.updates.append(
+                        Update(
+                            date=datetime.now().date().isoformat(),
+                            note=note,
+                        )
+                    )
+                    save_goal(goal)
+                    self.app.notify(f'✓ Logged update on "{t.description}"')
+                    return
 
 
 # ── Shared action helpers ────────────────────────────────────────────────────
