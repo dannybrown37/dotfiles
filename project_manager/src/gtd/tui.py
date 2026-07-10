@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 from datetime import datetime
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from dateutil import parser as dateparser
 from textual import on
@@ -24,6 +24,9 @@ from textual.widgets import (
     ListView,
     Static,
 )
+
+if TYPE_CHECKING:
+    from textual.events import Key
 
 from gtd.models import Goal, Tactic, Todo, Update, TOTAL_WEEKS
 from gtd.storage import (
@@ -297,52 +300,106 @@ class TwoFieldModal(ModalScreen[tuple[str, str] | None]):
 
 
 class SelectModal(ModalScreen[str | None]):
-    """List selection modal."""
+    """Filterable selection modal.
+
+    Filter mode (Input focused): type to filter, arrows navigate.
+    Browse mode (ListView focused): j/k navigate, any printable char
+    (except j/k) jumps back to Input. Tab toggles between modes.
+    """
 
     DEFAULT_CSS = (
         _MODAL_CSS
         + """
     SelectModal { align: center middle; }
-    SelectModal .modal-box { width: 70; max-height: 30; }
+    SelectModal .modal-box { width: 70; max-height: 35; }
+    SelectModal Input { margin-bottom: 1; }
     SelectModal ListView {
         height: auto;
         max-height: 20;
         border: solid $panel;
-        margin-bottom: 1;
     }
     """
     )
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('escape', 'cancel', 'Cancel'),
+        Binding('down', 'cursor_down', show=False),
+        Binding('up', 'cursor_up', show=False),
         Binding('j', 'cursor_down', show=False),
         Binding('k', 'cursor_up', show=False),
+        Binding('tab', 'toggle_focus', show=False),
     ]
 
     def __init__(self, title: str, items: list[str]) -> None:
         super().__init__()
         self._title = title
-        self._items = items
+        self._all_items = items
+        self._filtered = list(items)
 
     def compose(self) -> ComposeResult:
         with Vertical(classes='modal-box'):
             yield Label(self._title, classes='modal-title')
-            yield ListView(*[ListItem(Label(item)) for item in self._items])
+            yield Input(placeholder='/ filter  tab browse', id='filter-input')
+            yield ListView(
+                *[ListItem(Label(item)) for item in self._all_items],
+                id='select-list',
+            )
 
     def on_mount(self) -> None:
-        self.query_one(ListView).focus()
+        self.query_one('#filter-input', Input).focus()
+        lv = self.query_one('#select-list', ListView)
+        if self._all_items:
+            lv.index = 0
+
+    @on(Input.Changed, '#filter-input')
+    def filter_changed(self, event: Input.Changed) -> None:
+        query = event.value.lower()
+        self._filtered = [i for i in self._all_items if query in i.lower()]
+        lv = self.query_one('#select-list', ListView)
+        lv.clear()
+        for item in self._filtered:
+            lv.append(ListItem(Label(item)))
+        if self._filtered:
+            lv.index = 0
+
+    @on(Input.Submitted, '#filter-input')
+    def input_submitted(self) -> None:
+        self._select_current()
+
+    @on(ListView.Selected, '#select-list')
+    def item_selected(self) -> None:
+        self._select_current()
+
+    def on_key(self, event: Key) -> None:
+        lv = self.query_one('#select-list', ListView)
+        inp = self.query_one('#filter-input', Input)
+        nav_keys = ('j', 'k')
+        browsing = lv.has_focus and event.is_printable
+        if browsing and event.character not in nav_keys:
+            inp.focus()
+            inp.value += event.character
+            inp.cursor_position = len(inp.value)
+            event.stop()
+
+    def _select_current(self) -> None:
+        lv = self.query_one('#select-list', ListView)
+        idx = lv.index
+        if idx is not None and idx < len(self._filtered):
+            self.dismiss(self._filtered[idx])
 
     def action_cursor_down(self) -> None:
-        self.query_one(ListView).action_cursor_down()
+        self.query_one('#select-list', ListView).action_cursor_down()
 
     def action_cursor_up(self) -> None:
-        self.query_one(ListView).action_cursor_up()
+        self.query_one('#select-list', ListView).action_cursor_up()
 
-    @on(ListView.Selected)
-    def item_selected(self, event: ListView.Selected) -> None:
-        idx = event.list_view.index
-        if idx is not None and idx < len(self._items):
-            self.dismiss(self._items[idx])
+    def action_toggle_focus(self) -> None:
+        lv = self.query_one('#select-list', ListView)
+        inp = self.query_one('#filter-input', Input)
+        if inp.has_focus:
+            lv.focus()
+        else:
+            inp.focus()
 
     def action_cancel(self) -> None:
         self.dismiss(None)
