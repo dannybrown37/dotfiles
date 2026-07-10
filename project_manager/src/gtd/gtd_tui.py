@@ -1034,22 +1034,22 @@ class TodayContent(BaseEntryContent):
             return
 
         if item.habit_key == 'goal_scoring':
-            await self._run_goal_scoring_flow()
+            confirmed = await self._run_goal_scoring_flow()
         elif item.habit_key == 'weekly_review':
-            await self._run_weekly_review_flow()
+            confirmed = await self._run_weekly_review_flow()
         else:
             confirmed = await self.app.push_screen_wait(
                 ConfirmModal(f'Mark "{item.habit_label}" done for this week?')
             )
-            if not confirmed:
-                return
 
-        self._dismiss_habit_item(item)
+        if confirmed:
+            self._dismiss_habit_item(item)
 
-    async def _run_goal_scoring_flow(self) -> None:
+    async def _run_goal_scoring_flow(self) -> bool:
         from gtd.storage import get_stored_goal_names, load_goal, save_goal  # noqa: PLC0415
         from gtd.tui import ScorecardScreen  # noqa: PLC0415
 
+        scored_any = False
         for name in get_stored_goal_names():
             goal = load_goal(name)
             if goal.is_complete or not goal.tactics:
@@ -1065,18 +1065,20 @@ class TodayContent(BaseEntryContent):
                 if str(i) in scores:
                     tactic.weekly_scores[wk_key] = scores[str(i)]
             save_goal(goal)
+            scored_any = True
             self.app.notify(f'✓ Scored {goal.name} week {week}')
+        return scored_any
 
-    async def _run_weekly_review_flow(self) -> None:
-        confirmed = await self.app.push_screen_wait(
-            ConfirmModal(
-                'GTD Weekly Review\n\n'
-                + _GTD_REVIEW_CHECKLIST
-                + '\n\nMark complete?'
+    async def _run_weekly_review_flow(self) -> bool:
+        return bool(
+            await self.app.push_screen_wait(
+                ConfirmModal(
+                    'GTD Weekly Review\n\n'
+                    + _GTD_REVIEW_CHECKLIST
+                    + '\n\nMark complete?'
+                )
             )
         )
-        if not confirmed:
-            return
 
     def _dismiss_habit_item(self, item: WeeklyHabitItem) -> None:
         from gtd.storage import set_weekly_habit_date  # noqa: PLC0415
