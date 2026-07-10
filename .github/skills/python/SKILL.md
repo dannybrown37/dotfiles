@@ -37,6 +37,8 @@ Use at least Python 3.12 unless there is a good reason to use an older version.
 
 Use [pytest](https://docs.pytest.org/) for testing.
 
+**When fixing a bug, always add a regression test** that fails before the fix and passes after. The test name should make the bug obvious (e.g., `test_get_stored_goal_names_excludes_weekly_habits_json`). No exceptions — if you can't reproduce it in a test, document why in a comment in the test file.
+
 ## Linting
 
 Use [ruff](https://docs.astral.sh/ruff/) for linting and formatting.
