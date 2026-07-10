@@ -126,10 +126,28 @@ def _week_start_iso() -> str:
     return (today - timedelta(days=today.weekday())).isoformat()
 
 
+def _current_week_label() -> str:
+    """Human-readable label for the current Mon-Sun window, e.g. 'Jul 7-13'."""
+    start = datetime.fromisoformat(_week_start_iso()).date()
+    end = start + timedelta(days=6)
+    if start.month == end.month:
+        return f'{start:%b %-d}-{end:%-d}'
+    return f'{start:%b %-d}-{end:%b %-d}'
+
+
 def _sprint_start_iso() -> str:
     return (
         datetime.now().date() - timedelta(days=_SPRINT_DAYS - 1)
     ).isoformat()
+
+
+def _current_sprint_label() -> str:
+    """Human-readable label for the current 14-day sprint window."""
+    start = datetime.fromisoformat(_sprint_start_iso()).date()
+    end = datetime.now().date()
+    if start.month == end.month:
+        return f'{start:%b %-d}-{end:%-d}'
+    return f'{start:%b %-d}-{end:%b %-d}'
 
 
 def _count_updates_this_week(tactic: Tactic) -> int:
@@ -171,22 +189,32 @@ def _tactic_sort_key(tactic: Tactic) -> int:
 def _tactic_status_line(tactic: Tactic) -> str:
     """One-line due/done status for the detail pane."""
     if _is_sprint_cadence(tactic.reminder_cadence):
+        label = _current_sprint_label()
         if _updated_in_sprint(tactic):
-            return '[green]✓ Logged this sprint[/green]'
-        return '[bold red]⚠ Due this sprint[/bold red]'
+            return f'[green]✓ Logged this sprint  [dim]({label})[/dim][/green]'
+        return f'[bold red]⚠ Due this sprint  [dim]({label})[/dim][/bold red]'
     per_week = _parse_cadence_per_week(tactic.reminder_cadence)
+    today = datetime.now().date()
     if per_week >= _DAILY_CADENCE:
-        return (
-            '[green]✓ Done today[/green]'
-            if _updated_today(tactic)
-            else '[bold red]⚠ Due today[/bold red]'
-        )
+        done = f'[green]✓ Done today  [dim]({today:%b %-d})[/dim][/green]'
+        due = f'[bold red]⚠ Due today  [dim]({today:%b %-d})[/dim][/bold red]'
+        return done if _updated_today(tactic) else due
+    week_label = _current_week_label()
     n = _count_updates_this_week(tactic)
     if n >= per_week:
-        return f'[green]✓ Done this week ({n}/{per_week})[/green]'
+        return (
+            f'[green]✓ Done this week ({n}/{per_week})'
+            f'  [dim]({week_label})[/dim][/green]'
+        )
     if n > 0:
-        return f'[yellow]◑ In progress this week ({n}/{per_week})[/yellow]'
-    return f'[bold red]⚠ Due this week (0/{per_week})[/bold red]'
+        return (
+            f'[yellow]◑ In progress this week ({n}/{per_week})'
+            f'  [dim]({week_label})[/dim][/yellow]'
+        )
+    return (
+        f'[bold red]⚠ Due this week (0/{per_week})'
+        f'  [dim]({week_label})[/dim][/bold red]'
+    )
 
 
 def _render_tactic_detail(
@@ -195,8 +223,20 @@ def _render_tactic_detail(
     lines: list[str] = [f'[bold cyan]{goal_name}[/bold cyan]']
     if goal:
         week = goal.current_week()
+        week_start = goal.week_start_date(week).date()
+        week_end = week_start + timedelta(days=6)
+        if week_start.month == week_end.month:
+            week_range = f'{week_start:%b %-d}-{week_end:%-d}'
+        else:
+            week_range = f'{week_start:%b %-d}-{week_end:%b %-d}'
+        start_d = datetime.fromisoformat(goal.start_date).date()
+        end_d = datetime.fromisoformat(goal.end_date).date()
+        goal_range = f'{start_d:%b %-d}-{end_d:%b %-d, %Y}'
+        lines.append(
+            f'[dim]Week {week}/12  ({week_range})  •  {goal_range}[/dim]'
+        )
         bar = goal.progress_bar()
-        lines.append(f'[dim]Week {week}/12  {bar}[/dim]')
+        lines.append(f'[dim]{bar}[/dim]')
     lines += ['', f'[bold]{tactic.description}[/bold]']
     lines.append(f'Cadence: [dim]{tactic.reminder_cadence}[/dim]')
     lines.append('')
