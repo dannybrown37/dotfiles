@@ -1678,14 +1678,14 @@ class GTDApp(App[None]):
                 yield InboxContent()
             with TabPane('Projects', id='tab-projects'):
                 yield ProjectsContent()
-            with TabPane('Recurring', id='tab-recurring'):
-                yield RecurringContent()
             with TabPane('Waiting For', id='tab-waiting'):
                 yield WaitingForContent()
             with TabPane('Snoozed', id='tab-snoozed'):
                 yield SnoozedContent()
             with TabPane('Someday', id='tab-someday'):
                 yield SomedayContent()
+            with TabPane('Recurring', id='tab-recurring'):
+                yield RecurringContent()
             with TabPane('Goals', id='tab-goals'):
                 yield GoalsContent()
         yield Footer()
