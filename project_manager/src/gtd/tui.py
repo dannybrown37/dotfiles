@@ -463,7 +463,7 @@ class ScorecardScreen(ModalScreen[dict[str, int] | None]):
         content-align: right middle;
         color: $text-muted;
     }
-    .score-input { width: 8; }
+    .score-input { width: 10; }
     """
     )
 
@@ -501,6 +501,7 @@ class ScorecardScreen(ModalScreen[dict[str, int] | None]):
                         id=f'score-{i}',
                         classes='score-input',
                         value=str(current) if current is not None else '',
+                        max_length=2,
                     )
             with Horizontal(classes='modal-buttons'):
                 yield Button('Save', variant='primary', id='ok')
