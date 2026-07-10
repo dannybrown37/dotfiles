@@ -857,6 +857,7 @@ class TodayContent(BaseEntryContent):
         Binding('E', 'edit_notes', 'Edit notes'),
         Binding('D', 'mark_done', 'Done'),
         Binding('N', 'log_tactic', 'Log update'),
+        Binding('U', 'unlog_tactic', 'Unlog last'),
     ]
 
     _GTD_ACTIONS: ClassVar[set[str]] = {
@@ -867,7 +868,7 @@ class TodayContent(BaseEntryContent):
         'edit_notes',
         'mark_done',
     }
-    _TACTIC_ACTIONS: ClassVar[set[str]] = {'log_tactic'}
+    _TACTIC_ACTIONS: ClassVar[set[str]] = {'log_tactic', 'unlog_tactic'}
     _HABIT_ACTIONS: ClassVar[set[str]] = {'complete_habit'}
 
     def __init__(self) -> None:
@@ -1237,6 +1238,39 @@ class TodayContent(BaseEntryContent):
                     self._update_detail()
                     self.app.notify(f'✓ Logged update on "{t.description}"')
                     return
+
+    @work
+    async def action_unlog_tactic(self) -> None:
+        tactic_item = self._current_tactic_item()
+        if not tactic_item:
+            return
+        from gtd.storage import get_stored_goal_names, load_goal, save_goal  # noqa: PLC0415
+
+        for name in get_stored_goal_names():
+            if name != tactic_item.goal_name:
+                continue
+            goal = load_goal(name)
+            for t in goal.tactics:
+                if t.description != tactic_item.tactic_description:
+                    continue
+                if not t.updates:
+                    self.app.notify('No updates to remove', severity='warning')
+                    return
+                last = t.updates[-1]
+                confirmed = await self.app.push_screen_wait(
+                    ConfirmModal(
+                        f'Remove update from {last.date}?\n"{last.note}"'
+                    )
+                )
+                if not confirmed:
+                    return
+                t.updates.pop()
+                save_goal(goal)
+                self._goals[goal.name] = goal
+                tactic_item.refresh_display(t)
+                self._update_detail()
+                self.app.notify(f'✓ Removed last update on "{t.description}"')
+                return
 
 
 # ── Inbox content ────────────────────────────────────────────────────────────
