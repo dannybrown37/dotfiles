@@ -97,7 +97,7 @@ def _render_entry_summary(entry: ProjectEntry) -> str:
     return f'{icon} {entry.header.strip()}{ctx}{due}{next_step}'
 
 
-# ── Entry list item ──────────────────────────────────────────────────────────
+# ── Today content ────────────────────────────────────────────────────────────
 
 
 class EntryListItem(ListItem):
@@ -110,6 +110,31 @@ class EntryListItem(ListItem):
 
     def compose(self) -> ComposeResult:
         yield Label(self._text)
+
+
+class TacticListItem(ListItem):
+    def __init__(
+        self, goal_name: str, tactic_description: str, cadence: str
+    ) -> None:
+        super().__init__()
+        self.goal_name = goal_name
+        self.tactic_description = tactic_description
+        self.cadence = cadence
+
+    def compose(self) -> ComposeResult:
+        yield Label(
+            f'◆ {self.tactic_description}  [dim]{self.cadence}[/dim]',
+            markup=True,
+        )
+
+
+class SeparatorListItem(ListItem):
+    def __init__(self, label: str) -> None:
+        super().__init__(disabled=True)
+        self._label = label
+
+    def compose(self) -> ComposeResult:
+        yield Label(f'[dim]── {self._label} ──[/dim]', markup=True)
 
 
 class DetailPane(ScrollableContainer):
@@ -153,6 +178,7 @@ class TodayContent(Vertical):
     def __init__(self) -> None:
         super().__init__()
         self._entries: list[ProjectEntry] = []
+        self._tactic_items: list[TacticListItem] = []
         self._notes: dict[str, str] = {}
 
     def compose(self) -> ComposeResult:
@@ -185,15 +211,33 @@ class TodayContent(Vertical):
         with contextlib.suppress(Exception):
             self.query_one('#today-loading', LoadingIndicator).display = False
 
+        from gtd.storage import get_stored_goal_names, load_goal  # noqa: PLC0415
+
+        self._tactic_items = []
+        for name in get_stored_goal_names():
+            goal = load_goal(name)
+            if goal.is_complete or not goal.tactics:
+                continue
+            for tactic in goal.tactics:
+                self._tactic_items.append(
+                    TacticListItem(
+                        goal.name, tactic.description, tactic.reminder_cadence
+                    )
+                )
+
         lv = self.query_one('#today-list', VimListView)
         lv.clear()
         for entry in entries:
             lv.append(EntryListItem(entry))
+        if self._tactic_items:
+            lv.append(SeparatorListItem('12-Week Goals'))
+            for item in self._tactic_items:
+                lv.append(item)
 
         header = self.query_one('#today-list-header', Static)
         detail = self.query_one('#today-detail', Static)
 
-        if not entries:
+        if not entries and not self._tactic_items:
             header.update('Today — nothing actionable 🎉')
             detail.update('[dim]All clear. Nice work.[/dim]')
         else:
@@ -211,7 +255,24 @@ class TodayContent(Vertical):
             return None
         return self._entries[idx]
 
+    def _current_tactic_item(self) -> TacticListItem | None:
+        lv = self.query_one('#today-list', VimListView)
+        if lv.index is None:
+            return None
+        item = lv.highlighted_child
+        if isinstance(item, TacticListItem):
+            return item
+        return None
+
     def _update_detail(self) -> None:
+        tactic = self._current_tactic_item()
+        if tactic is not None:
+            self.query_one('#today-detail', Static).update(
+                f'[bold cyan]{tactic.goal_name}[/bold cyan]\n\n'
+                f'[bold]{tactic.tactic_description}[/bold]\n\n'
+                f'Cadence: [dim]{tactic.cadence}[/dim]'
+            )
+            return
         entry = self._current_entry()
         if not entry:
             return
