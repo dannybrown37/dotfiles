@@ -487,6 +487,7 @@ class VimListView(ListView):
         """Posted when k is pressed at the top of the list."""
 
     BINDINGS: ClassVar[list[Binding]] = [
+        Binding('ctrl+p', 'cursor_up', show=False),
         Binding('j', 'cursor_down', show=False),
         Binding('k', 'cursor_up_or_tabs', show=False),
         Binding('up', 'cursor_up_or_tabs', show=False),
@@ -835,9 +836,11 @@ class GoalsApp(App[None]):
 
     TITLE = '12-Week Year'
     SUB_TITLE = 'Goals'
+    COMMANDS: ClassVar[set] = set()
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('q', 'quit', 'Quit', priority=True)
+        Binding('ctrl+p', 'command_palette', show=False),
+        Binding('q', 'quit', 'Quit', priority=True),
     ]
 
     DEFAULT_CSS = 'GoalsApp { background: $surface; }'

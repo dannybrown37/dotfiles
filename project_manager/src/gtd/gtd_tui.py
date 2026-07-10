@@ -1339,15 +1339,18 @@ class GTDApp(App[None]):
     """Unified GTD + Goals TUI."""
 
     TITLE = 'GTD'
+    COMMANDS: ClassVar[set] = set()
+    ENABLE_COMMAND_PALETTE = False
 
     BINDINGS: ClassVar[list[Binding]] = [
+        Binding('ctrl+p', 'command_palette', show=False),
         Binding('h', 'tab_left', '←tab', priority=True),
         Binding('l', 'tab_right', 'tab→', priority=True),
         Binding('j', 'focus_list', show=False),
         Binding('down', 'focus_list', show=False),
         Binding('C', 'capture', 'Capture'),
         Binding('R', 'refresh', 'Refresh'),
-        Binding('M', 'gtd_menu', 'GTD menu'),
+        Binding('M', 'gtd_menu', 'FZF menu'),
         Binding('q', 'quit', 'Quit', priority=True),
         Binding('escape', 'quit', show=False),
     ]
