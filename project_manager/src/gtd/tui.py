@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
 from dateutil import parser as dateparser
-from textual import on
+from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, ScrollableContainer, Vertical
@@ -666,6 +666,7 @@ class GoalsContent(Widget):
 
     # ── Actions ──────────────────────────────────────────────────────────────
 
+    @work
     async def action_new_goal(self) -> None:
         result = await self.app.push_screen_wait(
             TwoFieldModal(
@@ -684,6 +685,7 @@ class GoalsContent(Widget):
         self._selected_idx = len(self._goals)
         self._refresh_goals()
 
+    @work
     async def action_score_week(self) -> None:
         goal = self._current_goal()
         if not goal:
@@ -725,6 +727,7 @@ class GoalsContent(Widget):
             f'Week {score_week} saved: {score_pct(sc, mx)} ({sc}/{mx})'
         )
 
+    @work
     async def action_add_tactic(self) -> None:
         goal = self._current_goal()
         if not goal:
@@ -751,6 +754,7 @@ class GoalsContent(Widget):
         self._refresh_goals()
         self.notify(f'Tactic added: {description}')
 
+    @work
     async def action_log_update(self) -> None:
         goal = self._current_goal()
         if not goal:
@@ -780,6 +784,7 @@ class GoalsContent(Widget):
         self._refresh_goals()
         self.notify('Update logged')
 
+    @work
     async def action_add_todo(self) -> None:
         goal = self._current_goal()
         if not goal:
@@ -807,6 +812,7 @@ class GoalsContent(Widget):
         self._refresh_goals()
         self.notify(f'To-do added: {description}')
 
+    @work
     async def action_complete_todo(self) -> None:
         goal = self._current_goal()
         if not goal:
@@ -830,10 +836,7 @@ class GoalsContent(Widget):
         self._refresh_goals()
         self.notify(f'✓ {choice}')
 
-    async def action_edit_goal(self) -> None:
-        goal = self._current_goal()
-        if not goal:
-            return
+    async def _edit_goal_meta(self, goal: Goal) -> None:
         result = await self.app.push_screen_wait(
             TwoFieldModal(
                 'Edit Goal',
@@ -855,7 +858,111 @@ class GoalsContent(Widget):
         new_path = OUTPUT_PATH / f'{_safe_filename(goal.name)}.json'
         if old_path != new_path and old_path.exists():
             old_path.unlink()
-        self._refresh_goals()
+
+    async def _edit_goal_dates(self, goal: Goal) -> None:
+        result = await self.app.push_screen_wait(
+            TwoFieldModal(
+                'Edit Dates',
+                'Start date',
+                'e.g. Jun 1, today',
+                'End date',
+                'e.g. Sep 1, in 12 weeks',
+                initial1=goal.start_date[:10],
+                initial2=goal.end_date[:10],
+            )
+        )
+        if not result:
+            return
+        start_str, end_str = result
+        with contextlib.suppress(ValueError, OverflowError):
+            parsed_start = dateparser.parse(start_str, fuzzy=True)
+            parsed_end = dateparser.parse(end_str, fuzzy=True)
+            if parsed_start:
+                goal.start_date = parsed_start.isoformat()
+            if parsed_end:
+                goal.end_date = parsed_end.isoformat()
+        save_goal(goal)
+
+    async def _edit_tactic(self, goal: Goal) -> None:
+        if not goal.tactics:
+            self.notify('No tactics to edit.', severity='warning')
+            return
+        choice = await self.app.push_screen_wait(
+            SelectModal(
+                'Edit which tactic?', [t.description for t in goal.tactics]
+            )
+        )
+        if not choice:
+            return
+        idx = next(
+            i for i, t in enumerate(goal.tactics) if t.description == choice
+        )
+        tactic = goal.tactics[idx]
+        result = await self.app.push_screen_wait(
+            TwoFieldModal(
+                'Edit Tactic',
+                'Description',
+                '',
+                'Cadence',
+                'e.g. daily, weekly, 2x/week',
+                initial1=tactic.description,
+                initial2=tactic.reminder_cadence,
+            )
+        )
+        if not result:
+            return
+        desc, cadence = result
+        goal.tactics[idx].description = desc or tactic.description
+        goal.tactics[idx].reminder_cadence = cadence or tactic.reminder_cadence
+        save_goal(goal)
+        self.notify(f'Tactic updated: {goal.tactics[idx].description}')
+
+    async def _remove_tactic(self, goal: Goal) -> None:
+        if not goal.tactics:
+            self.notify('No tactics to remove.', severity='warning')
+            return
+        choice = await self.app.push_screen_wait(
+            SelectModal(
+                'Remove which tactic?', [t.description for t in goal.tactics]
+            )
+        )
+        if not choice:
+            return
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal(f'Remove "{choice}"?')
+        )
+        if not confirmed:
+            return
+        goal.tactics = [t for t in goal.tactics if t.description != choice]
+        save_goal(goal)
+        self.notify(f'Tactic removed: {choice}')
+
+    @work
+    async def action_edit_goal(self) -> None:
+        goal = self._current_goal()
+        if not goal:
+            return
+        what = await self.app.push_screen_wait(
+            SelectModal(
+                'Edit what?',
+                [
+                    'Name & description',
+                    'Start & end dates',
+                    'Edit a tactic',
+                    'Remove a tactic',
+                ],
+            )
+        )
+        if what == 'Name & description':
+            await self._edit_goal_meta(goal)
+        elif what == 'Start & end dates':
+            await self._edit_goal_dates(goal)
+        elif what == 'Edit a tactic':
+            await self._edit_tactic(goal)
+        elif what == 'Remove a tactic':
+            await self._remove_tactic(goal)
+        if what:
+            self._refresh_goals()
 
     def action_score_history(self) -> None:
         goal = self._current_goal()
@@ -865,6 +972,7 @@ class GoalsContent(Widget):
             _render_score_history(goal)
         )
 
+    @work
     async def action_delete_goal(self) -> None:
         goal = self._current_goal()
         if not goal:
