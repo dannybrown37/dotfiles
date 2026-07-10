@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import os
+import re
 import subprocess
 import tempfile
 from datetime import datetime, timedelta
@@ -31,6 +32,7 @@ from textual.widgets import (
     Tabs,
 )
 
+from gtd.models import Goal, Tactic, Update
 from gtd.notion.models import ProjectEntry
 from gtd.notion.schema import STATUSES, STATUS_ICONS
 from gtd.tui import (
@@ -97,6 +99,104 @@ def _render_entry_summary(entry: ProjectEntry) -> str:
     return f'{icon} {entry.header.strip()}{ctx}{due}{next_step}'
 
 
+# ── Tactic cadence helpers ───────────────────────────────────────────────────
+
+
+def _parse_cadence_per_week(cadence: str) -> int:
+    """Parse reminder_cadence string into times-per-week count."""
+    c = cadence.lower().strip()
+    if c in ('daily', 'every day'):
+        return 7
+    m = re.match(r'(\d+)x', c)
+    if m:
+        return int(m.group(1))
+    return 1
+
+
+_DAILY_CADENCE = 7  # sentinel: cadence that means "every day"
+
+
+def _week_start_iso() -> str:
+    today = datetime.now().date()
+    return (today - timedelta(days=today.weekday())).isoformat()
+
+
+def _count_updates_this_week(tactic: Tactic) -> int:
+    ws = _week_start_iso()
+    return sum(1 for u in tactic.updates if u.date >= ws)
+
+
+def _updated_today(tactic: Tactic) -> bool:
+    today = datetime.now().date().isoformat()
+    return any(u.date == today for u in tactic.updates)
+
+
+def _tactic_is_due(tactic: Tactic) -> bool:
+    per_week = _parse_cadence_per_week(tactic.reminder_cadence)
+    if per_week >= _DAILY_CADENCE:
+        return not _updated_today(tactic)
+    return _count_updates_this_week(tactic) < per_week
+
+
+def _tactic_sort_key(tactic: Tactic) -> int:
+    """0 = overdue, 1 = partial, 2 = done — for sorting due items first."""
+    per_week = _parse_cadence_per_week(tactic.reminder_cadence)
+    if per_week >= _DAILY_CADENCE:
+        return 0 if not _updated_today(tactic) else 2
+    n = _count_updates_this_week(tactic)
+    if n == 0:
+        return 0
+    return 1 if n < per_week else 2
+
+
+def _render_tactic_detail(
+    goal_name: str, tactic: Tactic, goal: Goal | None
+) -> str:
+    lines: list[str] = [f'[bold cyan]{goal_name}[/bold cyan]']
+    if goal:
+        week = goal.current_week()
+        bar = goal.progress_bar()
+        lines.append(f'[dim]Week {week}/12  {bar}[/dim]')
+    lines += ['', f'[bold]{tactic.description}[/bold]']
+    lines.append(f'Cadence: [dim]{tactic.reminder_cadence}[/dim]')
+    lines.append('')
+
+    per_week = _parse_cadence_per_week(tactic.reminder_cadence)
+    if per_week >= _DAILY_CADENCE:
+        if _updated_today(tactic):
+            lines.append('[green]✓ Done today[/green]')
+        else:
+            lines.append('[bold red]⚠ Due today[/bold red]')
+    else:
+        n = _count_updates_this_week(tactic)
+        if n >= per_week:
+            lines.append(f'[green]✓ Done this week ({n}/{per_week})[/green]')
+        elif n > 0:
+            lines.append(
+                f'[yellow]◑ In progress this week ({n}/{per_week})[/yellow]'
+            )
+        else:
+            lines.append(
+                f'[bold red]⚠ Due this week (0/{per_week})[/bold red]'
+            )
+
+    recent = sorted(tactic.updates, key=lambda u: u.date, reverse=True)[:5]
+    if recent:
+        lines += ['', '[dim]── Recent updates ──[/dim]']
+        today_iso = datetime.now().date().isoformat()
+        for u in recent:
+            try:
+                d = datetime.fromisoformat(u.date)
+                date_str = 'Today' if u.date == today_iso else f'{d:%b %-d}'
+            except ValueError:
+                date_str = u.date
+            lines.append(f'  [dim]{date_str}[/dim]  {u.note}')
+    else:
+        lines += ['', '[dim]No updates yet. Press N to log one.[/dim]']
+
+    return '\n'.join(lines)
+
+
 # ── List item widgets ────────────────────────────────────────────────────────
 
 
@@ -113,19 +213,43 @@ class EntryListItem(ListItem):
 
 
 class TacticListItem(ListItem):
-    def __init__(
-        self, goal_name: str, tactic_description: str, cadence: str
-    ) -> None:
+    def __init__(self, goal_name: str, tactic: Tactic) -> None:
         super().__init__()
         self.goal_name = goal_name
-        self.tactic_description = tactic_description
-        self.cadence = cadence
+        self.tactic = tactic
+
+    @property
+    def tactic_description(self) -> str:
+        return self.tactic.description
+
+    @property
+    def cadence(self) -> str:
+        return self.tactic.reminder_cadence
+
+    def _build_label(self) -> str:
+        per_week = _parse_cadence_per_week(self.tactic.reminder_cadence)
+        n = _count_updates_this_week(self.tactic)
+        desc = self.tactic.description
+        cad = self.tactic.reminder_cadence
+        if per_week >= _DAILY_CADENCE:
+            if _updated_today(self.tactic):
+                return f'[dim]✓ {desc}  {cad}[/dim]'
+            return f'[bold red]●[/bold red] {desc}  [dim]{cad}[/dim]'
+        if n >= per_week:
+            return f'[dim]✓ {desc}  {cad}[/dim]'
+        if n > 0:
+            return (
+                f'[yellow]◑[/yellow] {desc}  [dim]{cad} · {n}/{per_week}[/dim]'
+            )
+        return f'[bold red]●[/bold red] {desc}  [dim]{cad}[/dim]'
 
     def compose(self) -> ComposeResult:
-        yield Label(
-            f'◆ {self.tactic_description}  [dim]{self.cadence}[/dim]',
-            markup=True,
-        )
+        yield Label(self._build_label(), markup=True)
+
+    def refresh_display(self, tactic: Tactic) -> None:
+        """Update visual after tactic data changes."""
+        self.tactic = tactic
+        self.query_one(Label).update(self._build_label())
 
 
 class SeparatorListItem(ListItem):
@@ -620,6 +744,7 @@ class TodayContent(BaseEntryContent):
     def __init__(self) -> None:
         super().__init__()
         self._tactic_items: list[TacticListItem] = []
+        self._goals: dict[str, Goal] = {}
 
     def _build_filter(self) -> dict:
         return {}
@@ -645,28 +770,41 @@ class TodayContent(BaseEntryContent):
 
         from gtd.storage import get_stored_goal_names, load_goal  # noqa: PLC0415
 
-        self._tactic_items = []
+        self._goals = {}
+        goals_with_tactics: list[tuple[Goal, list[TacticListItem]]] = []
         for name in get_stored_goal_names():
             goal = load_goal(name)
             if goal.is_complete or not goal.tactics:
                 continue
-            for tactic in goal.tactics:
-                self._tactic_items.append(
-                    TacticListItem(
-                        goal.name,
-                        tactic.description,
-                        tactic.reminder_cadence,
-                    )
-                )
+            self._goals[goal.name] = goal
+            items = [TacticListItem(goal.name, t) for t in goal.tactics]
+            items.sort(key=lambda i: _tactic_sort_key(i.tactic))
+            goals_with_tactics.append((goal, items))
+
+        self._tactic_items = [
+            i for _, items in goals_with_tactics for i in items
+        ]
 
         lv = self.query_one('#entry-list', VimListView)
         lv.clear()
         for entry in entries:
             lv.append(EntryListItem(entry))
-        if self._tactic_items:
-            lv.append(SeparatorListItem('12-Week Goals'))
-            for item in self._tactic_items:
-                lv.append(item)
+        if goals_with_tactics:
+            total_due = sum(
+                1 for i in self._tactic_items if _tactic_is_due(i.tactic)
+            )
+            header_sep = '12-Week Goals'
+            if total_due:
+                header_sep += f' ({total_due} due)'
+            lv.append(SeparatorListItem(header_sep))
+            for goal, items in goals_with_tactics:
+                due = sum(1 for i in items if _tactic_is_due(i.tactic))
+                goal_label = f'  {goal.name}'
+                if due:
+                    goal_label += f'  [red]{due} due[/red]'
+                lv.append(SeparatorListItem(goal_label))
+                for item in items:
+                    lv.append(item)
 
         header = self.query_one('#entry-list-header', Static)
         detail = self.query_one('#entry-detail', Static)
@@ -700,12 +838,13 @@ class TodayContent(BaseEntryContent):
         return None
 
     def _update_detail(self) -> None:
-        tactic = self._current_tactic_item()
-        if tactic is not None:
+        tactic_item = self._current_tactic_item()
+        if tactic_item is not None:
+            goal = self._goals.get(tactic_item.goal_name)
             self.query_one('#entry-detail', Static).update(
-                f'[bold cyan]{tactic.goal_name}[/bold cyan]\n\n'
-                f'[bold]{tactic.tactic_description}[/bold]\n\n'
-                f'Cadence: [dim]{tactic.cadence}[/dim]'
+                _render_tactic_detail(
+                    tactic_item.goal_name, tactic_item.tactic, goal
+                )
             )
             return
         entry = self._current_entry()
@@ -798,24 +937,22 @@ class TodayContent(BaseEntryContent):
 
     @work
     async def action_log_tactic(self) -> None:
-        tactic = self._current_tactic_item()
-        if not tactic:
+        tactic_item = self._current_tactic_item()
+        if not tactic_item:
             return
         note = await self.app.push_screen_wait(
-            InputModal('Log update', f'{tactic.tactic_description}')
+            InputModal('Log update', tactic_item.tactic_description)
         )
         if not note:
             return
         from gtd.storage import get_stored_goal_names, load_goal, save_goal  # noqa: PLC0415
-        from gtd.models import Update  # noqa: PLC0415
-        from datetime import datetime  # noqa: PLC0415
 
         for name in get_stored_goal_names():
-            if name != tactic.goal_name:
+            if name != tactic_item.goal_name:
                 continue
             goal = load_goal(name)
             for t in goal.tactics:
-                if t.description == tactic.tactic_description:
+                if t.description == tactic_item.tactic_description:
                     t.updates.append(
                         Update(
                             date=datetime.now().date().isoformat(),
@@ -823,6 +960,9 @@ class TodayContent(BaseEntryContent):
                         )
                     )
                     save_goal(goal)
+                    self._goals[goal.name] = goal
+                    tactic_item.refresh_display(t)
+                    self._update_detail()
                     self.app.notify(f'✓ Logged update on "{t.description}"')
                     return
 
