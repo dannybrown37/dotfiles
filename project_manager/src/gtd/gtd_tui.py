@@ -973,10 +973,11 @@ class TodayContent(BaseEntryContent):
         self.app.refresh_bindings()
 
     def _current_entry(self) -> ProjectEntry | None:
-        idx = self.query_one('#entry-list', VimListView).index
-        if idx is None or idx >= len(self._entries):
+        item = self.query_one('#entry-list', VimListView).highlighted_child
+        if not isinstance(item, EntryListItem):
             return None
-        return self._entries[idx]
+        pid = item.page_id
+        return next((e for e in self._entries if e.page_id == pid), None)
 
     def _current_habit_item(self) -> WeeklyHabitItem | None:
         item = self.query_one('#entry-list', VimListView).highlighted_child
