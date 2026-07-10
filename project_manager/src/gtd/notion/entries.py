@@ -60,9 +60,15 @@ def _parse_date_input(raw: str) -> str | None:
 def _today_filter() -> dict:
     """Build the Notion filter for today's actionable items."""
     today = datetime.now().strftime('%Y-%m-%d')
+    active_statuses = ['Current Project', 'Recurring']
     return {
         'and': [
-            {'property': 'Status', 'select': {'equals': 'Current Project'}},
+            {
+                'or': [
+                    {'property': 'Status', 'select': {'equals': s}}
+                    for s in active_statuses
+                ],
+            },
             {
                 'or': [
                     {

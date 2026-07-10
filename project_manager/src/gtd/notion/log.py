@@ -52,7 +52,10 @@ def _infer_cadence(header: str) -> str:
 
 def _is_recurring(entry: ProjectEntry) -> bool:
     """Check if an entry is a recurring item."""
-    return _infer_reschedule_days(entry.header) is not None
+    return (
+        entry.status == 'Recurring'
+        or _infer_reschedule_days(entry.header) is not None
+    )
 
 
 def _confirm_delete(entry: ProjectEntry) -> bool:

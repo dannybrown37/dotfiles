@@ -339,17 +339,17 @@ class SelectModal(ModalScreen[str | None]):
     def compose(self) -> ComposeResult:
         with Vertical(classes='modal-box'):
             yield Label(self._title, classes='modal-title')
-            yield Input(placeholder='/ filter  tab browse', id='filter-input')
+            yield Input(placeholder='tab → filter', id='filter-input')
             yield ListView(
                 *[ListItem(Label(item)) for item in self._all_items],
                 id='select-list',
             )
 
     def on_mount(self) -> None:
-        self.query_one('#filter-input', Input).focus()
         lv = self.query_one('#select-list', ListView)
         if self._all_items:
             lv.index = 0
+        lv.focus()
 
     @on(Input.Changed, '#filter-input')
     def filter_changed(self, event: Input.Changed) -> None:
