@@ -1070,15 +1070,59 @@ class TodayContent(BaseEntryContent):
         return scored_any
 
     async def _run_weekly_review_flow(self) -> bool:
-        return bool(
-            await self.app.push_screen_wait(
-                ConfirmModal(
-                    'GTD Weekly Review\n\n'
-                    + _GTD_REVIEW_CHECKLIST
-                    + '\n\nMark complete?'
+        loop = asyncio.get_running_loop()
+
+        # Step 1: Inbox
+        inbox_entries: list[ProjectEntry] = []
+        try:
+            from gtd.notion.client import query_database  # noqa: PLC0415
+
+            inbox_filter = {
+                'or': [
+                    {'property': 'Status', 'select': {'equals': 'Triage'}},
+                    {'property': 'Status', 'select': {'equals': 'Inbox'}},
+                ]
+            }
+            inbox_entries = await loop.run_in_executor(
+                None, query_database, inbox_filter
+            )
+            inbox_count = len(inbox_entries)
+        except Exception:
+            inbox_count = -1
+
+        if inbox_count == 0:
+            self.app.notify('Inbox: empty ✓')
+        else:
+            label = f'{inbox_count} item(s)' if inbox_count > 0 else '? items'
+            choice = await self.app.push_screen_wait(
+                SelectModal(
+                    f'Process inbox  [{label}]',
+                    ['Triage inbox now', 'Already done ✓'],
                 )
             )
-        )
+            if choice is None:
+                return False
+            if choice == 'Triage inbox now':
+                inbox_content = self.app.query_one(InboxContent)
+                inbox_content.seed_entries(inbox_entries)
+                await inbox_content.triage_entries(inbox_entries)
+
+        # Remaining checklist steps
+        steps = [
+            'Review Projects & next actions',
+            'Review Waiting For list',
+            'Review Someday/Maybe list',
+            'Review calendar (past & upcoming week)',
+            'Review 12-Week Goals progress',
+        ]
+        for step in steps:
+            choice = await self.app.push_screen_wait(
+                SelectModal(step, ['Done ✓', 'Skip'])
+            )
+            if choice is None:
+                return False
+
+        return True
 
     def _dismiss_habit_item(self, item: WeeklyHabitItem) -> None:
         from gtd.storage import set_weekly_habit_date  # noqa: PLC0415
@@ -1234,6 +1278,10 @@ class InboxContent(BaseEntryContent):
             ],
         }
 
+    def seed_entries(self, entries: list[ProjectEntry]) -> None:
+        """Pre-populate entries (e.g. from weekly review flow)."""
+        self._entries = entries
+
     @work
     async def action_triage_entry(self) -> None:
         entry = self._current_entry()
@@ -1245,9 +1293,11 @@ class InboxContent(BaseEntryContent):
 
     @work
     async def action_triage_all(self) -> None:
-        entries = list(self._entries)
+        await self.triage_entries(self._entries)
+
+    async def triage_entries(self, entries: list[ProjectEntry]) -> None:
         processed = 0
-        for entry in entries:
+        for entry in list(entries):
             triaged = await self._triage_one(entry)
             if triaged is None:
                 break
