@@ -39,6 +39,8 @@ Use [pytest](https://docs.pytest.org/) for testing.
 
 ## Linting
 
-Use [ruff](https://docs.astral.sh/ruff/) for linting.
+Use [ruff](https://docs.astral.sh/ruff/) for linting and formatting.
 
 See [.ruff.toml](../../config/.ruff.toml) for the current configuration.
+
+**Code is not shippable until it passes all linting and formatting checks.**
