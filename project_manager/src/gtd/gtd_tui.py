@@ -771,7 +771,8 @@ class InboxContent(Vertical):
     """Triage inbox — items waiting to be processed."""
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('T', 'triage_all', 'Triage all'),
+        Binding('T', 'triage_entry', 'Triage'),
+        Binding('A', 'triage_all', 'Triage all'),
         Binding('U', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit notes'),
         Binding('D', 'drop_entry', 'Drop'),
@@ -893,12 +894,114 @@ class InboxContent(Vertical):
         self._load_entries()
 
     @work
-    async def action_triage_all(self) -> None:
-        from gtd.notion.triage import process_triage  # noqa: PLC0415
+    async def action_triage_entry(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        triaged = await self._triage_one(entry)
+        if triaged:
+            self._remove_entry(entry.page_id)
 
-        with self.app.suspend():
-            process_triage()
-        self.action_refresh()
+    @work
+    async def action_triage_all(self) -> None:
+        entries = list(self._entries)
+        processed = 0
+        for entry in entries:
+            triaged = await self._triage_one(entry)
+            if triaged is None:
+                break
+            if triaged:
+                processed += 1
+                self._remove_entry(entry.page_id)
+        if processed:
+            s = 's' if processed != 1 else ''
+            self.app.notify(f'✓ Triaged {processed} item{s}')
+
+    async def _triage_one(self, entry: ProjectEntry) -> bool | None:
+        """Triage a single entry via TUI modals.
+
+        Returns True if saved, False if skipped/deleted, None if cancelled.
+        """
+        from dateutil import parser as dateparser  # noqa: PLC0415
+        from gtd.notion.client import (  # noqa: PLC0415
+            archive_page,
+            build_property_update,
+            get_select_options,
+            update_page,
+        )
+        from gtd.notion.triage import TRIAGE_STATUSES  # noqa: PLC0415
+
+        title = entry.header.strip()
+
+        status = await self.app.push_screen_wait(
+            SelectModal(f'Triage: {title}', TRIAGE_STATUSES)
+        )
+        if status is None:
+            return None
+
+        if status == 'Delete':
+            confirmed = await self.app.push_screen_wait(
+                ConfirmModal(f'Delete "{title}"?')
+            )
+            if confirmed:
+                await asyncio.get_running_loop().run_in_executor(
+                    None, archive_page, entry.page_id
+                )
+                self.app.notify(f'✓ Deleted "{title}"')
+                return True
+            return False
+
+        contexts = await asyncio.get_running_loop().run_in_executor(
+            None, get_select_options, 'Context'
+        )
+        context = await self.app.push_screen_wait(
+            SelectModal(f'Context: {title}', contexts)
+        )
+        if context is None:
+            return None
+
+        prompt = (
+            'Who/what are you waiting on?'
+            if status == 'Waiting For'
+            else 'Next actionable step'
+        )
+        next_step = await self.app.push_screen_wait(InputModal(prompt, title))
+        if next_step is None:
+            return None
+
+        due_str = await self.app.push_screen_wait(
+            InputModal('Due date (blank to skip)', 'e.g. Jul 15, 2026-08-01')
+        )
+        due_iso: str | None = None
+        if due_str:
+            parsed = dateparser.parse(due_str, fuzzy=True)
+            due_iso = parsed.strftime('%Y-%m-%d') if parsed else None
+
+        follow_up_prompt = (
+            'Follow-up date (required)'
+            if status == 'Waiting For'
+            else 'Follow-up date (blank to skip)'
+        )
+        follow_str = await self.app.push_screen_wait(
+            InputModal(follow_up_prompt, 'e.g. Friday, in 3 days')
+        )
+        follow_iso: str | None = None
+        if follow_str:
+            parsed = dateparser.parse(follow_str, fuzzy=True)
+            follow_iso = parsed.strftime('%Y-%m-%d') if parsed else None
+
+        props = build_property_update(
+            status=status,
+            context=context,
+            next_step=next_step or None,
+            due_date=due_iso,
+            follow_up_date=follow_iso,
+        )
+        await asyncio.get_running_loop().run_in_executor(
+            None, update_page, entry.page_id, props
+        )
+        self.app.notify(f'✓ "{title}" → {status} [{context}]')
+        return True
 
     @work
     async def action_update_entry(self) -> None:  # noqa: PLR0911
