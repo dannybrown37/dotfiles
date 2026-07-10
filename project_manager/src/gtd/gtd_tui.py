@@ -747,10 +747,90 @@ class InboxContent(Vertical):
         self.action_refresh()
 
     @work
-    async def action_update_entry(self) -> None:
+    async def action_update_entry(self) -> None:  # noqa: PLR0911
+        from gtd.notion.client import (  # noqa: PLC0415
+            build_property_update,
+            get_select_options,
+            update_page,
+        )
+
         entry = self._current_entry()
-        if entry:
-            await _shared_update_entry(self.app, entry, self._load_entries)
+        if not entry:
+            return
+
+        fields = [
+            'Name',
+            'Status',
+            'Context',
+            'Next actionable step',
+            'Follow-up date',
+            'Due date',
+        ]
+        choice = await self.app.push_screen_wait(
+            SelectModal('Update which field?', fields)
+        )
+        if not choice:
+            return
+
+        if choice != 'Status':
+            props = await _prompt_and_get_props(self.app, entry, choice)
+            if props is None:
+                return
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                update_page,
+                entry.page_id,
+                build_property_update(**props),
+            )
+            self._load_entries()
+            self.app.notify(f'✓ "{entry.header.strip()}" updated')
+            return
+
+        # Setting Status requires Context + Next Actionable Step
+        status = await self.app.push_screen_wait(
+            SelectModal('Status', STATUSES)
+        )
+        if not status:
+            return
+
+        loop = asyncio.get_running_loop()
+        context = entry.context
+        if not context:
+            contexts = await loop.run_in_executor(
+                None, get_select_options, 'Context'
+            )
+            context = await self.app.push_screen_wait(
+                SelectModal('Context (required to move out)', contexts)
+            )
+            if not context:
+                self.app.notify(
+                    'Context required to move out of Inbox', severity='warning'
+                )
+                return
+
+        next_step = entry.next_step
+        if not next_step:
+            next_step = await self.app.push_screen_wait(
+                InputModal('Next Actionable Step (required to move out)')
+            )
+            if not next_step:
+                self.app.notify(
+                    'Next step required to move out of Inbox',
+                    severity='warning',
+                )
+                return
+
+        await loop.run_in_executor(
+            None,
+            update_page,
+            entry.page_id,
+            build_property_update(
+                status=status, context=context, next_step=next_step
+            ),
+        )
+        self._load_entries()
+        self.app.notify(f'✓ "{entry.header.strip()}" → {status}')
 
     @work
     async def action_edit_notes(self) -> None:
