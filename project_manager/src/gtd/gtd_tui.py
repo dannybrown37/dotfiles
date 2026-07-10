@@ -112,6 +112,12 @@ class EntryListItem(ListItem):
         yield Label(self._text)
 
 
+class DetailPane(ScrollableContainer):
+    """Scrollable detail pane — not focusable via Tab."""
+
+    can_focus = False
+
+
 # ── Today content ────────────────────────────────────────────────────────────
 
 
@@ -155,7 +161,7 @@ class TodayContent(Vertical):
             yield Static('Today', id='today-list-header')
             yield LoadingIndicator(id='today-loading')
             yield VimListView(id='today-list')
-        with ScrollableContainer(id='today-detail-pane'):
+        with DetailPane(id='today-detail-pane'):
             yield Static('', id='today-detail', markup=True)
 
     def on_mount(self) -> None:
@@ -239,6 +245,7 @@ class TodayContent(Vertical):
 
     # ── Actions ──────────────────────────────────────────────────────────────
 
+    @work
     async def action_log(self) -> None:
         entry = self._current_entry()
         if not entry:
@@ -327,6 +334,7 @@ class TodayContent(Vertical):
         props = build_property_update(follow_up_date=date)
         update_page(page_id, props)
 
+    @work
     async def action_waiting_for(self) -> None:
         entry = self._current_entry()
         if not entry:
@@ -363,6 +371,7 @@ class TodayContent(Vertical):
             kwargs['follow_up_date'] = follow_date
         update_page(page_id, build_property_update(**kwargs))
 
+    @work
     async def action_update_entry(self) -> None:  # noqa: C901
         entry = self._current_entry()
         if not entry:
@@ -437,6 +446,7 @@ class TodayContent(Vertical):
         self._load_entries()
         self.app.notify(f'✓ "{entry.header.strip()}" updated')
 
+    @work
     async def action_mark_done(self) -> None:
         entry = self._current_entry()
         if not entry:
@@ -461,6 +471,7 @@ class TodayContent(Vertical):
 
         archive_page(page_id)
 
+    @work
     async def action_capture(self) -> None:
         header = await self.app.push_screen_wait(
             InputModal('Capture to Inbox', 'What needs capturing?')
@@ -639,7 +650,7 @@ class InboxContent(Vertical):
             yield Static('Inbox', id='inbox-list-header')
             yield LoadingIndicator(id='inbox-loading')
             yield VimListView(id='inbox-list')
-        with ScrollableContainer(id='inbox-detail-pane'):
+        with DetailPane(id='inbox-detail-pane'):
             yield Static('', id='inbox-detail', markup=True)
 
     def on_mount(self) -> None:
@@ -727,6 +738,7 @@ class InboxContent(Vertical):
         self.query_one('#inbox-detail', Static).update('')
         self._load_entries()
 
+    @work
     async def action_triage_all(self) -> None:
         from gtd.notion.triage import process_triage  # noqa: PLC0415
 
@@ -734,11 +746,13 @@ class InboxContent(Vertical):
             process_triage()
         self.action_refresh()
 
+    @work
     async def action_update_entry(self) -> None:
         entry = self._current_entry()
         if entry:
             await _shared_update_entry(self.app, entry, self._load_entries)
 
+    @work
     async def action_edit_notes(self) -> None:
         entry = self._current_entry()
         if entry:
@@ -746,6 +760,7 @@ class InboxContent(Vertical):
                 self.app, entry, self._notes, self._update_detail
             )
 
+    @work
     async def action_drop_entry(self) -> None:
         entry = self._current_entry()
         if not entry:
@@ -765,6 +780,7 @@ class InboxContent(Vertical):
 
         archive_page(page_id)
 
+    @work
     async def action_capture(self) -> None:
         header = await self.app.push_screen_wait(
             InputModal('Capture to Inbox', 'What needs capturing?')
@@ -823,7 +839,7 @@ class ProjectsContent(Vertical):
             yield Static('Projects', id='projects-list-header')
             yield LoadingIndicator(id='projects-loading')
             yield VimListView(id='projects-list')
-        with ScrollableContainer(id='projects-detail-pane'):
+        with DetailPane(id='projects-detail-pane'):
             yield Static('', id='projects-detail', markup=True)
 
     def on_mount(self) -> None:
@@ -929,11 +945,13 @@ class ProjectsContent(Vertical):
         self.query_one('#projects-detail', Static).update('')
         self._load_entries()
 
+    @work
     async def action_update_entry(self) -> None:
         entry = self._current_entry()
         if entry:
             await _shared_update_entry(self.app, entry, self._load_entries)
 
+    @work
     async def action_edit_notes(self) -> None:
         entry = self._current_entry()
         if entry:
@@ -941,6 +959,7 @@ class ProjectsContent(Vertical):
                 self.app, entry, self._notes, self._update_detail
             )
 
+    @work
     async def action_mark_done(self) -> None:
         entry = self._current_entry()
         if not entry:
@@ -979,6 +998,7 @@ class ProjectsContent(Vertical):
 
         update_page(page_id, build_property_update(status='Someday/Maybe'))
 
+    @work
     async def action_capture(self) -> None:
         header = await self.app.push_screen_wait(
             InputModal('Capture to Inbox', 'What needs capturing?')
@@ -1037,7 +1057,7 @@ class SomedayContent(Vertical):
             yield Static('Someday/Maybe', id='someday-list-header')
             yield LoadingIndicator(id='someday-loading')
             yield VimListView(id='someday-list')
-        with ScrollableContainer(id='someday-detail-pane'):
+        with DetailPane(id='someday-detail-pane'):
             yield Static('', id='someday-detail', markup=True)
 
     def on_mount(self) -> None:
@@ -1147,11 +1167,13 @@ class SomedayContent(Vertical):
 
         update_page(page_id, build_property_update(status='Current Project'))
 
+    @work
     async def action_update_entry(self) -> None:
         entry = self._current_entry()
         if entry:
             await _shared_update_entry(self.app, entry, self._load_entries)
 
+    @work
     async def action_edit_notes(self) -> None:
         entry = self._current_entry()
         if entry:
@@ -1159,6 +1181,7 @@ class SomedayContent(Vertical):
                 self.app, entry, self._notes, self._update_detail
             )
 
+    @work
     async def action_drop_entry(self) -> None:
         entry = self._current_entry()
         if not entry:
@@ -1178,6 +1201,7 @@ class SomedayContent(Vertical):
 
         archive_page(page_id)
 
+    @work
     async def action_capture(self) -> None:
         header = await self.app.push_screen_wait(
             InputModal('Capture to Inbox', 'What needs capturing?')
@@ -1205,6 +1229,7 @@ class GTDApp(App[None]):
         Binding('j', 'focus_list', show=False),
         Binding('m', 'gtd_menu', 'GTD menu'),
         Binding('q', 'quit', 'Quit', priority=True),
+        Binding('escape', 'quit', show=False, priority=True),
     ]
 
     DEFAULT_CSS = """
@@ -1271,6 +1296,7 @@ class GTDApp(App[None]):
         except (ValueError, KeyError):
             pass
 
+    @work
     async def action_gtd_menu(self) -> None:
         """Suspend the TUI and open the full fzf GTD menu."""
         with self.suspend():
