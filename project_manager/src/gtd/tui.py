@@ -480,6 +480,12 @@ class ScorecardScreen(ModalScreen[dict[str, int] | None]):
 # ── Widgets ──────────────────────────────────────────────────────────────────
 
 
+class DetailPane(ScrollableContainer):
+    """Scrollable detail pane — not focusable via Tab."""
+
+    can_focus = False
+
+
 class VimListView(ListView):
     """ListView with j/k/G/g vim-style navigation.
 
@@ -568,7 +574,7 @@ class GoalsContent(Widget):
         with Vertical(id='goals-list-pane'):
             yield Static('Goals', id='goals-list-header')
             yield VimListView(id='goals-list')
-        with ScrollableContainer(id='goals-detail-pane'):
+        with DetailPane(id='goals-detail-pane'):
             yield Static('', id='goals-detail-content', markup=True)
 
     def on_mount(self) -> None:
