@@ -219,6 +219,95 @@ def _render_tactic_detail(
     return '\n'.join(lines)
 
 
+# ── Weekly habit helpers ─────────────────────────────────────────────────────
+
+WEEKLY_HABITS: list[tuple[str, str]] = [
+    ('weekly_review', 'Weekly Review'),
+    ('goal_scoring', 'Score Goals'),
+]
+
+_GTD_REVIEW_CHECKLIST = """\
+  □ Process all inboxes to zero
+  □ Review Projects list & next actions
+  □ Review Waiting For list
+  □ Review Someday/Maybe list
+  □ Review calendar (past & upcoming)
+  □ Check 12-Week Goals progress"""
+
+_GOAL_SCORING_HINT = """\
+  Navigate to the Goals tab (right) and press S on each goal.
+  Score 1-10 for how well you executed each tactic this week."""
+
+
+def _habit_done_this_week(key: str) -> bool:
+    from gtd.storage import get_weekly_habit_date  # noqa: PLC0415
+
+    last = get_weekly_habit_date(key)
+    if not last:
+        return False
+    return last >= _week_start_iso()
+
+
+def _render_habit_detail(key: str, label: str) -> str:
+    from gtd.storage import get_weekly_habit_date  # noqa: PLC0415
+    from gtd.storage import get_stored_goal_names, load_goal  # noqa: PLC0415
+
+    last = get_weekly_habit_date(key)
+    if last:
+        try:
+            d = datetime.fromisoformat(last)
+            days_ago = (datetime.now().date() - d.date()).days
+            last_str = (
+                'today' if days_ago == 0 else f'{d:%b %-d} ({days_ago}d ago)'
+            )
+        except ValueError:
+            last_str = last
+    else:
+        last_str = 'never'
+
+    done = _habit_done_this_week(key)
+    if done:
+        status = '[green]✓ Done this week[/green]'
+    else:
+        status = '[bold red]⚠ Not done this week[/bold red]'
+
+    lines = [
+        f'[bold red]● {label}[/bold red]'
+        if not done
+        else f'[dim]✓ {label}[/dim]',
+        '',
+        f'{status}   [dim]last: {last_str}[/dim]',
+        '',
+    ]
+
+    if key == 'weekly_review':
+        lines += [
+            '[dim]── GTD Weekly Review checklist ──[/dim]',
+            _GTD_REVIEW_CHECKLIST,
+        ]
+    elif key == 'goal_scoring':
+        goals = [
+            load_goal(n)
+            for n in get_stored_goal_names()
+            if not load_goal(n).is_complete
+        ]
+        if goals:
+            lines.append('[dim]── Goals to score ──[/dim]')
+            for g in goals:
+                week = g.current_week()
+                scored = str(week) in (
+                    g.tactics[0].weekly_scores if g.tactics else {}
+                )
+                mark = '[green]✓[/green]' if scored else '[red]·[/red]'
+                lines.append(f'  {mark} {g.name}  [dim]Week {week}[/dim]')
+            lines += ['', _GOAL_SCORING_HINT]
+
+    if not done:
+        lines += ['', '[dim]Press X to mark done for this week.[/dim]']
+
+    return '\n'.join(lines)
+
+
 # ── List item widgets ────────────────────────────────────────────────────────
 
 
@@ -232,6 +321,20 @@ class EntryListItem(ListItem):
 
     def compose(self) -> ComposeResult:
         yield Label(self._text)
+
+
+class WeeklyHabitItem(ListItem):
+    def __init__(self, key: str, label: str) -> None:
+        super().__init__()
+        self.habit_key = key
+        self.habit_label = label
+
+    def compose(self) -> ComposeResult:
+        yield Label(
+            f'[bold red]●[/bold red] {self.habit_label}'
+            f'  [dim]not done this week[/dim]',
+            markup=True,
+        )
 
 
 class TacticListItem(ListItem):
@@ -746,6 +849,7 @@ class TodayContent(BaseEntryContent):
     EMPTY_MSG: ClassVar[str] = 'All clear. Nice work.'
 
     BINDINGS: ClassVar[list[Binding]] = [
+        Binding('W', 'complete_habit', 'Score Week'),
         Binding('L', 'log', 'Log'),
         Binding('S', 'snooze', 'Snooze'),
         Binding('W', 'waiting_for', 'Waiting For'),
@@ -764,10 +868,12 @@ class TodayContent(BaseEntryContent):
         'mark_done',
     }
     _TACTIC_ACTIONS: ClassVar[set[str]] = {'log_tactic'}
+    _HABIT_ACTIONS: ClassVar[set[str]] = {'complete_habit'}
 
     def __init__(self) -> None:
         super().__init__()
         self._tactic_items: list[TacticListItem] = []
+        self._habit_items: list[WeeklyHabitItem] = []
         self._goals: dict[str, Goal] = {}
 
     def _build_filter(self) -> dict:
@@ -787,12 +893,49 @@ class TodayContent(BaseEntryContent):
             )
             self.app.call_from_thread(self._set_entries, [])
 
+    def _populate_list(
+        self,
+        lv: VimListView,
+        entries: list[ProjectEntry],
+        goals_with_tactics: list[tuple[Goal, list[TacticListItem]]],
+    ) -> None:
+        lv.clear()
+        for item in self._habit_items:
+            lv.append(item)
+        if self._habit_items and entries:
+            lv.append(SeparatorListItem('GTD'))
+        for entry in entries:
+            lv.append(EntryListItem(entry))
+        if not goals_with_tactics:
+            return
+        total_due = sum(
+            1 for i in self._tactic_items if _tactic_is_due(i.tactic)
+        )
+        header_sep = '12-Week Goals'
+        if total_due:
+            header_sep += f' ({total_due} due)'
+        lv.append(SeparatorListItem(header_sep))
+        for goal, items in goals_with_tactics:
+            due = sum(1 for i in items if _tactic_is_due(i.tactic))
+            goal_label = f'  {goal.name}'
+            if due:
+                goal_label += f'  [red]{due} due[/red]'
+            lv.append(SeparatorListItem(goal_label))
+            for item in items:
+                lv.append(item)
+
     def _set_entries(self, entries: list[ProjectEntry]) -> None:
         self._entries = entries
         with contextlib.suppress(Exception):
             self.query_one('#entry-loading', LoadingIndicator).display = False
 
         from gtd.storage import get_stored_goal_names, load_goal  # noqa: PLC0415
+
+        self._habit_items = [
+            WeeklyHabitItem(key, label)
+            for key, label in WEEKLY_HABITS
+            if not _habit_done_this_week(key)
+        ]
 
         self._goals = {}
         goals_with_tactics: list[tuple[Goal, list[TacticListItem]]] = []
@@ -810,30 +953,12 @@ class TodayContent(BaseEntryContent):
         ]
 
         lv = self.query_one('#entry-list', VimListView)
-        lv.clear()
-        for entry in entries:
-            lv.append(EntryListItem(entry))
-        if goals_with_tactics:
-            total_due = sum(
-                1 for i in self._tactic_items if _tactic_is_due(i.tactic)
-            )
-            header_sep = '12-Week Goals'
-            if total_due:
-                header_sep += f' ({total_due} due)'
-            lv.append(SeparatorListItem(header_sep))
-            for goal, items in goals_with_tactics:
-                due = sum(1 for i in items if _tactic_is_due(i.tactic))
-                goal_label = f'  {goal.name}'
-                if due:
-                    goal_label += f'  [red]{due} due[/red]'
-                lv.append(SeparatorListItem(goal_label))
-                for item in items:
-                    lv.append(item)
+        self._populate_list(lv, entries, goals_with_tactics)
 
         header = self.query_one('#entry-list-header', Static)
         detail = self.query_one('#entry-detail', Static)
-
-        if not entries and not self._tactic_items:
+        has_content = entries or self._tactic_items or self._habit_items
+        if not has_content:
             header.update('Today — nothing actionable 🎉')
             detail.update('[dim]All clear. Nice work.[/dim]')
         else:
@@ -852,16 +977,22 @@ class TodayContent(BaseEntryContent):
             return None
         return self._entries[idx]
 
+    def _current_habit_item(self) -> WeeklyHabitItem | None:
+        item = self.query_one('#entry-list', VimListView).highlighted_child
+        return item if isinstance(item, WeeklyHabitItem) else None
+
     def _current_tactic_item(self) -> TacticListItem | None:
-        lv = self.query_one('#entry-list', VimListView)
-        if lv.index is None:
-            return None
-        item = lv.highlighted_child
-        if isinstance(item, TacticListItem):
-            return item
-        return None
+        item = self.query_one('#entry-list', VimListView).highlighted_child
+        return item if isinstance(item, TacticListItem) else None
 
     def _update_detail(self) -> None:
+        habit_item = self._current_habit_item()
+        if habit_item is not None:
+            detail = _render_habit_detail(
+                habit_item.habit_key, habit_item.habit_label
+            )
+            self.query_one('#entry-detail', Static).update(detail)
+            return
         tactic_item = self._current_tactic_item()
         if tactic_item is not None:
             goal = self._goals.get(tactic_item.goal_name)
@@ -886,10 +1017,81 @@ class TodayContent(BaseEntryContent):
         action: str,
         parameters: tuple[object, ...],  # noqa: ARG002
     ) -> bool | None:
+        habit_focused = self._current_habit_item() is not None
         tactic_focused = self._current_tactic_item() is not None
-        if action in self._GTD_ACTIONS and tactic_focused:
+        if action in self._HABIT_ACTIONS:
+            return habit_focused
+        if action in self._GTD_ACTIONS and (tactic_focused or habit_focused):
             return False
-        return not (action in self._TACTIC_ACTIONS and not tactic_focused)
+        if action in self._TACTIC_ACTIONS and not tactic_focused:
+            return False
+        return None
+
+    @work
+    async def action_complete_habit(self) -> None:
+        item = self._current_habit_item()
+        if not item:
+            return
+
+        if item.habit_key == 'goal_scoring':
+            await self._run_goal_scoring_flow()
+        elif item.habit_key == 'weekly_review':
+            await self._run_weekly_review_flow()
+        else:
+            confirmed = await self.app.push_screen_wait(
+                ConfirmModal(f'Mark "{item.habit_label}" done for this week?')
+            )
+            if not confirmed:
+                return
+
+        self._dismiss_habit_item(item)
+
+    async def _run_goal_scoring_flow(self) -> None:
+        from gtd.storage import get_stored_goal_names, load_goal, save_goal  # noqa: PLC0415
+        from gtd.tui import ScorecardScreen  # noqa: PLC0415
+
+        for name in get_stored_goal_names():
+            goal = load_goal(name)
+            if goal.is_complete or not goal.tactics:
+                continue
+            week = goal.current_week()
+            scores = await self.app.push_screen_wait(
+                ScorecardScreen(goal, week)
+            )
+            if scores is None:
+                continue
+            wk_key = str(week)
+            for i, tactic in enumerate(goal.tactics):
+                if str(i) in scores:
+                    tactic.weekly_scores[wk_key] = scores[str(i)]
+            save_goal(goal)
+            self.app.notify(f'✓ Scored {goal.name} week {week}')
+
+    async def _run_weekly_review_flow(self) -> None:
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal(
+                'GTD Weekly Review\n\n'
+                + _GTD_REVIEW_CHECKLIST
+                + '\n\nMark complete?'
+            )
+        )
+        if not confirmed:
+            return
+
+    def _dismiss_habit_item(self, item: WeeklyHabitItem) -> None:
+        from gtd.storage import set_weekly_habit_date  # noqa: PLC0415
+
+        set_weekly_habit_date(item.habit_key)
+        lv = self.query_one('#entry-list', VimListView)
+        idx = lv.index
+        item.remove()
+        self._habit_items = [
+            h for h in self._habit_items if h.habit_key != item.habit_key
+        ]
+        lv.index = max(0, (idx or 1) - 1)
+        self._update_detail()
+        self.app.refresh_bindings()
+        self.app.notify(f'✓ {item.habit_label} done for this week')
 
     def action_refresh_today(self) -> None:
         self.action_refresh()
