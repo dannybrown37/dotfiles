@@ -324,7 +324,9 @@ class SelectModal(ModalScreen[str | None]):
     )
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('escape', 'cancel', 'Cancel', show=False)
+        Binding('escape', 'cancel', 'Cancel', show=False),
+        Binding('j', 'cursor_down', show=False),
+        Binding('k', 'cursor_up', show=False),
     ]
 
     def __init__(self, title: str, items: list[str]) -> None:
@@ -342,6 +344,12 @@ class SelectModal(ModalScreen[str | None]):
 
     def on_mount(self) -> None:
         self.query_one(ListView).focus()
+
+    def action_cursor_down(self) -> None:
+        self.query_one(ListView).action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        self.query_one(ListView).action_cursor_up()
 
     @on(ListView.Selected)
     def item_selected(self, event: ListView.Selected) -> None:
