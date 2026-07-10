@@ -129,6 +129,7 @@ class TodayContent(Vertical):
         Binding('S', 'snooze', 'Snooze'),
         Binding('W', 'waiting_for', 'Waiting For'),
         Binding('U', 'update_entry', 'Update'),
+        Binding('E', 'edit_notes', 'Edit notes'),
         Binding('D', 'mark_done', 'Done'),
     ]
 
@@ -370,11 +371,18 @@ class TodayContent(Vertical):
         update_page(page_id, build_property_update(**kwargs))
 
     @work
-    async def action_update_entry(self) -> None:  # noqa: C901
+    async def action_update_entry(self) -> None:  # noqa: C901, PLR0912
         entry = self._current_entry()
         if not entry:
             return
-        fields = ['Name', 'Next actionable step', 'Follow-up date', 'Due date']
+        fields = [
+            'Name',
+            'Status',
+            'Context',
+            'Next actionable step',
+            'Follow-up date',
+            'Due date',
+        ]
         choice = await self.app.push_screen_wait(
             SelectModal('Update which field?', fields)
         )
@@ -394,6 +402,35 @@ class TodayContent(Vertical):
                     update_page,
                     entry.page_id,
                     build_property_update(name=value),
+                )
+
+        elif choice == 'Status':
+            value = await self.app.push_screen_wait(
+                SelectModal('Status', STATUSES)
+            )
+            if value:
+                await loop.run_in_executor(
+                    None,
+                    update_page,
+                    entry.page_id,
+                    build_property_update(status=value),
+                )
+
+        elif choice == 'Context':
+            from gtd.notion.client import get_select_options  # noqa: PLC0415
+
+            contexts = await loop.run_in_executor(
+                None, get_select_options, 'Context'
+            )
+            value = await self.app.push_screen_wait(
+                SelectModal('Context', contexts)
+            )
+            if value:
+                await loop.run_in_executor(
+                    None,
+                    update_page,
+                    entry.page_id,
+                    build_property_update(context=value),
                 )
 
         elif choice == 'Next actionable step':
@@ -443,6 +480,14 @@ class TodayContent(Vertical):
         # Refresh entry in list
         self._load_entries()
         self.app.notify(f'✓ "{entry.header.strip()}" updated')
+
+    @work
+    async def action_edit_notes(self) -> None:
+        entry = self._current_entry()
+        if entry:
+            await _shared_edit_notes(
+                self.app, entry, self._notes, self._update_detail
+            )
 
     @work
     async def action_mark_done(self) -> None:
