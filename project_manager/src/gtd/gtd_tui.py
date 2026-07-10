@@ -114,6 +114,11 @@ def _parse_cadence_per_week(cadence: str) -> int:
 
 
 _DAILY_CADENCE = 7  # sentinel: cadence that means "every day"
+_SPRINT_DAYS = 14  # sprint = one update per 2-week window
+
+
+def _is_sprint_cadence(cadence: str) -> bool:
+    return cadence.lower().strip() == 'sprint'
 
 
 def _week_start_iso() -> str:
@@ -121,9 +126,19 @@ def _week_start_iso() -> str:
     return (today - timedelta(days=today.weekday())).isoformat()
 
 
+def _sprint_start_iso() -> str:
+    return (
+        datetime.now().date() - timedelta(days=_SPRINT_DAYS - 1)
+    ).isoformat()
+
+
 def _count_updates_this_week(tactic: Tactic) -> int:
     ws = _week_start_iso()
     return sum(1 for u in tactic.updates if u.date >= ws)
+
+
+def _updated_in_sprint(tactic: Tactic) -> bool:
+    return any(u.date >= _sprint_start_iso() for u in tactic.updates)
 
 
 def _updated_today(tactic: Tactic) -> bool:
@@ -132,6 +147,8 @@ def _updated_today(tactic: Tactic) -> bool:
 
 
 def _tactic_is_due(tactic: Tactic) -> bool:
+    if _is_sprint_cadence(tactic.reminder_cadence):
+        return not _updated_in_sprint(tactic)
     per_week = _parse_cadence_per_week(tactic.reminder_cadence)
     if per_week >= _DAILY_CADENCE:
         return not _updated_today(tactic)
@@ -140,6 +157,8 @@ def _tactic_is_due(tactic: Tactic) -> bool:
 
 def _tactic_sort_key(tactic: Tactic) -> int:
     """0 = overdue, 1 = partial, 2 = done — for sorting due items first."""
+    if _is_sprint_cadence(tactic.reminder_cadence):
+        return 0 if not _updated_in_sprint(tactic) else 2
     per_week = _parse_cadence_per_week(tactic.reminder_cadence)
     if per_week >= _DAILY_CADENCE:
         return 0 if not _updated_today(tactic) else 2
@@ -147,6 +166,27 @@ def _tactic_sort_key(tactic: Tactic) -> int:
     if n == 0:
         return 0
     return 1 if n < per_week else 2
+
+
+def _tactic_status_line(tactic: Tactic) -> str:
+    """One-line due/done status for the detail pane."""
+    if _is_sprint_cadence(tactic.reminder_cadence):
+        if _updated_in_sprint(tactic):
+            return '[green]✓ Logged this sprint[/green]'
+        return '[bold red]⚠ Due this sprint[/bold red]'
+    per_week = _parse_cadence_per_week(tactic.reminder_cadence)
+    if per_week >= _DAILY_CADENCE:
+        return (
+            '[green]✓ Done today[/green]'
+            if _updated_today(tactic)
+            else '[bold red]⚠ Due today[/bold red]'
+        )
+    n = _count_updates_this_week(tactic)
+    if n >= per_week:
+        return f'[green]✓ Done this week ({n}/{per_week})[/green]'
+    if n > 0:
+        return f'[yellow]◑ In progress this week ({n}/{per_week})[/yellow]'
+    return f'[bold red]⚠ Due this week (0/{per_week})[/bold red]'
 
 
 def _render_tactic_detail(
@@ -160,25 +200,7 @@ def _render_tactic_detail(
     lines += ['', f'[bold]{tactic.description}[/bold]']
     lines.append(f'Cadence: [dim]{tactic.reminder_cadence}[/dim]')
     lines.append('')
-
-    per_week = _parse_cadence_per_week(tactic.reminder_cadence)
-    if per_week >= _DAILY_CADENCE:
-        if _updated_today(tactic):
-            lines.append('[green]✓ Done today[/green]')
-        else:
-            lines.append('[bold red]⚠ Due today[/bold red]')
-    else:
-        n = _count_updates_this_week(tactic)
-        if n >= per_week:
-            lines.append(f'[green]✓ Done this week ({n}/{per_week})[/green]')
-        elif n > 0:
-            lines.append(
-                f'[yellow]◑ In progress this week ({n}/{per_week})[/yellow]'
-            )
-        else:
-            lines.append(
-                f'[bold red]⚠ Due this week (0/{per_week})[/bold red]'
-            )
+    lines.append(_tactic_status_line(tactic))
 
     recent = sorted(tactic.updates, key=lambda u: u.date, reverse=True)[:5]
     if recent:
@@ -227,17 +249,19 @@ class TacticListItem(ListItem):
         return self.tactic.reminder_cadence
 
     def _build_label(self) -> str:
-        per_week = _parse_cadence_per_week(self.tactic.reminder_cadence)
-        n = _count_updates_this_week(self.tactic)
         desc = self.tactic.description
         cad = self.tactic.reminder_cadence
-        if per_week >= _DAILY_CADENCE:
-            if _updated_today(self.tactic):
-                return f'[dim]✓ {desc}  {cad}[/dim]'
-            return f'[bold red]●[/bold red] {desc}  [dim]{cad}[/dim]'
-        if n >= per_week:
+        done = not _tactic_is_due(self.tactic)
+        per_week = _parse_cadence_per_week(cad)
+        n = _count_updates_this_week(self.tactic)
+        is_partial = (
+            not _is_sprint_cadence(cad)
+            and per_week < _DAILY_CADENCE
+            and 0 < n < per_week
+        )
+        if done:
             return f'[dim]✓ {desc}  {cad}[/dim]'
-        if n > 0:
+        if is_partial:
             return (
                 f'[yellow]◑[/yellow] {desc}  [dim]{cad} · {n}/{per_week}[/dim]'
             )
