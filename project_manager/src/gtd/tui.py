@@ -230,7 +230,7 @@ class InputModal(ModalScreen[str | None]):
 
     @on(Input.Submitted)
     def submitted(self) -> None:
-        self.dismiss(self.query_one('#the-input', Input).value.strip() or None)
+        self.dismiss(self.query_one('#the-input', Input).value.strip())
 
 
 class TwoFieldModal(ModalScreen[tuple[str, str] | None]):
