@@ -837,6 +837,12 @@ class BaseEntryContent(Vertical):
 
         archive_page(page_id)
 
+    @work(thread=True)
+    def _update_worker(self, page_id: str, props: dict) -> None:
+        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+
+        update_page(page_id, build_property_update(**props))
+
     @work
     async def action_log_and_reschedule(self) -> None:
         entry = self._current_entry()
@@ -1066,20 +1072,18 @@ class TodayContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('W', 'complete_habit', 'Complete'),
-        Binding('L', 'log', 'Log'),
-        Binding('S', 'snooze', 'Snooze'),
-        Binding('W', 'waiting_for', 'Waiting For'),
+        Binding('T', 'wait_tomorrow', 'Tomorrow'),
+        Binding('S', 'set_status', 'Status'),
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit notes'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'mark_done', 'Done'),
         Binding('N', 'log_tactic', 'Log update'),
         Binding('U', 'unlog_tactic', 'Unlog last'),
     ]
 
     _GTD_ACTIONS: ClassVar[set[str]] = {
-        'log',
-        'snooze',
-        'waiting_for',
+        'wait_tomorrow',
+        'set_status',
         'update_entry',
         'edit_notes',
         'mark_done',
@@ -1345,14 +1349,27 @@ class TodayContent(BaseEntryContent):
             self._remove_entry(entry.page_id)
             self.app.notify(f'✓ "{entry.header.strip()}" → {next_date}')
 
-    async def action_snooze(self) -> None:
+    async def action_wait_tomorrow(self) -> None:
         entry = self._current_entry()
         if not entry:
             return
         tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
         self._snooze_worker(entry.page_id, tomorrow)
         self._remove_entry(entry.page_id)
-        self.app.notify(f'✓ Snoozed until {tomorrow}')
+        self.app.notify(f'✓ "{entry.header.strip()}" → {tomorrow}')
+
+    @work
+    async def action_set_status(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        props = await _prompt_and_get_props(self.app, entry, 'Status')
+        if not props:
+            return
+        self._update_worker(entry.page_id, props)
+        self._remove_entry(entry.page_id)
+        status = props.get('status', '')
+        self.app.notify(f'✓ "{entry.header.strip()}" → {status}')
 
     @work(thread=True)
     def _snooze_worker(self, page_id: str, date: str) -> None:
@@ -1476,7 +1493,7 @@ class InboxContent(BaseEntryContent):
         Binding('T', 'triage_entry', 'Triage'),
         Binding('A', 'triage_all', 'Triage all'),
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit notes'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'drop_entry', 'Drop'),
     ]
 
@@ -1727,7 +1744,7 @@ class ProjectsContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit notes'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'mark_done', 'Done'),
         Binding('S', 'move_someday', 'Someday'),
     ]
@@ -1794,14 +1811,17 @@ class RecurringContent(BaseEntryContent):
     EMPTY_MSG: ClassVar[str] = 'No recurring tasks.'
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('L', 'log_and_reschedule', 'Log'),
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit notes'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'drop_entry', 'Drop'),
     ]
 
     def _build_filter(self) -> dict:
         return {'property': 'Status', 'select': {'equals': 'Recurring'}}
+
+    def _set_entries(self, entries: list[ProjectEntry]) -> None:
+        entries = sorted(entries, key=lambda e: e.follow_up_date or '\xff')
+        super()._set_entries(entries)
 
 
 # ── Waiting For content ──────────────────────────────────────────────────────
@@ -1815,7 +1835,7 @@ class WaitingForContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit notes'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'mark_done', 'Done'),
         Binding('A', 'activate', 'Activate'),
     ]
@@ -1839,7 +1859,7 @@ class SomedayContent(BaseEntryContent):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('A', 'activate', 'Activate'),
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit notes'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'drop_entry', 'Drop'),
     ]
 
@@ -1891,14 +1911,14 @@ class SomedayContent(BaseEntryContent):
 
 
 class SnoozedContent(BaseEntryContent):
-    """Items snoozed with a future follow-up date."""
+    """Items with a future follow-up date."""
 
-    TITLE: ClassVar[str] = 'Snoozed'
-    EMPTY_MSG: ClassVar[str] = 'Nothing snoozed.'
+    TITLE: ClassVar[str] = 'Future'
+    EMPTY_MSG: ClassVar[str] = 'Nothing in the future.'
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit notes'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'mark_done', 'Done'),
     ]
 
@@ -1953,7 +1973,7 @@ class GTDApp(App[None]):
                 yield ProjectsContent()
             with TabPane('Waiting For', id='tab-waiting'):
                 yield WaitingForContent()
-            with TabPane('Snoozed', id='tab-snoozed'):
+            with TabPane('Future', id='tab-snoozed'):
                 yield SnoozedContent()
             with TabPane('Someday', id='tab-someday'):
                 yield SomedayContent()
