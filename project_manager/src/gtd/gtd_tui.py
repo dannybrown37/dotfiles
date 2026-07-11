@@ -482,7 +482,9 @@ async def _prompt_and_get_props(
         contexts = await loop.run_in_executor(
             None, get_select_options, 'Context'
         )
-        value = await app.push_screen_wait(SelectModal('Context', contexts))
+        value = await app.push_screen_wait(
+            SelectModal('Context', contexts, allow_new=True)
+        )
         props = {'context': value} if value else None
     elif choice == 'Next actionable step':
         value = await app.push_screen_wait(
@@ -1571,8 +1573,8 @@ class InboxContent(BaseEntryContent):
             s = 's' if processed != 1 else ''
             self.app.notify(f'✓ Triaged {processed} item{s}')
 
-    async def _triage_one(self, entry: ProjectEntry) -> bool | None:  # noqa: PLR0911
-        """Triage a single entry via TUI modals.
+    async def _triage_one(self, entry: ProjectEntry) -> bool | None:  # noqa: PLR0911, PLR0912, C901, PLR0915
+        """Triage a single entry — only prompts for missing fields.
 
         Returns True if saved, False if skipped/deleted, None if cancelled.
         """
@@ -1586,85 +1588,102 @@ class InboxContent(BaseEntryContent):
         from gtd.notion.triage import TRIAGE_STATUSES  # noqa: PLC0415
 
         title = entry.header.strip()
+        kwargs: dict = {}
 
-        status = await self.app.push_screen_wait(
-            SelectModal(f'Triage: {title}', TRIAGE_STATUSES)
-        )
-        if status is None:
-            return None
-
-        if status == 'Delete':
-            confirmed = await self.app.push_screen_wait(
-                ConfirmModal(f'Delete "{title}"?')
+        needs_status = not entry.status or entry.status == 'Triage'
+        if needs_status:
+            status = await self.app.push_screen_wait(
+                SelectModal(f'Triage: {title}', TRIAGE_STATUSES)
             )
-            if confirmed:
-                await asyncio.get_running_loop().run_in_executor(
-                    None, archive_page, entry.page_id
+            if status is None:
+                return None
+            if status == 'Delete':
+                confirmed = await self.app.push_screen_wait(
+                    ConfirmModal(f'Delete "{title}"?')
                 )
-                self.app.notify(f'✓ Deleted "{title}"')
-                return True
-            return False
+                if confirmed:
+                    await asyncio.get_running_loop().run_in_executor(
+                        None, archive_page, entry.page_id
+                    )
+                    self.app.notify(f'✓ Deleted "{title}"')
+                    return True
+                return False
+            kwargs['status'] = status
+        else:
+            status = entry.status
 
-        contexts = await asyncio.get_running_loop().run_in_executor(
-            None, get_select_options, 'Context'
-        )
-        context = await self.app.push_screen_wait(
-            SelectModal(f'Context: {title}', contexts)
-        )
-        if context is None:
-            return None
-
-        prompt = (
-            'Who/what are you waiting on?'
-            if status == 'Waiting For'
-            else 'Next actionable step'
-        )
-        next_step = await self.app.push_screen_wait(InputModal(prompt, title))
-        if next_step is None:
-            return None
-
-        intended_outcome = await self.app.push_screen_wait(
-            InputModal(
-                'Intended successful outcome',
-                'What does done look like?',
+        if not entry.context:
+            contexts = await asyncio.get_running_loop().run_in_executor(
+                None, get_select_options, 'Context'
             )
-        )
-        if intended_outcome is None:
-            return None
+            context = await self.app.push_screen_wait(
+                SelectModal(f'Context: {title}', contexts, allow_new=True)
+            )
+            if context is None:
+                return None
+            kwargs['context'] = context
 
-        due_str = await self.app.push_screen_wait(
-            InputModal('Due date (blank to skip)', 'e.g. Jul 15, 2026-08-01')
-        )
-        due_iso: str | None = None
-        if due_str:
-            parsed = dateparser.parse(due_str, fuzzy=True)
-            due_iso = parsed.strftime('%Y-%m-%d') if parsed else None
+        if not entry.next_step:
+            prompt = (
+                'Who/what are you waiting on?'
+                if status == 'Waiting For'
+                else 'Next actionable step'
+            )
+            next_step = await self.app.push_screen_wait(
+                InputModal(prompt, title)
+            )
+            if next_step is None:
+                return None
+            if next_step:
+                kwargs['next_step'] = next_step
 
-        follow_up_prompt = (
-            'Follow-up date (required)'
-            if status == 'Waiting For'
-            else 'Follow-up date (blank to skip)'
-        )
-        follow_str = await self.app.push_screen_wait(
-            InputModal(follow_up_prompt, 'e.g. Friday, in 3 days')
-        )
-        follow_iso: str | None = None
-        if follow_str:
-            parsed = dateparser.parse(follow_str, fuzzy=True)
-            follow_iso = parsed.strftime('%Y-%m-%d') if parsed else None
+        if not entry.intended_outcome:
+            intended_outcome = await self.app.push_screen_wait(
+                InputModal(
+                    'Intended successful outcome',
+                    'What does done look like?',
+                )
+            )
+            if intended_outcome is None:
+                return None
+            if intended_outcome:
+                kwargs['intended_outcome'] = intended_outcome
 
-        props = build_property_update(
-            status=status,
-            context=context,
-            next_step=next_step or None,
-            intended_outcome=intended_outcome or None,
-            due_date=due_iso,
-            follow_up_date=follow_iso,
-        )
+        if not entry.due_date:
+            due_str = await self.app.push_screen_wait(
+                InputModal(
+                    'Due date (blank to skip)', 'e.g. Jul 15, 2026-08-01'
+                )
+            )
+            if due_str:
+                parsed = dateparser.parse(due_str, fuzzy=True)
+                if parsed:
+                    kwargs['due_date'] = parsed.strftime('%Y-%m-%d')
+
+        if not entry.follow_up_date:
+            follow_up_prompt = (
+                'Follow-up date (required)'
+                if status == 'Waiting For'
+                else 'Follow-up date (blank to skip)'
+            )
+            follow_str = await self.app.push_screen_wait(
+                InputModal(follow_up_prompt, 'e.g. Friday, in 3 days')
+            )
+            if follow_str:
+                parsed = dateparser.parse(follow_str, fuzzy=True)
+                if parsed:
+                    kwargs['follow_up_date'] = parsed.strftime('%Y-%m-%d')
+
+        if not kwargs:
+            return True
+
+        props = build_property_update(**kwargs)
         await asyncio.get_running_loop().run_in_executor(
             None, update_page, entry.page_id, props
         )
-        self.app.notify(f'✓ "{title}" → {status} [{context}]')
+        final_status = kwargs.get('status', entry.status)
+        final_context = kwargs.get('context', entry.context)
+        self.app.notify(f'✓ "{title}" → {final_status} [{final_context}]')
         return True
 
     @work
@@ -1722,7 +1741,11 @@ class InboxContent(BaseEntryContent):
                 None, get_select_options, 'Context'
             )
             context = await self.app.push_screen_wait(
-                SelectModal('Context (required to move out)', contexts)
+                SelectModal(
+                    'Context (required to move out)',
+                    contexts,
+                    allow_new=True,
+                )
             )
             if not context:
                 self.app.notify(

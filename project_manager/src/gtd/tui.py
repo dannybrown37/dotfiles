@@ -306,6 +306,9 @@ class SelectModal(ModalScreen[str | None]):
     Filter mode (Input focused): type to filter, arrows navigate.
     Browse mode (ListView focused): j/k navigate, any printable char
     (except j/k) jumps back to Input. Tab toggles between modes.
+
+    If allow_new=True, typing a value with no matches and pressing Enter
+    creates a new option with that value.
     """
 
     DEFAULT_CSS = (
@@ -319,6 +322,7 @@ class SelectModal(ModalScreen[str | None]):
         max-height: 20;
         border: solid $panel;
     }
+    SelectModal #new-hint { padding: 0 1; color: $text-muted; }
     """
     )
 
@@ -331,11 +335,18 @@ class SelectModal(ModalScreen[str | None]):
         Binding('tab', 'toggle_focus', show=False),
     ]
 
-    def __init__(self, title: str, items: list[str]) -> None:
+    def __init__(
+        self,
+        title: str,
+        items: list[str],
+        *,
+        allow_new: bool = False,
+    ) -> None:
         super().__init__()
         self._title = title
         self._all_items = items
         self._filtered = list(items)
+        self._allow_new = allow_new
 
     def compose(self) -> ComposeResult:
         with Vertical(classes='modal-box'):
@@ -345,26 +356,40 @@ class SelectModal(ModalScreen[str | None]):
                 *[ListItem(Label(item)) for item in self._all_items],
                 id='select-list',
             )
+            yield Static('', id='new-hint')
 
     def on_mount(self) -> None:
         lv = self.query_one('#select-list', ListView)
         if self._all_items:
             lv.index = 0
         lv.focus()
+        self.query_one('#new-hint', Static).display = False
 
     @on(Input.Changed, '#filter-input')
     def filter_changed(self, event: Input.Changed) -> None:
         query = event.value.lower()
         self._filtered = [i for i in self._all_items if query in i.lower()]
         lv = self.query_one('#select-list', ListView)
+        hint = self.query_one('#new-hint', Static)
         lv.clear()
         for item in self._filtered:
             lv.append(ListItem(Label(item)))
         if self._filtered:
             lv.index = 0
+        if self._allow_new and event.value and not self._filtered:
+            hint.update(f'↵ to create new: "{event.value}"')
+            hint.display = True
+            lv.display = False
+        else:
+            hint.display = False
+            lv.display = True
 
     @on(Input.Submitted, '#filter-input')
     def input_submitted(self) -> None:
+        inp = self.query_one('#filter-input', Input)
+        if self._allow_new and inp.value and not self._filtered:
+            self.dismiss(inp.value)
+            return
         self._select_current()
 
     @on(ListView.Selected, '#select-list')
