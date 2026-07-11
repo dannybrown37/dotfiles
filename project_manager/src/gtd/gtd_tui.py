@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
+    from textual.events import Key
     from collections.abc import Callable
 
 from textual import on, work
@@ -442,15 +443,19 @@ class DetailPane(ScrollableContainer):
 
     can_focus = True
 
-    BINDINGS: ClassVar[list[Binding]] = [
-        Binding('j', 'scroll_down', show=False),
-        Binding('k', 'scroll_up', show=False),
-        Binding('G', 'scroll_end', show=False),
-        Binding('g', 'scroll_home', show=False),
-    ]
-
-
-# ── Shared action helpers ────────────────────────────────────────────────────
+    def on_key(self, event: Key) -> None:
+        if event.key == 'j':
+            event.stop()
+            self.scroll_relative(y=3, animate=False)
+        elif event.key == 'k':
+            event.stop()
+            self.scroll_relative(y=-3, animate=False)
+        elif event.key == 'G':
+            event.stop()
+            self.scroll_end(animate=False)
+        elif event.key == 'g':
+            event.stop()
+            self.scroll_home(animate=False)
 
 
 async def _prompt_and_get_props(
@@ -660,7 +665,12 @@ class BaseEntryContent(Vertical):
         text-style: bold;
     }
     BaseEntryContent #entry-list { height: 1fr; }
-    BaseEntryContent #entry-detail-pane { width: 1fr; padding: 1 2; }
+    BaseEntryContent #entry-detail-pane {
+        width: 1fr;
+        padding: 1 2;
+        border: solid transparent;
+    }
+    BaseEntryContent #entry-detail-pane:focus { border: solid $accent; }
     BaseEntryContent LoadingIndicator { height: 3; }
     """
 
@@ -1736,6 +1746,43 @@ class ProjectsContent(BaseEntryContent):
             ],
         }
 
+    def _set_entries(self, entries: list[ProjectEntry]) -> None:
+        entries.sort(
+            key=lambda e: (
+                e.context or '\xff',
+                e.due_date or '\xff',
+            )
+        )
+        self._entries = entries
+        with contextlib.suppress(Exception):
+            self.query_one('#entry-loading', LoadingIndicator).display = False
+        lv = self.query_one('#entry-list', VimListView)
+        lv.clear()
+        current_ctx: str | None = None
+        for entry in entries:
+            ctx = entry.context or ''
+            if ctx != current_ctx:
+                current_ctx = ctx
+                lv.append(SeparatorListItem(ctx or '(no context)'))
+            lv.append(EntryListItem(entry))
+        header = self.query_one('#entry-list-header', Static)
+        detail = self.query_one('#entry-detail', Static)
+        if not entries:
+            header.update(f'{self.TITLE} — empty')
+            detail.update(f'[dim]{self.EMPTY_MSG}[/dim]')
+        else:
+            header.update(f'{self.TITLE}  [dim]({len(entries)})[/dim]')
+            lv.index = 0
+            self._update_detail()
+
+    def _current_entry(self) -> ProjectEntry | None:
+        item = self.query_one('#entry-list', VimListView).highlighted_child
+        if not isinstance(item, EntryListItem):
+            return None
+        return next(
+            (e for e in self._entries if e.page_id == item.page_id), None
+        )
+
 
 # ── Recurring content ────────────────────────────────────────────────────────
 
@@ -1801,6 +1848,43 @@ class SomedayContent(BaseEntryContent):
             'property': 'Status',
             'select': {'equals': 'Someday/Maybe'},
         }
+
+    def _set_entries(self, entries: list[ProjectEntry]) -> None:
+        entries.sort(
+            key=lambda e: (
+                e.context or '\xff',
+                e.due_date or '\xff',
+            )
+        )
+        self._entries = entries
+        with contextlib.suppress(Exception):
+            self.query_one('#entry-loading', LoadingIndicator).display = False
+        lv = self.query_one('#entry-list', VimListView)
+        lv.clear()
+        current_ctx: str | None = None
+        for entry in entries:
+            ctx = entry.context or ''
+            if ctx != current_ctx:
+                current_ctx = ctx
+                lv.append(SeparatorListItem(ctx or '(no context)'))
+            lv.append(EntryListItem(entry))
+        header = self.query_one('#entry-list-header', Static)
+        detail = self.query_one('#entry-detail', Static)
+        if not entries:
+            header.update(f'{self.TITLE} — empty')
+            detail.update(f'[dim]{self.EMPTY_MSG}[/dim]')
+        else:
+            header.update(f'{self.TITLE}  [dim]({len(entries)})[/dim]')
+            lv.index = 0
+            self._update_detail()
+
+    def _current_entry(self) -> ProjectEntry | None:
+        item = self.query_one('#entry-list', VimListView).highlighted_child
+        if not isinstance(item, EntryListItem):
+            return None
+        return next(
+            (e for e in self._entries if e.page_id == item.page_id), None
+        )
 
 
 # ── Snoozed content ──────────────────────────────────────────────────────────
