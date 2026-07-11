@@ -67,7 +67,9 @@ def _week_date_range(goal: Goal, week_num: int) -> str:
     return f'{start:%b %-d} - {end:%b %-d}'
 
 
-def _render_tactics_section(goal: Goal, week: int) -> list[str]:
+def _render_tactics_section(
+    goal: Goal, week: int, *, expand_logs: bool = False
+) -> list[str]:
     lines = ['\n[bold]Tactics[/bold]']
     if not goal.tactics:
         lines.append(
@@ -87,14 +89,19 @@ def _render_tactics_section(goal: Goal, week: int) -> list[str]:
             f'  {i}. [{color}]{mark:>4}[/{color}]  '
             f'{t.description}  [dim]({t.reminder_cadence})[/dim]'
         )
-        if t.updates:
+        if expand_logs:
+            for u in t.updates:
+                date = datetime.fromisoformat(u.date).strftime('%b %-d')
+                lines.append(f'       [dim]↳ {date}: {u.note}[/dim]')
+        elif t.updates:
             latest = t.updates[-1]
             date = datetime.fromisoformat(latest.date).strftime('%b %-d')
             lines.append(f'       [dim]↳ {date}: {latest.note}[/dim]')
     return lines
+    return lines
 
 
-def _render_goal_detail(goal: Goal) -> str:
+def _render_goal_detail(goal: Goal, *, expand_logs: bool = False) -> str:
     week = goal.current_week()
     weeks_left = goal.weeks_remaining()
     week_range = _week_date_range(goal, week)
@@ -125,7 +132,7 @@ def _render_goal_detail(goal: Goal) -> str:
                 f'  Week {week}: {score_pct(ex_w, tot_w)} ({ex_w}/{tot_w})'
             )
 
-    lines.extend(_render_tactics_section(goal, week))
+    lines.extend(_render_tactics_section(goal, week, expand_logs=expand_logs))
     return '\n'.join(lines)
 
 
@@ -523,9 +530,16 @@ class ScorecardScreen(ModalScreen[dict[str, int] | None]):
 
 
 class DetailPane(ScrollableContainer):
-    """Scrollable detail pane — not focusable via Tab."""
+    """Scrollable detail pane — focusable for keyboard scrolling."""
 
-    can_focus = False
+    can_focus = True
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('j', 'scroll_down', show=False),
+        Binding('k', 'scroll_up', show=False),
+        Binding('G', 'scroll_end', show=False),
+        Binding('g', 'scroll_home', show=False),
+    ]
 
 
 class VimListView(ListView):
@@ -624,6 +638,7 @@ class GoalsContent(Widget):
         Binding('U', 'log_update', 'Log update'),
         Binding('E', 'edit_goal', 'Edit'),
         Binding('H', 'score_history', 'History'),
+        Binding('X', 'toggle_logs', 'Expand logs'),
         Binding('D', 'delete_goal', 'Delete', show=False),
         Binding('r', 'refresh_goals', 'Refresh', show=False),
     ]
@@ -655,6 +670,7 @@ class GoalsContent(Widget):
         ensure_dirs()
         self._goals: list[Goal] = []
         self._selected_idx: int = 0
+        self._expand_logs: bool = False
 
     def compose(self) -> ComposeResult:
         with Vertical(id='goals-list-pane'):
@@ -688,7 +704,9 @@ class GoalsContent(Widget):
             return
         self._selected_idx = idx
         self.query_one('#goals-detail-content', Static).update(
-            _render_goal_detail(self._goals[idx])
+            _render_goal_detail(
+                self._goals[idx], expand_logs=self._expand_logs
+            )
         )
 
     def _current_goal(self) -> Goal | None:
@@ -1001,6 +1019,12 @@ class GoalsContent(Widget):
         self.query_one('#goals-detail-content', Static).update(
             _render_score_history(goal)
         )
+
+    def action_toggle_logs(self) -> None:
+        self._expand_logs = not self._expand_logs
+        self._update_detail()
+        state = 'expanded' if self._expand_logs else 'collapsed'
+        self.notify(f'Logs {state}')
 
     @work
     async def action_delete_goal(self) -> None:

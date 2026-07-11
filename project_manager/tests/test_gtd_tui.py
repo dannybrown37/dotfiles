@@ -360,14 +360,14 @@ class TestRenderTacticDetail:
         )
         result = _render_tactic_detail('Goal', t, None)
         assert 'great session' in result
-        assert 'Recent updates' in result
+        assert 'Updates' in result
 
-    def test_only_last_5_updates_shown(self) -> None:
+    def test_all_updates_shown(self) -> None:
         updates = [_update(i, f'note {i}') for i in range(7)]
         t = _tactic('weekly', updates)
         result = _render_tactic_detail('Goal', t, None)
-        assert 'note 5' not in result
-        assert 'note 6' not in result
+        assert 'note 5' in result
+        assert 'note 6' in result
 
     def test_with_goal_shows_week_and_progress(self) -> None:
         t = _tactic()

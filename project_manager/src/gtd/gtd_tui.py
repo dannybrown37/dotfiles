@@ -245,11 +245,11 @@ def _render_tactic_detail(
     lines.append('')
     lines.append(_tactic_status_line(tactic))
 
-    recent = sorted(tactic.updates, key=lambda u: u.date, reverse=True)[:5]
-    if recent:
-        lines += ['', '[dim]── Recent updates ──[/dim]']
+    all_updates = sorted(tactic.updates, key=lambda u: u.date, reverse=True)
+    if all_updates:
+        lines += ['', '[dim]── Updates ──[/dim]']
         today_iso = datetime.now().date().isoformat()
-        for u in recent:
+        for u in all_updates:
             try:
                 d = datetime.fromisoformat(u.date)
                 date_str = 'Today' if u.date == today_iso else f'{d:%b %-d}'
@@ -438,9 +438,16 @@ class SeparatorListItem(ListItem):
 
 
 class DetailPane(ScrollableContainer):
-    """Scrollable detail pane — not focusable via Tab."""
+    """Scrollable detail pane — focusable for keyboard scrolling."""
 
-    can_focus = False
+    can_focus = True
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('j', 'scroll_down', show=False),
+        Binding('k', 'scroll_up', show=False),
+        Binding('G', 'scroll_end', show=False),
+        Binding('g', 'scroll_home', show=False),
+    ]
 
 
 # ── Shared action helpers ────────────────────────────────────────────────────
