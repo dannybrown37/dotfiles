@@ -534,12 +534,19 @@ class DetailPane(ScrollableContainer):
 
     can_focus = True
 
-    BINDINGS: ClassVar[list[Binding]] = [
-        Binding('j', 'scroll_down', show=False),
-        Binding('k', 'scroll_up', show=False),
-        Binding('G', 'scroll_end', show=False),
-        Binding('g', 'scroll_home', show=False),
-    ]
+    def on_key(self, event: Key) -> None:
+        if event.key == 'j':
+            event.stop()
+            self.scroll_relative(y=3, animate=False)
+        elif event.key == 'k':
+            event.stop()
+            self.scroll_relative(y=-3, animate=False)
+        elif event.key == 'G':
+            event.stop()
+            self.scroll_end(animate=False)
+        elif event.key == 'g':
+            event.stop()
+            self.scroll_home(animate=False)
 
 
 class VimListView(ListView):
@@ -662,7 +669,9 @@ class GoalsContent(Widget):
     GoalsContent #goals-detail-pane {
         width: 1fr;
         padding: 1 2;
+        border: solid transparent;
     }
+    GoalsContent #goals-detail-pane:focus { border: solid $accent; }
     """
 
     def __init__(self) -> None:
