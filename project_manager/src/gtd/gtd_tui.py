@@ -779,8 +779,12 @@ class BaseEntryContent(Vertical):
             detail.update(f'[dim]{self.EMPTY_MSG}[/dim]')
         else:
             header.update(f'{self.TITLE}  [dim]({len(self._entries)})[/dim]')
-        lv.focus()
         self._update_detail()
+
+    def _remove_entry_and_refocus(self, page_id: str) -> None:
+        """Remove entry and refocus list. Use from actions, not triage."""
+        self._remove_entry(page_id)
+        self.query_one('#entry-list', VimListView).focus()
 
     def action_refresh(self) -> None:
         self._entries = []
@@ -824,7 +828,7 @@ class BaseEntryContent(Vertical):
                     self.app, entry, self._notes
                 )
                 if next_date:
-                    self._remove_entry(entry.page_id)
+                    self._remove_entry_and_refocus(entry.page_id)
                     self.app.notify(
                         f'✓ "{entry.header.strip()}" → {next_date}'
                     )
@@ -843,7 +847,7 @@ class BaseEntryContent(Vertical):
         if not confirmed:
             return
         self._done_worker(entry.page_id)
-        self._remove_entry(entry.page_id)
+        self._remove_entry_and_refocus(entry.page_id)
         self.app.notify(f'✓ "{entry.header.strip()}" → done')
 
     @work(thread=True)
@@ -887,7 +891,7 @@ class BaseEntryContent(Vertical):
         if not confirmed:
             return
         self._drop_worker(entry.page_id)
-        self._remove_entry(entry.page_id)
+        self._remove_entry_and_refocus(entry.page_id)
         self.app.notify(f'✓ Dropped "{entry.header.strip()}"')
 
     @work(thread=True)
@@ -902,7 +906,7 @@ class BaseEntryContent(Vertical):
         if not entry:
             return
         self._activate_worker(entry.page_id)
-        self._remove_entry(entry.page_id)
+        self._remove_entry_and_refocus(entry.page_id)
         self.app.notify(f'✓ "{entry.header.strip()}" → Current Project')
 
     @work(thread=True)
@@ -916,7 +920,7 @@ class BaseEntryContent(Vertical):
         if not entry:
             return
         self._someday_worker(entry.page_id)
-        self._remove_entry(entry.page_id)
+        self._remove_entry_and_refocus(entry.page_id)
         self.app.notify(f'✓ "{entry.header.strip()}" → Someday/Maybe')
 
     @work(thread=True)
@@ -1368,7 +1372,7 @@ class TodayContent(BaseEntryContent):
             self.app, entry, self._notes
         )
         if next_date:
-            self._remove_entry(entry.page_id)
+            self._remove_entry_and_refocus(entry.page_id)
             self.app.notify(f'✓ "{entry.header.strip()}" → {next_date}')
 
     async def action_wait_tomorrow(self) -> None:
@@ -1377,7 +1381,7 @@ class TodayContent(BaseEntryContent):
             return
         tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
         self._snooze_worker(entry.page_id, tomorrow)
-        self._remove_entry(entry.page_id)
+        self._remove_entry_and_refocus(entry.page_id)
         self.app.notify(f'✓ "{entry.header.strip()}" → {tomorrow}')
 
     @work
@@ -1389,7 +1393,7 @@ class TodayContent(BaseEntryContent):
         if not props:
             return
         self._update_worker(entry.page_id, props)
-        self._remove_entry(entry.page_id)
+        self._remove_entry_and_refocus(entry.page_id)
         status = props.get('status', '')
         self.app.notify(f'✓ "{entry.header.strip()}" → {status}')
 
@@ -1421,7 +1425,7 @@ class TodayContent(BaseEntryContent):
 
         follow_date = _parse_date_input(followup_str) if followup_str else None
         self._waiting_for_worker(entry.page_id, waiting_on, follow_date)
-        self._remove_entry(entry.page_id)
+        self._remove_entry_and_refocus(entry.page_id)
         self.app.notify(f'✓ "{entry.header.strip()}" → Waiting For')
 
     @work(thread=True)
@@ -1631,6 +1635,27 @@ class InboxContent(BaseEntryContent):
             kwargs['status'] = status
         else:
             status = entry.status
+            action = await self.app.push_screen_wait(
+                SelectModal(
+                    f'{title}',
+                    ['Continue — fill in missing fields', 'Drop this item'],
+                )
+            )
+            if action is None:
+                return None
+            if action and action.startswith('Drop'):
+                confirmed = await self.app.push_screen_wait(
+                    ConfirmModal(f'Delete "{title}"?')
+                )
+                if confirmed:
+                    await asyncio.get_running_loop().run_in_executor(
+                        None, archive_page, entry.page_id
+                    )
+                    self.app.notify(f'✓ Deleted "{title}"')
+                    return True
+                return False
+
+        subtitle = title
 
         if not entry.context:
             contexts = await asyncio.get_running_loop().run_in_executor(
@@ -1650,7 +1675,7 @@ class InboxContent(BaseEntryContent):
                 else 'Next actionable step'
             )
             next_step = await self.app.push_screen_wait(
-                InputModal(prompt, title)
+                InputModal(prompt, title, subtitle=subtitle)
             )
             if next_step is None:
                 return None
@@ -1662,6 +1687,7 @@ class InboxContent(BaseEntryContent):
                 InputModal(
                     'Success condition',
                     'What does done look like?',
+                    subtitle=subtitle,
                 )
             )
             if success_condition is None:
@@ -1669,10 +1695,12 @@ class InboxContent(BaseEntryContent):
             if success_condition:
                 kwargs['success_condition'] = success_condition
 
-        if not entry.due_date:
+        if not entry.due_date and status != 'Recurring':
             due_str = await self.app.push_screen_wait(
                 InputModal(
-                    'Due date (blank to skip)', 'e.g. Jul 15, 2026-08-01'
+                    'Due date (blank to skip)',
+                    'e.g. Jul 15, 2026-08-01',
+                    subtitle=subtitle,
                 )
             )
             if due_str:
@@ -1687,7 +1715,11 @@ class InboxContent(BaseEntryContent):
                 else 'Follow-up date (blank to skip)'
             )
             follow_str = await self.app.push_screen_wait(
-                InputModal(follow_up_prompt, 'e.g. Friday, in 3 days')
+                InputModal(
+                    follow_up_prompt,
+                    'e.g. Friday, in 3 days',
+                    subtitle=subtitle,
+                )
             )
             if follow_str:
                 parsed = dateparser.parse(follow_str, fuzzy=True)
