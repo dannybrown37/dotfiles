@@ -32,7 +32,7 @@ from textual.widgets import (
 if TYPE_CHECKING:
     from textual.events import Key
 
-from gtd.models import Goal, Tactic, Todo, Update, TOTAL_WEEKS
+from gtd.models import Goal, Tactic, Update, TOTAL_WEEKS
 from gtd.storage import (
     ARCHIVE_PATH,
     OUTPUT_PATH,
@@ -94,28 +94,6 @@ def _render_tactics_section(goal: Goal, week: int) -> list[str]:
     return lines
 
 
-def _render_todos_section(goal: Goal) -> list[str]:
-    lines = ['\n[bold]To-dos[/bold]']
-    if not goal.todos:
-        lines.append(
-            '  [dim]No to-dos yet — press [bold]t[/bold] to add one[/dim]'
-        )
-        return lines
-    open_todos = [t for t in goal.todos if not t.completed]
-    done_count = sum(1 for t in goal.todos if t.completed)
-    for t in open_todos:
-        due = ''
-        if t.due_date:
-            d = datetime.fromisoformat(t.due_date)
-            due = f'  [yellow](due {d:%b %-d})[/yellow]'
-        lines.append(f'  ☐  {t.description}{due}')
-    if done_count:
-        lines.append(f'  [dim]+ {done_count} completed[/dim]')
-    if not open_todos:
-        lines.append('  [green]All to-dos complete ✓[/green]')
-    return lines
-
-
 def _render_goal_detail(goal: Goal) -> str:
     week = goal.current_week()
     weeks_left = goal.weeks_remaining()
@@ -148,7 +126,6 @@ def _render_goal_detail(goal: Goal) -> str:
             )
 
     lines.extend(_render_tactics_section(goal, week))
-    lines.extend(_render_todos_section(goal))
     return '\n'.join(lines)
 
 
@@ -645,8 +622,6 @@ class GoalsContent(Widget):
         Binding('S', 'score_week', 'Score week'),
         Binding('A', 'add_tactic', 'Add tactic'),
         Binding('U', 'log_update', 'Log update'),
-        Binding('T', 'add_todo', 'Add to-do'),
-        Binding('C', 'complete_todo', 'Complete to-do'),
         Binding('E', 'edit_goal', 'Edit'),
         Binding('H', 'score_history', 'History'),
         Binding('D', 'delete_goal', 'Delete', show=False),
@@ -845,58 +820,6 @@ class GoalsContent(Widget):
         save_goal(goal)
         self._refresh_goals()
         self.notify('Update logged')
-
-    @work
-    async def action_add_todo(self) -> None:
-        goal = self._current_goal()
-        if not goal:
-            return
-        result = await self.app.push_screen_wait(
-            TwoFieldModal(
-                'Add To-do',
-                'Description',
-                'e.g. Set up billing',
-                'Due date (optional)',
-                'e.g. Jul 20, tomorrow',
-            )
-        )
-        if not result:
-            return
-        description, due_str = result
-        due_iso = None
-        if due_str:
-            with contextlib.suppress(ValueError, OverflowError):
-                parsed = dateparser.parse(due_str, fuzzy=True)
-                if parsed:
-                    due_iso = parsed.isoformat()
-        goal.todos.append(Todo(description=description, due_date=due_iso))
-        save_goal(goal)
-        self._refresh_goals()
-        self.notify(f'To-do added: {description}')
-
-    @work
-    async def action_complete_todo(self) -> None:
-        goal = self._current_goal()
-        if not goal:
-            return
-        open_todos = [
-            (i, t) for i, t in enumerate(goal.todos) if not t.completed
-        ]
-        if not open_todos:
-            self.notify('No open to-dos.', severity='warning')
-            return
-        choice = await self.app.push_screen_wait(
-            SelectModal(
-                'Complete to-do', [t.description for _, t in open_todos]
-            )
-        )
-        if not choice:
-            return
-        real_idx = next(i for i, t in open_todos if t.description == choice)
-        goal.todos[real_idx].completed = True
-        save_goal(goal)
-        self._refresh_goals()
-        self.notify(f'✓ {choice}')
 
     async def _edit_goal_meta(self, goal: Goal) -> None:
         result = await self.app.push_screen_wait(

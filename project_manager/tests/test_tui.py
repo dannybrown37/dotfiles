@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from gtd.models import Goal, Tactic, Todo, Update
+from gtd.models import Goal, Tactic, Update
 from gtd.tui import (
     _parse_updates_from_text,
     _render_goal_detail,
@@ -97,22 +97,6 @@ class TestRenderGoalDetail:
         result = _render_goal_detail(goal)
         assert 'Did 5k' in result
 
-    def test_open_todo_shown(self):
-        goal = _make_goal(todos=[Todo(description='Buy milk')])
-        result = _render_goal_detail(goal)
-        assert 'Buy milk' in result
-        assert '☐' in result
-
-    def test_completed_todos_show_count(self):
-        goal = _make_goal(
-            todos=[
-                Todo(description='Done thing', completed=True),
-                Todo(description='Done thing 2', completed=True),
-            ]
-        )
-        result = _render_goal_detail(goal)
-        assert '2' in result
-
     def test_overall_execution_shown_when_scored(self):
         goal = _make_goal(
             tactics=[
@@ -125,18 +109,6 @@ class TestRenderGoalDetail:
         )
         result = _render_goal_detail(goal)
         assert '90%' in result
-
-    def test_due_date_shown(self):
-        goal = _make_goal(
-            todos=[Todo(description='Ship it', due_date='2026-07-20T00:00:00')]
-        )
-        result = _render_goal_detail(goal)
-        assert 'Jul' in result
-
-    def test_no_todos_shows_prompt(self):
-        goal = _make_goal()
-        result = _render_goal_detail(goal)
-        assert 'No to-dos' in result
 
 
 class TestRenderScoreHistory:
@@ -212,8 +184,7 @@ class TestSerializeUpdates:
     def test_empty_updates_produces_only_header_lines(self):
         result = _serialize_updates([])
         lines = [
-            ln for ln in result.splitlines()
-            if ln and not ln.startswith('#')
+            ln for ln in result.splitlines() if ln and not ln.startswith('#')
         ]
         assert lines == []
 
