@@ -1,20 +1,14 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from dateutil import parser as dateparser
-
 
 __all__ = [
     'add_tactic',
-    'add_todo',
-    'complete_todo',
     'edit_goal',
     'edit_settings',
     'edit_tactic',
-    'edit_todo',
     'log_update',
     'remove_tactic',
-    'remove_todo',
     'start_new_cycle',
     'view_score_history',
     'weekly_scorecard',
@@ -23,7 +17,6 @@ __all__ = [
 from gtd.models import (
     Goal,
     Tactic,
-    Todo,
     Update,
     TOTAL_WEEKS,
     SCORE_GREEN_THRESHOLD,
@@ -192,68 +185,6 @@ def view_score_history(goal: Goal) -> Goal:
     return goal
 
 
-def add_todo(goal: Goal) -> Goal:
-    description = prompt_input('To-do description: ')
-    if not description:
-        print('Description required.')
-        return goal
-    due = (
-        prompt_input(
-            'Due date (e.g. Aug 29, tomorrow, blank to skip): ',
-        )
-        or None
-    )
-    due_iso = None
-    if due:
-        try:
-            parsed = dateparser.parse(due, fuzzy=True)
-            if parsed is None:
-                print(
-                    f'Could not parse "{due}", saving without due date.',
-                )
-            else:
-                due_iso = parsed.isoformat()
-        except Exception:
-            print(
-                f'Could not parse "{due}", saving without due date.',
-            )
-    goal.todos.append(Todo(description=description, due_date=due_iso))
-    save_goal(goal)
-    print('\n✓ To-do added')
-    return goal
-
-
-def complete_todo(goal: Goal) -> Goal:
-    open_todos = [(i, t) for i, t in enumerate(goal.todos) if not t.completed]
-    if not open_todos:
-        print('No open to-dos.')
-        return goal
-    labels = [f'{i}: {t.description}' for i, t in open_todos]
-    selection = fzf_on_a_list(labels, prompt='Mark complete')
-    if not selection:
-        return goal
-    idx = int(selection.split(':', 1)[0])
-    goal.todos[idx].completed = True
-    save_goal(goal)
-    print(f'\n✓ "{goal.todos[idx].description}" marked complete')
-    return goal
-
-
-def remove_todo(goal: Goal) -> Goal:
-    if not goal.todos:
-        print('No to-dos.')
-        return goal
-    labels = [f'{i}: {t.description}' for i, t in enumerate(goal.todos)]
-    selection = fzf_on_a_list(labels, prompt='Remove to-do')
-    if not selection:
-        return goal
-    idx = int(selection.split(':', 1)[0])
-    removed = goal.todos.pop(idx)
-    save_goal(goal)
-    print(f'\n✓ Removed: {removed.description}')
-    return goal
-
-
 def edit_tactic(goal: Goal) -> Goal:
     idx = select_tactic_index(goal, prompt='Select tactic to edit')
     if idx is None:
@@ -269,56 +200,6 @@ def edit_tactic(goal: Goal) -> Goal:
         tactic.reminder_cadence = cadence
     save_goal(goal)
     print('\n✓ Tactic updated')
-    return goal
-
-
-def _apply_todo_edits(t: Todo) -> None:
-    """Prompt for and apply edits to a single to-do."""
-    print(f'  Current description: {t.description}')
-    desc = prompt_input('New description (Enter to keep): ')
-    due_display = (
-        datetime.fromisoformat(t.due_date).strftime('%b %-d')
-        if t.due_date
-        else 'none'
-    )
-    print(f'  Current due date: {due_display}')
-    due = prompt_input(
-        'New due date (Enter to keep, "clear" to remove): ',
-    )
-    if t.completed:
-        reopen = prompt_input('Re-open this to-do? (y/N): ')
-        if reopen and reopen.lower().startswith('y'):
-            t.completed = False
-    if desc:
-        t.description = desc
-    if due and due.lower() == 'clear':
-        t.due_date = None
-    elif due:
-        try:
-            parsed = dateparser.parse(
-                due,
-                fuzzy=True,
-            )
-            if parsed is None:
-                print(f'Could not parse "{due}", due date unchanged.')
-            else:
-                t.due_date = parsed.isoformat()
-        except Exception:
-            print(f'Could not parse "{due}", due date unchanged.')
-
-
-def edit_todo(goal: Goal) -> Goal:
-    if not goal.todos:
-        print('No to-dos yet.')
-        return goal
-    labels = [f'{i}: {t.description}' for i, t in enumerate(goal.todos)]
-    selection = fzf_on_a_list(labels, prompt='Select to-do to edit')
-    if not selection:
-        return goal
-    idx = int(selection.split(':', 1)[0])
-    _apply_todo_edits(goal.todos[idx])
-    save_goal(goal)
-    print('\n✓ To-do updated')
     return goal
 
 
@@ -374,28 +255,18 @@ def start_new_cycle(goal: Goal) -> Goal | None:
                 ),
             )
 
-    open_todos = [
-        Todo(description=t.description, due_date=t.due_date)
-        for t in goal.todos
-        if not t.completed
-    ]
-
     new_goal = Goal(
         name=goal.name,
         description=goal.description,
         start_date=now.isoformat(),
         end_date=(now + timedelta(weeks=TOTAL_WEEKS)).isoformat(),
         tactics=new_tactics,
-        todos=open_todos,
     )
     save_goal(new_goal)
 
-    carried = []
-    if new_tactics:
-        carried.append(f'{len(new_tactics)} tactics')
-    if open_todos:
-        carried.append(f'{len(open_todos)} open to-dos')
-    carry_msg = f' (carried: {", ".join(carried)})' if carried else ''
+    carry_msg = (
+        f' (carried: {len(new_tactics)} tactics)' if new_tactics else ''
+    )
 
     print(
         f'\n✓ New cycle started for "{new_goal.name}"{carry_msg}',

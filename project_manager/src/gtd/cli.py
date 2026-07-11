@@ -30,12 +30,8 @@ from gtd.actions import (
     view_score_history,
     add_tactic,
     log_update,
-    add_todo,
     edit_tactic,
     remove_tactic,
-    edit_todo,
-    remove_todo,
-    complete_todo,
     edit_settings,
     start_new_cycle,
 )
@@ -51,10 +47,6 @@ GOAL_MENU_ITEMS = [
     ('Tactics', 'Edit tactic'),
     ('Tactics', 'Remove tactic'),
     ('Tactics', 'Log update on tactic'),
-    ('To-do', 'Add to-do'),
-    ('To-do', 'Edit to-do'),
-    ('To-do', 'Remove to-do'),
-    ('To-do', 'Complete to-do'),
     ('', 'Other goals'),
     ('', 'Settings'),
 ]
@@ -76,12 +68,8 @@ GOAL_ACTION_MAP = {
     'Score history': view_score_history,
     'Add tactic': add_tactic,
     'Log update on tactic': log_update,
-    'Add to-do': add_todo,
     'Edit tactic': edit_tactic,
     'Remove tactic': remove_tactic,
-    'Edit to-do': edit_todo,
-    'Remove to-do': remove_todo,
-    'Complete to-do': complete_todo,
 }
 
 
@@ -172,7 +160,7 @@ def remove_goal() -> None:
         return
     src = OUTPUT_PATH / f'{_safe_filename(name)}.json'
     goal = load_goal(name)
-    has_data = goal.tactics or goal.todos
+    has_data = bool(goal.tactics)
     if has_data:
         dest = ARCHIVE_PATH / f'{name}.json'
         src.rename(dest)

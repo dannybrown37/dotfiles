@@ -85,34 +85,6 @@ def _tactics_detail_lines(goal: Goal) -> list[str]:
     return lines
 
 
-def _todos_lines(goal: Goal, *, compact: bool = False) -> list[str]:
-    """Build to-do section lines."""
-    open_todos = [t for t in goal.todos if not t.completed]
-    done_todos = [t for t in goal.todos if t.completed]
-    if not goal.todos:
-        return ['\n  No to-dos yet.']
-    lines = []
-    if open_todos:
-        lines.append(f'\n  To-dos | Open ({len(open_todos)}):')
-        for t in open_todos:
-            due = (
-                f'  (due {datetime.fromisoformat(t.due_date):%b %-d})'
-                if t.due_date
-                else ''
-            )
-            lines.append(f'    ☐  {t.description}{due}')
-    if done_todos:
-        if compact:
-            lines.append(f'\n  To-dos | Done: {len(done_todos)}')
-        else:
-            lines.append(
-                f'\n  To-dos | Done ({len(done_todos)}):',
-            )
-            for t in done_todos:
-                lines.append(f'    ✓  {t.description}')
-    return lines
-
-
 def _score_history_lines(goal: Goal) -> list[str]:
     """Build score history section."""
     week = goal.current_week()
@@ -136,7 +108,6 @@ def view_goal(goal: Goal) -> Goal:
     """Compact view -- fits on one screen."""
     lines = _goal_header_lines(goal)
     lines.extend(_tactics_compact_lines(goal))
-    lines.extend(_todos_lines(goal, compact=True))
     lines.append(f'{"─" * 55}\n')
     print('\n' + '\n'.join(lines))
     return goal
@@ -146,7 +117,6 @@ def detailed_view(goal: Goal) -> Goal:
     """Full detail piped through less."""
     lines = _goal_header_lines(goal)
     lines.extend(_tactics_detail_lines(goal))
-    lines.extend(_todos_lines(goal))
     lines.extend(_score_history_lines(goal))
     lines.append(f'{"─" * 55}')
 

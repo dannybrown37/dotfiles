@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 
-from gtd.models import Goal, Tactic, Todo, Update
+from gtd.models import Goal, Tactic, Update
 from gtd.ui import score_pct
 
 
@@ -227,16 +227,6 @@ class TestSerialization:
                     weekly_scores={'1': 8, '2': 7},
                 ),
             ],
-            todos=[
-                Todo(
-                    description='Talk to Bob',
-                    due_date='2026-07-01T00:00:00',
-                ),
-                Todo(
-                    description='Done thing',
-                    completed=True,
-                ),
-            ],
         )
         data = goal.model_dump()
         restored = Goal.model_validate(data)
@@ -245,9 +235,6 @@ class TestSerialization:
         assert restored.tactics[0].weekly_scores == {'1': 8, '2': 7}
         assert len(restored.tactics[0].updates) == 1
         assert restored.tactics[0].updates[0].note == 'Did it'
-        assert len(restored.todos) == 2
-        assert restored.todos[0].due_date == '2026-07-01T00:00:00'
-        assert restored.todos[1].completed is True
 
     def test_goal_new_sets_12_week_window(self):
         goal = Goal.new('Test', 'desc')

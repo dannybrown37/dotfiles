@@ -4,12 +4,8 @@ from pydantic import BaseModel, Field
 
 
 __all__ = [
-    'SCORE_GREEN_THRESHOLD',
-    'SCORE_YELLOW_THRESHOLD',
-    'TOTAL_WEEKS',
     'Goal',
     'Tactic',
-    'Todo',
     'Update',
 ]
 
@@ -32,22 +28,12 @@ class Tactic(BaseModel):
     )  # week number (str) -> 1-10 score
 
 
-class Todo(BaseModel):
-    description: str
-    due_date: str | None = None
-    completed: bool = False
-    created_at: str = Field(
-        default_factory=lambda: datetime.now().isoformat(),
-    )
-
-
 class Goal(BaseModel):
     name: str
     description: str
     start_date: str
     end_date: str
     tactics: list[Tactic] = Field(default_factory=list)
-    todos: list[Todo] = Field(default_factory=list)
 
     @classmethod
     def new(cls, name: str, description: str) -> 'Goal':
