@@ -115,7 +115,7 @@ def _make_page(
     header: str = 'Test',
     context: str = 'Work',
     next_step: str = 'Do it',
-    intended_outcome: str = 'Done',
+    success_condition: str = 'Done',
 ) -> dict:
     return {
         'id': 'page-1',
@@ -129,10 +129,10 @@ def _make_page(
             'Next Actionable Step': {
                 'rich_text': [{'plain_text': next_step}] if next_step else [],
             },
-            'Intended Successful Outcome': {
+            'Success Condition': {
                 'rich_text': (
-                    [{'plain_text': intended_outcome}]
-                    if intended_outcome
+                    [{'plain_text': success_condition}]
+                    if success_condition
                     else []
                 ),
             },
@@ -165,7 +165,7 @@ def _make_triage_page(
     status: str = 'Triage',
     context: str = '',
     next_step: str = '',
-    intended_outcome: str = '',
+    success_condition: str = '',
 ) -> dict:
     return {
         'id': 'page-triage-1',
@@ -181,10 +181,10 @@ def _make_triage_page(
             'Next Actionable Step': {
                 'rich_text': [{'plain_text': next_step}] if next_step else [],
             },
-            'Intended Successful Outcome': {
+            'Success Condition': {
                 'rich_text': (
-                    [{'plain_text': intended_outcome}]
-                    if intended_outcome
+                    [{'plain_text': success_condition}]
+                    if success_condition
                     else []
                 ),
             },
@@ -300,7 +300,7 @@ class TestCadenceInference:
             status='Current Project',
             context='Home',
             next_step='Sit',
-            intended_outcome='Feel centered',
+            success_condition='Feel centered',
             due_date=None,
             follow_up_date=None,
             created_date='2026-06-01',
@@ -326,39 +326,39 @@ class TestBuildPropertyUpdate:
         assert 'Due Date' not in props
         assert 'Follow-Up Date' not in props
         assert 'Header' not in props
-        assert 'Intended Successful Outcome' not in props
+        assert 'Success Condition' not in props
 
-    def test_intended_outcome_included_when_set(self):
-        props = build_property_update(intended_outcome='Ship the feature')
-        assert props['Intended Successful Outcome'] == {
+    def test_success_condition_included_when_set(self):
+        props = build_property_update(success_condition='Ship the feature')
+        assert props['Success Condition'] == {
             'rich_text': [{'text': {'content': 'Ship the feature'}}]
         }
 
-    def test_intended_outcome_none_omits_field(self):
+    def test_success_condition_none_omits_field(self):
         props = build_property_update(next_step='Do it')
-        assert 'Intended Successful Outcome' not in props
+        assert 'Success Condition' not in props
 
 
-# --- ProjectEntry.from_page: parses intended_outcome ---
+# --- ProjectEntry.from_page: parses success_condition ---
 
 
 class TestProjectEntryFromPage:
-    def test_parses_intended_outcome(self):
-        page = _make_page(intended_outcome='Inbox zero maintained')
+    def test_parses_success_condition(self):
+        page = _make_page(success_condition='Inbox zero maintained')
         entry = ProjectEntry.from_page(page)
-        assert entry.intended_outcome == 'Inbox zero maintained'
+        assert entry.success_condition == 'Inbox zero maintained'
 
-    def test_empty_intended_outcome_defaults_to_empty_string(self):
-        page = _make_page(intended_outcome='')
+    def test_empty_success_condition_defaults_to_empty_string(self):
+        page = _make_page(success_condition='')
         entry = ProjectEntry.from_page(page)
-        assert entry.intended_outcome == ''
+        assert entry.success_condition == ''
 
     def test_missing_iso_property_defaults_to_empty_string(self):
         """Pages created before the ISO field was added parse gracefully."""
         page = _make_page()
-        del page['properties']['Intended Successful Outcome']
+        del page['properties']['Success Condition']
         entry = ProjectEntry.from_page(page)
-        assert entry.intended_outcome == ''
+        assert entry.success_condition == ''
 
 
 # --- _get_triage_entries: items missing ISO appear for triage ---
@@ -374,7 +374,7 @@ class TestTriageIncludesItemsMissingISO:
                 status='Current Project',
                 context='Work',
                 next_step='Do something',
-                intended_outcome='',
+                success_condition='',
             ),
         ]
         results = _get_triage_entries()
@@ -390,7 +390,7 @@ class TestTriageIncludesItemsMissingISO:
         filter_obj = call_kwargs.get('filter_obj', {})
         conditions = filter_obj.get('or', [])
         iso_condition = {
-            'property': 'Intended Successful Outcome',
+            'property': 'Success Condition',
             'rich_text': {'is_empty': True},
         }
         assert iso_condition in conditions
@@ -408,7 +408,7 @@ class TestEntryPreviewText:
         ],
     )
     def test_outcome_shown_in_preview(self, outcome: str, expected: str):
-        page = _make_page(intended_outcome=outcome)
+        page = _make_page(success_condition=outcome)
         entry = ProjectEntry.from_page(page)
         result = _entry_preview_text(entry)
         assert expected in result

@@ -290,7 +290,7 @@ def build_property_update(
     status: str | None = None,
     context: str | None = None,
     next_step: str | None = None,
-    intended_outcome: str | None = None,
+    success_condition: str | None = None,
     due_date: str | None = None,
     follow_up_date: str | None = None,
 ) -> dict:
@@ -306,9 +306,9 @@ def build_property_update(
         props['Next Actionable Step'] = {
             'rich_text': [{'text': {'content': next_step}}],
         }
-    if intended_outcome is not None:
-        props['Intended Successful Outcome'] = {
-            'rich_text': [{'text': {'content': intended_outcome}}],
+    if success_condition is not None:
+        props['Success Condition'] = {
+            'rich_text': [{'text': {'content': success_condition}}],
         }
     if due_date is not None:
         if due_date == '':

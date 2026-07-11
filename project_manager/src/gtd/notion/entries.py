@@ -108,7 +108,7 @@ def _entry_preview_text(
         f'Status:    {entry.status}',
         f'Context:   {entry.context or "(none)"}',
         f'Next step: {entry.next_step or "(none)"}',
-        f'Outcome:   {entry.intended_outcome or "(none)"}',
+        f'Success condition: {entry.success_condition or "(none)"}',
         f'Due:       {entry.due_date or "(none)"}',
         f'Follow-up: {entry.follow_up_date or "(none)"}',
     ]
@@ -257,13 +257,13 @@ def _collect_field_updates(  # noqa: C901, PLR0912
         if step is not None:
             kwargs['next_step'] = step
 
-    if 'Intended outcome' in fields:
+    if 'Success condition' in fields:
         outcome = prompt_input(
-            'Intended outcome'
-            f' (current: {entry.intended_outcome or "none"}): ',
+            'Success condition'
+            f' (current: {entry.success_condition or "none"}): ',
         )
         if outcome is not None:
-            kwargs['intended_outcome'] = outcome
+            kwargs['success_condition'] = outcome
 
     if 'Context' in fields:
         contexts = get_select_options('Context')
@@ -330,7 +330,7 @@ def _edit_entry_fields(entry: ProjectEntry) -> None:
         [
             'Name',
             'Next actionable step',
-            'Intended outcome',
+            'Success condition',
             'Edit notes',
             'Context',
             'Status',
