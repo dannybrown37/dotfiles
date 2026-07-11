@@ -19,7 +19,9 @@ from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import ScrollableContainer, Vertical
+from textual.screen import ModalScreen
 from textual.widgets import (
+    Button,
     Footer,
     Header,
     Label,
@@ -65,6 +67,7 @@ def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:
     lines.append(row('Status', entry.status))
     lines.append(row('Context', entry.context))
     lines.append(row('Next step', entry.next_step))
+    lines.append(row('Outcome', entry.intended_outcome))
     if entry.due_date:
         lines.append(row('Due', entry.due_date, 'yellow'))
     if entry.follow_up_date:
@@ -272,7 +275,7 @@ _GTD_REVIEW_CHECKLIST = """\
   □ Review Waiting For list
   □ Review Someday/Maybe list
   □ Review calendar (past & upcoming)
-  □ Check 12-Week Goals progress"""
+  □ Plan next week's priorities"""
 
 _GOAL_SCORING_HINT = """\
   Navigate to the Goals tab (right) and press S on each goal.
@@ -343,7 +346,13 @@ def _render_habit_detail(key: str, label: str) -> str:
             lines += ['', _GOAL_SCORING_HINT]
 
     if not done:
-        lines += ['', '[dim]Press X to mark done for this week.[/dim]']
+        action_hint = (
+            'Plan your week' if key == 'weekly_review' else 'Score your goals'
+        )
+        lines += [
+            '',
+            f'[dim]Press W to {action_hint} and mark done.[/dim]',
+        ]
 
     return '\n'.join(lines)
 
@@ -468,6 +477,14 @@ async def _prompt_and_get_props(
             InputModal('Next Actionable Step', initial=entry.next_step)
         )
         props = {'next_step': value} if value is not None else None
+    elif choice == 'Intended outcome':
+        value = await app.push_screen_wait(
+            InputModal(
+                'Intended Successful Outcome',
+                initial=entry.intended_outcome,
+            )
+        )
+        props = {'intended_outcome': value} if value is not None else None
     elif choice in ('Follow-up date', 'Due date'):
         value = await app.push_screen_wait(
             InputModal(choice, 'e.g. Monday, Jul 15, blank to clear')
@@ -495,6 +512,7 @@ async def _shared_update_entry(
         'Status',
         'Context',
         'Next actionable step',
+        'Intended outcome',
         'Follow-up date',
         'Due date',
     ]
@@ -879,6 +897,147 @@ class BaseEntryContent(Vertical):
         _create_page(header)
 
 
+# ── Weekly Review Screen ─────────────────────────────────────────────────────
+
+
+class WeeklyReviewScreen(ModalScreen[bool]):
+    """Interactive checklist for the weekly GTD review."""
+
+    DEFAULT_CSS = """
+    WeeklyReviewScreen { align: center middle; }
+    WeeklyReviewScreen .modal-box {
+        background: $surface;
+        border: solid $accent;
+        padding: 1 2;
+        width: 70;
+        height: auto;
+        max-height: 30;
+    }
+    WeeklyReviewScreen .review-title {
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    WeeklyReviewScreen .review-item { padding: 0 1; height: 1; }
+    WeeklyReviewScreen .review-item:focus { background: $accent 30%; }
+    WeeklyReviewScreen .review-footer {
+        margin-top: 1;
+        color: $text-muted;
+    }
+    """
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('escape', 'cancel', 'Cancel'),
+        Binding('enter,space', 'toggle', 'Check/Launch', show=True),
+        Binding('c', 'complete', 'Complete review', show=True),
+        Binding('j', 'cursor_down', show=False),
+        Binding('k', 'cursor_up', show=False),
+        Binding('down', 'cursor_down', show=False),
+        Binding('up', 'cursor_up', show=False),
+    ]
+
+    def __init__(
+        self,
+        inbox_entries: list[ProjectEntry],
+        inbox_count: int,
+    ) -> None:
+        super().__init__()
+        self._inbox_entries = inbox_entries
+        self._inbox_count = inbox_count
+        # Each step: (key, label, done, triage_fn | None)
+        self._steps: list[dict] = self._build_steps()
+        self._focused = 0
+
+    def _build_steps(self) -> list[dict]:
+        if self._inbox_count == 0:
+            inbox_label = 'Process inbox  [dim](empty ✓)[/dim]'
+            inbox_done = True
+        else:
+            n = self._inbox_count
+            c = 's' if n != 1 else ''
+            inbox_label = f'Triage inbox  [dim]({n} item{c})[/dim]'
+            inbox_done = False
+        manual = [
+            'Review Projects & next actions',
+            'Review Waiting For list',
+            'Review Someday/Maybe list',
+            'Review calendar (past & upcoming)',
+            "Plan next week's priorities",
+        ]
+        steps = [{'label': inbox_label, 'done': inbox_done, 'triage': True}]
+        steps += [{'label': l, 'done': False, 'triage': False} for l in manual]  # noqa: E741
+        return steps
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes='modal-box'):
+            yield Static('── Weekly Review ──', classes='review-title')
+            for i, step in enumerate(self._steps):
+                mark = '[green]✓[/green]' if step['done'] else '[ ]'
+                yield Static(
+                    f'{mark}  {step["label"]}',
+                    id=f'review-step-{i}',
+                    classes='review-item',
+                )
+            yield Static(
+                '[dim]space: check · c: complete · esc: cancel[/dim]',
+                classes='review-footer',
+            )
+            yield Button(
+                'Complete Review (c)', variant='success', id='complete-btn'
+            )
+
+    def on_mount(self) -> None:
+        self._refresh_steps()
+        self._focus_step(0)
+
+    def _focus_step(self, idx: int) -> None:
+        self._focused = max(0, min(idx, len(self._steps) - 1))
+        with contextlib.suppress(Exception):
+            self.query_one(f'#review-step-{self._focused}', Static).focus()
+
+    def _refresh_steps(self) -> None:
+        for i, step in enumerate(self._steps):
+            mark = '[green]✓[/green]' if step['done'] else '[ ]'
+            with contextlib.suppress(Exception):
+                self.query_one(f'#review-step-{i}', Static).update(
+                    f'{mark}  {step["label"]}'
+                )
+
+    def action_cursor_down(self) -> None:
+        self._focus_step(self._focused + 1)
+
+    def action_cursor_up(self) -> None:
+        self._focus_step(self._focused - 1)
+
+    @work
+    async def action_toggle(self) -> None:
+        step = self._steps[self._focused]
+        if step['done']:
+            step['done'] = False
+            self._refresh_steps()
+            return
+        if step['triage'] and self._inbox_entries:
+            inbox_content = self.app.query_one(InboxContent)
+            inbox_content.seed_entries(self._inbox_entries)
+            await inbox_content.triage_entries(self._inbox_entries)
+        step['done'] = True
+        self._refresh_steps()
+        # Auto-advance to next undone step
+        for i in range(self._focused + 1, len(self._steps)):
+            if not self._steps[i]['done']:
+                self._focus_step(i)
+                return
+
+    def action_complete(self) -> None:
+        self.dismiss(result=True)
+
+    def action_cancel(self) -> None:
+        self.dismiss(result=False)
+
+    @on(Button.Pressed, '#complete-btn')
+    def _complete_pressed(self) -> None:
+        self.dismiss(result=True)
+
+
 # ── Today content ────────────────────────────────────────────────────────────
 
 
@@ -889,7 +1048,7 @@ class TodayContent(BaseEntryContent):
     EMPTY_MSG: ClassVar[str] = 'All clear. Nice work.'
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('W', 'complete_habit', 'Score Week'),
+        Binding('W', 'complete_habit', 'Complete'),
         Binding('L', 'log', 'Log'),
         Binding('S', 'snooze', 'Snooze'),
         Binding('W', 'waiting_for', 'Waiting For'),
@@ -1114,8 +1273,8 @@ class TodayContent(BaseEntryContent):
     async def _run_weekly_review_flow(self) -> bool:
         loop = asyncio.get_running_loop()
 
-        # Step 1: Inbox
         inbox_entries: list[ProjectEntry] = []
+        inbox_count = 0
         try:
             from gtd.notion.client import query_database  # noqa: PLC0415
 
@@ -1132,39 +1291,12 @@ class TodayContent(BaseEntryContent):
         except Exception:
             inbox_count = -1
 
-        if inbox_count == 0:
-            self.app.notify('Inbox: empty ✓')
-        else:
-            label = f'{inbox_count} item(s)' if inbox_count > 0 else '? items'
-            choice = await self.app.push_screen_wait(
-                SelectModal(
-                    f'Process inbox  [{label}]',
-                    ['Triage inbox now', 'Already done ✓'],
-                )
+        return (
+            await self.app.push_screen_wait(
+                WeeklyReviewScreen(inbox_entries, inbox_count)
             )
-            if choice is None:
-                return False
-            if choice == 'Triage inbox now':
-                inbox_content = self.app.query_one(InboxContent)
-                inbox_content.seed_entries(inbox_entries)
-                await inbox_content.triage_entries(inbox_entries)
-
-        # Remaining checklist steps
-        steps = [
-            'Review Projects & next actions',
-            'Review Waiting For list',
-            'Review Someday/Maybe list',
-            'Review calendar (past & upcoming week)',
-            'Review 12-Week Goals progress',
-        ]
-        for step in steps:
-            choice = await self.app.push_screen_wait(
-                SelectModal(step, ['Done ✓', 'Skip'])
-            )
-            if choice is None:
-                return False
-
-        return True
+            or False
+        )
 
     def _dismiss_habit_item(self, item: WeeklyHabitItem) -> None:
         from gtd.storage import set_weekly_habit_date  # noqa: PLC0415
@@ -1383,7 +1515,7 @@ class InboxContent(BaseEntryContent):
             s = 's' if processed != 1 else ''
             self.app.notify(f'✓ Triaged {processed} item{s}')
 
-    async def _triage_one(self, entry: ProjectEntry) -> bool | None:
+    async def _triage_one(self, entry: ProjectEntry) -> bool | None:  # noqa: PLR0911
         """Triage a single entry via TUI modals.
 
         Returns True if saved, False if skipped/deleted, None if cancelled.
@@ -1435,6 +1567,15 @@ class InboxContent(BaseEntryContent):
         if next_step is None:
             return None
 
+        intended_outcome = await self.app.push_screen_wait(
+            InputModal(
+                'Intended successful outcome',
+                'What does done look like?',
+            )
+        )
+        if intended_outcome is None:
+            return None
+
         due_str = await self.app.push_screen_wait(
             InputModal('Due date (blank to skip)', 'e.g. Jul 15, 2026-08-01')
         )
@@ -1460,6 +1601,7 @@ class InboxContent(BaseEntryContent):
             status=status,
             context=context,
             next_step=next_step or None,
+            intended_outcome=intended_outcome or None,
             due_date=due_iso,
             follow_up_date=follow_iso,
         )

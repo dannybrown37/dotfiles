@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import contextlib
+import os
+import subprocess
+import tempfile
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
 from dateutil import parser as dateparser
@@ -588,6 +592,50 @@ class GoalListItem(ListItem):
 
 # ── Goals widget (embeddable) ────────────────────────────────────────────────
 
+_LOG_DATE_FMT = '%Y-%m-%d'
+_LOG_LINE_EXAMPLE = '# YYYY-MM-DD: your note here'
+
+
+def _serialize_updates(updates: list[Update]) -> str:
+    """Render updates as editable text, one line per entry.
+
+    Format: YYYY-MM-DD: note
+    Lines starting with '#' are comments and are ignored on parse.
+    """
+    lines = [
+        '# Edit tactic logs below. Format: YYYY-MM-DD: your note',
+        '# Lines starting with # are ignored. Delete a line to remove it.',
+        '',
+    ]
+    for u in updates:
+        date_part = u.date[:10]
+        lines.append(f'{date_part}: {u.note}')
+    return '\n'.join(lines) + '\n'
+
+
+def _parse_updates_from_text(text: str) -> list[Update]:
+    """Parse update lines back into Update objects.
+
+    Accepts 'YYYY-MM-DD: note' lines; skips blank lines and comments.
+    Lines with unrecognised dates are silently skipped.
+    """
+    updates: list[Update] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#'):
+            continue
+        if ': ' not in line:
+            continue
+        date_str, _, note = line.partition(': ')
+        date_str = date_str.strip()
+        note = note.strip()
+        try:
+            datetime.strptime(date_str, _LOG_DATE_FMT)
+        except ValueError:
+            continue
+        updates.append(Update(date=date_str, note=note))
+    return updates
+
 
 class GoalsContent(Widget):
     """Goals pane — can be embedded in a tab or used standalone."""
@@ -951,6 +999,48 @@ class GoalsContent(Widget):
         save_goal(goal)
         self.notify(f'Tactic removed: {choice}')
 
+    async def _edit_tactic_logs(self, goal: Goal) -> None:
+        """Free-edit a tactic's update log in $EDITOR."""
+        if not goal.tactics:
+            self.notify('No tactics yet.', severity='warning')
+            return
+        choice = await self.app.push_screen_wait(
+            SelectModal(
+                'Edit logs for which tactic?',
+                [t.description for t in goal.tactics],
+            )
+        )
+        if not choice:
+            return
+        idx = next(
+            i for i, t in enumerate(goal.tactics) if t.description == choice
+        )
+        tactic = goal.tactics[idx]
+        original_text = _serialize_updates(tactic.updates)
+
+        editor = os.environ.get('EDITOR', 'nvim')
+        fd, tmp_path = tempfile.mkstemp(suffix='.txt', prefix='gtd-logs-')
+        try:
+            with os.fdopen(fd, 'w') as f:
+                f.write(original_text)
+            with self.app.suspend():
+                subprocess.run([editor, tmp_path], check=False)  # noqa: S603
+            new_text = Path(tmp_path).read_text()
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+        if new_text == original_text:
+            self.notify('No changes.')
+            return
+
+        new_updates = _parse_updates_from_text(new_text)
+        goal.tactics[idx].updates = new_updates
+        save_goal(goal)
+        self.notify(
+            f'Logs updated: {len(new_updates)} entr'
+            f'{"y" if len(new_updates) == 1 else "ies"}'
+        )
+
     @work
     async def action_edit_goal(self) -> None:
         goal = self._current_goal()
@@ -963,6 +1053,7 @@ class GoalsContent(Widget):
                     'Name & description',
                     'Start & end dates',
                     'Edit a tactic',
+                    'Edit tactic logs',
                     'Remove a tactic',
                 ],
             )
@@ -973,6 +1064,8 @@ class GoalsContent(Widget):
             await self._edit_goal_dates(goal)
         elif what == 'Edit a tactic':
             await self._edit_tactic(goal)
+        elif what == 'Edit tactic logs':
+            await self._edit_tactic_logs(goal)
         elif what == 'Remove a tactic':
             await self._remove_tactic(goal)
         if what:
