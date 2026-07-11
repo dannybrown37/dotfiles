@@ -1497,6 +1497,24 @@ class InboxContent(BaseEntryContent):
         Binding('D', 'drop_entry', 'Drop'),
     ]
 
+    _ENTRY_ACTIONS: ClassVar[set[str]] = {
+        'triage_entry',
+        'update_entry',
+        'edit_notes',
+        'drop_entry',
+    }
+
+    def check_action(
+        self,
+        action: str,
+        parameters: tuple[object, ...],  # noqa: ARG002
+    ) -> bool | None:
+        if action == 'triage_all':
+            return True
+        if action in self._ENTRY_ACTIONS:
+            return self._current_entry() is not None
+        return None
+
     def _build_filter(self) -> dict:
         return {
             'or': [
@@ -1514,6 +1532,10 @@ class InboxContent(BaseEntryContent):
                 },
                 {
                     'property': 'Next Actionable Step',
+                    'rich_text': {'is_empty': True},
+                },
+                {
+                    'property': 'Intended Successful Outcome',
                     'rich_text': {'is_empty': True},
                 },
             ],
