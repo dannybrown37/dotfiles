@@ -657,7 +657,7 @@ class BaseEntryContent(Vertical):
     DEFAULT_CSS = """
     BaseEntryContent { layout: horizontal; height: 1fr; }
     BaseEntryContent #entry-list-pane {
-        width: 44;
+        width: 40%;
         border-right: solid $panel;
     }
     BaseEntryContent #entry-list-header {
@@ -949,8 +949,197 @@ class BaseEntryContent(Vertical):
 # ── Weekly Review Screen ─────────────────────────────────────────────────────
 
 
+async def _review_projects(app: App) -> int:
+    """Walk through each Current Project. Returns count reviewed."""
+    from gtd.notion.client import (  # noqa: PLC0415
+        build_property_update,
+        query_database,
+        update_page,
+    )
+    from gtd.notion.client import archive_page  # noqa: PLC0415
+
+    loop = asyncio.get_running_loop()
+    pages = await loop.run_in_executor(
+        None,
+        lambda: query_database(
+            filter_obj={
+                'property': 'Status',
+                'select': {'equals': 'Current Project'},
+            }
+        ),
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    reviewed = 0
+    for entry in entries:
+        title = entry.header.strip()
+        action = await app.push_screen_wait(
+            SelectModal(
+                f'Project: {title}',
+                [
+                    'Keep — no changes',
+                    'Update next step',
+                    'Move to Someday',
+                    'Mark Done',
+                ],
+            )
+        )
+        if action is None:
+            break
+        reviewed += 1
+        if action == 'Update next step':
+            val = await app.push_screen_wait(
+                InputModal(
+                    'Next actionable step',
+                    entry.next_step or '',
+                    initial=entry.next_step or '',
+                    subtitle=title,
+                )
+            )
+            if val is not None:
+                await loop.run_in_executor(
+                    None,
+                    update_page,
+                    entry.page_id,
+                    build_property_update(next_step=val),
+                )
+        elif action == 'Move to Someday':
+            await loop.run_in_executor(
+                None,
+                update_page,
+                entry.page_id,
+                build_property_update(status='Someday/Maybe'),
+            )
+        elif action == 'Mark Done':
+            confirmed = await app.push_screen_wait(
+                ConfirmModal(f'Archive "{title}"?')
+            )
+            if confirmed:
+                await loop.run_in_executor(None, archive_page, entry.page_id)
+    return reviewed
+
+
+async def _review_waiting_for(app: App) -> int:
+    """Walk through Waiting For items. Returns count reviewed."""
+    from gtd.notion.client import (  # noqa: PLC0415
+        build_property_update,
+        query_database,
+        update_page,
+    )
+    from gtd.notion.client import archive_page  # noqa: PLC0415
+    from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
+
+    loop = asyncio.get_running_loop()
+    pages = await loop.run_in_executor(
+        None,
+        lambda: query_database(
+            filter_obj={
+                'property': 'Status',
+                'select': {'equals': 'Waiting For'},
+            }
+        ),
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    reviewed = 0
+    for entry in entries:
+        title = entry.header.strip()
+        waiting_on = entry.next_step or '(unknown)'
+        action = await app.push_screen_wait(
+            SelectModal(
+                f'Waiting: {title}',
+                [
+                    f'Still waiting on: {waiting_on}',
+                    'Heard back → Mark Done',
+                    'Activate → Current Project',
+                    'Update follow-up date',
+                ],
+            )
+        )
+        if action is None:
+            break
+        reviewed += 1
+        if action and action.startswith('Heard back'):
+            await loop.run_in_executor(None, archive_page, entry.page_id)
+        elif action and action.startswith('Activate'):
+            await loop.run_in_executor(
+                None,
+                update_page,
+                entry.page_id,
+                build_property_update(status='Current Project'),
+            )
+        elif action and action.startswith('Update follow-up'):
+            val = await app.push_screen_wait(
+                InputModal(
+                    'New follow-up date',
+                    'e.g. Friday, in 3 days',
+                    subtitle=title,
+                )
+            )
+            if val:
+                date = _parse_date_input(val)
+                if date:
+                    await loop.run_in_executor(
+                        None,
+                        update_page,
+                        entry.page_id,
+                        build_property_update(follow_up_date=date),
+                    )
+    return reviewed
+
+
+async def _review_someday(app: App) -> int:
+    """Walk through Someday/Maybe items. Returns count reviewed."""
+    from gtd.notion.client import (  # noqa: PLC0415
+        build_property_update,
+        query_database,
+        update_page,
+    )
+    from gtd.notion.client import archive_page  # noqa: PLC0415
+
+    loop = asyncio.get_running_loop()
+    pages = await loop.run_in_executor(
+        None,
+        lambda: query_database(
+            filter_obj={
+                'property': 'Status',
+                'select': {'equals': 'Someday/Maybe'},
+            }
+        ),
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    reviewed = 0
+    for entry in entries:
+        title = entry.header.strip()
+        action = await app.push_screen_wait(
+            SelectModal(
+                f'Someday: {title}',
+                [
+                    'Still someday — skip',
+                    'Activate → Current Project',
+                    'Drop',
+                ],
+            )
+        )
+        if action is None:
+            break
+        reviewed += 1
+        if action and action.startswith('Activate'):
+            await loop.run_in_executor(
+                None,
+                update_page,
+                entry.page_id,
+                build_property_update(status='Current Project'),
+            )
+        elif action and action.startswith('Drop'):
+            confirmed = await app.push_screen_wait(
+                ConfirmModal(f'Drop "{title}"?')
+            )
+            if confirmed:
+                await loop.run_in_executor(None, archive_page, entry.page_id)
+    return reviewed
+
+
 class WeeklyReviewScreen(ModalScreen[bool]):
-    """Interactive checklist for the weekly GTD review."""
+    """Step-by-step guided GTD weekly review."""
 
     DEFAULT_CSS = """
     WeeklyReviewScreen { align: center middle; }
@@ -978,6 +1167,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
         Binding('escape', 'cancel', 'Cancel'),
         Binding('enter,space', 'toggle', 'Check/Launch', show=True),
         Binding('c', 'complete', 'Complete review', show=True),
+        Binding('X', 'reset', 'Reset', show=True),
         Binding('j', 'cursor_down', show=False),
         Binding('k', 'cursor_up', show=False),
         Binding('down', 'cursor_down', show=False),
@@ -992,9 +1182,9 @@ class WeeklyReviewScreen(ModalScreen[bool]):
         super().__init__()
         self._inbox_entries = inbox_entries
         self._inbox_count = inbox_count
-        # Each step: (key, label, done, triage_fn | None)
         self._steps: list[dict] = self._build_steps()
         self._focused = 0
+        self._restore_state()
 
     def _build_steps(self) -> list[dict]:
         if self._inbox_count == 0:
@@ -1005,16 +1195,36 @@ class WeeklyReviewScreen(ModalScreen[bool]):
             c = 's' if n != 1 else ''
             inbox_label = f'Triage inbox  [dim]({n} item{c})[/dim]'
             inbox_done = False
-        manual = [
-            'Review Projects & next actions',
-            'Review Waiting For list',
-            'Review Someday/Maybe list',
-            'Review calendar (past & upcoming)',
-            "Plan next week's priorities",
+        s = {'done': False}
+        return [
+            {'label': inbox_label, 'done': inbox_done, 'action': 'triage'},
+            {**s, 'label': 'Review Projects', 'action': 'projects'},
+            {**s, 'label': 'Review Waiting For', 'action': 'waiting'},
+            {**s, 'label': 'Review Someday/Maybe', 'action': 'someday'},
+            {
+                **s,
+                'label': 'Review calendar (past & upcoming)',
+                'action': 'manual',
+            },
+            {
+                **s,
+                'label': "Plan next week's priorities",
+                'action': 'manual',
+            },
         ]
-        steps = [{'label': inbox_label, 'done': inbox_done, 'triage': True}]
-        steps += [{'label': l, 'done': False, 'triage': False} for l in manual]  # noqa: E741
-        return steps
+
+    def _restore_state(self) -> None:
+        from gtd.storage import load_review_state  # noqa: PLC0415
+
+        saved = load_review_state(len(self._steps))
+        for i, done in enumerate(saved):
+            if done and not self._steps[i]['done']:
+                self._steps[i]['done'] = True
+
+    def _save_state(self) -> None:
+        from gtd.storage import save_review_state  # noqa: PLC0415
+
+        save_review_state([s['done'] for s in self._steps])
 
     def compose(self) -> ComposeResult:
         with Vertical(classes='modal-box'):
@@ -1027,7 +1237,8 @@ class WeeklyReviewScreen(ModalScreen[bool]):
                     classes='review-item',
                 )
             yield Static(
-                '[dim]space: check · c: complete · esc: cancel[/dim]',
+                '[dim]j/k: move · space: launch step · c: complete'
+                ' · X: reset · esc: cancel[/dim]',
                 classes='review-footer',
             )
             yield Button(
@@ -1036,20 +1247,33 @@ class WeeklyReviewScreen(ModalScreen[bool]):
 
     def on_mount(self) -> None:
         self._refresh_steps()
+        # Resume at first undone step
+        for i, step in enumerate(self._steps):
+            if not step['done']:
+                self._focus_step(i)
+                return
         self._focus_step(0)
 
     def _focus_step(self, idx: int) -> None:
         self._focused = max(0, min(idx, len(self._steps) - 1))
-        with contextlib.suppress(Exception):
-            self.query_one(f'#review-step-{self._focused}', Static).focus()
+        self._refresh_steps()
 
     def _refresh_steps(self) -> None:
         for i, step in enumerate(self._steps):
             mark = '[green]✓[/green]' if step['done'] else '[ ]'
+            cursor = (
+                '[bold cyan]►[/bold cyan] ' if i == self._focused else '  '
+            )
             with contextlib.suppress(Exception):
                 self.query_one(f'#review-step-{i}', Static).update(
-                    f'{mark}  {step["label"]}'
+                    f'{cursor}{mark}  {step["label"]}'
                 )
+
+    def _advance(self) -> None:
+        for i in range(self._focused + 1, len(self._steps)):
+            if not self._steps[i]['done']:
+                self._focus_step(i)
+                return
 
     def action_cursor_down(self) -> None:
         self._focus_step(self._focused + 1)
@@ -1063,18 +1287,51 @@ class WeeklyReviewScreen(ModalScreen[bool]):
         if step['done']:
             step['done'] = False
             self._refresh_steps()
+            self._save_state()
             return
-        if step['triage'] and self._inbox_entries:
+
+        action = step['action']
+        if action == 'triage' and self._inbox_entries:
             inbox_content = self.app.query_one(InboxContent)
             inbox_content.seed_entries(self._inbox_entries)
             await inbox_content.triage_entries(self._inbox_entries)
+        elif action == 'projects':
+            n = await _review_projects(self.app)
+            if n > 0:
+                step['label'] = f'Review Projects  [dim]({n} reviewed)[/dim]'
+        elif action == 'waiting':
+            n = await _review_waiting_for(self.app)
+            if n > 0:
+                step['label'] = (
+                    f'Review Waiting For  [dim]({n} reviewed)[/dim]'
+                )
+        elif action == 'someday':
+            n = await _review_someday(self.app)
+            if n > 0:
+                step['label'] = (
+                    f'Review Someday/Maybe  [dim]({n} reviewed)[/dim]'
+                )
+
         step['done'] = True
         self._refresh_steps()
-        # Auto-advance to next undone step
-        for i in range(self._focused + 1, len(self._steps)):
-            if not self._steps[i]['done']:
-                self._focus_step(i)
-                return
+        self._save_state()
+        self._advance()
+
+    @work
+    async def action_reset(self) -> None:
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal('Reset weekly review progress?')
+        )
+        if not confirmed:
+            return
+        from gtd.storage import reset_review_state  # noqa: PLC0415
+
+        reset_review_state()
+        for step in self._steps:
+            step['done'] = False
+        self._refresh_steps()
+        self._focus_step(0)
+        self.app.notify('Review progress reset')
 
     def action_complete(self) -> None:
         self.dismiss(result=True)
@@ -1328,15 +1585,26 @@ class TodayContent(BaseEntryContent):
             inbox_filter = {
                 'or': [
                     {'property': 'Status', 'select': {'equals': 'Triage'}},
-                    {'property': 'Status', 'select': {'equals': 'Inbox'}},
+                    {'property': 'Status', 'select': {'is_empty': True}},
+                    {'property': 'Context', 'select': {'is_empty': True}},
+                    {
+                        'property': 'Next Actionable Step',
+                        'rich_text': {'is_empty': True},
+                    },
+                    {
+                        'property': 'Success Condition',
+                        'rich_text': {'is_empty': True},
+                    },
                 ]
             }
-            inbox_entries = await loop.run_in_executor(
-                None, query_database, inbox_filter
+            pages = await loop.run_in_executor(
+                None,
+                lambda: query_database(filter_obj=inbox_filter),
             )
+            inbox_entries = [ProjectEntry.from_page(p) for p in pages]
             inbox_count = len(inbox_entries)
         except Exception:
-            inbox_count = -1
+            inbox_count = 0
 
         return (
             await self.app.push_screen_wait(
