@@ -178,6 +178,10 @@ _MODAL_CSS = """
     text-style: bold;
     margin-bottom: 1;
 }
+.modal-subtitle {
+    color: $text-muted;
+    margin-bottom: 1;
+}
 .field-label {
     margin-top: 1;
     color: $text-muted;
@@ -206,16 +210,23 @@ class InputModal(ModalScreen[str | None]):
     BINDINGS: ClassVar[list[Binding]] = [Binding('escape', 'cancel', 'Cancel')]
 
     def __init__(
-        self, title: str, placeholder: str = '', initial: str = ''
+        self,
+        title: str,
+        placeholder: str = '',
+        initial: str = '',
+        subtitle: str = '',
     ) -> None:
         super().__init__()
         self._title = title
         self._placeholder = placeholder
         self._initial = initial
+        self._subtitle = subtitle
 
     def compose(self) -> ComposeResult:
         with Vertical(classes='modal-box'):
             yield Label(self._title, classes='modal-title')
+            if self._subtitle:
+                yield Label(self._subtitle, classes='modal-subtitle')
             yield Input(
                 value=self._initial,
                 placeholder=self._placeholder,
