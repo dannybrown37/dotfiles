@@ -36,7 +36,7 @@ def _get_triage_entries() -> list[ProjectEntry]:
                     'rich_text': {'is_empty': True},
                 },
                 {
-                    'property': 'Intended Successful Outcome',
+                    'property': 'Success Condition',
                     'rich_text': {'is_empty': True},
                 },
             ],
@@ -87,11 +87,11 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, 
     if next_step is None:
         return False
 
-    # Intended Successful Outcome
-    intended_outcome = prompt_input(
-        'Intended successful outcome (what does done look like?): ',
+    # Success Condition
+    success_condition = prompt_input(
+        'Success condition (what does done look like?): ',
     )
-    if intended_outcome is None:
+    if success_condition is None:
         return False
 
     # Optional Due Date
@@ -136,7 +136,7 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, 
         status=status,
         context=context,
         next_step=next_step or None,
-        intended_outcome=intended_outcome or None,
+        success_condition=success_condition or None,
         due_date=due_iso,
         follow_up_date=follow_up_iso,
     )

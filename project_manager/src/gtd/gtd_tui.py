@@ -68,7 +68,7 @@ def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:
     lines.append(row('Status', entry.status))
     lines.append(row('Context', entry.context))
     lines.append(row('Next step', entry.next_step))
-    lines.append(row('Outcome', entry.intended_outcome))
+    lines.append(row('Success condition', entry.success_condition))
     if entry.due_date:
         lines.append(row('Due', entry.due_date, 'yellow'))
     if entry.follow_up_date:
@@ -491,14 +491,14 @@ async def _prompt_and_get_props(
             InputModal('Next Actionable Step', initial=entry.next_step)
         )
         props = {'next_step': value} if value is not None else None
-    elif choice == 'Intended outcome':
+    elif choice == 'Success condition':
         value = await app.push_screen_wait(
             InputModal(
-                'Intended Successful Outcome',
-                initial=entry.intended_outcome,
+                'Success Condition',
+                initial=entry.success_condition,
             )
         )
-        props = {'intended_outcome': value} if value is not None else None
+        props = {'success_condition': value} if value is not None else None
     elif choice in ('Follow-up date', 'Due date'):
         value = await app.push_screen_wait(
             InputModal(choice, 'e.g. Monday, Jul 15, blank to clear')
@@ -526,7 +526,7 @@ async def _shared_update_entry(
         'Status',
         'Context',
         'Next actionable step',
-        'Intended outcome',
+        'Success condition',
         'Follow-up date',
         'Due date',
     ]
@@ -1537,7 +1537,7 @@ class InboxContent(BaseEntryContent):
                     'rich_text': {'is_empty': True},
                 },
                 {
-                    'property': 'Intended Successful Outcome',
+                    'property': 'Success Condition',
                     'rich_text': {'is_empty': True},
                 },
             ],
@@ -1637,17 +1637,17 @@ class InboxContent(BaseEntryContent):
             if next_step:
                 kwargs['next_step'] = next_step
 
-        if not entry.intended_outcome:
-            intended_outcome = await self.app.push_screen_wait(
+        if not entry.success_condition:
+            success_condition = await self.app.push_screen_wait(
                 InputModal(
-                    'Intended successful outcome',
+                    'Success condition',
                     'What does done look like?',
                 )
             )
-            if intended_outcome is None:
+            if success_condition is None:
                 return None
-            if intended_outcome:
-                kwargs['intended_outcome'] = intended_outcome
+            if success_condition:
+                kwargs['success_condition'] = success_condition
 
         if not entry.due_date:
             due_str = await self.app.push_screen_wait(
