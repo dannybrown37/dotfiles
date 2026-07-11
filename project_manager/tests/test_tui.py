@@ -3,7 +3,12 @@ from datetime import datetime, timedelta
 import pytest
 
 from gtd.models import Goal, Tactic, Todo, Update
-from gtd.tui import _render_goal_detail, _render_score_history
+from gtd.tui import (
+    _parse_updates_from_text,
+    _render_goal_detail,
+    _render_score_history,
+    _serialize_updates,
+)
 
 
 def _make_goal(**kwargs) -> Goal:
@@ -198,3 +203,97 @@ class TestRenderScoreHistory:
         )
         result = _render_score_history(goal)
         assert expected_indicator in result
+
+
+# --- _serialize_updates / _parse_updates_from_text round-trip ---
+
+
+class TestSerializeUpdates:
+    def test_empty_updates_produces_only_header_lines(self):
+        result = _serialize_updates([])
+        lines = [
+            ln for ln in result.splitlines()
+            if ln and not ln.startswith('#')
+        ]
+        assert lines == []
+
+    def test_single_update_serialized(self):
+        updates = [Update(date='2026-07-01', note='Did the thing')]
+        result = _serialize_updates(updates)
+        assert '2026-07-01: Did the thing' in result
+
+    def test_multiple_updates_all_present(self):
+        updates = [
+            Update(date='2026-07-01', note='First'),
+            Update(date='2026-07-02', note='Second'),
+        ]
+        result = _serialize_updates(updates)
+        assert '2026-07-01: First' in result
+        assert '2026-07-02: Second' in result
+
+    def test_datetime_truncated_to_date(self):
+        updates = [Update(date='2026-07-11T09:30:00', note='Morning run')]
+        result = _serialize_updates(updates)
+        assert '2026-07-11: Morning run' in result
+        assert 'T09:30' not in result
+
+
+class TestParseUpdatesFromText:
+    def test_basic_round_trip(self):
+        updates = [
+            Update(date='2026-07-01', note='Did it'),
+            Update(date='2026-07-03', note='Did it again'),
+        ]
+        text = _serialize_updates(updates)
+        parsed = _parse_updates_from_text(text)
+        assert len(parsed) == 2
+        assert parsed[0].note == 'Did it'
+        assert parsed[1].date == '2026-07-03'
+
+    def test_comments_and_blank_lines_ignored(self):
+        text = '# This is a comment\n\n2026-07-05: Real entry\n\n'
+        parsed = _parse_updates_from_text(text)
+        assert len(parsed) == 1
+        assert parsed[0].note == 'Real entry'
+
+    def test_deleted_line_removes_entry(self):
+        updates = [
+            Update(date='2026-07-01', note='Keep me'),
+            Update(date='2026-07-02', note='Delete me'),
+        ]
+        text = _serialize_updates(updates)
+        trimmed = '\n'.join(
+            ln for ln in text.splitlines() if 'Delete me' not in ln
+        )
+        parsed = _parse_updates_from_text(trimmed)
+        assert len(parsed) == 1
+        assert parsed[0].note == 'Keep me'
+
+    def test_edited_note_preserved(self):
+        parsed = _parse_updates_from_text('2026-07-10: Edited note')
+        assert parsed[0].note == 'Edited note'
+
+    def test_malformed_lines_skipped(self):
+        text = 'not-a-date: something\n2026-07-10: good line\njunk'
+        parsed = _parse_updates_from_text(text)
+        assert len(parsed) == 1
+        assert parsed[0].date == '2026-07-10'
+
+    def test_note_with_colon_preserved(self):
+        text = '2026-07-10: Step 1: do the thing'
+        parsed = _parse_updates_from_text(text)
+        assert parsed[0].note == 'Step 1: do the thing'
+
+    @pytest.mark.parametrize(
+        ('date_input', 'expected_date'),
+        [
+            ('2026-07-11', '2026-07-11'),
+            ('2026-07-01', '2026-07-01'),
+        ],
+    )
+    def test_valid_iso_dates_accepted(
+        self, date_input: str, expected_date: str
+    ):
+        parsed = _parse_updates_from_text(f'{date_input}: Some note')
+        assert len(parsed) == 1
+        assert parsed[0].date == expected_date

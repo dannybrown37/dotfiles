@@ -57,6 +57,7 @@ def _entry(**kwargs) -> ProjectEntry:
         'status': 'Current Project',
         'context': 'Home',
         'next_step': 'Go to store',
+        'intended_outcome': 'Fridge fully stocked',
         'due_date': None,
         'follow_up_date': None,
         'created_date': '2026-07-01T00:00:00',
@@ -115,6 +116,16 @@ class TestRenderEntryDetail:
 
     def test_empty_next_step_shows_none(self):
         result = _render_entry_detail(_entry(next_step=''))
+        assert '(none)' in result
+
+    def test_shows_intended_outcome(self):
+        result = _render_entry_detail(
+            _entry(intended_outcome='Ship the feature')
+        )
+        assert 'Ship the feature' in result
+
+    def test_empty_intended_outcome_shows_none(self):
+        result = _render_entry_detail(_entry(intended_outcome=''))
         assert '(none)' in result
 
     def test_multiline_notes_shown(self):

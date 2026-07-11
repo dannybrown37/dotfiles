@@ -12,7 +12,7 @@ from gtd.notion.client import (
     _handle_response,
     build_property_update,
 )
-from gtd.notion.entries import _parse_date_input
+from gtd.notion.entries import _entry_preview_text, _parse_date_input
 from gtd.notion.log import (
     _infer_cadence,
     _infer_reschedule_days,
@@ -115,6 +115,7 @@ def _make_page(
     header: str = 'Test',
     context: str = 'Work',
     next_step: str = 'Do it',
+    intended_outcome: str = 'Done',
 ) -> dict:
     return {
         'id': 'page-1',
@@ -127,6 +128,13 @@ def _make_page(
             },
             'Next Actionable Step': {
                 'rich_text': [{'plain_text': next_step}] if next_step else [],
+            },
+            'Intended Successful Outcome': {
+                'rich_text': (
+                    [{'plain_text': intended_outcome}]
+                    if intended_outcome
+                    else []
+                ),
             },
             'Due Date': {'date': None},
             'Follow-Up Date': {'date': None},
@@ -157,6 +165,7 @@ def _make_triage_page(
     status: str = 'Triage',
     context: str = '',
     next_step: str = '',
+    intended_outcome: str = '',
 ) -> dict:
     return {
         'id': 'page-triage-1',
@@ -171,6 +180,13 @@ def _make_triage_page(
             },
             'Next Actionable Step': {
                 'rich_text': [{'plain_text': next_step}] if next_step else [],
+            },
+            'Intended Successful Outcome': {
+                'rich_text': (
+                    [{'plain_text': intended_outcome}]
+                    if intended_outcome
+                    else []
+                ),
             },
             'Due Date': {'date': None},
             'Follow-Up Date': {'date': None},
@@ -284,6 +300,7 @@ class TestCadenceInference:
             status='Current Project',
             context='Home',
             next_step='Sit',
+            intended_outcome='Feel centered',
             due_date=None,
             follow_up_date=None,
             created_date='2026-06-01',
@@ -309,3 +326,89 @@ class TestBuildPropertyUpdate:
         assert 'Due Date' not in props
         assert 'Follow-Up Date' not in props
         assert 'Header' not in props
+        assert 'Intended Successful Outcome' not in props
+
+    def test_intended_outcome_included_when_set(self):
+        props = build_property_update(intended_outcome='Ship the feature')
+        assert props['Intended Successful Outcome'] == {
+            'rich_text': [{'text': {'content': 'Ship the feature'}}]
+        }
+
+    def test_intended_outcome_none_omits_field(self):
+        props = build_property_update(next_step='Do it')
+        assert 'Intended Successful Outcome' not in props
+
+
+# --- ProjectEntry.from_page: parses intended_outcome ---
+
+
+class TestProjectEntryFromPage:
+    def test_parses_intended_outcome(self):
+        page = _make_page(intended_outcome='Inbox zero maintained')
+        entry = ProjectEntry.from_page(page)
+        assert entry.intended_outcome == 'Inbox zero maintained'
+
+    def test_empty_intended_outcome_defaults_to_empty_string(self):
+        page = _make_page(intended_outcome='')
+        entry = ProjectEntry.from_page(page)
+        assert entry.intended_outcome == ''
+
+    def test_missing_iso_property_defaults_to_empty_string(self):
+        """Pages created before the ISO field was added parse gracefully."""
+        page = _make_page()
+        del page['properties']['Intended Successful Outcome']
+        entry = ProjectEntry.from_page(page)
+        assert entry.intended_outcome == ''
+
+
+# --- _get_triage_entries: items missing ISO appear for triage ---
+
+
+class TestTriageIncludesItemsMissingISO:
+    @patch('gtd.notion.triage.query_database')
+    def test_items_missing_iso_appear_in_triage(self, mock_db):
+        """Projects without an ISO must surface for triage."""
+        mock_db.return_value = [
+            _make_triage_page(
+                header='No outcome set',
+                status='Current Project',
+                context='Work',
+                next_step='Do something',
+                intended_outcome='',
+            ),
+        ]
+        results = _get_triage_entries()
+        assert len(results) == 1
+        assert results[0].header == 'No outcome set'
+
+    @patch('gtd.notion.triage.query_database')
+    def test_filter_includes_iso_condition(self, mock_db):
+        """The query sent to Notion must include an ISO-empty condition."""
+        mock_db.return_value = []
+        _get_triage_entries()
+        call_kwargs = mock_db.call_args.kwargs
+        filter_obj = call_kwargs.get('filter_obj', {})
+        conditions = filter_obj.get('or', [])
+        iso_condition = {
+            'property': 'Intended Successful Outcome',
+            'rich_text': {'is_empty': True},
+        }
+        assert iso_condition in conditions
+
+
+# --- _entry_preview_text: outcome shown in fzf preview ---
+
+
+class TestEntryPreviewText:
+    @pytest.mark.parametrize(
+        ('outcome', 'expected'),
+        [
+            ('Project shipped', 'Project shipped'),
+            ('', '(none)'),
+        ],
+    )
+    def test_outcome_shown_in_preview(self, outcome: str, expected: str):
+        page = _make_page(intended_outcome=outcome)
+        entry = ProjectEntry.from_page(page)
+        result = _entry_preview_text(entry)
+        assert expected in result

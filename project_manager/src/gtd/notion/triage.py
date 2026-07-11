@@ -35,13 +35,17 @@ def _get_triage_entries() -> list[ProjectEntry]:
                     'property': 'Next Actionable Step',
                     'rich_text': {'is_empty': True},
                 },
+                {
+                    'property': 'Intended Successful Outcome',
+                    'rich_text': {'is_empty': True},
+                },
             ],
         },
     )
     return [ProjectEntry.from_page(p) for p in pages]
 
 
-def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0912
+def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, PLR0912
     """Process one triage item. Returns True if processed, False if skipped."""
     body = get_page_body(entry.page_id)
     preview = _escape_for_shell(_entry_preview_text(entry, body))
@@ -81,6 +85,13 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0912
     else:
         next_step = prompt_input('Next actionable step: ')
     if next_step is None:
+        return False
+
+    # Intended Successful Outcome
+    intended_outcome = prompt_input(
+        'Intended successful outcome (what does done look like?): ',
+    )
+    if intended_outcome is None:
         return False
 
     # Optional Due Date
@@ -125,6 +136,7 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0912
         status=status,
         context=context,
         next_step=next_step or None,
+        intended_outcome=intended_outcome or None,
         due_date=due_iso,
         follow_up_date=follow_up_iso,
     )

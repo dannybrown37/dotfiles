@@ -15,6 +15,7 @@ class ProjectEntry:
     status: str
     context: str
     next_step: str
+    intended_outcome: str
     due_date: str | None
     follow_up_date: str | None
     created_date: str
@@ -29,6 +30,9 @@ class ProjectEntry:
             context=_get_select(props.get('Context', {})),
             next_step=_get_rich_text(
                 props.get('Next Actionable Step', {}),
+            ),
+            intended_outcome=_get_rich_text(
+                props.get('Intended Successful Outcome', {}),
             ),
             due_date=_get_date(props.get('Due Date', {})),
             follow_up_date=_get_date(props.get('Follow-Up Date', {})),
