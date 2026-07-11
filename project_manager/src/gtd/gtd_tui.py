@@ -767,7 +767,20 @@ class BaseEntryContent(Vertical):
 
     def _remove_entry(self, page_id: str) -> None:
         self._entries = [e for e in self._entries if e.page_id != page_id]
-        self._set_entries(self._entries)
+        lv = self.query_one('#entry-list', VimListView)
+        for child in lv.query(EntryListItem):
+            if child.page_id == page_id:
+                child.remove()
+                break
+        header = self.query_one('#entry-list-header', Static)
+        detail = self.query_one('#entry-detail', Static)
+        if not self._entries:
+            header.update(f'{self.TITLE} — empty')
+            detail.update(f'[dim]{self.EMPTY_MSG}[/dim]')
+        else:
+            header.update(f'{self.TITLE}  [dim]({len(self._entries)})[/dim]')
+        lv.focus()
+        self._update_detail()
 
     def action_refresh(self) -> None:
         self._entries = []
@@ -835,15 +848,21 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _done_worker(self, page_id: str) -> None:
-        from gtd.notion.client import archive_page  # noqa: PLC0415
+        from gtd.notion.client import NotionAPIError, archive_page  # noqa: PLC0415
 
-        archive_page(page_id)
+        with contextlib.suppress(NotionAPIError):
+            archive_page(page_id)
 
     @work(thread=True)
     def _update_worker(self, page_id: str, props: dict) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import (  # noqa: PLC0415
+            NotionAPIError,
+            build_property_update,
+            update_page,
+        )
 
-        update_page(page_id, build_property_update(**props))
+        with contextlib.suppress(NotionAPIError):
+            update_page(page_id, build_property_update(**props))
 
     @work
     async def action_log_and_reschedule(self) -> None:
@@ -873,9 +892,10 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _drop_worker(self, page_id: str) -> None:
-        from gtd.notion.client import archive_page  # noqa: PLC0415
+        from gtd.notion.client import NotionAPIError, archive_page  # noqa: PLC0415
 
-        archive_page(page_id)
+        with contextlib.suppress(NotionAPIError):
+            archive_page(page_id)
 
     async def action_activate(self) -> None:
         entry = self._current_entry()
