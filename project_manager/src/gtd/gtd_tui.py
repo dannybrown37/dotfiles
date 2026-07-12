@@ -2116,26 +2116,34 @@ class InboxContent(BaseEntryContent):
 
     def _build_filter(self) -> dict:
         return {
-            'or': [
+            'and': [
                 {
                     'property': 'Status',
-                    'select': {'equals': 'Triage'},
+                    'select': {'does_not_equal': 'List'},
                 },
                 {
-                    'property': 'Status',
-                    'select': {'is_empty': True},
-                },
-                {
-                    'property': 'Context',
-                    'select': {'is_empty': True},
-                },
-                {
-                    'property': 'Next Actionable Step',
-                    'rich_text': {'is_empty': True},
-                },
-                {
-                    'property': 'Success Condition',
-                    'rich_text': {'is_empty': True},
+                    'or': [
+                        {
+                            'property': 'Status',
+                            'select': {'equals': 'Triage'},
+                        },
+                        {
+                            'property': 'Status',
+                            'select': {'is_empty': True},
+                        },
+                        {
+                            'property': 'Context',
+                            'select': {'is_empty': True},
+                        },
+                        {
+                            'property': 'Next Actionable Step',
+                            'rich_text': {'is_empty': True},
+                        },
+                        {
+                            'property': 'Success Condition',
+                            'rich_text': {'is_empty': True},
+                        },
+                    ],
                 },
             ],
         }
@@ -2234,12 +2242,32 @@ class InboxContent(BaseEntryContent):
             contexts = await asyncio.get_running_loop().run_in_executor(
                 None, get_select_options, 'Context'
             )
-            context = await self.app.push_screen_wait(
-                SelectModal(f'Context: {title}', contexts, allow_new=True)
-            )
+            if status == 'List':
+                list_contexts = sorted(
+                    set(LIST_CONTEXTS)
+                    | {e.context for e in self._entries if e.context}
+                )
+                context = await self.app.push_screen_wait(
+                    SelectModal(
+                        f'Which list? {title}', list_contexts, allow_new=True
+                    )
+                )
+            else:
+                context = await self.app.push_screen_wait(
+                    SelectModal(f'Context: {title}', contexts, allow_new=True)
+                )
             if context is None:
                 return None
             kwargs['context'] = context
+
+        if status == 'List':
+            props = build_property_update(**kwargs)
+            await asyncio.get_running_loop().run_in_executor(
+                None, update_page, entry.page_id, props
+            )
+            ctx = kwargs.get('context', entry.context)
+            self.app.notify(f'✓ "{title}" → List [{ctx}]')
+            return True
 
         if not entry.next_step:
             if status == 'Waiting For':
@@ -2702,9 +2730,199 @@ class SnoozedContent(BaseEntryContent):
         }
 
 
-class GTDApp(App[None]):
-    """Unified GTD + Goals TUI."""
+# ── Lists content ────────────────────────────────────────────────────────────
 
+LIST_CONTEXTS: list[str] = [
+    'Weekend Trips to Take',
+    'Fun Things to Do with Elliott',
+    'Restaurants to Try',
+    'Recipes to Try',
+    'Books to Read',
+    'Things to Watch',
+    'Websites to Surf',
+    'Software to Try',
+    'Musicals to See',
+    'Bands to See',
+]
+
+
+def _render_list_item_detail(entry: ProjectEntry, notes: str | None) -> str:
+    lines = [
+        f'[bold cyan]{entry.header.strip()}[/bold cyan]',
+        f'[dim]{entry.context}[/dim]' if entry.context else '',
+        '',
+    ]
+    if notes is None:
+        lines.append('[dim]Loading notes...[/dim]')
+    elif notes.strip():
+        lines.append('[dim]── Notes ──[/dim]')
+        for line in notes.split('\n'):
+            lines.append(f'  {line}' if line.strip() else '')
+    else:
+        lines.append('[dim]No notes. Press E to add.[/dim]')
+    return '\n'.join(lines)
+
+
+class ListsContent(BaseEntryContent):
+    """Curated reference lists backed by Notion (Status=List)."""
+
+    TITLE: ClassVar[str] = 'Lists'
+    EMPTY_MSG: ClassVar[str] = 'No list items.'
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('N', 'add_item', 'Add'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('D', 'drop_entry', 'Drop'),
+        Binding('F', 'filter_list', 'Filter list'),
+    ]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._list_filter: str | None = None
+
+    def _build_filter(self) -> dict:
+        return {'property': 'Status', 'select': {'equals': 'List'}}
+
+    def _set_entries(self, entries: list[ProjectEntry]) -> None:
+        entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
+        self._entries = entries
+        with contextlib.suppress(Exception):
+            self.query_one('#entry-loading', LoadingIndicator).display = False
+        self._rebuild_list()
+
+    def _rebuild_list(self) -> None:
+        filtered = (
+            [e for e in self._entries if e.context == self._list_filter]
+            if self._list_filter
+            else self._entries
+        )
+        lv = self.query_one('#entry-list', VimListView)
+        lv.clear()
+        current_ctx: str | None = None
+        for entry in filtered:
+            ctx = entry.context or ''
+            if ctx != current_ctx:
+                current_ctx = ctx
+                lv.append(SeparatorListItem(ctx or '(no list)'))
+            lv.append(EntryListItem(entry))
+
+        header = self.query_one('#entry-list-header', Static)
+        detail = self.query_one('#entry-detail', Static)
+        total = len(self._entries)
+        shown = len(filtered)
+        ctx_badge = (
+            f'  [yellow][{self._list_filter}][/yellow]'
+            if self._list_filter
+            else ''
+        )
+        count = f'({shown}/{total})' if self._list_filter else f'({total})'
+
+        if not filtered:
+            header.update(f'{self.TITLE} — empty')
+            detail.update(f'[dim]{self.EMPTY_MSG}[/dim]')
+        else:
+            header.update(f'{self.TITLE}  [dim]{count}[/dim]{ctx_badge}')
+            lv.index = 0
+            self._update_detail()
+
+    def _current_entry(self) -> ProjectEntry | None:
+        item = self.query_one('#entry-list', VimListView).highlighted_child
+        if not isinstance(item, EntryListItem):
+            return None
+        return next(
+            (e for e in self._entries if e.page_id == item.page_id), None
+        )
+
+    def _update_detail(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        notes = self._notes.get(entry.page_id)
+        self.query_one('#entry-detail', Static).update(
+            _render_list_item_detail(entry, notes)
+        )
+        if entry.page_id not in self._notes:
+            self._load_notes(entry.page_id)
+
+    def action_refresh(self) -> None:
+        self._list_filter = None
+        super().action_refresh()
+
+    @work
+    async def action_add_item(self) -> None:
+        from gtd.notion.client import (  # noqa: PLC0415
+            get_projects_db_id,
+            get_token,
+            NOTION_API_URL,
+            NOTION_VERSION,
+        )
+        import httpx  # noqa: PLC0415
+        from gtd.notion.client import _handle_response  # noqa: PLC0415
+        from datetime import UTC, datetime as _dt  # noqa: PLC0415
+
+        contexts = sorted({e.context for e in self._entries if e.context})
+        all_lists = list(dict.fromkeys(LIST_CONTEXTS + contexts))
+
+        if self._list_filter:
+            target = self._list_filter
+        else:
+            target = await self.app.push_screen_wait(
+                SelectModal('Add to which list?', all_lists)
+            )
+            if not target:
+                return
+
+        name = await self.app.push_screen_wait(
+            InputModal(f'Add to {target}', 'Item name')
+        )
+        if not name:
+            return
+
+        loop = asyncio.get_running_loop()
+        db_id = await loop.run_in_executor(None, get_projects_db_id)
+        token = await loop.run_in_executor(None, get_token)
+        url = f'{NOTION_API_URL}/pages'
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+            'Notion-Version': NOTION_VERSION,
+        }
+        payload = {
+            'parent': {'database_id': db_id},
+            'properties': {
+                'Header': {'title': [{'text': {'content': name.strip()}}]},
+                'Status': {'select': {'name': 'List'}},
+                'Context': {'select': {'name': target}},
+                'Created Date': {
+                    'date': {
+                        'start': _dt.now(tz=UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+                    }
+                },
+            },
+        }
+        response = await loop.run_in_executor(
+            None,
+            lambda: httpx.post(url, headers=headers, json=payload),
+        )
+        _handle_response(response)
+        self._load_entries()
+        self.app.notify(f'✓ Added "{name.strip()}" to {target}')
+
+    @work
+    async def action_filter_list(self) -> None:
+        contexts = sorted({e.context for e in self._entries if e.context})
+        all_lists = list(dict.fromkeys(LIST_CONTEXTS + contexts))
+        options = ['(All)', *all_lists]
+        choice = await self.app.push_screen_wait(
+            SelectModal('Show which list?', options)
+        )
+        if choice is None:
+            return
+        self._list_filter = None if choice == '(All)' else choice
+        self._rebuild_list()
+
+
+class GTDApp(App[None]):
     TITLE = 'GTD'
     COMMANDS: ClassVar[set] = set()
     ENABLE_COMMAND_PALETTE = False
@@ -2747,6 +2965,8 @@ class GTDApp(App[None]):
                 yield RecurringContent()
             with TabPane('Someday', id='tab-someday'):
                 yield SomedayContent()
+            with TabPane('Lists', id='tab-lists'):
+                yield ListsContent()
             with TabPane('Goals', id='tab-goals'):
                 yield GoalsContent()
         yield SplitFooter()
@@ -2793,6 +3013,9 @@ class GTDApp(App[None]):
             pane = tc.query_one(f'#{tc.active}', TabPane)
             with contextlib.suppress(Exception):
                 pane.query_one(BaseEntryContent).action_refresh()
+                return
+            with contextlib.suppress(Exception):
+                pane.query_one(ListsContent).action_refresh()
                 return
             pane.query_one(GoalsContent).action_refresh_goals()
 

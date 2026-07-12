@@ -6,6 +6,7 @@ STATUSES = [
     'Recurring',
     'Waiting For',
     'Someday/Maybe',
+    'List',
 ]
 
 STATUS_ICONS = {
@@ -14,6 +15,7 @@ STATUS_ICONS = {
     'Triage': '🟣',
     'Waiting For': '🔵',
     'Someday/Maybe': '💭',
+    'List': '📋',
 }
 
 DEFAULT_CONTEXTS = [

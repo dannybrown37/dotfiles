@@ -136,10 +136,11 @@ def save_areas(areas: list[dict]) -> None:
 
 
 def get_stored_goal_names() -> list[str]:
+    excluded = {'config.json', 'weekly_habits.json', 'areas.json'}
     return [
         f.stem
         for f in sorted(OUTPUT_PATH.glob('*.json'))
-        if f.name not in ('config.json', 'weekly_habits.json', 'areas.json')
+        if f.name not in excluded
     ]
 
 
