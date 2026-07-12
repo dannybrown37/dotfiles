@@ -136,7 +136,12 @@ def save_areas(areas: list[dict]) -> None:
 
 
 def get_stored_goal_names() -> list[str]:
-    excluded = {'config.json', 'weekly_habits.json', 'areas.json'}
+    excluded = {
+        'config.json',
+        'weekly_habits.json',
+        'areas.json',
+        'list_categories.json',
+    }
     return [
         f.stem
         for f in sorted(OUTPUT_PATH.glob('*.json'))
@@ -146,3 +151,17 @@ def get_stored_goal_names() -> list[str]:
 
 def get_archived_goal_names() -> list[str]:
     return [f.stem for f in sorted(ARCHIVE_PATH.glob('*.json'))]
+
+
+LIST_CATEGORIES_PATH = OUTPUT_PATH / 'list_categories.json'
+
+
+def load_list_categories(defaults: list[str]) -> list[str]:
+    """Return persisted list categories, seeded with defaults if missing."""
+    if LIST_CATEGORIES_PATH.exists():
+        return json.loads(LIST_CATEGORIES_PATH.read_text())
+    return list(defaults)
+
+
+def save_list_categories(categories: list[str]) -> None:
+    LIST_CATEGORIES_PATH.write_text(json.dumps(categories, indent=2) + '\n')

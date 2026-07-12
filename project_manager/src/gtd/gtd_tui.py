@@ -499,6 +499,10 @@ class SeparatorListItem(ListItem):
         super().__init__(disabled=True)
         self._label = label
 
+    @property
+    def raw_label(self) -> str:
+        return self._label
+
     def compose(self) -> ComposeResult:
         yield Label(f'[dim]── {self._label} ──[/dim]', markup=True)
 
@@ -608,7 +612,6 @@ async def _shared_update_entry(
 
     fields = [
         'Name',
-        'Status',
         'Context',
         'Steps',
         'Success condition',
@@ -1729,8 +1732,8 @@ class TodayContent(BaseEntryContent):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('W', 'complete_habit', 'Complete'),
         Binding('T', 'wait_tomorrow', 'Tomorrow'),
-        Binding('S', 'set_status', 'Status'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('S', 'edit_steps', 'Steps'),
+        Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'mark_done', 'Done'),
         Binding('L', 'log_tactic', 'Log Update'),
         Binding('U', 'update_entry', 'Update'),
@@ -1739,7 +1742,7 @@ class TodayContent(BaseEntryContent):
 
     _GTD_ACTIONS: ClassVar[set[str]] = {
         'wait_tomorrow',
-        'set_status',
+        'edit_steps',
         'update_entry',
         'edit_notes',
         'mark_done',
@@ -2027,17 +2030,22 @@ class TodayContent(BaseEntryContent):
         self.app.notify(f'✓ "{entry.header.strip()}" → {tomorrow}')
 
     @work
-    async def action_set_status(self) -> None:
+    async def action_edit_steps(self) -> None:
         entry = self._current_entry()
         if not entry:
             return
-        props = await _prompt_and_get_props(self.app, entry, 'Status')
-        if not props:
+        val = await _open_steps_editor(
+            self.app, initial_text=entry.next_step or ''
+        )
+        if val is None:
             return
-        self._update_worker(entry.page_id, props)
-        self._remove_entry_and_refocus(entry.page_id)
-        status = props.get('status', '')
-        self.app.notify(f'✓ "{entry.header.strip()}" → {status}')
+        self._update_worker(
+            entry.page_id,
+            {'next_step': val},
+        )
+        entry.next_step = val
+        self._update_detail()
+        self.app.notify('✓ Steps updated')
 
     @work(thread=True)
     def _snooze_worker(self, page_id: str, date: str) -> None:
@@ -2161,7 +2169,7 @@ class InboxContent(BaseEntryContent):
         Binding('T', 'triage_entry', 'Triage'),
         Binding('A', 'triage_all', 'Triage All'),
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'drop_entry', 'Drop'),
     ]
 
@@ -2513,9 +2521,10 @@ class ProjectsContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('S', 'edit_steps', 'Steps'),
+        Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'mark_done', 'Done'),
-        Binding('S', 'move_someday', 'Someday'),
+        Binding('M', 'move_someday', 'Someday'),
     ]
 
     def _build_filter(self) -> dict:
@@ -2569,6 +2578,21 @@ class ProjectsContent(BaseEntryContent):
             (e for e in self._entries if e.page_id == item.page_id), None
         )
 
+    @work
+    async def action_edit_steps(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        val = await _open_steps_editor(
+            self.app, initial_text=entry.next_step or ''
+        )
+        if val is None:
+            return
+        self._update_worker(entry.page_id, {'next_step': val})
+        entry.next_step = val
+        self._update_detail()
+        self.app.notify('✓ Steps updated')
+
 
 # ── Next Steps content ───────────────────────────────────────────────────────
 
@@ -2581,7 +2605,8 @@ class NextStepsContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('S', 'edit_steps', 'Steps'),
+        Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'mark_done', 'Done'),
         Binding('X', 'complete_step', 'Complete Step'),
         Binding('F', 'filter_context', 'Filter ctx'),
@@ -2661,6 +2686,21 @@ class NextStepsContent(BaseEntryContent):
         self._ctx_filter = None if choice == '(All)' else choice
         self._rebuild_list()
 
+    @work
+    async def action_edit_steps(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        val = await _open_steps_editor(
+            self.app, initial_text=entry.next_step or ''
+        )
+        if val is None:
+            return
+        self._update_worker(entry.page_id, {'next_step': val})
+        entry.next_step = val
+        self._update_detail()
+        self.app.notify('✓ Steps updated')
+
 
 # ── Recurring content ────────────────────────────────────────────────────────
 
@@ -2673,7 +2713,7 @@ class RecurringContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'drop_entry', 'Drop'),
     ]
 
@@ -2696,7 +2736,7 @@ class WaitingForContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'mark_done', 'Done'),
         Binding('A', 'activate', 'Activate'),
     ]
@@ -2720,7 +2760,7 @@ class SomedayContent(BaseEntryContent):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('A', 'activate', 'Activate'),
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'drop_entry', 'Drop'),
     ]
 
@@ -2779,7 +2819,7 @@ class SnoozedContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'mark_done', 'Done'),
     ]
 
@@ -2839,15 +2879,25 @@ class ListsContent(BaseEntryContent):
     EMPTY_MSG: ClassVar[str] = 'No list items.'
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('N', 'add_item', 'Add'),
-        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('A', 'add_item', 'Add'),
+        Binding('E', 'edit_notes', 'Notes'),
         Binding('D', 'drop_entry', 'Drop'),
         Binding('F', 'filter_list', 'Filter list'),
+        Binding('+', 'add_category', 'New Area'),
+        Binding('-', 'remove_category', 'Remove Area'),
+        Binding('R', 'rename_category', 'Rename Area'),
     ]
 
     def __init__(self) -> None:
         super().__init__()
         self._list_filter: str | None = None
+        self._categories: list[str] = []
+
+    def on_mount(self) -> None:
+        from gtd.storage import load_list_categories  # noqa: PLC0415
+
+        self._categories = load_list_categories(LIST_CONTEXTS)
+        super().on_mount()
 
     def _build_filter(self) -> dict:
         return {'property': 'Status', 'select': {'equals': 'List'}}
@@ -2859,38 +2909,47 @@ class ListsContent(BaseEntryContent):
             self.query_one('#entry-loading', LoadingIndicator).display = False
         self._rebuild_list()
 
-    def _rebuild_list(self) -> None:
-        filtered = (
-            [e for e in self._entries if e.context == self._list_filter]
-            if self._list_filter
-            else self._entries
+    def _all_categories(self) -> list[str]:
+        """Persisted categories + any extra contexts from Notion entries."""
+        seen = set(self._categories)
+        extras = sorted(
+            e.context
+            for e in self._entries
+            if e.context and e.context not in seen
         )
+        return sorted(self._categories) + list(dict.fromkeys(extras))
+
+    def _rebuild_list(self) -> None:
+        categories = (
+            [self._list_filter]
+            if self._list_filter
+            else self._all_categories()
+        )
+        by_ctx: dict[str, list[ProjectEntry]] = {}
+        for e in self._entries:
+            by_ctx.setdefault(e.context or '', []).append(e)
+
         lv = self.query_one('#entry-list', VimListView)
         lv.clear()
-        current_ctx: str | None = None
-        for entry in filtered:
-            ctx = entry.context or ''
-            if ctx != current_ctx:
-                current_ctx = ctx
-                lv.append(SeparatorListItem(ctx or '(no list)'))
-            lv.append(EntryListItem(entry))
+        for cat in categories:
+            items = by_ctx.get(cat, [])
+            n = len(items)
+            label = f'{cat}  ({n})' if n else f'{cat}  [dim](empty)[/dim]'
+            lv.append(SeparatorListItem(label))
+            for entry in items:
+                lv.append(EntryListItem(entry))
 
-        header = self.query_one('#entry-list-header', Static)
-        detail = self.query_one('#entry-detail', Static)
         total = len(self._entries)
-        shown = len(filtered)
+        shown = sum(len(by_ctx.get(c, [])) for c in categories)
+        header = self.query_one('#entry-list-header', Static)
         ctx_badge = (
             f'  [yellow][{self._list_filter}][/yellow]'
             if self._list_filter
             else ''
         )
         count = f'({shown}/{total})' if self._list_filter else f'({total})'
-
-        if not filtered:
-            header.update(f'{self.TITLE} — empty')
-            detail.update(f'[dim]{self.EMPTY_MSG}[/dim]')
-        else:
-            header.update(f'{self.TITLE}  [dim]{count}[/dim]{ctx_badge}')
+        header.update(f'{self.TITLE}  [dim]{count}[/dim]{ctx_badge}')
+        if lv.children:
             lv.index = 0
             self._update_detail()
 
@@ -2902,20 +2961,47 @@ class ListsContent(BaseEntryContent):
             (e for e in self._entries if e.page_id == item.page_id), None
         )
 
+    def _current_category(self) -> str | None:
+        """Return category name for the nearest separator at/above cursor."""
+        lv = self.query_one('#entry-list', VimListView)
+        idx = lv.index
+        if idx is None:
+            return None
+        for child in reversed(list(lv.children)[: idx + 1]):
+            if isinstance(child, SeparatorListItem):
+                return child.raw_label.split('  ')[0]
+        return None
+
     def _update_detail(self) -> None:
         entry = self._current_entry()
+        detail = self.query_one('#entry-detail', Static)
         if not entry:
+            cat = self._current_category()
+            if cat:
+                detail.update(
+                    f'[bold]{cat}[/bold]\n\n'
+                    '[dim]Press N to add an item to this list.[/dim]'
+                )
+            else:
+                detail.update('')
             return
         notes = self._notes.get(entry.page_id)
-        self.query_one('#entry-detail', Static).update(
-            _render_list_item_detail(entry, notes)
-        )
+        detail.update(_render_list_item_detail(entry, notes))
         if entry.page_id not in self._notes:
             self._load_notes(entry.page_id)
 
     def action_refresh(self) -> None:
         self._list_filter = None
         super().action_refresh()
+
+    def check_action(
+        self,
+        action: str,
+        parameters: tuple[object, ...],
+    ) -> bool | None:
+        if action == 'complete_step':
+            return False
+        return super().check_action(action, parameters)
 
     @work
     async def action_add_item(self) -> None:
@@ -2929,17 +3015,11 @@ class ListsContent(BaseEntryContent):
         from gtd.notion.client import _handle_response  # noqa: PLC0415
         from datetime import UTC, datetime as _dt  # noqa: PLC0415
 
-        contexts = sorted({e.context for e in self._entries if e.context})
-        all_lists = list(dict.fromkeys(LIST_CONTEXTS + contexts))
-
-        if self._list_filter:
-            target = self._list_filter
-        else:
-            target = await self.app.push_screen_wait(
-                SelectModal('Add to which list?', all_lists)
-            )
-            if not target:
-                return
+        target = await self.app.push_screen_wait(
+            SelectModal('Add to which list?', self._all_categories())
+        )
+        if not target:
+            return
 
         name = await self.app.push_screen_wait(
             InputModal(f'Add to {target}', 'Item name')
@@ -2978,10 +3058,97 @@ class ListsContent(BaseEntryContent):
         self.app.notify(f'✓ Added "{name.strip()}" to {target}')
 
     @work
+    async def action_add_category(self) -> None:
+        from gtd.storage import save_list_categories  # noqa: PLC0415
+
+        name = await self.app.push_screen_wait(
+            InputModal('New list category', 'Category name')
+        )
+        if not name or not name.strip():
+            return
+        name = name.strip()
+        if name in self._categories:
+            self.app.notify(f'"{name}" already exists', severity='warning')
+            return
+        self._categories.append(name)
+        self._categories.sort()
+        save_list_categories(self._categories)
+        self._rebuild_list()
+        self.app.notify(f'✓ Added category "{name}"')
+
+    @work
+    async def action_remove_category(self) -> None:
+        from gtd.storage import save_list_categories  # noqa: PLC0415
+
+        if not self._categories:
+            self.app.notify(
+                'No saved categories to remove', severity='warning'
+            )
+            return
+        cat = await self.app.push_screen_wait(
+            SelectModal('Remove Area', self._categories)
+        )
+        if not cat:
+            return
+        items = [e for e in self._entries if e.context == cat]
+        if items:
+            confirmed = await self.app.push_screen_wait(
+                ConfirmModal(
+                    f'"{cat}" has {len(items)} item(s). Remove anyway?'
+                )
+            )
+            if not confirmed:
+                return
+        self._categories = [c for c in self._categories if c != cat]
+        save_list_categories(self._categories)
+        self._rebuild_list()
+        self.app.notify(f'✓ Removed category "{cat}"')
+
+    @work
+    async def action_rename_category(self) -> None:
+        from gtd.storage import save_list_categories  # noqa: PLC0415
+        from gtd.notion.client import update_page  # noqa: PLC0415
+
+        if not self._categories:
+            self.app.notify(
+                'No saved categories to rename', severity='warning'
+            )
+            return
+        old = await self.app.push_screen_wait(
+            SelectModal('Rename which area?', sorted(self._categories))
+        )
+        if not old:
+            return
+        new = await self.app.push_screen_wait(
+            InputModal('Rename area', 'New name', initial=old)
+        )
+        if not new or not new.strip() or new.strip() == old:
+            return
+        new = new.strip()
+        if new in self._categories:
+            self.app.notify(f'"{new}" already exists', severity='warning')
+            return
+        self._categories = [new if c == old else c for c in self._categories]
+        self._categories.sort()
+        save_list_categories(self._categories)
+        loop = asyncio.get_running_loop()
+        affected = [e for e in self._entries if e.context == old]
+        for entry in affected:
+            await loop.run_in_executor(
+                None,
+                lambda eid=entry.page_id: update_page(
+                    eid, {'Context': {'select': {'name': new}}}
+                ),
+            )
+        self._load_entries()
+        self.app.notify(
+            f'✓ Renamed "{old}" → "{new}"'
+            + (f' ({len(affected)} items updated)' if affected else '')
+        )
+
+    @work
     async def action_filter_list(self) -> None:
-        contexts = sorted({e.context for e in self._entries if e.context})
-        all_lists = list(dict.fromkeys(LIST_CONTEXTS + contexts))
-        options = ['(All)', *all_lists]
+        options = ['(All)', *self._all_categories()]
         choice = await self.app.push_screen_wait(
             SelectModal('Show which list?', options)
         )
