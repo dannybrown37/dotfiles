@@ -605,7 +605,11 @@ class VimListView(ListView):
     ]
 
     def action_cursor_up_or_tabs(self) -> None:
-        if self.index == 0 or self.index is None:
+        first_enabled = next(
+            (i for i, child in enumerate(self._nodes) if not child.disabled),
+            0,
+        )
+        if self.index is None or self.index <= first_enabled:
             self.post_message(self.FocusTabBar())
         else:
             self.action_cursor_up()

@@ -502,6 +502,28 @@ class SeparatorListItem(ListItem):
         yield Label(f'[dim]── {self._label} ──[/dim]', markup=True)
 
 
+class NextStepListItem(ListItem):
+    """List item showing next step as primary, project name as secondary."""
+
+    def __init__(self, entry: ProjectEntry) -> None:
+        super().__init__()
+        self.page_id = entry.page_id
+        step = entry.current_step
+        project = entry.header.strip()
+        due = ''
+        if entry.due_date:
+            with contextlib.suppress(ValueError):
+                d = datetime.fromisoformat(entry.due_date)
+                due = f'  [yellow]{d:%b %-d}[/yellow]'
+        if step:
+            self._text = f'[cyan]→[/cyan] {step}\n  [dim]{project}{due}[/dim]'
+        else:
+            self._text = f'[dim](no step)[/dim]\n  [dim]{project}{due}[/dim]'
+
+    def compose(self) -> ComposeResult:
+        yield Label(self._text, markup=True)
+
+
 class DetailPane(ScrollableContainer):
     """Scrollable detail pane — focusable for keyboard scrolling."""
 
@@ -2451,6 +2473,98 @@ class ProjectsContent(BaseEntryContent):
         )
 
 
+# ── Next Steps content ───────────────────────────────────────────────────────
+
+
+class NextStepsContent(BaseEntryContent):
+    """Context-divided, filterable next steps for all in-flight projects."""
+
+    TITLE: ClassVar[str] = 'Next Steps'
+    EMPTY_MSG: ClassVar[str] = 'No in-flight projects.'
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('U', 'update_entry', 'Update'),
+        Binding('E', 'edit_notes', 'Edit Notes'),
+        Binding('D', 'mark_done', 'Done'),
+        Binding('X', 'complete_step', 'Complete Step'),
+        Binding('F', 'filter_context', 'Filter ctx'),
+    ]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._ctx_filter: str | None = None
+
+    def _build_filter(self) -> dict:
+        return {
+            'property': 'Status',
+            'select': {'equals': 'Current Project'},
+        }
+
+    def _filtered_entries(self) -> list[ProjectEntry]:
+        if self._ctx_filter:
+            return [e for e in self._entries if e.context == self._ctx_filter]
+        return self._entries
+
+    def _set_entries(self, entries: list[ProjectEntry]) -> None:
+        entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
+        self._entries = entries
+        with contextlib.suppress(Exception):
+            self.query_one('#entry-loading', LoadingIndicator).display = False
+        self._rebuild_list()
+
+    def _rebuild_list(self) -> None:
+        filtered = self._filtered_entries()
+        lv = self.query_one('#entry-list', VimListView)
+        lv.clear()
+        current_ctx: str | None = None
+        for entry in filtered:
+            ctx = entry.context or ''
+            if ctx != current_ctx:
+                current_ctx = ctx
+                lv.append(SeparatorListItem(ctx or '(no context)'))
+            lv.append(NextStepListItem(entry))
+
+        detail = self.query_one('#entry-detail', Static)
+        header = self.query_one('#entry-list-header', Static)
+
+        ctx_badge = (
+            f'  [yellow][{self._ctx_filter}][/yellow]'
+            if self._ctx_filter
+            else ''
+        )
+        total = len(self._entries)
+        shown = len(filtered)
+        count = f'({shown}/{total})' if self._ctx_filter else f'({total})'
+
+        if not filtered:
+            header.update(f'{self.TITLE} — empty')
+            detail.update(f'[dim]{self.EMPTY_MSG}[/dim]')
+        else:
+            header.update(f'{self.TITLE}  [dim]{count}[/dim]{ctx_badge}')
+            lv.index = 0
+            self._update_detail()
+
+    def _current_entry(self) -> ProjectEntry | None:
+        item = self.query_one('#entry-list', VimListView).highlighted_child
+        if not isinstance(item, NextStepListItem):
+            return None
+        return next(
+            (e for e in self._entries if e.page_id == item.page_id), None
+        )
+
+    @work
+    async def action_filter_context(self) -> None:
+        contexts = sorted({e.context for e in self._entries if e.context})
+        options = ['(All)', *contexts]
+        choice = await self.app.push_screen_wait(
+            SelectModal('Filter by context', options)
+        )
+        if choice is None:
+            return
+        self._ctx_filter = None if choice == '(All)' else choice
+        self._rebuild_list()
+
+
 # ── Recurring content ────────────────────────────────────────────────────────
 
 
@@ -2480,8 +2594,8 @@ class RecurringContent(BaseEntryContent):
 class WaitingForContent(BaseEntryContent):
     """Items delegated and waiting on someone else."""
 
-    TITLE: ClassVar[str] = 'Waiting For'
-    EMPTY_MSG: ClassVar[str] = 'Nothing in waiting.'
+    TITLE: ClassVar[str] = 'Delegated'
+    EMPTY_MSG: ClassVar[str] = 'Nothing delegated.'
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('U', 'update_entry', 'Update'),
@@ -2619,18 +2733,20 @@ class GTDApp(App[None]):
         with TabbedContent(id='tabs'):
             with TabPane('Today', id='tab-today'):
                 yield TodayContent()
+            with TabPane('Next Steps', id='tab-next-steps'):
+                yield NextStepsContent()
             with TabPane('Inbox', id='tab-inbox'):
                 yield InboxContent()
             with TabPane('Projects', id='tab-projects'):
                 yield ProjectsContent()
-            with TabPane('Waiting For', id='tab-waiting'):
+            with TabPane('Delegated', id='tab-waiting'):
                 yield WaitingForContent()
             with TabPane('Incubation', id='tab-snoozed'):
                 yield SnoozedContent()
-            with TabPane('Someday', id='tab-someday'):
-                yield SomedayContent()
             with TabPane('Recurring', id='tab-recurring'):
                 yield RecurringContent()
+            with TabPane('Someday', id='tab-someday'):
+                yield SomedayContent()
             with TabPane('Goals', id='tab-goals'):
                 yield GoalsContent()
         yield SplitFooter()
