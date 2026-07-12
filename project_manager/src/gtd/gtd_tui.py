@@ -34,6 +34,7 @@ from textual.widgets import (
     TabPane,
     Tabs,
 )
+from textual.widgets._footer import FooterKey, FooterLabel
 
 from gtd.models import Goal, Tactic, Update
 from gtd.notion.models import ProjectEntry
@@ -46,6 +47,55 @@ from gtd.tui import (
     TwoFieldModal,
     VimListView,
 )
+
+
+class SplitFooter(Footer):
+    """Footer with a separator between contextual and global bindings."""
+
+    def compose(self) -> ComposeResult:
+        if not self._bindings_ready:  # type: ignore[attr-defined]
+            return
+
+        # Contextual: active bindings NOT owned by the app
+        contextual = [
+            (a.binding, a.enabled, a.tooltip)
+            for a in self.screen.active_bindings.values()
+            if a.binding.show and a.node is not self.app
+        ]
+
+        # Global: always sourced directly from app BINDINGS (never overridden)
+        global_b = [
+            (b, True, '')
+            for b in self.app.BINDINGS
+            if isinstance(b, Binding) and b.show
+        ]
+
+        seen: set[str] = set()
+        for binding, enabled, tooltip in contextual:
+            if binding.action in seen:
+                continue
+            seen.add(binding.action)
+            yield FooterKey(
+                binding.key,
+                self.app.get_key_display(binding),
+                binding.description,
+                binding.action,
+                disabled=not enabled,
+                tooltip=tooltip or binding.description,
+            ).data_bind(compact=Footer.compact)
+
+        if contextual and global_b:
+            yield FooterLabel(' ─── ')
+
+        for binding, enabled, tooltip in global_b:
+            yield FooterKey(
+                binding.key,
+                self.app.get_key_display(binding),
+                binding.description,
+                binding.action,
+                disabled=not enabled,
+                tooltip=tooltip or binding.description,
+            ).data_bind(compact=Footer.compact)
 
 
 # ── Entry renderers ──────────────────────────────────────────────────────────
@@ -1138,6 +1188,52 @@ async def _review_someday(app: App) -> int:
     return reviewed
 
 
+async def _review_areas(app: App) -> int:
+    """Walk through Areas of Focus, prompt for inbox captures."""
+    from gtd.notion.capture import _create_page  # noqa: PLC0415
+    from gtd.storage import load_areas  # noqa: PLC0415
+
+    areas = load_areas()
+    if not areas:
+        app.notify(
+            'No Areas defined. Run: gtd areas add "Health"', severity='warning'
+        )
+        return 0
+
+    loop = asyncio.get_running_loop()
+    reviewed = 0
+    for area in areas:
+        name = area['name']
+        notes = area.get('notes', '')
+        title = f'Area: {name}' + (f'\n[dim]{notes}[/dim]' if notes else '')
+        action = await app.push_screen_wait(
+            SelectModal(
+                title,
+                [
+                    'All good — nothing falling through the cracks',
+                    'Capture something to inbox',
+                ],
+            )
+        )
+        if action is None:
+            break
+        reviewed += 1
+        if action and action.startswith('Capture'):
+            capture_text = await app.push_screen_wait(
+                InputModal(
+                    f'Capture for [{name}]',
+                    subtitle=name,
+                    placeholder='What needs attention?',
+                )
+            )
+            if capture_text:
+                await loop.run_in_executor(
+                    None, _create_page, capture_text.strip()
+                )
+                app.notify('Captured → Inbox')
+    return reviewed
+
+
 class WeeklyReviewScreen(ModalScreen[bool]):
     """Step-by-step guided GTD weekly review."""
 
@@ -1201,6 +1297,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
             {**s, 'label': 'Review Projects', 'action': 'projects'},
             {**s, 'label': 'Review Waiting For', 'action': 'waiting'},
             {**s, 'label': 'Review Someday/Maybe', 'action': 'someday'},
+            {**s, 'label': 'Review Areas of Focus', 'action': 'areas'},
             {
                 **s,
                 'label': 'Review calendar (past & upcoming)',
@@ -1281,15 +1378,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
     def action_cursor_up(self) -> None:
         self._focus_step(self._focused - 1)
 
-    @work
-    async def action_toggle(self) -> None:
-        step = self._steps[self._focused]
-        if step['done']:
-            step['done'] = False
-            self._refresh_steps()
-            self._save_state()
-            return
-
+    async def _run_step(self, step: dict) -> None:
         action = step['action']
         if action == 'triage' and self._inbox_entries:
             inbox_content = self.app.query_one(InboxContent)
@@ -1311,7 +1400,23 @@ class WeeklyReviewScreen(ModalScreen[bool]):
                 step['label'] = (
                     f'Review Someday/Maybe  [dim]({n} reviewed)[/dim]'
                 )
+        elif action == 'areas':
+            n = await _review_areas(self.app)
+            if n > 0:
+                step['label'] = (
+                    f'Review Areas of Focus  [dim]({n} reviewed)[/dim]'
+                )
 
+    @work
+    async def action_toggle(self) -> None:
+        step = self._steps[self._focused]
+        if step['done']:
+            step['done'] = False
+            self._refresh_steps()
+            self._save_state()
+            return
+
+        await self._run_step(step)
         step['done'] = True
         self._refresh_steps()
         self._save_state()
@@ -2312,9 +2417,11 @@ class GTDApp(App[None]):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('ctrl+p', 'command_palette', show=False),
-        Binding('h', 'tab_left', '←tab', priority=True),
-        Binding('l', 'tab_right', 'tab→', priority=True),
-        Binding('j', 'focus_list', show=False),
+        Binding('h', 'tab_left', '←', priority=True),
+        Binding('j', 'focus_list', '↓', priority=False),
+        Binding('k', 'focus_list_up', '↑', priority=False),
+        Binding('l', 'tab_right', '→', priority=True),
+        Binding('tab', 'tab_right', 'switch pane', priority=False),
         Binding('down', 'focus_list', show=False),
         Binding('C', 'capture', 'Capture'),
         Binding('R', 'refresh', 'Refresh'),
@@ -2346,7 +2453,7 @@ class GTDApp(App[None]):
                 yield RecurringContent()
             with TabPane('Goals', id='tab-goals'):
                 yield GoalsContent()
-        yield Footer()
+        yield SplitFooter()
 
     @on(VimListView.FocusTabBar)
     def on_focus_tab_bar(self) -> None:
@@ -2363,7 +2470,18 @@ class GTDApp(App[None]):
         tc = self.query_one('#tabs', TabbedContent)
         with contextlib.suppress(Exception):
             pane = tc.query_one(f'#{tc.active}', TabPane)
-            pane.query_one(VimListView).focus()
+            lv = pane.query_one(VimListView)
+            lv.focus()
+            lv.action_cursor_down()
+
+    def action_focus_list_up(self) -> None:
+        """Focus active tab's list and move up."""
+        tc = self.query_one('#tabs', TabbedContent)
+        with contextlib.suppress(Exception):
+            pane = tc.query_one(f'#{tc.active}', TabPane)
+            lv = pane.query_one(VimListView)
+            lv.focus()
+            lv.action_cursor_up()
 
     def action_capture(self) -> None:
         """Capture a new item — available from anywhere in the app."""

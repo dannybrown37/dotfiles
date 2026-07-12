@@ -692,7 +692,7 @@ class GoalsContent(Widget):
         height: 1fr;
     }
     GoalsContent #goals-list-pane {
-        width: 34;
+        width: 40%;
         border-right: solid $panel;
     }
     GoalsContent #goals-list-header {

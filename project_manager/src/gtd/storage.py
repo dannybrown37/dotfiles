@@ -14,8 +14,10 @@ __all__ = [
     'get_archived_goal_names',
     'get_stored_goal_names',
     'get_weekly_habit_date',
+    'load_areas',
     'load_config',
     'load_goal',
+    'save_areas',
     'save_config',
     'save_goal',
     'set_weekly_habit_date',
@@ -25,6 +27,7 @@ OUTPUT_PATH = Path.home() / '.local' / 'share' / 'gtd'
 ARCHIVE_PATH = OUTPUT_PATH / 'archive'
 CONFIG_PATH = OUTPUT_PATH / 'config.json'
 HABITS_PATH = OUTPUT_PATH / 'weekly_habits.json'
+AREAS_PATH = OUTPUT_PATH / 'areas.json'
 
 
 def ensure_dirs() -> None:
@@ -121,11 +124,22 @@ def load_goal(name: str) -> Goal:
     return Goal.model_validate(data)
 
 
+def load_areas() -> list[dict]:
+    """Return list of area dicts: {name: str, notes: str}."""
+    if not AREAS_PATH.exists():
+        return []
+    return json.loads(AREAS_PATH.read_text())
+
+
+def save_areas(areas: list[dict]) -> None:
+    AREAS_PATH.write_text(json.dumps(areas, indent=2) + '\n')
+
+
 def get_stored_goal_names() -> list[str]:
     return [
         f.stem
         for f in sorted(OUTPUT_PATH.glob('*.json'))
-        if f.name not in ('config.json', 'weekly_habits.json')
+        if f.name not in ('config.json', 'weekly_habits.json', 'areas.json')
     ]
 
 
