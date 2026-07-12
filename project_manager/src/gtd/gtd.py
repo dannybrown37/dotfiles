@@ -421,8 +421,32 @@ def _interactive_menu(verbose: bool) -> None:  # noqa: C901, PLR0912, PLR0915
             continue
 
 
-@cli.command()
-def fzf() -> None:
+@cli.group(invoke_without_command=True)
+@click.pass_context
+def config(ctx: click.Context) -> None:
+    """View or set GTD configuration."""
+    if ctx.invoked_subcommand is None:
+        from gtd.notion.config import load_config  # noqa: PLC0415
+
+        cfg = load_config()
+        if not cfg:
+            click.echo('No configuration set.')
+            return
+        for k, v in cfg.items():
+            click.echo(f'{k}: {v}')
+
+
+@config.command('notes-editor')
+@click.argument('mode', type=click.Choice(['inline', 'external']))
+def config_notes_editor(mode: str) -> None:
+    """Set notes editor: inline (TUI TextArea) or external (uses $EDITOR)."""
+    from gtd.notion.config import load_config, save_config  # noqa: PLC0415
+
+    cfg = load_config()
+    cfg['notes_editor'] = mode
+    save_config(cfg)
+    click.echo(f'notes_editor → {mode}')
+
     """Launch the legacy fzf-based interactive GTD menu."""
     _interactive_menu(verbose=False)
 

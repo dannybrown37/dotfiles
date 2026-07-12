@@ -33,6 +33,7 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
     Tabs,
+    TextArea,
 )
 from textual.widgets._footer import FooterKey, FooterLabel
 
@@ -661,33 +662,107 @@ async def _open_steps_editor(app: App, initial_text: str = '') -> str:
     return format_steps(steps)
 
 
-async def _shared_edit_notes(
-    app: App,
-    entry: ProjectEntry,
-    notes_cache: dict[str, str],
-    refresh_cb: Callable[[], None],
-) -> None:
-    """Open nvim to edit notes — shared across tab widgets."""
-    from gtd.notion.client import get_page_body, replace_page_body  # noqa: PLC0415
+class EditNotesModal(ModalScreen[str | None]):
+    """In-TUI notes editor — no terminal takeover."""
 
-    loop = asyncio.get_running_loop()
-    body = await loop.run_in_executor(None, get_page_body, entry.page_id)
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('ctrl+s', 'save', 'Save'),
+        Binding('escape', 'cancel', 'Cancel'),
+    ]
+
+    DEFAULT_CSS = """
+    EditNotesModal { align: center middle; }
+    EditNotesModal .enm-box {
+        width: 90%;
+        height: 90%;
+        border: solid $accent;
+        background: $surface;
+    }
+    EditNotesModal .enm-title {
+        background: $panel;
+        padding: 0 1;
+        height: 1;
+        text-style: bold;
+    }
+    EditNotesModal TextArea { height: 1fr; }
+    EditNotesModal .enm-footer {
+        background: $panel;
+        padding: 0 1;
+        height: 1;
+    }
+    """
+
+    def __init__(self, title: str, initial: str = '') -> None:
+        super().__init__()
+        self._title = title
+        self._initial = initial
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes='enm-box'):
+            yield Static(self._title, classes='enm-title')
+            yield TextArea(
+                self._initial,
+                language='markdown',
+                id='enm-editor',
+            )
+            yield Static(
+                '[dim]ctrl+s  save · esc  cancel[/dim]',
+                classes='enm-footer',
+                markup=True,
+            )
+
+    def on_mount(self) -> None:
+        self.query_one('#enm-editor', TextArea).focus()
+
+    def action_save(self) -> None:
+        self.dismiss(self.query_one('#enm-editor', TextArea).text)
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+
+def _use_inline_editor() -> bool:
+    from gtd.notion.config import get_config_value  # noqa: PLC0415
+
+    return get_config_value('notes_editor') == 'inline'
+
+
+async def _get_edited_body(app: App, title: str, body: str) -> str | None:
+    """Return edited body via inline modal or external $EDITOR per config."""
+    if _use_inline_editor():
+        return await app.push_screen_wait(EditNotesModal(title, initial=body))
     fd, tmp_path = tempfile.mkstemp(suffix='.md')
     with open(fd, 'w') as f:  # noqa: PTH123
         f.write(body)
     editor = os.environ.get('EDITOR', 'nvim')
     with app.suspend():
         subprocess.run([editor, tmp_path], check=False)  # noqa: S603
-
     new_body = Path(tmp_path).read_text()
     Path(tmp_path).unlink(missing_ok=True)
-    if new_body != body:
-        await loop.run_in_executor(
-            None, replace_page_body, entry.page_id, new_body
-        )
-        notes_cache[entry.page_id] = new_body
-        app.notify('Notes saved')
-        refresh_cb()
+    return new_body
+
+
+async def _shared_edit_notes(
+    app: App,
+    entry: ProjectEntry,
+    notes_cache: dict[str, str],
+    refresh_cb: Callable[[], None],
+) -> None:
+    """Edit notes via inline modal or external $EDITOR per config."""
+    from gtd.notion.client import get_page_body, replace_page_body  # noqa: PLC0415
+
+    loop = asyncio.get_running_loop()
+    body = await loop.run_in_executor(None, get_page_body, entry.page_id)
+
+    new_body = await _get_edited_body(app, entry.header.strip(), body)
+    if new_body is None or new_body == body:
+        return
+    await loop.run_in_executor(
+        None, replace_page_body, entry.page_id, new_body
+    )
+    notes_cache[entry.page_id] = new_body
+    app.notify('Notes saved')
+    refresh_cb()
 
 
 async def _shared_log_and_reschedule(
@@ -695,7 +770,7 @@ async def _shared_log_and_reschedule(
     entry: ProjectEntry,
     notes_cache: dict[str, str],
 ) -> str | None:
-    """Open editor, save notes, prompt/infer next follow-up.
+    """Edit notes then prompt/infer next follow-up.
 
     Returns the new follow-up date string, or None if cancelled.
     """
@@ -711,15 +786,9 @@ async def _shared_log_and_reschedule(
         app.notify(f'Error: {e}', severity='error')
         return None
 
-    fd, tmp_path = tempfile.mkstemp(suffix='.md')
-    with open(fd, 'w') as f:  # noqa: PTH123
-        f.write(body)
-    editor = os.environ.get('EDITOR', 'nvim')
-    with app.suspend():
-        subprocess.run([editor, tmp_path], check=False)  # noqa: S603
-
-    new_body = Path(tmp_path).read_text()
-    Path(tmp_path).unlink(missing_ok=True)
+    new_body = await _get_edited_body(app, entry.header.strip(), body)
+    if new_body is None:
+        return None
     if new_body != body:
         await loop.run_in_executor(
             None, replace_page_body, entry.page_id, new_body
