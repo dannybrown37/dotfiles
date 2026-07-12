@@ -101,6 +101,16 @@ class SplitFooter(Footer):
 # ── Entry renderers ──────────────────────────────────────────────────────────
 
 
+def _render_steps_block(steps: list[str]) -> list[str]:
+    lines = [f'  [dim]{"Steps:".ljust(12)}[/dim]']
+    for i, step in enumerate(steps):
+        if i == 0:
+            lines.append(f'    [cyan]→[/cyan] {step}')
+        else:
+            lines.append(f'    [dim]  {i + 1}. {step}[/dim]')
+    return lines
+
+
 def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:
     icon = STATUS_ICONS.get(entry.status, '·')
     lines = [
@@ -117,8 +127,12 @@ def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:
 
     lines.append(row('Status', entry.status))
     lines.append(row('Context', entry.context))
-    lines.append(row('Next step', entry.next_step))
-    lines.append(row('Success condition', entry.success_condition))
+    steps = entry.steps
+    if len(steps) > 1:
+        lines.extend(_render_steps_block(steps))
+    else:
+        lines.append(row('Next Step', entry.current_step))
+    lines.append(row('Success', entry.success_condition))
     if entry.due_date:
         lines.append(row('Due', entry.due_date, 'yellow'))
     if entry.follow_up_date:
@@ -148,7 +162,7 @@ def _render_entry_summary(entry: ProjectEntry) -> str:
         except ValueError:
             due = f'  [yellow]{entry.due_date}[/yellow]'
     next_step = (
-        f'\n  [dim]→ {entry.next_step}[/dim]' if entry.next_step else ''
+        f'\n  [dim]→ {entry.current_step}[/dim]' if entry.current_step else ''
     )
     return f'{icon} {entry.header.strip()}{ctx}{due}{next_step}'
 
@@ -536,11 +550,9 @@ async def _prompt_and_get_props(
             SelectModal('Context', contexts, allow_new=True)
         )
         props = {'context': value} if value else None
-    elif choice == 'Next actionable step':
-        value = await app.push_screen_wait(
-            InputModal('Next Actionable Step', initial=entry.next_step)
-        )
-        props = {'next_step': value} if value is not None else None
+    elif choice == 'Steps':
+        value = await _open_steps_editor(app, initial_text=entry.next_step)
+        props = {'next_step': value}
     elif choice == 'Success condition':
         value = await app.push_screen_wait(
             InputModal(
@@ -575,7 +587,7 @@ async def _shared_update_entry(
         'Name',
         'Status',
         'Context',
-        'Next actionable step',
+        'Steps',
         'Success condition',
         'Follow-up date',
         'Due date',
@@ -596,6 +608,35 @@ async def _shared_update_entry(
     )
     refresh_cb()
     app.notify(f'✓ "{entry.header.strip()}" updated')
+
+
+async def _open_steps_editor(app: App, initial_text: str = '') -> str:
+    """Suspend the TUI and open $EDITOR to edit the steps queue.
+
+    Returns the cleaned text (empty string if cleared). No cancel detection
+    — quitting the editor without saving preserves the original content.
+    """
+    instructions = (
+        '# Enter steps, one per line. Numbering is optional.\n'
+        '# Example:\n'
+        '#   1. Call the vendor about contract\n'
+        '#   2. Send signed agreement\n'
+        '#   3. Follow up in two weeks\n'
+        '# Lines starting with # are ignored.\n\n'
+    )
+    fd, tmp_path = tempfile.mkstemp(suffix='.md')
+    with open(fd, 'w') as f:  # noqa: PTH123
+        f.write(instructions + initial_text)
+    editor = os.environ.get('EDITOR', 'nvim')
+    with app.suspend():
+        subprocess.run([editor, tmp_path], check=False)  # noqa: S603
+    content = Path(tmp_path).read_text()
+    Path(tmp_path).unlink(missing_ok=True)
+    lines = [ln for ln in content.split('\n') if not ln.startswith('#')]
+    from gtd.notion.models import format_steps, parse_steps  # noqa: PLC0415
+
+    steps = parse_steps('\n'.join(lines))
+    return format_steps(steps)
 
 
 async def _shared_edit_notes(
@@ -703,6 +744,10 @@ class BaseEntryContent(Vertical):
 
     TITLE: ClassVar[str] = ''
     EMPTY_MSG: ClassVar[str] = 'Nothing here.'
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('X', 'complete_step', 'Complete Step', show=True),
+    ]
 
     DEFAULT_CSS = """
     BaseEntryContent { layout: horizontal; height: 1fr; }
@@ -951,6 +996,36 @@ class BaseEntryContent(Vertical):
         with contextlib.suppress(NotionAPIError):
             archive_page(page_id)
 
+    @work
+    async def action_complete_step(self) -> None:
+        from gtd.notion.models import advance_steps  # noqa: PLC0415
+
+        entry = self._current_entry()
+        if not entry or not entry.next_step:
+            return
+        steps = entry.steps
+        if len(steps) <= 1:
+            confirmed = await self.app.push_screen_wait(
+                ConfirmModal(f'Complete final step: "{entry.current_step}"?')
+            )
+            if not confirmed:
+                return
+        new_text = advance_steps(entry.next_step)
+        self._advance_step_worker(entry.page_id, new_text)
+        entry.next_step = new_text
+        self._update_detail()
+        remaining = len(entry.steps)
+        if remaining:
+            self.app.notify(f'✓ Step done — {remaining} remaining')
+        else:
+            self.app.notify('✓ All steps complete!')
+
+    @work(thread=True)
+    def _advance_step_worker(self, page_id: str, new_text: str) -> None:
+        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+
+        update_page(page_id, build_property_update(next_step=new_text))
+
     async def action_activate(self) -> None:
         entry = self._current_entry()
         if not entry:
@@ -1027,7 +1102,7 @@ async def _review_projects(app: App) -> int:
                 f'Project: {title}',
                 [
                     'Keep — no changes',
-                    'Update next step',
+                    'Update steps',
                     'Move to Someday',
                     'Mark Done',
                 ],
@@ -1036,14 +1111,9 @@ async def _review_projects(app: App) -> int:
         if action is None:
             break
         reviewed += 1
-        if action == 'Update next step':
-            val = await app.push_screen_wait(
-                InputModal(
-                    'Next actionable step',
-                    entry.next_step or '',
-                    initial=entry.next_step or '',
-                    subtitle=title,
-                )
+        if action == 'Update steps':
+            val = await _open_steps_editor(
+                app, initial_text=entry.next_step or ''
             )
             if val is not None:
                 await loop.run_in_executor(
@@ -1295,14 +1365,15 @@ class SomedayBrowseScreen(ModalScreen):
 
 
 async def _review_areas(app: App) -> int:
-    """Walk through Areas of Focus, prompt for inbox captures."""
+    """Walk through Horizons of Focus, prompt for inbox captures."""
     from gtd.notion.capture import _create_page  # noqa: PLC0415
     from gtd.storage import load_areas  # noqa: PLC0415
 
     areas = load_areas()
     if not areas:
         app.notify(
-            'No Areas defined. Run: gtd areas add "Health"', severity='warning'
+            'No horizons defined. Run: gtd areas add "Health"',
+            severity='warning',
         )
         return 0
 
@@ -1390,12 +1461,12 @@ class WeeklyReviewScreen(ModalScreen[bool]):
 
     def _build_steps(self) -> list[dict]:
         if self._inbox_count == 0:
-            inbox_label = 'Process inbox  [dim](empty ✓)[/dim]'
+            inbox_label = 'Process Inbox  [dim](empty ✓)[/dim]'
             inbox_done = True
         else:
             n = self._inbox_count
             c = 's' if n != 1 else ''
-            inbox_label = f'Triage inbox  [dim]({n} item{c})[/dim]'
+            inbox_label = f'Triage Inbox  [dim]({n} item{c})[/dim]'
             inbox_done = False
         s = {'done': False}
         return [
@@ -1403,15 +1474,15 @@ class WeeklyReviewScreen(ModalScreen[bool]):
             {**s, 'label': 'Review Projects', 'action': 'projects'},
             {**s, 'label': 'Review Waiting For', 'action': 'waiting'},
             {**s, 'label': 'Review Someday/Maybe', 'action': 'someday'},
-            {**s, 'label': 'Review Areas of Focus', 'action': 'areas'},
+            {**s, 'label': 'Review Horizons of Focus', 'action': 'areas'},
             {
                 **s,
-                'label': 'Review calendar (past & upcoming)',
+                'label': 'Review Calendar (Past & Upcoming)',
                 'action': 'manual',
             },
             {
                 **s,
-                'label': "Plan next week's priorities",
+                'label': "Plan Next Week's Priorities",
                 'action': 'manual',
             },
         ]
@@ -1440,8 +1511,8 @@ class WeeklyReviewScreen(ModalScreen[bool]):
                     classes='review-item',
                 )
             yield Static(
-                '[dim]j/k: move · space: launch step · c: complete'
-                ' · X: reset · esc: cancel[/dim]',
+                '[dim]j/k: move · space: launch step · c: complete\n'
+                'X: reset · esc: cancel[/dim]',
                 classes='review-footer',
             )
             yield Button(
@@ -1510,7 +1581,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
             n = await _review_areas(self.app)
             if n > 0:
                 step['label'] = (
-                    f'Review Areas of Focus  [dim]({n} reviewed)[/dim]'
+                    f'Review Horizons of Focus  [dim]({n} reviewed)[/dim]'
                 )
 
     @work
@@ -1581,6 +1652,7 @@ class TodayContent(BaseEntryContent):
         'update_entry',
         'edit_notes',
         'mark_done',
+        'complete_step',
     }
     _TACTIC_ACTIONS: ClassVar[set[str]] = {'log_tactic', 'unlog_tactic'}
     _HABIT_ACTIONS: ClassVar[set[str]] = {'complete_habit'}
@@ -2148,18 +2220,22 @@ class InboxContent(BaseEntryContent):
             kwargs['context'] = context
 
         if not entry.next_step:
-            prompt = (
-                'Who/what are you waiting on?'
-                if status == 'Waiting For'
-                else 'Next actionable step'
-            )
-            next_step = await self.app.push_screen_wait(
-                InputModal(prompt, title, subtitle=subtitle)
-            )
-            if next_step is None:
-                return None
-            if next_step:
-                kwargs['next_step'] = next_step
+            if status == 'Waiting For':
+                next_step = await self.app.push_screen_wait(
+                    InputModal(
+                        'Who/what are you waiting on?',
+                        title,
+                        subtitle=subtitle,
+                    )
+                )
+                if next_step is None:
+                    return None
+                if next_step:
+                    kwargs['next_step'] = next_step
+            else:
+                val = await _open_steps_editor(self.app)
+                if val:
+                    kwargs['next_step'] = val
 
         if not entry.success_condition:
             success_condition = await self.app.push_screen_wait(
@@ -2233,7 +2309,7 @@ class InboxContent(BaseEntryContent):
             'Name',
             'Status',
             'Context',
-            'Next actionable step',
+            'Steps',
             'Follow-up date',
             'Due date',
         ]
@@ -2287,12 +2363,10 @@ class InboxContent(BaseEntryContent):
 
         next_step = entry.next_step
         if not next_step:
-            next_step = await self.app.push_screen_wait(
-                InputModal('Next Actionable Step (required to move out)')
-            )
+            next_step = await _open_steps_editor(self.app)
             if not next_step:
                 self.app.notify(
-                    'Next step required to move out of Inbox',
+                    'Steps required to move out of Inbox',
                     severity='warning',
                 )
                 return

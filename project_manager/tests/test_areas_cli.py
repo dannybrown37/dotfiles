@@ -19,7 +19,7 @@ def invoke(*args: str) -> object:
 class TestAreasList:
     def test_no_areas_shows_message(self) -> None:
         result = invoke()
-        assert 'No areas defined' in result.output
+        assert 'No horizons defined' in result.output
 
     def test_lists_areas_with_name(self) -> None:
         invoke('add', 'Health')
