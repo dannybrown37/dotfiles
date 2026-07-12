@@ -49,7 +49,7 @@ All entry tabs extend `BaseEntryContent(Vertical)` with stable IDs (`#entry-list
 The Today tab has three sections in the left list:
 
 1. **Weekly habit reminders** (top, always) — shown when not done this week:
-   - `● Weekly Review` — `W` opens a guided step-by-step flow: inbox count check → triage option → 5 checklist steps (Projects, Waiting For, Someday, Calendar, Goals)
+   - `● Weekly Review` — `W` opens a guided 6-step flow via `WeeklyReviewScreen` modal. Steps: (1) Triage Inbox, (2) Review Projects, (3) Review Waiting For, (4) Review Someday/Maybe [uses `SomedayBrowseScreen`], (5) Review Areas of Focus, (6) Plan next week's priorities + Review Calendar [manual steps]. State persisted per-week in `weekly_habits.json` under `review_state`; resumes at first incomplete step.
    - `● Score Goals` — `W` opens `ScorecardScreen` for each active goal sequentially
    - Both use `check_action` to show `W` only when habit item is focused
    - Completion stored in `~/.local/share/gtd/weekly_habits.json`; resets each Monday
@@ -84,6 +84,10 @@ The Today tab has three sections in the left list:
 
 Two-mode design: opens in **browse mode** (ListView focused, j/k navigate). **Tab** switches to **filter mode** (Input focused, type to filter). Any printable non-j/k key in browse mode jumps to filter and appends char. Default is browse mode.
 
+## SomedayBrowseScreen
+
+`ModalScreen` used during Weekly Review step 4 (Review Someday/Maybe). Shows a scrollable list of Someday items — scroll with j/k, optionally **a** to activate or **d** to drop any item. No forced per-item decision; user browses at will and dismisses when done.
+
 ## GoalsContent (tui.py)
 
 `E` → sub-menu: Name & description / Start & end dates / Edit a tactic / Remove a tactic. All async actions decorated with `@work` (required when called from GTDApp context). `ScorecardScreen` is importable from `tui.py`.
@@ -105,9 +109,20 @@ Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_ta
 | GTD projects/inbox | Notion database | `NOTION_PROJECTS_DB_ID` env var |
 | 12WY goals/tactics/todos | Local JSON | `~/.local/share/gtd/<goal-name>.json` |
 | Weekly habit completion | Local JSON | `~/.local/share/gtd/weekly_habits.json` |
+| Areas of Focus | Local JSON | `~/.local/share/gtd/areas.json` |
 | GTD config | Local JSON | `~/.config/gtd/config.json` |
 
-`get_stored_goal_names()` excludes `config.json` and `weekly_habits.json` from glob results.
+`get_stored_goal_names()` excludes `config.json`, `weekly_habits.json`, and `areas.json` from glob results.
+
+## Areas of Focus
+
+`load_areas()` / `save_areas(areas)` in `storage.py` manage `areas.json` — a list of `{name: str, notes: str}` dicts. `load_areas()` returns `[]` when the file is missing.
+
+**CLI commands** (`gtd areas`):
+- `gtd areas` — list all areas (name + notes if present); prints "No areas defined" when empty
+- `gtd areas add "Health"` — add new area; `--notes "..."` sets optional description; duplicate names rejected (case-insensitive)
+- `gtd areas remove "Health"` — remove area by name (case-insensitive)
+- `gtd areas notes "Health" "some notes"` — update notes field for existing area
 
 ## Key Models
 
@@ -132,12 +147,14 @@ Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_ta
 - `SeparatorListItem(ListItem)` — `disabled=True`, used as visual dividers; supports markup in label
 - `WeeklyHabitItem(ListItem)` — habit reminder item with `habit_key` and `habit_label` attrs
 - `TacticListItem(ListItem)` — holds full `Tactic` object; `refresh_display(tactic)` updates label in-place
-- Modals: `InputModal`, `SelectModal`, `ConfirmModal`, `TwoFieldModal`, `ScorecardScreen` — all `ModalScreen`
+- Modals: `InputModal`, `SelectModal`, `ConfirmModal`, `TwoFieldModal`, `ScorecardScreen`, `SomedayBrowseScreen` — all `ModalScreen`
 - `ENABLE_COMMAND_PALETTE = False` on both App classes
 - Use `@work` for ALL async actions that call `push_screen_wait` — required in both standalone and embedded contexts. `@work(thread=True)` for blocking Notion calls.
 - **Never `await` a `@work`-decorated method** — it returns a `Worker` object. Extract core logic into a plain `async def` and have both `@work` action and other callers use that.
 - Always call `self.app.refresh_bindings()` after selection changes that affect `check_action`
 - `check_action` must return explicit `True`/`False` (not `None`) for actions you control — `None` means "defer to parent" which can cause unexpected behaviour with duplicate key bindings
+- **`SplitFooter`** — subclass of `Footer`; separates contextual bindings (left) from global app bindings (right) with a ` ─── ` separator. Global section always sourced from `self.app.BINDINGS` directly (not overridable by child widgets).
+- **Left pane width**: `40%` via CSS — dynamic, scales with terminal width.
 
 ## Tooling
 
