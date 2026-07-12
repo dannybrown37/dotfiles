@@ -1262,7 +1262,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('escape', 'cancel', 'Cancel'),
         Binding('enter,space', 'toggle', 'Check/Launch', show=True),
-        Binding('c', 'complete', 'Complete review', show=True),
+        Binding('c', 'complete', 'Complete Review', show=True),
         Binding('X', 'reset', 'Reset', show=True),
         Binding('j', 'cursor_down', show=False),
         Binding('k', 'cursor_up', show=False),
@@ -1462,11 +1462,11 @@ class TodayContent(BaseEntryContent):
         Binding('W', 'complete_habit', 'Complete'),
         Binding('T', 'wait_tomorrow', 'Tomorrow'),
         Binding('S', 'set_status', 'Status'),
-        Binding('U', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'mark_done', 'Done'),
-        Binding('N', 'log_tactic', 'Log update'),
-        Binding('U', 'unlog_tactic', 'Unlog last'),
+        Binding('L', 'log_tactic', 'Log Update'),
+        Binding('U', 'update_entry', 'Update'),
+        Binding('U', 'unlog_tactic', 'Unlog Last'),
     ]
 
     _GTD_ACTIONS: ClassVar[set[str]] = {
@@ -1890,7 +1890,7 @@ class InboxContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('T', 'triage_entry', 'Triage'),
-        Binding('A', 'triage_all', 'Triage all'),
+        Binding('A', 'triage_all', 'Triage All'),
         Binding('U', 'update_entry', 'Update'),
         Binding('E', 'edit_notes', 'Edit Notes'),
         Binding('D', 'drop_entry', 'Drop'),
@@ -2421,7 +2421,7 @@ class GTDApp(App[None]):
         Binding('j', 'focus_list', '↓', priority=False),
         Binding('k', 'focus_list_up', '↑', priority=False),
         Binding('l', 'tab_right', '→', priority=True),
-        Binding('tab', 'tab_right', 'switch pane', priority=False),
+        Binding('tab', 'tab_right', 'Switch Pane', priority=False),
         Binding('down', 'focus_list', show=False),
         Binding('C', 'capture', 'Capture'),
         Binding('R', 'refresh', 'Refresh'),
