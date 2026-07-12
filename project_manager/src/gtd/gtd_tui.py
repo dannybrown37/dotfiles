@@ -2489,7 +2489,7 @@ class SomedayContent(BaseEntryContent):
 class SnoozedContent(BaseEntryContent):
     """Items with a future follow-up date."""
 
-    TITLE: ClassVar[str] = 'Future'
+    TITLE: ClassVar[str] = 'Incubation'
     EMPTY_MSG: ClassVar[str] = 'Nothing in the future.'
 
     BINDINGS: ClassVar[list[Binding]] = [
@@ -2551,7 +2551,7 @@ class GTDApp(App[None]):
                 yield ProjectsContent()
             with TabPane('Waiting For', id='tab-waiting'):
                 yield WaitingForContent()
-            with TabPane('Future', id='tab-snoozed'):
+            with TabPane('Incubation', id='tab-snoozed'):
                 yield SnoozedContent()
             with TabPane('Someday', id='tab-someday'):
                 yield SomedayContent()
