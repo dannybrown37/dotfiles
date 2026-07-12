@@ -1137,7 +1137,7 @@ async def _review_waiting_for(app: App) -> int:
 
 
 async def _review_someday(app: App) -> int:
-    """Walk through Someday/Maybe items. Returns count reviewed."""
+    """Browse Someday/Maybe items — perusal, not per-item triage."""
     from gtd.notion.client import (  # noqa: PLC0415
         build_property_update,
         query_database,
@@ -1156,36 +1156,142 @@ async def _review_someday(app: App) -> int:
         ),
     )
     entries = [ProjectEntry.from_page(p) for p in pages]
-    reviewed = 0
-    for entry in entries:
-        title = entry.header.strip()
-        action = await app.push_screen_wait(
-            SelectModal(
-                f'Someday: {title}',
-                [
-                    'Still someday — skip',
-                    'Activate → Current Project',
-                    'Drop',
-                ],
-            )
+    if not entries:
+        app.notify('Someday/Maybe is empty.')
+        return 0
+
+    result = await app.push_screen_wait(SomedayBrowseScreen(entries))
+    if not result:
+        return len(entries)
+
+    to_activate, to_drop = result
+    for entry in to_activate:
+        await loop.run_in_executor(
+            None,
+            update_page,
+            entry.page_id,
+            build_property_update(status='Current Project'),
         )
-        if action is None:
-            break
-        reviewed += 1
-        if action and action.startswith('Activate'):
-            await loop.run_in_executor(
-                None,
-                update_page,
-                entry.page_id,
-                build_property_update(status='Current Project'),
+    for entry in to_drop:
+        await loop.run_in_executor(None, archive_page, entry.page_id)
+    return len(entries)
+
+
+class SomedayBrowseScreen(ModalScreen):
+    """Browsable Someday/Maybe list — peruse, optionally act."""
+
+    DEFAULT_CSS = """
+    SomedayBrowseScreen { align: center middle; }
+    SomedayBrowseScreen .modal-box {
+        border: solid $accent;
+        padding: 1 2;
+        width: 72;
+        height: auto;
+        max-height: 36;
+    }
+    SomedayBrowseScreen .sb-title {
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    SomedayBrowseScreen VimListView { height: auto; max-height: 24; }
+    SomedayBrowseScreen .sb-footer {
+        margin-top: 1;
+        color: $text-muted;
+    }
+    """
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('escape', 'done', 'Done', show=True),
+        Binding('a', 'activate', 'Activate', show=True),
+        Binding('d', 'drop', 'Drop', show=True),
+        Binding('j', 'cursor_down', show=False),
+        Binding('k', 'cursor_up', show=False),
+    ]
+
+    def __init__(self, entries: list[ProjectEntry]) -> None:
+        super().__init__()
+        self._entries = list(entries)
+        self._to_activate: list[ProjectEntry] = []
+        self._to_drop: list[ProjectEntry] = []
+
+    def compose(self) -> ComposeResult:
+        n = len(self._entries)
+        s = 's' if n != 1 else ''
+        with Vertical(classes='modal-box'):
+            yield Static(
+                f'Someday/Maybe  [dim]({n} item{s})[/dim]',
+                classes='sb-title',
+                markup=True,
             )
-        elif action and action.startswith('Drop'):
-            confirmed = await app.push_screen_wait(
-                ConfirmModal(f'Drop "{title}"?')
+            yield VimListView(id='sb-list')
+            yield Static(
+                '[dim]j/k: browse · a: activate · d: drop · esc: done[/dim]',
+                classes='sb-footer',
+                markup=True,
             )
-            if confirmed:
-                await loop.run_in_executor(None, archive_page, entry.page_id)
-    return reviewed
+
+    def on_mount(self) -> None:
+        lv = self.query_one('#sb-list', VimListView)
+        for entry in self._entries:
+            lv.append(EntryListItem(entry))
+        lv.focus()
+
+    def _current_entry(self) -> ProjectEntry | None:
+        lv = self.query_one('#sb-list', VimListView)
+        idx = lv.index
+        if idx is None or idx >= len(self._entries):
+            return None
+        return self._entries[idx]
+
+    def _remove_current(self) -> None:
+        lv = self.query_one('#sb-list', VimListView)
+        idx = lv.index
+        if idx is None:
+            return
+        self._entries.pop(idx)
+        child = lv.highlighted_child
+        if child:
+            child.remove()
+        header = self.query_one('.sb-title', Static)
+        n = len(self._entries)
+        s = 's' if n != 1 else ''
+        header.update(f'Someday/Maybe  [dim]({n} item{s})[/dim]')
+        if not self._entries:
+            self.dismiss((self._to_activate, self._to_drop))
+
+    @work
+    async def action_activate(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal(f'Activate "{entry.header.strip()}"?')
+        )
+        if confirmed:
+            self._to_activate.append(entry)
+            self._remove_current()
+            self.app.notify(f'Will activate: {entry.header.strip()}')
+
+    @work
+    async def action_drop(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal(f'Drop "{entry.header.strip()}"?')
+        )
+        if confirmed:
+            self._to_drop.append(entry)
+            self._remove_current()
+
+    def action_done(self) -> None:
+        self.dismiss((self._to_activate, self._to_drop))
+
+    def action_cursor_down(self) -> None:
+        self.query_one('#sb-list', VimListView).action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        self.query_one('#sb-list', VimListView).action_cursor_up()
 
 
 async def _review_areas(app: App) -> int:
