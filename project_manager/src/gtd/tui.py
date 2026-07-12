@@ -676,12 +676,12 @@ class GoalsContent(Widget):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('N', 'new_goal', 'New'),
-        Binding('S', 'score_week', 'Score week'),
-        Binding('A', 'add_tactic', 'Add tactic'),
-        Binding('U', 'log_update', 'Log update'),
+        Binding('S', 'score_week', 'Score Week'),
+        Binding('A', 'add_tactic', 'Add Tactic'),
+        Binding('U', 'log_update', 'Log Update'),
         Binding('E', 'edit_goal', 'Edit'),
         Binding('H', 'score_history', 'History'),
-        Binding('X', 'toggle_logs', 'Expand logs'),
+        Binding('X', 'toggle_logs', 'Expand Logs'),
         Binding('D', 'delete_goal', 'Delete', show=False),
         Binding('r', 'refresh_goals', 'Refresh', show=False),
     ]
