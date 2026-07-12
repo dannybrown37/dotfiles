@@ -2759,6 +2759,7 @@ class SomedayContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('A', 'activate', 'Activate'),
+        Binding('L', 'move_to_list', '→ List'),
         Binding('U', 'update_entry', 'Update'),
         Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'drop_entry', 'Drop'),
@@ -2805,6 +2806,35 @@ class SomedayContent(BaseEntryContent):
             return None
         return next(
             (e for e in self._entries if e.page_id == item.page_id), None
+        )
+
+    @work
+    async def action_move_to_list(self) -> None:
+        from gtd.storage import load_list_categories  # noqa: PLC0415
+
+        entry = self._current_entry()
+        if not entry:
+            return
+        categories = load_list_categories(LIST_CONTEXTS)
+        cat = await self.app.push_screen_wait(
+            SelectModal('Add to which list?', sorted(categories))
+        )
+        if not cat:
+            return
+        self._move_to_list_worker(entry.page_id, cat)
+        self._remove_entry_and_refocus(entry.page_id)
+        self.app.notify(f'✓ "{entry.header.strip()}" → {cat}')
+
+    @work(thread=True)
+    def _move_to_list_worker(self, page_id: str, category: str) -> None:
+        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+
+        update_page(
+            page_id,
+            {
+                **build_property_update(status='List'),
+                'Context': {'select': {'name': category}},
+            },
         )
 
 
@@ -2885,7 +2915,8 @@ class ListsContent(BaseEntryContent):
         Binding('F', 'filter_list', 'Filter list'),
         Binding('+', 'add_category', 'New Area'),
         Binding('-', 'remove_category', 'Remove Area'),
-        Binding('R', 'rename_category', 'Rename Area'),
+        Binding(')', 'rename_category', 'Rename Area'),
+        Binding('(', 'move_item', 'Move Item'),
     ]
 
     def __init__(self) -> None:
@@ -3056,6 +3087,38 @@ class ListsContent(BaseEntryContent):
         _handle_response(response)
         self._load_entries()
         self.app.notify(f'✓ Added "{name.strip()}" to {target}')
+
+    @work
+    async def action_move_item(self) -> None:
+        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+
+        entry = self._current_entry()
+        if not entry:
+            return
+        destinations = [
+            *sorted(self._all_categories()),
+            '── Status ──',
+            'Someday/Maybe',
+            'Current Project',
+        ]
+        dest = await self.app.push_screen_wait(
+            SelectModal('Move to…', destinations)
+        )
+        if not dest or dest == '── Status ──':
+            return
+        loop = asyncio.get_running_loop()
+        if dest in ('Someday/Maybe', 'Current Project'):
+            props = build_property_update(status=dest)
+        else:
+            props = {
+                **build_property_update(status='List'),
+                'Context': {'select': {'name': dest}},
+            }
+        await loop.run_in_executor(
+            None, lambda: update_page(entry.page_id, props)
+        )
+        self._remove_entry_and_refocus(entry.page_id)
+        self.app.notify(f'✓ "{entry.header.strip()}" → {dest}')
 
     @work
     async def action_add_category(self) -> None:
