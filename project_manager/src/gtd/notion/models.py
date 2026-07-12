@@ -1,9 +1,39 @@
 """Parse Notion page properties into simple data structures."""
 
+from __future__ import annotations
+
+import re
 from dataclasses import dataclass
 
 
-__all__ = ['ProjectEntry']
+__all__ = ['ProjectEntry', 'advance_steps', 'format_steps', 'parse_steps']
+
+_NUMBERED_RE = re.compile(r'^\d+[.)]\s+(.+)$')
+
+
+def parse_steps(text: str) -> list[str]:
+    """Split a steps string into individual step texts (numbering stripped)."""
+    if not text:
+        return []
+    lines = [ln.strip() for ln in text.split('\n') if ln.strip()]
+    result = []
+    for line in lines:
+        m = _NUMBERED_RE.match(line)
+        result.append(m.group(1) if m else line)
+    return result
+
+
+def format_steps(steps: list[str]) -> str:
+    """Format a list of step strings as a numbered list."""
+    return '\n'.join(f'{i + 1}. {s}' for i, s in enumerate(steps))
+
+
+def advance_steps(text: str) -> str:
+    """Remove the first step and renumber the rest. Returns '' when empty."""
+    steps = parse_steps(text)
+    if not steps:
+        return ''
+    return format_steps(steps[1:])
 
 
 @dataclass
@@ -21,7 +51,7 @@ class ProjectEntry:
     created_date: str
 
     @classmethod
-    def from_page(cls, page: dict) -> 'ProjectEntry':
+    def from_page(cls, page: dict) -> ProjectEntry:
         props = page['properties']
         return cls(
             page_id=page['id'],
@@ -42,6 +72,21 @@ class ProjectEntry:
     @property
     def is_12_week_goal(self) -> bool:
         return self.context == '12-Week Goal'
+
+    @property
+    def steps(self) -> list[str]:
+        """Parsed list of steps from next_step field."""
+        return parse_steps(self.next_step)
+
+    @property
+    def current_step(self) -> str:
+        """The first (active) step, or the raw next_step if not numbered."""
+        s = self.steps
+        return s[0] if s else ''
+
+    @property
+    def step_count(self) -> int:
+        return len(self.steps)
 
 
 def _get_title(prop: dict) -> str:

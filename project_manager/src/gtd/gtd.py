@@ -220,13 +220,13 @@ def capture(header: tuple[str, ...]) -> None:
 @cli.group(invoke_without_command=True)
 @click.pass_context
 def areas(ctx: click.Context) -> None:
-    """Manage Areas of Focus / Responsibilities."""
+    """Manage Horizons of Focus (Areas of Responsibility)."""
     if ctx.invoked_subcommand is None:
         from gtd.storage import load_areas  # noqa: PLC0415
 
         area_list = load_areas()
         if not area_list:
-            click.echo('No areas defined. Use: gtd areas add "Health"')
+            click.echo('No horizons defined. Use: gtd areas add "Health"')
             return
         for i, a in enumerate(area_list, 1):
             notes = f'  — {a["notes"]}' if a.get('notes') else ''
@@ -237,7 +237,7 @@ def areas(ctx: click.Context) -> None:
 @click.argument('name')
 @click.option('--notes', default='', help='Optional description or reminder')
 def areas_add(name: str, notes: str) -> None:
-    """Add a new Area of Focus."""
+    """Add a new Horizon of Focus."""
     from gtd.storage import load_areas, save_areas  # noqa: PLC0415
 
     area_list = load_areas()
@@ -252,7 +252,7 @@ def areas_add(name: str, notes: str) -> None:
 @areas.command('remove')
 @click.argument('name')
 def areas_remove(name: str) -> None:
-    """Remove an Area of Focus."""
+    """Remove a Horizon of Focus."""
     from gtd.storage import load_areas, save_areas  # noqa: PLC0415
 
     area_list = load_areas()
