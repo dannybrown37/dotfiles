@@ -9,6 +9,7 @@ import re
 import subprocess
 import tempfile
 from datetime import datetime, timedelta
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.command import Hit, Hits, Provider
 from textual.containers import ScrollableContainer, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import (
@@ -982,6 +984,16 @@ class BaseEntryContent(Vertical):
         entry = self._current_entry()
         if entry and entry.page_id == page_id:
             self._update_detail()
+
+    def select_entry(self, page_id: str) -> bool:
+        """Highlight and focus the entry. Returns True if found."""
+        lv = self.query_one('#entry-list', VimListView)
+        for idx, child in enumerate(lv.children):
+            if isinstance(child, EntryListItem) and child.page_id == page_id:
+                lv.index = idx
+                lv.focus()
+                return True
+        return False
 
     def _remove_entry(self, page_id: str) -> None:
         self._entries = [e for e in self._entries if e.page_id != page_id]
@@ -3337,13 +3349,153 @@ def _classify_network_error(err: Exception) -> tuple[str, str]:
     return '', ''
 
 
+_TAB_LABELS: dict[str, str] = {
+    'tab-today': 'Today',
+    'tab-next-steps': 'Next Steps',
+    'tab-inbox': 'Inbox',
+    'tab-waiting': 'Delegated',
+    'tab-snoozed': 'Incubation',
+    'tab-recurring': 'Recurring',
+    'tab-someday': 'Someday',
+    'tab-goals': 'Goals',
+}
+
+
+def _entry_canonical_tab(entry: ProjectEntry, today: str) -> str:
+    status = entry.status or ''
+    if status == 'Current Project':
+        if entry.follow_up_date and entry.follow_up_date > today:
+            return 'tab-snoozed'
+        return 'tab-next-steps'
+    if status == 'Waiting For':
+        return 'tab-waiting'
+    if status == 'Recurring':
+        return 'tab-recurring'
+    if status == 'Someday/Maybe':
+        return 'tab-someday'
+    return 'tab-inbox'
+
+
+class GTDSearchProvider(Provider):
+    """Fuzzy search across all GTD entries, goals, and tactics."""
+
+    _entry_index: list[tuple[str, str, ProjectEntry]]
+    _goal_index: list[tuple[str, Goal, Tactic | None]]
+
+    async def startup(self) -> None:
+        from gtd.storage import get_stored_goal_names, load_goal  # noqa: PLC0415
+
+        self._goal_index = []
+        for name in get_stored_goal_names():
+            goal = load_goal(name)
+            self._goal_index.append((goal.name, goal, None))
+            for tactic in goal.tactics:
+                self._goal_index.append((goal.name, goal, tactic))
+
+        self._entry_index = []
+        try:
+            entries = await asyncio.to_thread(self._fetch_all_entries)
+            today = datetime.now().date().isoformat()
+            seen: set[str] = set()
+            for entry in entries:
+                if entry.page_id in seen:
+                    continue
+                seen.add(entry.page_id)
+                tab_id = _entry_canonical_tab(entry, today)
+                self._entry_index.append((tab_id, _TAB_LABELS[tab_id], entry))
+        except Exception:  # noqa: S110
+            pass
+
+    @staticmethod
+    def _fetch_all_entries() -> list[ProjectEntry]:
+        from gtd.notion.client import query_database  # noqa: PLC0415
+
+        pages = query_database(
+            filter_obj={
+                'or': [
+                    {'property': 'Status', 'select': {'equals': s}}
+                    for s in [
+                        'Triage',
+                        'Current Project',
+                        'Waiting For',
+                        'Recurring',
+                        'Someday/Maybe',
+                    ]
+                ]
+                + [{'property': 'Status', 'select': {'is_empty': True}}]
+            }
+        )
+        return [ProjectEntry.from_page(p) for p in pages]
+
+    async def search(self, query: str) -> Hits:
+        matcher = self.matcher(query)
+
+        for goal_name, goal, tactic in self._goal_index:
+            if tactic is None:
+                search_text = goal_name
+                if goal.description:
+                    search_text += f' {goal.description}'
+                score = matcher.match(search_text)
+                if score > 0:
+                    yield Hit(
+                        score,
+                        matcher.highlight(goal_name),
+                        partial(self._navigate_goal, goal_name),
+                        help=f'Goal · {goal.description or "no description"}',
+                    )
+            else:
+                score = matcher.match(f'{tactic.description} {goal_name}')
+                if score > 0:
+                    yield Hit(
+                        score,
+                        matcher.highlight(tactic.description),
+                        partial(self._navigate_goal, goal_name),
+                        help=(
+                            f'Tactic · {goal_name} · {tactic.reminder_cadence}'
+                        ),
+                    )
+
+        for tab_id, tab_label, entry in self._entry_index:
+            search_text = entry.header
+            if entry.context:
+                search_text += f' {entry.context}'
+            if entry.next_step:
+                search_text += f' {entry.next_step}'
+            score = matcher.match(search_text)
+            if score > 0:
+                icon = STATUS_ICONS.get(entry.status or '', '·')
+                ctx = f'  [{entry.context}]' if entry.context else ''
+                yield Hit(
+                    score,
+                    matcher.highlight(f'{icon} {entry.header.strip()}'),
+                    partial(self._navigate_entry, tab_id, entry.page_id),
+                    help=f'{tab_label}{ctx}',
+                )
+
+    async def _navigate_goal(self, goal_name: str) -> None:
+        tc = self.app.query_one('#tabs', TabbedContent)
+        tc.active = 'tab-goals'
+        await asyncio.sleep(0.05)
+        with contextlib.suppress(Exception):
+            self.app.query_one(GoalsContent).select_goal(goal_name)
+
+    async def _navigate_entry(self, tab_id: str, page_id: str) -> None:
+        tc = self.app.query_one('#tabs', TabbedContent)
+        tc.active = tab_id
+        await asyncio.sleep(0.05)
+        with contextlib.suppress(Exception):
+            pane = tc.query_one(f'#{tab_id}', TabPane)
+            pane.query_one(BaseEntryContent).select_entry(page_id)
+
+
 class GTDApp(App[None]):
     TITLE = 'GTD'
-    COMMANDS: ClassVar[set] = set()
-    ENABLE_COMMAND_PALETTE = False
+    COMMANDS: ClassVar[set] = {GTDSearchProvider}
+    ENABLE_COMMAND_PALETTE = True
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('ctrl+p', 'command_palette', show=False),
+        Binding('/', 'command_palette', 'Search', show=True),
         Binding('h', 'tab_left', '←', priority=True),
         Binding('j', 'focus_list', '↓', priority=False),
         Binding('k', 'focus_list_up', '↑', priority=False),
