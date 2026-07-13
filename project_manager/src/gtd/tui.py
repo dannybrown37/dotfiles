@@ -764,6 +764,19 @@ class GoalsContent(Widget):
             return None
         return self._goals[idx]
 
+    def select_goal(self, goal_name: str) -> bool:
+        """Highlight and focus the goal. Returns True if found."""
+        lv = self.query_one('#goals-list', VimListView)
+        for idx, child in enumerate(lv.children):
+            if (
+                isinstance(child, GoalListItem)
+                and child.goal_name == goal_name
+            ):
+                lv.index = idx
+                lv.focus()
+                return True
+        return False
+
     @on(ListView.Highlighted, '#goals-list')
     def on_list_highlighted(self) -> None:
         self._update_detail()
