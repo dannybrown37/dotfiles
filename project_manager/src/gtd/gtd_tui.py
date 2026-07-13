@@ -233,6 +233,11 @@ def _updated_today(tactic: Tactic) -> bool:
     return any(u.date == today for u in tactic.updates)
 
 
+def _updated_yesterday(tactic: Tactic) -> bool:
+    yesterday = (datetime.now().date() - timedelta(days=1)).isoformat()
+    return any(u.date == yesterday for u in tactic.updates)
+
+
 def _tactic_is_due(tactic: Tactic) -> bool:
     if _is_sprint_cadence(tactic.reminder_cadence):
         return not _updated_in_sprint(tactic)
@@ -2111,6 +2116,25 @@ class TodayContent(BaseEntryContent):
         tactic_item = self._current_tactic_item()
         if not tactic_item:
             return
+
+        today = datetime.now().date()
+        yesterday = today - timedelta(days=1)
+        if not _updated_yesterday(tactic_item.tactic):
+            choice = await self.app.push_screen_wait(
+                SelectModal(
+                    'Log for which day?',
+                    [
+                        f'Today ({today:%b %-d})',
+                        f'Yesterday ({yesterday:%b %-d})',
+                    ],
+                )
+            )
+            if choice is None:
+                return
+            log_date = yesterday if choice.startswith('Yesterday') else today
+        else:
+            log_date = today
+
         note = await self.app.push_screen_wait(
             InputModal('Log update', tactic_item.tactic_description)
         )
@@ -2126,7 +2150,7 @@ class TodayContent(BaseEntryContent):
                 if t.description == tactic_item.tactic_description:
                     t.updates.append(
                         Update(
-                            date=datetime.now().date().isoformat(),
+                            date=log_date.isoformat(),
                             note=note,
                         )
                     )
