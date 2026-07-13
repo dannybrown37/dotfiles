@@ -2,4 +2,4 @@ ahk/secrets.ahk*
 config/.secrets*
 **/.env
 **/__pycache__/
-./worktrees/
+.worktrees/
