@@ -1,7 +1,10 @@
 import pytest
 from datetime import datetime, timedelta
 
+import httpx
+
 from gtd.gtd_tui import (
+    _classify_network_error,
     _current_sprint_label,
     _current_week_label,
     _is_sprint_cadence,
@@ -501,3 +504,35 @@ class TestStatusLineIncludesDates:
             'Dec',
         ]
         assert any(m in result for m in months)
+
+
+class TestClassifyNetworkError:
+    def test_read_timeout_returns_warning(self):
+        msg, severity = _classify_network_error(
+            httpx.ReadTimeout('timed out'),
+        )
+        assert 'timed out' in msg.lower()
+        assert severity == 'warning'
+
+    def test_connect_timeout_returns_warning(self):
+        msg, severity = _classify_network_error(
+            httpx.ConnectTimeout('timed out')
+        )
+        assert severity == 'warning'
+        assert msg
+
+    def test_request_error_returns_error_severity(self):
+        msg, severity = _classify_network_error(
+            httpx.ConnectError('connection refused')
+        )
+        assert severity == 'error'
+        assert msg
+
+    def test_unrelated_exception_returns_empty(self):
+        msg, severity = _classify_network_error(ValueError('something else'))
+        assert msg == ''
+        assert severity == ''
+
+    def test_non_network_does_not_swallow(self):
+        msg, _ = _classify_network_error(RuntimeError('boom'))
+        assert msg == ''

@@ -335,13 +335,19 @@ WEEKLY_HABITS: list[tuple[str, str]] = [
     ('goal_scoring', 'Score Goals'),
 ]
 
-_GTD_REVIEW_CHECKLIST = """\
-  □ Process all inboxes to zero
-  □ Review Projects list & next actions
-  □ Review Waiting For list
-  □ Review Someday/Maybe list
-  □ Review calendar (past & upcoming)
-  □ Plan next week's priorities"""
+_GTD_REVIEW_STEPS: list[tuple[str, str]] = [
+    ('Process Inbox', 'triage'),
+    ('Review Projects', 'projects'),
+    ('Review Waiting For', 'waiting'),
+    ('Review Someday/Maybe', 'someday'),
+    ('Review Horizons of Focus', 'areas'),
+    ('Review Calendar (Past & Upcoming)', 'manual'),
+    ("Plan Next Week's Priorities", 'manual'),
+]
+
+_GTD_REVIEW_CHECKLIST = '\n'.join(
+    f'  □ {label}' for label, _ in _GTD_REVIEW_STEPS
+)
 
 _GOAL_SCORING_HINT = """\
   Navigate to the Goals tab (right) and press S on each goal.
@@ -436,6 +442,23 @@ class EntryListItem(ListItem):
 
     def compose(self) -> ComposeResult:
         yield Label(self._text)
+
+
+class ListEntryListItem(ListItem):
+    """List item showing success_condition (streaming service) inline."""
+
+    def __init__(self, entry: ProjectEntry) -> None:
+        super().__init__()
+        self.page_id = entry.page_id
+        svc = (
+            f'  [dim]{entry.success_condition}[/dim]'
+            if entry.success_condition
+            else ''
+        )
+        self._text = f'📋 {entry.header.strip()}{svc}'
+
+    def compose(self) -> ComposeResult:
+        yield Label(self._text, markup=True)
 
 
 class WeeklyHabitItem(ListItem):
@@ -612,6 +635,7 @@ async def _shared_update_entry(
 
     fields = [
         'Name',
+        'Status',
         'Context',
         'Steps',
         'Success condition',
@@ -1554,32 +1578,23 @@ class WeeklyReviewScreen(ModalScreen[bool]):
         self._restore_state()
 
     def _build_steps(self) -> list[dict]:
-        if self._inbox_count == 0:
-            inbox_label = 'Process Inbox  [dim](empty ✓)[/dim]'
-            inbox_done = True
-        else:
-            n = self._inbox_count
-            c = 's' if n != 1 else ''
-            inbox_label = f'Triage Inbox  [dim]({n} item{c})[/dim]'
-            inbox_done = False
-        s = {'done': False}
-        return [
-            {'label': inbox_label, 'done': inbox_done, 'action': 'triage'},
-            {**s, 'label': 'Review Projects', 'action': 'projects'},
-            {**s, 'label': 'Review Waiting For', 'action': 'waiting'},
-            {**s, 'label': 'Review Someday/Maybe', 'action': 'someday'},
-            {**s, 'label': 'Review Horizons of Focus', 'action': 'areas'},
-            {
-                **s,
-                'label': 'Review Calendar (Past & Upcoming)',
-                'action': 'manual',
-            },
-            {
-                **s,
-                'label': "Plan Next Week's Priorities",
-                'action': 'manual',
-            },
-        ]
+        steps = []
+        for label, action in _GTD_REVIEW_STEPS:
+            if action == 'triage':
+                if self._inbox_count == 0:
+                    display = 'Process Inbox  [dim](empty ✓)[/dim]'
+                    done = True
+                else:
+                    n = self._inbox_count
+                    c = 's' if n != 1 else ''
+                    display = f'Triage Inbox  [dim]({n} item{c})[/dim]'
+                    done = False
+                steps.append(
+                    {'label': display, 'done': done, 'action': action}
+                )
+            else:
+                steps.append({'label': label, 'done': False, 'action': action})
+        return steps
 
     def _restore_state(self) -> None:
         from gtd.storage import load_review_state  # noqa: PLC0415
@@ -2910,6 +2925,7 @@ class ListsContent(BaseEntryContent):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('A', 'add_item', 'Add'),
+        Binding('U', 'update_item', 'Update'),
         Binding('E', 'edit_notes', 'Notes'),
         Binding('D', 'drop_entry', 'Drop'),
         Binding('F', 'filter_list', 'Filter list'),
@@ -2964,11 +2980,12 @@ class ListsContent(BaseEntryContent):
         lv.clear()
         for cat in categories:
             items = by_ctx.get(cat, [])
+            items.sort(key=lambda e: (e.success_condition or '\xff', e.header))
             n = len(items)
             label = f'{cat}  ({n})' if n else f'{cat}  [dim](empty)[/dim]'
             lv.append(SeparatorListItem(label))
             for entry in items:
-                lv.append(EntryListItem(entry))
+                lv.append(ListEntryListItem(entry))
 
         total = len(self._entries)
         shown = sum(len(by_ctx.get(c, [])) for c in categories)
@@ -2986,7 +3003,7 @@ class ListsContent(BaseEntryContent):
 
     def _current_entry(self) -> ProjectEntry | None:
         item = self.query_one('#entry-list', VimListView).highlighted_child
-        if not isinstance(item, EntryListItem):
+        if not isinstance(item, EntryListItem | ListEntryListItem):
             return None
         return next(
             (e for e in self._entries if e.page_id == item.page_id), None
@@ -3030,8 +3047,10 @@ class ListsContent(BaseEntryContent):
         action: str,
         parameters: tuple[object, ...],
     ) -> bool | None:
-        if action == 'complete_step':
+        if action in ('complete_step', 'update_entry'):
             return False
+        if action == 'update_item':
+            return self._current_entry() is not None
         return super().check_action(action, parameters)
 
     @work
@@ -3058,6 +3077,13 @@ class ListsContent(BaseEntryContent):
         if not name:
             return
 
+        service = await self.app.push_screen_wait(
+            InputModal(
+                f'Add to {target}',
+                'Streaming service (optional)',
+            )
+        )
+
         loop = asyncio.get_running_loop()
         db_id = await loop.run_in_executor(None, get_projects_db_id)
         token = await loop.run_in_executor(None, get_token)
@@ -3067,19 +3093,21 @@ class ListsContent(BaseEntryContent):
             'Content-Type': 'application/json',
             'Notion-Version': NOTION_VERSION,
         }
-        payload = {
-            'parent': {'database_id': db_id},
-            'properties': {
-                'Header': {'title': [{'text': {'content': name.strip()}}]},
-                'Status': {'select': {'name': 'List'}},
-                'Context': {'select': {'name': target}},
-                'Created Date': {
-                    'date': {
-                        'start': _dt.now(tz=UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
-                    }
-                },
+        props: dict = {
+            'Header': {'title': [{'text': {'content': name.strip()}}]},
+            'Status': {'select': {'name': 'List'}},
+            'Context': {'select': {'name': target}},
+            'Created Date': {
+                'date': {
+                    'start': _dt.now(tz=UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+                }
             },
         }
+        if service and service.strip():
+            props['Success Condition'] = {
+                'rich_text': [{'text': {'content': service.strip()}}]
+            }
+        payload = {'parent': {'database_id': db_id}, 'properties': props}
         response = await loop.run_in_executor(
             None,
             lambda: httpx.post(url, headers=headers, json=payload),
@@ -3087,6 +3115,59 @@ class ListsContent(BaseEntryContent):
         _handle_response(response)
         self._load_entries()
         self.app.notify(f'✓ Added "{name.strip()}" to {target}')
+
+    @work
+    async def action_update_item(self) -> None:
+        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+
+        entry = self._current_entry()
+        if not entry:
+            return
+        fields = ['Name', 'Streaming Service', 'Context']
+        choice = await self.app.push_screen_wait(
+            SelectModal('Update which field?', fields)
+        )
+        if not choice:
+            return
+        if choice == 'Name':
+            value = await self.app.push_screen_wait(
+                InputModal('Name', initial=entry.header.strip())
+            )
+            if not value:
+                return
+            props = build_property_update(name=value.strip())
+        elif choice == 'Streaming Service':
+            value = await self.app.push_screen_wait(
+                InputModal(
+                    'Streaming Service',
+                    'e.g. Netflix, blank to clear',
+                    initial=entry.success_condition or '',
+                )
+            )
+            if value is None:
+                return
+            props = build_property_update(
+                success_condition=value.strip() or ''
+            )
+        elif choice == 'Context':
+            from gtd.notion.client import get_select_options  # noqa: PLC0415
+
+            loop = asyncio.get_running_loop()
+            contexts = await loop.run_in_executor(
+                None, get_select_options, 'Context'
+            )
+            value = await self.app.push_screen_wait(
+                SelectModal('Context', contexts, allow_new=True)
+            )
+            if not value:
+                return
+            props = build_property_update(context=value)
+        else:
+            return
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, update_page, entry.page_id, props)
+        self._load_entries()
+        self.app.notify('✓ Updated')
 
     @work
     async def action_move_item(self) -> None:
@@ -3221,6 +3302,17 @@ class ListsContent(BaseEntryContent):
         self._rebuild_list()
 
 
+def _classify_network_error(err: Exception) -> tuple[str, str]:
+    """(message, severity) for network errors; ('', '') means re-raise."""
+    import httpx  # noqa: PLC0415
+
+    if isinstance(err, httpx.TimeoutException):
+        return 'Notion timed out — try again', 'warning'
+    if isinstance(err, httpx.RequestError):
+        return f'Network error: {err}', 'error'
+    return '', ''
+
+
 class GTDApp(App[None]):
     TITLE = 'GTD'
     COMMANDS: ClassVar[set] = set()
@@ -3339,6 +3431,16 @@ class GTDApp(App[None]):
             tc.active = tab_ids[(idx - 1) % len(tab_ids)]
         except (ValueError, KeyError):
             pass
+
+    def _handle_exception(self, error: Exception) -> None:
+        from textual.worker import WorkerFailed  # noqa: PLC0415
+
+        if isinstance(error, WorkerFailed) and error.__cause__ is not None:
+            msg, severity = _classify_network_error(error.__cause__)
+            if msg:
+                self.notify(msg, severity=severity)
+                return
+        super()._handle_exception(error)
 
 
 def run_gtd_tui() -> None:
