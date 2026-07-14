@@ -64,6 +64,7 @@ def _entry(**kwargs) -> ProjectEntry:
         'due_date': None,
         'follow_up_date': None,
         'created_date': '2026-07-01T00:00:00',
+        'updated_date': '',
     }
     return ProjectEntry(**{**defaults, **kwargs})
 

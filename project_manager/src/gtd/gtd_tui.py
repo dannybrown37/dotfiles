@@ -114,7 +114,7 @@ def _render_steps_block(steps: list[str]) -> list[str]:
     return lines
 
 
-def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:  # noqa: C901
+def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:  # noqa: C901, PLR0912
     icon = STATUS_ICONS.get(entry.status, '·')
     lines = [
         f'{icon} [bold cyan]{entry.header.strip()}[/bold cyan]',
@@ -139,13 +139,30 @@ def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str: 
     if entry.due_date:
         lines.append(row('Due', entry.due_date, 'yellow'))
     if entry.follow_up_date:
-        lines.append(row('Follow-up', entry.follow_up_date, 'dim'))
+        lines.append(row('Follow-up', entry.follow_up_date, 'cyan'))
     if entry.created_date:
         try:
             created = datetime.fromisoformat(
                 entry.created_date.replace('Z', '+00:00')
             )
             lines.append(row('Created', created.strftime('%Y-%m-%d'), 'dim'))
+        except ValueError:
+            pass
+    if entry.updated_date:
+        try:
+            updated = datetime.fromisoformat(
+                entry.updated_date.replace('Z', '+00:00')
+            )
+            updated_str = updated.strftime('%Y-%m-%d')
+            created_str = (
+                datetime.fromisoformat(
+                    entry.created_date.replace('Z', '+00:00')
+                ).strftime('%Y-%m-%d')
+                if entry.created_date
+                else None
+            )
+            if updated_str != created_str:
+                lines.append(row('Updated', updated_str, 'dim'))
         except ValueError:
             pass
 
@@ -1689,13 +1706,13 @@ class WeeklyReviewScreen(ModalScreen[bool]):
     def action_cursor_up(self) -> None:
         self._focus_step(self._focused - 1)
 
-    async def _run_step(self, step: dict) -> None:
+    async def _run_step(self, step: dict) -> bool:
         action = step['action']
         if action == 'triage' and self._inbox_entries:
             inbox_content = self.app.query_one(InboxContent)
             inbox_content.seed_entries(self._inbox_entries)
-            await inbox_content.triage_entries(self._inbox_entries)
-        elif action == 'projects':
+            return await inbox_content.triage_entries(self._inbox_entries)
+        if action == 'projects':
             n = await _review_projects(self.app)
             if n > 0:
                 step['label'] = f'Review Projects  [dim]({n} reviewed)[/dim]'
@@ -1717,6 +1734,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
                 step['label'] = (
                     f'Review Horizons of Focus  [dim]({n} reviewed)[/dim]'
                 )
+        return True
 
     @work
     async def action_toggle(self) -> None:
@@ -1727,11 +1745,12 @@ class WeeklyReviewScreen(ModalScreen[bool]):
             self._save_state()
             return
 
-        await self._run_step(step)
-        step['done'] = True
+        completed = await self._run_step(step)
+        if completed:
+            step['done'] = True
+            self._save_state()
+            self._advance()
         self._refresh_steps()
-        self._save_state()
-        self._advance()
 
     @work
     async def action_reset(self) -> None:
@@ -2005,12 +2024,28 @@ class TodayContent(BaseEntryContent):
                     {'property': 'Status', 'select': {'is_empty': True}},
                     {'property': 'Context', 'select': {'is_empty': True}},
                     {
-                        'property': 'Next Actionable Step',
-                        'rich_text': {'is_empty': True},
+                        'and': [
+                            {
+                                'property': 'Status',
+                                'select': {'does_not_equal': 'List'},
+                            },
+                            {
+                                'property': 'Next Actionable Step',
+                                'rich_text': {'is_empty': True},
+                            },
+                        ]
                     },
                     {
-                        'property': 'Success Condition',
-                        'rich_text': {'is_empty': True},
+                        'and': [
+                            {
+                                'property': 'Status',
+                                'select': {'does_not_equal': 'List'},
+                            },
+                            {
+                                'property': 'Success Condition',
+                                'rich_text': {'is_empty': True},
+                            },
+                        ]
                     },
                 ]
             }
@@ -2301,18 +2336,20 @@ class InboxContent(BaseEntryContent):
     async def action_triage_all(self) -> None:
         await self.triage_entries(self._entries)
 
-    async def triage_entries(self, entries: list[ProjectEntry]) -> None:
+    async def triage_entries(self, entries: list[ProjectEntry]) -> bool:
+        """Returns True if completed, False if cancelled."""
         processed = 0
         for entry in list(entries):
             triaged = await self._triage_one(entry)
             if triaged is None:
-                break
+                return False
             if triaged:
                 processed += 1
                 self._remove_entry(entry.page_id)
         if processed:
             s = 's' if processed != 1 else ''
             self.app.notify(f'✓ Triaged {processed} item{s}')
+        return True
 
     async def _triage_one(self, entry: ProjectEntry) -> bool | None:  # noqa: PLR0911, PLR0912, C901, PLR0915
         """Triage a single entry — only prompts for missing fields.
@@ -2332,6 +2369,9 @@ class InboxContent(BaseEntryContent):
         kwargs: dict = {}
 
         needs_status = not entry.status or entry.status == 'Triage'
+
+        if entry.status == 'List' and entry.context:
+            return True
         if needs_status:
             status = await self.app.push_screen_wait(
                 SelectModal(f'Triage: {title}', TRIAGE_STATUSES)
@@ -2343,9 +2383,16 @@ class InboxContent(BaseEntryContent):
                     ConfirmModal(f'Delete "{title}"?')
                 )
                 if confirmed:
-                    await asyncio.get_running_loop().run_in_executor(
-                        None, archive_page, entry.page_id
-                    )
+                    try:
+                        await asyncio.get_running_loop().run_in_executor(
+                            None, archive_page, entry.page_id
+                        )
+                    except Exception as e:
+                        self.app.notify(
+                            f'⚠ Delete failed: {e}',
+                            severity='error',
+                        )
+                        return False
                     self.app.notify(f'✓ Deleted "{title}"')
                     return True
                 return False
@@ -2365,9 +2412,16 @@ class InboxContent(BaseEntryContent):
                     ConfirmModal(f'Delete "{title}"?')
                 )
                 if confirmed:
-                    await asyncio.get_running_loop().run_in_executor(
-                        None, archive_page, entry.page_id
-                    )
+                    try:
+                        await asyncio.get_running_loop().run_in_executor(
+                            None, archive_page, entry.page_id
+                        )
+                    except Exception as e:
+                        self.app.notify(
+                            f'⚠ Delete failed: {e}',
+                            severity='error',
+                        )
+                        return False
                     self.app.notify(f'✓ Deleted "{title}"')
                     return True
                 return False
@@ -2471,9 +2525,13 @@ class InboxContent(BaseEntryContent):
             return True
 
         props = build_property_update(**kwargs)
-        await asyncio.get_running_loop().run_in_executor(
-            None, update_page, entry.page_id, props
-        )
+        try:
+            await asyncio.get_running_loop().run_in_executor(
+                None, update_page, entry.page_id, props
+            )
+        except Exception as e:
+            self.app.notify(f'⚠ Save failed: {e}', severity='error')
+            return False
         final_status = kwargs.get('status', entry.status)
         final_context = kwargs.get('context', entry.context)
         self.app.notify(f'✓ "{title}" → {final_status} [{final_context}]')

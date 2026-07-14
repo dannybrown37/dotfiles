@@ -49,6 +49,7 @@ class ProjectEntry:
     due_date: str | None
     follow_up_date: str | None
     created_date: str
+    updated_date: str = ''
 
     @classmethod
     def from_page(cls, page: dict) -> ProjectEntry:
@@ -67,6 +68,7 @@ class ProjectEntry:
             due_date=_get_date(props.get('Due Date', {})),
             follow_up_date=_get_date(props.get('Follow-Up Date', {})),
             created_date=page.get('created_time', ''),
+            updated_date=page.get('last_edited_time', ''),
         )
 
     @property
