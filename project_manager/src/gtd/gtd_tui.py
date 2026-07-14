@@ -2499,9 +2499,14 @@ class InboxContent(BaseEntryContent):
                 )
             )
             if due_str:
-                parsed = dateparser.parse(due_str, fuzzy=True)
-                if parsed:
+                try:
+                    parsed = dateparser.parse(due_str, fuzzy=True)
                     kwargs['due_date'] = parsed.strftime('%Y-%m-%d')
+                except Exception:
+                    self.app.notify(
+                        f'Could not parse "{due_str}", skipping due date.',
+                        severity='warning',
+                    )
 
         if not entry.follow_up_date:
             follow_up_prompt = (
@@ -2517,9 +2522,14 @@ class InboxContent(BaseEntryContent):
                 )
             )
             if follow_str:
-                parsed = dateparser.parse(follow_str, fuzzy=True)
-                if parsed:
+                try:
+                    parsed = dateparser.parse(follow_str, fuzzy=True)
                     kwargs['follow_up_date'] = parsed.strftime('%Y-%m-%d')
+                except Exception:
+                    self.app.notify(
+                        f'Could not parse "{follow_str}", skipping follow-up.',
+                        severity='warning',
+                    )
 
         if not kwargs:
             return True
