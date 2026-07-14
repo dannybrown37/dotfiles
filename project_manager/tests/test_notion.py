@@ -304,6 +304,7 @@ class TestCadenceInference:
             due_date=None,
             follow_up_date=None,
             created_date='2026-06-01',
+            updated_date='',
         )
         assert _is_recurring(entry) is True
         entry.header = 'Call Bob'

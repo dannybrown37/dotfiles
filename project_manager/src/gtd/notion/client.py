@@ -101,6 +101,25 @@ def _headers() -> dict[str, str]:
     }
 
 
+_TIMEOUT = httpx.Timeout(30.0)
+
+
+def _get(url: str, **kw: object) -> httpx.Response:
+    return httpx.get(url, headers=_headers(), timeout=_TIMEOUT, **kw)
+
+
+def _post(url: str, **kw: object) -> httpx.Response:
+    return httpx.post(url, headers=_headers(), timeout=_TIMEOUT, **kw)
+
+
+def _patch(url: str, **kw: object) -> httpx.Response:
+    return httpx.patch(url, headers=_headers(), timeout=_TIMEOUT, **kw)
+
+
+def _delete(url: str, **kw: object) -> httpx.Response:
+    return httpx.delete(url, headers=_headers(), timeout=_TIMEOUT, **kw)
+
+
 def query_database(
     *,
     database_id: str | None = None,
@@ -118,7 +137,7 @@ def query_database(
     all_results = []
     has_more = True
     while has_more:
-        response = httpx.post(url, headers=_headers(), json=payload)
+        response = _post(url, json=payload)
         _handle_response(response)
         data = response.json()
         all_results.extend(data['results'])
@@ -137,7 +156,7 @@ def get_database_schema(
     if database_id is None:
         database_id = get_projects_db_id()
     url = f'{NOTION_API_URL}/databases/{database_id}'
-    response = httpx.get(url, headers=_headers())
+    response = _get(url)
     _handle_response(response)
     return response.json()
 
@@ -154,7 +173,7 @@ def update_page(page_id: str, properties: dict) -> dict:
     """Update a Notion page's properties."""
     url = f'{NOTION_API_URL}/pages/{page_id}'
     payload = {'properties': properties}
-    response = httpx.patch(url, headers=_headers(), json=payload)
+    response = _patch(url, json=payload)
     _handle_response(response)
     return response.json()
 
@@ -183,7 +202,7 @@ def _extract_block_text(block: dict) -> str | None:
 def get_page_body(page_id: str) -> str:
     """Fetch the text content from a page's body blocks."""
     url = f'{NOTION_API_URL}/blocks/{page_id}/children'
-    response = httpx.get(url, headers=_headers())
+    response = _get(url)
     _handle_response(response)
     blocks = response.json().get('results', [])
     lines = []
@@ -208,7 +227,7 @@ def append_page_note(page_id: str, text: str) -> dict:
             },
         ],
     }
-    response = httpx.patch(url, headers=_headers(), json=payload)
+    response = _patch(url, json=payload)
     _handle_response(response)
     return response.json()
 
@@ -216,7 +235,7 @@ def append_page_note(page_id: str, text: str) -> dict:
 def _delete_block(block_id: str) -> None:
     """Delete a single block."""
     url = f'{NOTION_API_URL}/blocks/{block_id}'
-    response = httpx.delete(url, headers=_headers())
+    response = _delete(url)
     _handle_response(response)
 
 
@@ -228,7 +247,7 @@ def _update_block_text(block_id: str, text: str) -> None:
             'rich_text': [{'text': {'content': text}}],
         },
     }
-    response = httpx.patch(url, headers=_headers(), json=payload)
+    response = _patch(url, json=payload)
     _handle_response(response)
 
 
@@ -239,7 +258,7 @@ def replace_page_body(page_id: str, text: str) -> None:
     deletes extras.
     """
     url = f'{NOTION_API_URL}/blocks/{page_id}/children'
-    response = httpx.get(url, headers=_headers())
+    response = _get(url)
     _handle_response(response)
     old_blocks = response.json().get('results', [])
 
@@ -276,11 +295,7 @@ def replace_page_body(page_id: str, text: str) -> None:
         ]
         for i in range(0, len(children), 100):
             batch = children[i : i + 100]
-            resp = httpx.patch(
-                url,
-                headers=_headers(),
-                json={'children': batch},
-            )
+            resp = _patch(url, json={'children': batch})
             _handle_response(resp)
 
 
@@ -327,6 +342,6 @@ def archive_page(page_id: str) -> dict:
     """Move a Notion page to trash."""
     url = f'{NOTION_API_URL}/pages/{page_id}'
     payload = {'in_trash': True}
-    response = httpx.patch(url, headers=_headers(), json=payload)
+    response = _patch(url, json=payload)
     _handle_response(response)
     return response.json()

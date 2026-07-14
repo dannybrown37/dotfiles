@@ -178,11 +178,13 @@ _MODAL_CSS = """
     text-style: bold;
     margin-bottom: 1;
     height: auto;
+    width: 1fr;
 }
 .modal-subtitle {
     color: $text-muted;
     margin-bottom: 1;
     height: auto;
+    width: 1fr;
 }
 .field-label {
     margin-top: 1;
