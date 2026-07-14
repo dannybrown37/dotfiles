@@ -114,7 +114,7 @@ def _render_steps_block(steps: list[str]) -> list[str]:
     return lines
 
 
-def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:
+def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:  # noqa: C901
     icon = STATUS_ICONS.get(entry.status, '·')
     lines = [
         f'{icon} [bold cyan]{entry.header.strip()}[/bold cyan]',
@@ -140,6 +140,14 @@ def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str:
         lines.append(row('Due', entry.due_date, 'yellow'))
     if entry.follow_up_date:
         lines.append(row('Follow-up', entry.follow_up_date, 'dim'))
+    if entry.created_date:
+        try:
+            created = datetime.fromisoformat(
+                entry.created_date.replace('Z', '+00:00')
+            )
+            lines.append(row('Created', created.strftime('%b %-d, %Y'), 'dim'))
+        except ValueError:
+            pass
 
     lines.append('')
     if notes is None:

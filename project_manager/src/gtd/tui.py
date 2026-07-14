@@ -177,10 +177,12 @@ _MODAL_CSS = """
 .modal-title {
     text-style: bold;
     margin-bottom: 1;
+    height: auto;
 }
 .modal-subtitle {
     color: $text-muted;
     margin-bottom: 1;
+    height: auto;
 }
 .field-label {
     margin-top: 1;
