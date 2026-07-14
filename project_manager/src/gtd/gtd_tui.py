@@ -2848,7 +2848,7 @@ class RecurringContent(BaseEntryContent):
 class WaitingForContent(BaseEntryContent):
     """Items delegated and waiting on someone else."""
 
-    TITLE: ClassVar[str] = 'Delegated'
+    TITLE: ClassVar[str] = 'Waiting For'
     EMPTY_MSG: ClassVar[str] = 'Nothing delegated.'
 
     BINDINGS: ClassVar[list[Binding]] = [
@@ -3419,7 +3419,7 @@ _TAB_LABELS: dict[str, str] = {
     'tab-today': 'Today',
     'tab-next-steps': 'Next Steps',
     'tab-inbox': 'Inbox',
-    'tab-waiting': 'Delegated',
+    'tab-waiting': 'Waiting For',
     'tab-snoozed': 'Incubation',
     'tab-recurring': 'Recurring',
     'tab-someday': 'Someday',
@@ -3590,7 +3590,7 @@ class GTDApp(App[None]):
                 yield InboxContent()
             with TabPane('Projects', id='tab-projects'):
                 yield ProjectsContent()
-            with TabPane('Delegated', id='tab-waiting'):
+            with TabPane('Waiting For', id='tab-waiting'):
                 yield WaitingForContent()
             with TabPane('Incubation', id='tab-snoozed'):
                 yield SnoozedContent()
