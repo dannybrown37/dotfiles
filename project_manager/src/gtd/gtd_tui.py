@@ -145,7 +145,7 @@ def _render_entry_detail(entry: ProjectEntry, notes: str | None = None) -> str: 
             created = datetime.fromisoformat(
                 entry.created_date.replace('Z', '+00:00')
             )
-            lines.append(row('Created', created.strftime('%b %-d, %Y'), 'dim'))
+            lines.append(row('Created', created.strftime('%Y-%m-%d'), 'dim'))
         except ValueError:
             pass
 
