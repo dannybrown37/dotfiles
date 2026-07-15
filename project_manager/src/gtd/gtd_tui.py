@@ -24,7 +24,6 @@ from textual.command import Hit, Hits, Provider
 from textual.containers import ScrollableContainer, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import (
-    Button,
     Footer,
     Header,
     Label,
@@ -562,12 +561,11 @@ class SeparatorListItem(ListItem):
         yield Label(f'[dim]── {self._label} ──[/dim]', markup=True)
 
 
-class NextStepListItem(ListItem):
+class NextStepListItem(EntryListItem):
     """List item showing next step as primary, project name as secondary."""
 
     def __init__(self, entry: ProjectEntry) -> None:
-        super().__init__()
-        self.page_id = entry.page_id
+        super().__init__(entry)
         step = entry.current_step
         project = entry.header.strip()
         due = ''
@@ -1234,14 +1232,143 @@ class BaseEntryContent(Vertical):
 # ── Weekly Review Screen ─────────────────────────────────────────────────────
 
 
+class ProjectsBrowseScreen(ModalScreen):
+    """Browse Current Projects — peruse, optionally act."""
+
+    DEFAULT_CSS = """
+    ProjectsBrowseScreen { align: center middle; }
+    ProjectsBrowseScreen .modal-box {
+        border: solid $accent;
+        padding: 1 2;
+        width: 72;
+        height: auto;
+        max-height: 36;
+    }
+    ProjectsBrowseScreen .sb-title {
+        text-style: bold;
+        margin-bottom: 1;
+        width: 1fr;
+    }
+    ProjectsBrowseScreen VimListView { height: auto; max-height: 24; }
+    ProjectsBrowseScreen .sb-footer { margin-top: 1; color: $text-muted; }
+    """
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('escape', 'done', 'Done', show=True),
+        Binding('d', 'mark_done', 'Done', show=True),
+        Binding('s', 'someday', 'Someday', show=True),
+        Binding('e', 'edit_steps', 'Edit Steps', show=True),
+        Binding('j', 'cursor_down', show=False),
+        Binding('k', 'cursor_up', show=False),
+    ]
+
+    def __init__(self, entries: list[ProjectEntry]) -> None:
+        super().__init__()
+        self._entries = list(entries)
+        self._to_done: list[ProjectEntry] = []
+        self._to_someday: list[ProjectEntry] = []
+        self._step_updates: dict[str, str] = {}
+
+    def compose(self) -> ComposeResult:
+        n = len(self._entries)
+        s = 's' if n != 1 else ''
+        with Vertical(classes='modal-box'):
+            yield Static(
+                f'Current Projects  [dim]({n} item{s})[/dim]',
+                classes='sb-title',
+                markup=True,
+            )
+            yield VimListView(id='sb-list')
+            yield Static(
+                '[dim]j/k · d: done · s: someday · e: steps · esc: done[/dim]',
+                classes='sb-footer',
+                markup=True,
+            )
+
+    def on_mount(self) -> None:
+        lv = self.query_one('#sb-list', VimListView)
+        for entry in self._entries:
+            lv.append(EntryListItem(entry))
+        lv.focus()
+
+    def _current_entry(self) -> ProjectEntry | None:
+        lv = self.query_one('#sb-list', VimListView)
+        idx = lv.index
+        if idx is None or idx >= len(self._entries):
+            return None
+        return self._entries[idx]
+
+    def _remove_current(self) -> None:
+        lv = self.query_one('#sb-list', VimListView)
+        idx = lv.index
+        if idx is None:
+            return
+        self._entries.pop(idx)
+        child = lv.highlighted_child
+        if child:
+            child.remove()
+        n = len(self._entries)
+        s = 's' if n != 1 else ''
+        self.query_one('.sb-title', Static).update(
+            f'Current Projects  [dim]({n} item{s})[/dim]'
+        )
+        if not self._entries:
+            self.dismiss((self._to_done, self._to_someday, self._step_updates))
+
+    @work
+    async def action_mark_done(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal(f'Mark done: "{entry.header.strip()}"?')
+        )
+        if confirmed:
+            self._to_done.append(entry)
+            self._remove_current()
+
+    @work
+    async def action_someday(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal(f'Move to Someday: "{entry.header.strip()}"?')
+        )
+        if confirmed:
+            self._to_someday.append(entry)
+            self._remove_current()
+
+    @work
+    async def action_edit_steps(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        val = await _open_steps_editor(
+            self.app, initial_text=entry.next_step or ''
+        )
+        if val is not None:
+            self._step_updates[entry.page_id] = val
+            self.app.notify(f'Steps updated: {entry.header.strip()[:40]}')
+
+    def action_done(self) -> None:
+        self.dismiss((self._to_done, self._to_someday, self._step_updates))
+
+    def action_cursor_down(self) -> None:
+        self.query_one('#sb-list', VimListView).action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        self.query_one('#sb-list', VimListView).action_cursor_up()
+
+
 async def _review_projects(app: App) -> int:
-    """Walk through each Current Project. Returns count reviewed."""
+    """Browse Current Projects. Returns count."""
     from gtd.notion.client import (  # noqa: PLC0415
+        archive_page,
         build_property_update,
         query_database,
         update_page,
     )
-    from gtd.notion.client import archive_page  # noqa: PLC0415
 
     loop = asyncio.get_running_loop()
     pages = await loop.run_in_executor(
@@ -1254,59 +1381,183 @@ async def _review_projects(app: App) -> int:
         ),
     )
     entries = [ProjectEntry.from_page(p) for p in pages]
-    reviewed = 0
-    for entry in entries:
-        title = entry.header.strip()
-        action = await app.push_screen_wait(
-            SelectModal(
-                f'Project: {title}',
-                [
-                    'Keep — no changes',
-                    'Update steps',
-                    'Move to Someday',
-                    'Mark Done',
-                ],
+    if not entries:
+        app.notify('No current projects.')
+        return 0
+
+    result = await app.push_screen_wait(ProjectsBrowseScreen(entries))
+    if not result:
+        return len(entries)
+
+    to_done, to_someday, step_updates = result
+    for entry in to_done:
+        await loop.run_in_executor(None, archive_page, entry.page_id)
+    for entry in to_someday:
+        await loop.run_in_executor(
+            None,
+            update_page,
+            entry.page_id,
+            build_property_update(status='Someday/Maybe'),
+        )
+    for page_id, steps in step_updates.items():
+        await loop.run_in_executor(
+            None,
+            update_page,
+            page_id,
+            build_property_update(next_step=steps),
+        )
+    return len(entries)
+
+
+class WaitingForBrowseScreen(ModalScreen):
+    """Browse Waiting For items — peruse, optionally act."""
+
+    DEFAULT_CSS = """
+    WaitingForBrowseScreen { align: center middle; }
+    WaitingForBrowseScreen .modal-box {
+        border: solid $accent;
+        padding: 1 2;
+        width: 72;
+        height: auto;
+        max-height: 36;
+    }
+    WaitingForBrowseScreen .sb-title {
+        text-style: bold;
+        margin-bottom: 1;
+        width: 1fr;
+    }
+    WaitingForBrowseScreen VimListView { height: auto; max-height: 24; }
+    WaitingForBrowseScreen .sb-footer { margin-top: 1; color: $text-muted; }
+    """
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('escape', 'done', 'Done', show=True),
+        Binding('d', 'heard_back', 'Heard Back', show=True),
+        Binding('a', 'activate', 'Activate', show=True),
+        Binding('f', 'follow_up', 'Follow-up', show=True),
+        Binding('j', 'cursor_down', show=False),
+        Binding('k', 'cursor_up', show=False),
+    ]
+
+    def __init__(self, entries: list[ProjectEntry]) -> None:
+        super().__init__()
+        self._entries = list(entries)
+        self._to_done: list[ProjectEntry] = []
+        self._to_activate: list[ProjectEntry] = []
+        self._followup_updates: dict[str, str] = {}
+
+    def compose(self) -> ComposeResult:
+        n = len(self._entries)
+        s = 's' if n != 1 else ''
+        with Vertical(classes='modal-box'):
+            yield Static(
+                f'Waiting For  [dim]({n} item{s})[/dim]',
+                classes='sb-title',
+                markup=True,
+            )
+            yield VimListView(id='sb-list')
+            yield Static(
+                '[dim]j/k · d: heard back · a: activate · f: follow-up[/dim]',
+                classes='sb-footer',
+                markup=True,
+            )
+
+    def on_mount(self) -> None:
+        lv = self.query_one('#sb-list', VimListView)
+        for entry in self._entries:
+            lv.append(EntryListItem(entry))
+        lv.focus()
+
+    def _current_entry(self) -> ProjectEntry | None:
+        lv = self.query_one('#sb-list', VimListView)
+        idx = lv.index
+        if idx is None or idx >= len(self._entries):
+            return None
+        return self._entries[idx]
+
+    def _remove_current(self) -> None:
+        lv = self.query_one('#sb-list', VimListView)
+        idx = lv.index
+        if idx is None:
+            return
+        self._entries.pop(idx)
+        child = lv.highlighted_child
+        if child:
+            child.remove()
+        n = len(self._entries)
+        s = 's' if n != 1 else ''
+        self.query_one('.sb-title', Static).update(
+            f'Waiting For  [dim]({n} item{s})[/dim]'
+        )
+        if not self._entries:
+            self.dismiss(
+                (self._to_done, self._to_activate, self._followup_updates)
+            )
+
+    @work
+    async def action_heard_back(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal(f'Heard back — archive "{entry.header.strip()}"?')
+        )
+        if confirmed:
+            self._to_done.append(entry)
+            self._remove_current()
+
+    @work
+    async def action_activate(self) -> None:
+        entry = self._current_entry()
+        if not entry:
+            return
+        confirmed = await self.app.push_screen_wait(
+            ConfirmModal(f'Activate "{entry.header.strip()}"?')
+        )
+        if confirmed:
+            self._to_activate.append(entry)
+            self._remove_current()
+
+    @work
+    async def action_follow_up(self) -> None:
+        from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
+
+        entry = self._current_entry()
+        if not entry:
+            return
+        val = await self.app.push_screen_wait(
+            InputModal(
+                'New follow-up date',
+                'e.g. Friday, in 3 days',
+                subtitle=entry.header.strip(),
             )
         )
-        if action is None:
-            break
-        reviewed += 1
-        if action == 'Update steps':
-            val = await _open_steps_editor(
-                app, initial_text=entry.next_step or ''
-            )
-            if val is not None:
-                await loop.run_in_executor(
-                    None,
-                    update_page,
-                    entry.page_id,
-                    build_property_update(next_step=val),
-                )
-        elif action == 'Move to Someday':
-            await loop.run_in_executor(
-                None,
-                update_page,
-                entry.page_id,
-                build_property_update(status='Someday/Maybe'),
-            )
-        elif action == 'Mark Done':
-            confirmed = await app.push_screen_wait(
-                ConfirmModal(f'Archive "{title}"?')
-            )
-            if confirmed:
-                await loop.run_in_executor(None, archive_page, entry.page_id)
-    return reviewed
+        if val:
+            date = _parse_date_input(val)
+            if date:
+                self._followup_updates[entry.page_id] = date
+                self.app.notify(f'Follow-up: {entry.header.strip()[:44]}')
+
+    def action_done(self) -> None:
+        self.dismiss(
+            (self._to_done, self._to_activate, self._followup_updates)
+        )
+
+    def action_cursor_down(self) -> None:
+        self.query_one('#sb-list', VimListView).action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        self.query_one('#sb-list', VimListView).action_cursor_up()
 
 
 async def _review_waiting_for(app: App) -> int:
-    """Walk through Waiting For items. Returns count reviewed."""
+    """Browse Waiting For items. Returns count."""
     from gtd.notion.client import (  # noqa: PLC0415
+        archive_page,
         build_property_update,
         query_database,
         update_page,
     )
-    from gtd.notion.client import archive_page  # noqa: PLC0415
-    from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
 
     loop = asyncio.get_running_loop()
     pages = await loop.run_in_executor(
@@ -1319,51 +1570,32 @@ async def _review_waiting_for(app: App) -> int:
         ),
     )
     entries = [ProjectEntry.from_page(p) for p in pages]
-    reviewed = 0
-    for entry in entries:
-        title = entry.header.strip()
-        waiting_on = entry.next_step or '(unknown)'
-        action = await app.push_screen_wait(
-            SelectModal(
-                f'Waiting: {title}',
-                [
-                    f'Still waiting on: {waiting_on}',
-                    'Heard back → Mark Done',
-                    'Activate → Current Project',
-                    'Update follow-up date',
-                ],
-            )
+    if not entries:
+        app.notify('No Waiting For items.')
+        return 0
+
+    result = await app.push_screen_wait(WaitingForBrowseScreen(entries))
+    if not result:
+        return len(entries)
+
+    to_done, to_activate, followup_updates = result
+    for entry in to_done:
+        await loop.run_in_executor(None, archive_page, entry.page_id)
+    for entry in to_activate:
+        await loop.run_in_executor(
+            None,
+            update_page,
+            entry.page_id,
+            build_property_update(status='Current Project'),
         )
-        if action is None:
-            break
-        reviewed += 1
-        if action and action.startswith('Heard back'):
-            await loop.run_in_executor(None, archive_page, entry.page_id)
-        elif action and action.startswith('Activate'):
-            await loop.run_in_executor(
-                None,
-                update_page,
-                entry.page_id,
-                build_property_update(status='Current Project'),
-            )
-        elif action and action.startswith('Update follow-up'):
-            val = await app.push_screen_wait(
-                InputModal(
-                    'New follow-up date',
-                    'e.g. Friday, in 3 days',
-                    subtitle=title,
-                )
-            )
-            if val:
-                date = _parse_date_input(val)
-                if date:
-                    await loop.run_in_executor(
-                        None,
-                        update_page,
-                        entry.page_id,
-                        build_property_update(follow_up_date=date),
-                    )
-    return reviewed
+    for page_id, date in followup_updates.items():
+        await loop.run_in_executor(
+            None,
+            update_page,
+            page_id,
+            build_property_update(follow_up_date=date),
+        )
+    return len(entries)
 
 
 async def _review_someday(app: App) -> int:
@@ -1599,7 +1831,6 @@ class WeeklyReviewScreen(ModalScreen[bool]):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('escape', 'cancel', 'Cancel'),
         Binding('enter,space', 'toggle', 'Check/Launch', show=True),
-        Binding('c', 'complete', 'Complete Review', show=True),
         Binding('X', 'reset', 'Reset', show=True),
         Binding('j', 'cursor_down', show=False),
         Binding('k', 'cursor_up', show=False),
@@ -1662,12 +1893,8 @@ class WeeklyReviewScreen(ModalScreen[bool]):
                     classes='review-item',
                 )
             yield Static(
-                '[dim]j/k: move · space: launch step · c: complete\n'
-                'X: reset · esc: cancel[/dim]',
+                '[dim]j/k · space: launch · X: reset · esc: cancel[/dim]',
                 classes='review-footer',
-            )
-            yield Button(
-                'Complete Review (c)', variant='success', id='complete-btn'
             )
 
     def on_mount(self) -> None:
@@ -1751,6 +1978,8 @@ class WeeklyReviewScreen(ModalScreen[bool]):
             self._save_state()
             self._advance()
         self._refresh_steps()
+        if all(s['done'] for s in self._steps):
+            self.dismiss(result=True)
 
     @work
     async def action_reset(self) -> None:
@@ -1768,15 +1997,8 @@ class WeeklyReviewScreen(ModalScreen[bool]):
         self._focus_step(0)
         self.app.notify('Review progress reset')
 
-    def action_complete(self) -> None:
-        self.dismiss(result=True)
-
     def action_cancel(self) -> None:
         self.dismiss(result=False)
-
-    @on(Button.Pressed, '#complete-btn')
-    def _complete_pressed(self) -> None:
-        self.dismiss(result=True)
 
 
 # ── Today content ────────────────────────────────────────────────────────────
@@ -1845,7 +2067,7 @@ class TodayContent(BaseEntryContent):
         if self._habit_items and entries:
             lv.append(SeparatorListItem('GTD'))
         for entry in entries:
-            lv.append(EntryListItem(entry))
+            lv.append(NextStepListItem(entry))
         if not goals_with_tactics:
             return
         total_due = sum(
