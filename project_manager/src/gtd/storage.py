@@ -103,11 +103,12 @@ def save_review_state(steps_done: list[bool]) -> None:
 
 
 def reset_review_state() -> None:
-    """Clear the saved weekly review state."""
+    """Clear the saved weekly review state and completion marker."""
     if not HABITS_PATH.exists():
         return
     data = json.loads(HABITS_PATH.read_text())
     data.pop('review_state', None)
+    data.pop('weekly_review', None)
     HABITS_PATH.write_text(json.dumps(data, indent=2) + '\n')
 
 
