@@ -444,3 +444,4 @@ _bt_show() {
 
 [[ "${PROMPT_COMMAND[*]}" != *_bt_pc_mark* ]] && PROMPT_COMMAND=("_bt_pc_mark" "${PROMPT_COMMAND[@]}")
 [[ "${PROMPT_COMMAND[*]}" != *_bt_show* ]] && PROMPT_COMMAND+=($'\n''_bt_show')
+export PATH="$HOME/.npm-global/bin:$PATH"
