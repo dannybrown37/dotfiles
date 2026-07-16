@@ -1432,9 +1432,8 @@ class WaitingForBrowseScreen(ModalScreen):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding('escape', 'done', 'Done', show=True),
-        Binding('d', 'heard_back', 'Heard Back', show=True),
-        Binding('a', 'activate', 'Activate', show=True),
-        Binding('f', 'follow_up', 'Follow-up', show=True),
+        Binding('d', 'heard_back', 'Project Done', show=True),
+        Binding('s', 'change_status', 'Change Status', show=True),
         Binding('j', 'cursor_down', show=False),
         Binding('k', 'cursor_up', show=False),
     ]
@@ -1443,8 +1442,7 @@ class WaitingForBrowseScreen(ModalScreen):
         super().__init__()
         self._entries = list(entries)
         self._to_done: list[ProjectEntry] = []
-        self._to_activate: list[ProjectEntry] = []
-        self._followup_updates: dict[str, str] = {}
+        self._status_changes: dict[str, str] = {}
 
     def compose(self) -> ComposeResult:
         n = len(self._entries)
@@ -1457,7 +1455,7 @@ class WaitingForBrowseScreen(ModalScreen):
             )
             yield VimListView(id='sb-list')
             yield Static(
-                '[dim]j/k · d: heard back · a: activate · f: follow-up[/dim]',
+                '[dim]j/k · d: project done · s: change status[/dim]',
                 classes='sb-footer',
                 markup=True,
             )
@@ -1490,9 +1488,7 @@ class WaitingForBrowseScreen(ModalScreen):
             f'Waiting For  [dim]({n} item{s})[/dim]'
         )
         if not self._entries:
-            self.dismiss(
-                (self._to_done, self._to_activate, self._followup_updates)
-            )
+            self.dismiss((self._to_done, self._status_changes))
 
     @work
     async def action_heard_back(self) -> None:
@@ -1500,48 +1496,39 @@ class WaitingForBrowseScreen(ModalScreen):
         if not entry:
             return
         confirmed = await self.app.push_screen_wait(
-            ConfirmModal(f'Heard back — archive "{entry.header.strip()}"?')
+            ConfirmModal(f'Mark "{entry.header.strip()}" as done?')
         )
         if confirmed:
             self._to_done.append(entry)
             self._remove_current()
 
     @work
-    async def action_activate(self) -> None:
+    async def action_change_status(self) -> None:
         entry = self._current_entry()
         if not entry:
             return
-        confirmed = await self.app.push_screen_wait(
-            ConfirmModal(f'Activate "{entry.header.strip()}"?')
-        )
-        if confirmed:
-            self._to_activate.append(entry)
-            self._remove_current()
-
-    @work
-    async def action_follow_up(self) -> None:
-        from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
-
-        entry = self._current_entry()
-        if not entry:
-            return
-        val = await self.app.push_screen_wait(
-            InputModal(
-                'New follow-up date',
-                'e.g. Friday, in 3 days',
+        options = [s for s in STATUSES if s != 'Waiting For']
+        new_status = await self.app.push_screen_wait(
+            SelectModal(
+                options,
+                title='Move to status',
                 subtitle=entry.header.strip(),
             )
         )
-        if val:
-            date = _parse_date_input(val)
-            if date:
-                self._followup_updates[entry.page_id] = date
-                self.app.notify(f'Follow-up: {entry.header.strip()[:44]}')
+        if new_status:
+            self._status_changes[entry.page_id] = new_status
+            self._remove_current()
+
+    @work
+    async def action_activate(self) -> None:
+        pass  # replaced by action_change_status
+
+    @work
+    async def action_follow_up(self) -> None:
+        pass  # replaced by action_change_status
 
     def action_done(self) -> None:
-        self.dismiss(
-            (self._to_done, self._to_activate, self._followup_updates)
-        )
+        self.dismiss((self._to_done, self._status_changes))
 
     def action_cursor_down(self) -> None:
         self.query_one('#sb-list', VimListView).action_cursor_down()
@@ -1578,22 +1565,15 @@ async def _review_waiting_for(app: App) -> int:
     if not result:
         return len(entries)
 
-    to_done, to_activate, followup_updates = result
+    to_done, status_changes = result
     for entry in to_done:
         await loop.run_in_executor(None, archive_page, entry.page_id)
-    for entry in to_activate:
-        await loop.run_in_executor(
-            None,
-            update_page,
-            entry.page_id,
-            build_property_update(status='Current Project'),
-        )
-    for page_id, date in followup_updates.items():
+    for page_id, new_status in status_changes.items():
         await loop.run_in_executor(
             None,
             update_page,
             page_id,
-            build_property_update(follow_up_date=date),
+            build_property_update(status=new_status),
         )
     return len(entries)
 
@@ -1775,19 +1755,21 @@ async def _review_areas(app: App) -> int:
         name = area['name']
         notes = area.get('notes', '')
         title = f'Area: {name}' + (f'\n[dim]{notes}[/dim]' if notes else '')
-        action = await app.push_screen_wait(
-            SelectModal(
-                title,
-                [
-                    'All good — nothing falling through the cracks',
-                    'Capture something to inbox',
-                ],
+        while True:
+            action = await app.push_screen_wait(
+                SelectModal(
+                    title,
+                    [
+                        'All good — nothing falling through the cracks',
+                        'Capture something to inbox',
+                    ],
+                )
             )
-        )
-        if action is None:
-            break
-        reviewed += 1
-        if action and action.startswith('Capture'):
+            if action is None:
+                return reviewed
+            if action.startswith('All good'):
+                reviewed += 1
+                break
             capture_text = await app.push_screen_wait(
                 InputModal(
                     f'Capture for [{name}]',
@@ -3226,7 +3208,7 @@ LIST_CONTEXTS: list[str] = [
     'Restaurants to Try',
     'Recipes to Try',
     'Books to Read',
-    'Things to Watch',
+    'Watchlist',
     'Websites to Surf',
     'Software to Try',
     'Musicals to See',
