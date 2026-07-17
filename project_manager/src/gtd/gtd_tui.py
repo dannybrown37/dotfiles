@@ -551,7 +551,7 @@ class EntryListItem(ListItem):
         super().__init__()
         self.page_id = entry.page_id
         icon = STATUS_ICONS.get(entry.status, '·')
-        ctx = f' [{entry.context}]' if entry.context else ''
+        ctx = ''
         self._text = f'{icon} {entry.header.strip()}{ctx}'
 
     def compose(self) -> ComposeResult:
@@ -2722,10 +2722,9 @@ class InboxContent(BaseEntryContent):
                 None, get_select_options, 'Context'
             )
             if status == 'List':
-                list_contexts = sorted(
-                    set(LIST_CONTEXTS)
-                    | {e.context for e in self._entries if e.context}
-                )
+                from gtd.storage import load_list_categories  # noqa: PLC0415
+
+                list_contexts = sorted(load_list_categories(LIST_CONTEXTS))
                 context = await self.app.push_screen_wait(
                     SelectModal(
                         f'Which list? {title}', list_contexts, allow_new=True
