@@ -15,9 +15,10 @@ A personal productivity CLI at `project_manager/` combining David Allen's **Gett
 
 ```
 src/gtd/
-├── gtd.py          # CLI entry point (click group); gtd / gtd fzf / gtd tui / gtd triage / etc.
+├── gtd.py          # CLI entry point (click group); gtd / gtd fzf / gtd tui / gtd triage / gtd api / etc.
 ├── gtd_tui.py      # Unified Textual TUI — GTDApp (main), all tab content widgets
 ├── tui.py          # Shared Textual widgets: modals, GoalsApp, GoalsContent, VimListView, ScorecardScreen
+├── api.py          # FastAPI HTTP wrapper for iOS Shortcuts / mobile access
 ├── models.py       # Pydantic: Goal, Tactic, Todo, Update
 ├── storage.py      # Local JSON I/O for goals + weekly habits (~/.local/share/gtd/)
 ├── cli.py          # 12WY fzf-based CLI (legacy pm command)
@@ -72,6 +73,17 @@ The Today tab has three sections in the left list:
 
 **T** triages selected entry, **A** triages all — both use TUI modals (no fzf). `_triage_one()` chains: `SelectModal(status)` → `SelectModal(context)` → `InputModal(next step)` → `InputModal(due date)` → `InputModal(follow-up)`. Core logic is in `triage_entries(entries)` (public, no `@work`); `action_triage_all` wraps it with `@work`.
 
+**Triage context for "List" status** uses `load_list_categories(LIST_CONTEXTS)` — the same source as the Lists tab — not Notion's raw context options.
+
+### Waiting For tab (Weekly Review)
+
+`WaitingForBrowseScreen` — browse Waiting For items during the Weekly Review step. Actions:
+- **`d`** → Project Done — confirms then archives the page
+- **`s`** → Change Status — `SelectModal` with all statuses except "Waiting For"; updates Notion on dismiss
+- **`esc`** → Done / exit
+
+Changes are collected (`_to_done: list`, `_status_changes: dict[str, str]`) and applied in `_review_waiting_for` after dismissal.
+
 ### Other tabs
 
 - **Recurring** — Status == 'Recurring'; `L` log+reschedule (stays in list), `D` drop
@@ -79,6 +91,14 @@ The Today tab has three sections in the left list:
 - **Snoozed** — Current Project + follow_up > today
 - **Projects / Someday** — standard status filters
 - **Goals** — `GoalsContent` widget (from `tui.py`); `E` opens edit sub-menu
+
+## Weekly Review — Areas of Focus (step 5)
+
+Each area loops until explicitly marked "All good". The prompt repeats for the same area after each capture, so multiple items can be captured before moving on. Escape exits the entire review early.
+
+## CelebrationScreen
+
+`CelebrationScreen(header)` — shown after `action_mark_done` confirms. Cycling emoji animation (4 frames, 0.35s interval), random hype message, auto-dismisses after 2s. Any key skips it. Located in `gtd_tui.py` near the top with `_CELEBRATION_FRAMES` and `_CELEBRATION_MESSAGES` constants.
 
 ## SelectModal UX
 
@@ -110,6 +130,7 @@ Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_ta
 | 12WY goals/tactics/todos | Local JSON | `~/.local/share/gtd/<goal-name>.json` |
 | Weekly habit completion | Local JSON | `~/.local/share/gtd/weekly_habits.json` |
 | Areas of Focus | Local JSON | `~/.local/share/gtd/areas.json` |
+| List categories | Local JSON | `~/.local/share/gtd/list_categories.json` |
 | GTD config | Local JSON | `~/.config/gtd/config.json` |
 
 `get_stored_goal_names()` excludes `config.json`, `weekly_habits.json`, and `areas.json` from glob results.
@@ -155,6 +176,27 @@ Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_ta
 - `check_action` must return explicit `True`/`False` (not `None`) for actions you control — `None` means "defer to parent" which can cause unexpected behaviour with duplicate key bindings
 - **`SplitFooter`** — subclass of `Footer`; separates contextual bindings (left) from global app bindings (right) with a ` ─── ` separator. Global section always sourced from `self.app.BINDINGS` directly (not overridable by child widgets).
 - **Left pane width**: `40%` via CSS — dynamic, scales with terminal width.
+- `EntryListItem` does **not** show context in the list label — context is only shown in the detail pane.
+
+## HTTP API (api.py)
+
+A FastAPI app for mobile/iOS Shortcuts access. Requires the `api` optional dependency group.
+
+**Install**: `uv pip install "gtd[api]"`  
+**Run**: `gtd api` (default: `0.0.0.0:8000`) or `gtd api --port 9000 --reload`  
+**Auth**: Bearer token — set `GTD_API_KEY` env var on the server; pass as `Authorization: Bearer <key>` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/capture` | Add item to inbox (`{"header": "..."}`) |
+| `GET` | `/today` | Today's actionable entries |
+| `GET` | `/inbox` | All Triage entries |
+| `POST` | `/done/{page_id}` | Archive (complete) an entry |
+| `POST` | `/snooze/{page_id}` | Snooze (`{"days": 1}` or `{"until": "Friday"}`) |
+| `PATCH` | `/entry/{page_id}` | Update fields: `status`, `context`, `next_step`, `due_date`, `follow_up_date` |
+| `GET` | `/statuses` | List valid GTD statuses |
+
+All responses are JSON. Entry objects match `ProjectEntry` fields.
 
 ## Tooling
 
@@ -162,4 +204,5 @@ Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_ta
 - **ruff** for lint/format — `uv run ruff check src/` must pass before shipping
 - **pytest** for tests — `uv run pytest`
 - Python 3.12+, Textual ≥ 0.71, Pydantic ≥ 2, httpx, click, python-dateutil
+- Optional: fastapi ≥ 0.115, uvicorn ≥ 0.34 (install with `uv pip install "gtd[api]"`)
 - After any code change: `uv tool install -e .` to update the installed `gtd` binary

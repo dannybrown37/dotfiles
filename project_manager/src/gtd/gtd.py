@@ -459,6 +459,22 @@ def tui() -> None:
     run_gtd_tui()
 
 
+@cli.command()
+@click.option('--host', default='0.0.0.0', show_default=True)  # noqa: S104
+@click.option('--port', default=8000, show_default=True)
+@click.option('--reload', is_flag=True, help='Auto-reload (dev only)')
+def api(host: str, port: int, reload: bool) -> None:
+    """Start the GTD HTTP API server (requires: pip install gtd[api])."""
+    try:
+        import uvicorn  # noqa: PLC0415
+    except ImportError:
+        click.echo(
+            'uvicorn not installed. Run: uv pip install "gtd[api]"', err=True
+        )
+        raise SystemExit(1)  # noqa: B904
+    uvicorn.run('gtd.api:app', host=host, port=port, reload=reload)
+
+
 def main() -> None:
     """Entry point for gtd command."""
     cli()
