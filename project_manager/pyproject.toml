@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["click>=8.1.0", "httpx>=0.28.0", "pydantic>=2.13.4", "python-dateutil>=2.9.0.post0", "textual>=0.71.0"]
 
+[project.optional-dependencies]
+api = ["fastapi>=0.115.0", "uvicorn>=0.34.0"]
+
 
 [project.scripts]
 gtd = "gtd.gtd:main"
