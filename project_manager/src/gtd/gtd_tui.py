@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import os
+import random
 import re
 import subprocess
 import tempfile
@@ -458,6 +459,88 @@ def _render_habit_detail(key: str, label: str) -> str:
         ]
 
     return '\n'.join(lines)
+
+
+# ── Celebration ─────────────────────────────────────────────────────────────
+
+_CELEBRATION_FRAMES = [
+    '🎉  ✨  🏆  ✨  🎉',
+    '✨  🎊  🥳  🎊  ✨',
+    '🏆  🎉  ✨  🎉  🏆',
+    '🎊  🥳  🎉  🥳  🎊',
+]
+
+_CELEBRATION_MESSAGES = [
+    'CRUSHED IT',
+    'DONE AND DONE',
+    'NAILED IT',
+    'GET IN',
+    'SHIPPED',
+    'BOOM',
+    'KILLED IT',
+    'OBLITERATED',
+]
+
+
+class CelebrationScreen(ModalScreen):
+    DEFAULT_CSS = """
+    CelebrationScreen { align: center middle; }
+    CelebrationScreen .cel-box {
+        border: double $success;
+        padding: 1 4;
+        width: 52;
+        height: auto;
+        background: $surface;
+    }
+    CelebrationScreen .cel-emoji {
+        text-align: center;
+        width: 1fr;
+        margin-bottom: 1;
+    }
+    CelebrationScreen .cel-title {
+        text-align: center;
+        text-style: bold;
+        color: $success;
+        width: 1fr;
+    }
+    CelebrationScreen .cel-header {
+        text-align: center;
+        color: $text-muted;
+        width: 1fr;
+        margin-top: 1;
+    }
+    """
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding('escape,enter,space', 'dismiss_cel', show=False),
+    ]
+
+    def __init__(self, header: str) -> None:
+        super().__init__()
+        self._header = header
+        self._frame = 0
+        self._msg = random.choice(_CELEBRATION_MESSAGES)
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes='cel-box'):
+            yield Static('', classes='cel-emoji', id='cel-emoji', markup=True)
+            yield Static(self._msg, classes='cel-title', markup=False)
+            yield Static(
+                f'"{self._header}"', classes='cel-header', markup=False
+            )
+
+    def on_mount(self) -> None:
+        self._tick()
+        self.set_interval(0.35, self._tick)
+        self.set_timer(2.0, self.action_dismiss_cel)
+
+    def _tick(self) -> None:
+        frame = _CELEBRATION_FRAMES[self._frame % len(_CELEBRATION_FRAMES)]
+        self.query_one('#cel-emoji', Static).update(frame)
+        self._frame += 1
+
+    def action_dismiss_cel(self) -> None:
+        self.dismiss()
 
 
 # ── List item widgets ────────────────────────────────────────────────────────
@@ -1101,7 +1184,9 @@ class BaseEntryContent(Vertical):
             return
         self._done_worker(entry.page_id)
         self._remove_entry_and_refocus(entry.page_id)
-        self.app.notify(f'✓ "{entry.header.strip()}" → done')
+        await self.app.push_screen_wait(
+            CelebrationScreen(entry.header.strip())
+        )
 
     @work(thread=True)
     def _done_worker(self, page_id: str) -> None:
