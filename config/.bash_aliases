@@ -203,4 +203,5 @@ alias tmconf='tmux source-file ~/.tmux.conf'  # @doc Reload tmux config
 
 # Mental Models
 alias mentalmodels='nvim -c "setlocal wrap linebreak" ~/projects/dotfiles/references/mental-models.md'  # @doc Open mental models reference
+alias media='nvim -c "setlocal wrap linebreak" ~/projects/dotfiles/references/media.md'  # @doc Open educational media reference
 # alias fixhashicorppublickey='wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg'
