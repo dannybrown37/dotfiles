@@ -93,6 +93,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
 | `llmedit` | Edit LLM rules in Neovim | `config/.bash_aliases` |
 | `llmrules` | Copy LLM rules to clipboard for chatbot copy-paste | `config/.bash_aliases` |
+| `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
 | `mk` | Create a directory and cd into it | `config/.bashrc` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
 | `note` | Create a note file from the command line | `config/.bashrc` |
@@ -138,6 +139,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `pass/` | password-store (pass) configuration and GPG setup |
 | `project_manager/` | Python CLI for GTD and 12-Week Year planning |
+| `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
 | `scripts/` | Non-sourced standalone executable scripts |
 | `wsl/` | WSL-specific settings, functions, and komorebi config |
 
