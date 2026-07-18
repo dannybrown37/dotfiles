@@ -192,5 +192,13 @@
   "typescript.tsc.autoDetect": "off",
   "vim.enableNeovim": true,
   "vim.neovimPath": "/usr/bin/nvim",
-  "workbench.iconTheme": "eq-material-theme-icons-deepforest"
+  "workbench.iconTheme": "eq-material-theme-icons-deepforest",
+  "yaml.disableSchemaDetection": [
+    "**/.github/workflows/*.yml",
+    "**/.github/workflows/*.yaml",
+    "**/.gitea/workflows/*.yml",
+    "**/.gitea/workflows/*.yaml",
+    "**/.forgejo/workflows/*.yml",
+    "**/.forgejo/workflows/*.yaml"
+  ]
 }
