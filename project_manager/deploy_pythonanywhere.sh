@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+[[ -f "${HOME}/.env" ]] && { set -a; source "${HOME}/.env"; set +a; }
+
 PA_USERNAME="${PA_USERNAME:?set PA_USERNAME}"
 PA_API_TOKEN="${PA_API_TOKEN:?set PA_API_TOKEN}"
 PA_DOMAIN="${PA_USERNAME}.pythonanywhere.com"
