@@ -1,139 +1,117 @@
-"""Thin FastAPI wrapper around GTD Notion operations for iOS Shortcuts."""
+"""Thin Flask wrapper around GTD Notion operations for iOS Shortcuts."""
 
 from __future__ import annotations
 
 import os
 from dataclasses import asdict
 from datetime import datetime, timedelta
-from typing import Annotated
+from functools import wraps
+from typing import Any, TYPE_CHECKING
 
-from fastapi import Depends, FastAPI, HTTPException, Security
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+from flask import Flask, jsonify, request
 
 from gtd.notion.capture import _create_page
-from gtd.notion.client import archive_page, build_property_update, update_page
+from gtd.notion.client import (
+    archive_page,
+    build_property_update,
+    query_database,
+    update_page,
+)
 from gtd.notion.entries import _get_today_entries, _parse_date_input
 from gtd.notion.models import ProjectEntry
-from gtd.notion.client import query_database
 from gtd.notion.schema import STATUSES
 
-app = FastAPI(title='GTD API', docs_url='/docs')
-_bearer = HTTPBearer()
+app = Flask(__name__)
 
 
-def _require_auth(
-    creds: Annotated[HTTPAuthorizationCredentials, Security(_bearer)],
-) -> None:
-    expected = os.environ.get('GTD_API_KEY')
-    if not expected:
-        raise HTTPException(500, 'GTD_API_KEY not set on server')
-    if creds.credentials != expected:
-        raise HTTPException(401, 'Invalid API key')
+def require_auth(fn: Callable) -> Callable:
+    @wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        expected = os.environ.get('GTD_API_KEY')
+        if not expected:
+            return jsonify(error='GTD_API_KEY not set on server'), 500
+        auth = request.headers.get('Authorization', '')
+        if not auth.startswith('Bearer ') or auth[7:] != expected:
+            return jsonify(error='Invalid API key'), 401
+        return fn(*args, **kwargs)
 
-
-Auth = Annotated[None, Depends(_require_auth)]
+    return wrapper
 
 
 def _entry_dict(e: ProjectEntry) -> dict:
     return asdict(e)
 
 
-# ── Capture ──────────────────────────────────────────────────────────────────
-
-
-class CaptureRequest(BaseModel):
-    header: str
-
-
-@app.post('/capture', status_code=201)
-def capture(_: Auth, body: CaptureRequest) -> dict:
-    """Add an item to the GTD inbox (Triage status)."""
-    page = _create_page(body.header.strip())
-    return {'page_id': page['id'], 'header': body.header.strip()}
-
-
-# ── Today ────────────────────────────────────────────────────────────────────
+@app.post('/capture')
+@require_auth
+def capture() -> Any:
+    body = request.get_json(force=True)
+    header = (body.get('header') or '').strip()
+    if not header:
+        return jsonify(error='header is required'), 400
+    page = _create_page(header)
+    return jsonify(page_id=page['id'], header=header), 201
 
 
 @app.get('/today')
-def today(_: Auth) -> list[dict]:
-    """Return today's actionable entries."""
-    return [_entry_dict(e) for e in _get_today_entries()]
-
-
-# ── Inbox ────────────────────────────────────────────────────────────────────
+@require_auth
+def today() -> Any:
+    return jsonify([_entry_dict(e) for e in _get_today_entries()])
 
 
 @app.get('/inbox')
-def inbox(_: Auth) -> list[dict]:
-    """Return all entries with Triage status."""
+@require_auth
+def inbox() -> Any:
     pages = query_database(
-        filter_obj={'property': 'Status', 'select': {'equals': 'Triage'}}
+        filter_obj={'property': 'Status', 'select': {'equals': 'Triage'}},
     )
-    return [_entry_dict(ProjectEntry.from_page(p)) for p in pages]
+    return jsonify([_entry_dict(ProjectEntry.from_page(p)) for p in pages])
 
 
-# ── Done ─────────────────────────────────────────────────────────────────────
-
-
-@app.post('/done/{page_id}')
-def done(_: Auth, page_id: str) -> dict:
-    """Archive (complete) an entry."""
+@app.post('/done/<page_id>')
+@require_auth
+def done(page_id: str) -> Any:
     archive_page(page_id)
-    return {'page_id': page_id, 'status': 'archived'}
+    return jsonify(page_id=page_id, status='archived')
 
 
-# ── Snooze ───────────────────────────────────────────────────────────────────
-
-
-class SnoozeRequest(BaseModel):
-    days: int = 1
-    until: str | None = None  # YYYY-MM-DD or natural language
-
-
-@app.post('/snooze/{page_id}')
-def snooze(_: Auth, page_id: str, body: SnoozeRequest) -> dict:
-    """Set a follow-up date, pushing the entry out of today's view."""
-    if body.until:
-        date = _parse_date_input(body.until)
+@app.post('/snooze/<page_id>')
+@require_auth
+def snooze(page_id: str) -> Any:
+    body = request.get_json(force=True, silent=True) or {}
+    until = body.get('until')
+    days = body.get('days', 1)
+    if until:
+        date = _parse_date_input(until)
         if not date:
-            raise HTTPException(400, f'Could not parse date: {body.until!r}')
+            return jsonify(error=f'Could not parse date: {until!r}'), 400
     else:
-        date = (datetime.now() + timedelta(days=body.days)).strftime(
-            '%Y-%m-%d'
-        )
+        date = (datetime.now() + timedelta(days=days)).strftime('%Y-%m-%d')
     update_page(page_id, build_property_update(follow_up_date=date))
-    return {'page_id': page_id, 'follow_up_date': date}
+    return jsonify(page_id=page_id, follow_up_date=date)
 
 
-# ── Update status / fields ───────────────────────────────────────────────────
-
-
-class UpdateRequest(BaseModel):
-    status: str | None = None
-    context: str | None = None
-    next_step: str | None = None
-    due_date: str | None = None
-    follow_up_date: str | None = None
-
-
-@app.patch('/entry/{page_id}')
-def update_entry(_: Auth, page_id: str, body: UpdateRequest) -> dict:
-    """Update one or more fields on an entry."""
-    if body.status and body.status not in STATUSES:
-        raise HTTPException(400, f'Invalid status. Must be one of: {STATUSES}')
-    kwargs = {k: v for k, v in body.model_dump().items() if v is not None}
+@app.patch('/entry/<page_id>')
+@require_auth
+def update_entry(page_id: str) -> Any:
+    body = request.get_json(force=True, silent=True) or {}
+    status = body.get('status')
+    if status and status not in STATUSES:
+        return jsonify(
+            error=f'Invalid status. Must be one of: {STATUSES}'
+        ), 400
+    fields = ('status', 'context', 'next_step', 'due_date', 'follow_up_date')
+    kwargs = {k: body[k] for k in fields if body.get(k) is not None}
     if not kwargs:
-        raise HTTPException(400, 'No fields provided')
+        return jsonify(error='No fields provided'), 400
     update_page(page_id, build_property_update(**kwargs))
-    return {'page_id': page_id, 'updated': kwargs}
-
-
-# ── Meta ─────────────────────────────────────────────────────────────────────
+    return jsonify(page_id=page_id, updated=kwargs)
 
 
 @app.get('/statuses')
-def statuses(_: Auth) -> list[str]:
-    """List valid GTD statuses."""
-    return STATUSES
+@require_auth
+def statuses() -> Any:
+    return jsonify(STATUSES)
