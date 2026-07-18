@@ -8,9 +8,10 @@ PA_API_TOKEN="${PA_API_TOKEN:?set PA_API_TOKEN}"
 PA_DOMAIN="${PA_USERNAME}.pythonanywhere.com"
 REPO_DIR="/home/${PA_USERNAME}/dotfiles"
 PROJECT_DIR="${REPO_DIR}/project_manager"
-VENV_NAME="gtd-env"
-VENV_DIR="/home/${PA_USERNAME}/.virtualenvs/${VENV_NAME}"
+VENV_DIR="${PROJECT_DIR}/.venv"
 WSGI_FILE="/var/www/${PA_USERNAME//./_}_pythonanywhere_com_wsgi.py"
+
+command -v uv &>/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
 
 if [[ ! -d "${REPO_DIR}" ]]; then
     git clone https://github.com/dannybrown37/dotfiles "${REPO_DIR}"
@@ -18,11 +19,11 @@ else
     git -C "${REPO_DIR}" pull
 fi
 
-if [[ ! -d "${VENV_DIR}" ]]; then
-    mkvirtualenv --python=/usr/bin/python3.12 "${VENV_NAME}"
-fi
+cd "${PROJECT_DIR}"
 
-"${VENV_DIR}/bin/pip" install -e "${PROJECT_DIR}[api]" a2wsgi
+[[ -d "${VENV_DIR}" ]] || uv venv --python 3.12
+
+uv pip install -e ".[api]" a2wsgi
 
 cat > "${WSGI_FILE}" <<EOF
 import sys
