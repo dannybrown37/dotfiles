@@ -280,7 +280,13 @@ def remove_context(name: str) -> None:
 
 
 def rename_context(old_name: str, new_name: str) -> None:
-    """Rename a context in the Notion schema."""
+    """Rename a context and update all items with that context."""
+    # First, fetch all items with old context (while option still exists)
+    pages = query_database(
+        filter_obj={'property': 'Context', 'select': {'equals': old_name}}
+    )
+
+    # Then update schema (rename the option)
     schema = get_database_schema()
     opts = schema['properties']['Context']['select']['options']
     new_opts = [
@@ -292,6 +298,11 @@ def rename_context(old_name: str, new_name: str) -> None:
     payload = {'properties': {'Context': {'select': {'options': new_opts}}}}
     response = _patch(url, json=payload)
     _handle_response(response)
+
+    # Finally, update all items with the newly renamed context
+    for page in pages:
+        props = build_property_update(context=new_name)
+        update_page(page['id'], props)
 
 
 def update_page(page_id: str, properties: dict) -> dict:

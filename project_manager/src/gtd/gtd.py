@@ -329,9 +329,10 @@ def contexts_remove(name: str) -> None:
 @click.argument('old_name')
 @click.argument('new_name')
 def contexts_rename(old_name: str, new_name: str) -> None:
-    """Rename a context."""
+    """Rename a context and update all items with that context."""
     from gtd.notion.client import (  # noqa: PLC0415
         get_contexts,
+        query_database,
         rename_context,
     )
 
@@ -341,8 +342,21 @@ def contexts_rename(old_name: str, new_name: str) -> None:
     if new_name in get_contexts():
         click.echo(f'Context "{new_name}" already exists.')
         return
+
+    # Show how many items will be updated
+    pages = query_database(
+        filter_obj={'property': 'Context', 'select': {'equals': old_name}}
+    )
+    item_count = len(pages)
+
     rename_context(old_name, new_name)
-    click.echo(f'Renamed: {old_name} → {new_name}')
+    if item_count:
+        click.echo(
+            f'Renamed: {old_name} → {new_name} ({item_count} item'
+            f'{"s" if item_count != 1 else ""} updated)'
+        )
+    else:
+        click.echo(f'Renamed: {old_name} → {new_name}')
 
 
 @cli.command()
