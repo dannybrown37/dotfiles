@@ -72,13 +72,36 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, 
     # Context (skip for List items)
     context = None
     if status != 'List':
-        contexts = get_select_options('Context')
-        context = fzf_on_a_list(
-            contexts,
-            prompt=f'"{entry.header}" → Context',
+        from gtd.notion.client import (  # noqa: PLC0415
+            add_context,
+            remove_context,
         )
-        if not context:
-            return False
+
+        contexts = sorted(get_select_options('Context'))
+        while True:
+            context = fzf_on_a_list(
+                [*contexts, '[+ Add new]', '[- Remove]'],
+                prompt=f'"{entry.header}" → Context',
+            )
+            if not context:
+                return False
+            if context == '[+ Add new]':
+                new_ctx = prompt_input('New context name: ')
+                if new_ctx:
+                    add_context(new_ctx)
+                    contexts = sorted(get_select_options('Context'))
+                continue
+            if context == '[- Remove]':
+                remove_opts = sorted(get_select_options('Context'))
+                remove_ctx = fzf_on_a_list(
+                    remove_opts,
+                    prompt='Remove context',
+                )
+                if remove_ctx:
+                    remove_context(remove_ctx)
+                    contexts = sorted(get_select_options('Context'))
+                continue
+            break
 
     # List Category (for List status)
     list_category = None

@@ -710,7 +710,7 @@ async def _prompt_and_get_props(
             None, get_select_options, 'Context'
         )
         value = await app.push_screen_wait(
-            SelectModal('Context', contexts, allow_new=True)
+            SelectModal('Context', sorted(contexts), allow_new=True)
         )
         props = {'context': value} if value else None
     elif choice == 'Steps':
@@ -942,8 +942,8 @@ async def _shared_log_and_reschedule(
     new_context = await app.push_screen_wait(
         SelectModal(
             f'Context for next step? ({entry.context or "none"})',
-            contexts,
-            allow_new=False,
+            sorted(contexts),
+            allow_new=True,
         )
     )
 
@@ -2752,14 +2752,61 @@ class InboxContent(BaseEntryContent):
                     return None
                 kwargs['list_category'] = list_category
             else:
-                contexts = await asyncio.get_running_loop().run_in_executor(
-                    None, get_select_options, 'Context'
+                from gtd.notion.client import (  # noqa: PLC0415
+                    add_context,
+                    remove_context,
                 )
-                context = await self.app.push_screen_wait(
-                    SelectModal(f'Context: {title}', contexts, allow_new=True)
-                )
-                if context is None:
-                    return None
+
+                loop = asyncio.get_running_loop()
+                context = None
+                while True:
+                    contexts = await loop.run_in_executor(
+                        None, get_select_options, 'Context'
+                    )
+                    context = await self.app.push_screen_wait(
+                        SelectModal(
+                            f'Context: {title}',
+                            [
+                                *sorted(contexts),
+                                '──────────',
+                                '[+ Add new context]',
+                                '[- Remove context]',
+                            ],
+                            allow_new=False,
+                        )
+                    )
+                    if context is None:
+                        return None
+                    if context == '[+ Add new context]':
+                        new_name = await self.app.push_screen_wait(
+                            InputModal('New context name')
+                        )
+                        if new_name:
+                            await loop.run_in_executor(
+                                None, add_context, new_name
+                            )
+                            self.app.notify(f'✓ Added context: {new_name}')
+                        continue
+                    if context == '[- Remove context]':
+                        contexts_to_remove = await loop.run_in_executor(
+                            None, get_select_options, 'Context'
+                        )
+                        remove_name = await self.app.push_screen_wait(
+                            SelectModal(
+                                'Remove context',
+                                sorted(contexts_to_remove),
+                                allow_new=False,
+                            )
+                        )
+                        if remove_name:
+                            await loop.run_in_executor(
+                                None, remove_context, remove_name
+                            )
+                            msg = f'✓ Removed context: {remove_name}'
+                            self.app.notify(msg)
+                        continue
+                    if context != '──────────':
+                        break
                 kwargs['context'] = context
 
         if status == 'List':
@@ -2916,7 +2963,7 @@ class InboxContent(BaseEntryContent):
             context = await self.app.push_screen_wait(
                 SelectModal(
                     'Context (required to move out)',
-                    contexts,
+                    sorted(contexts),
                     allow_new=True,
                 )
             )
@@ -3579,7 +3626,7 @@ class ListsContent(BaseEntryContent):
                 None, get_select_options, 'Context'
             )
             value = await self.app.push_screen_wait(
-                SelectModal('Context', contexts, allow_new=True)
+                SelectModal('Context', sorted(contexts), allow_new=True)
             )
             if not value:
                 return
