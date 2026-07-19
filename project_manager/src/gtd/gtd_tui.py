@@ -2718,33 +2718,42 @@ class InboxContent(BaseEntryContent):
         subtitle = title
 
         if not entry.context:
-            contexts = await asyncio.get_running_loop().run_in_executor(
-                None, get_select_options, 'Context'
-            )
             if status == 'List':
-                from gtd.storage import load_list_categories  # noqa: PLC0415
+                from gtd.notion.client import get_list_categories  # noqa: PLC0415
 
-                list_contexts = sorted(load_list_categories(LIST_CONTEXTS))
-                context = await self.app.push_screen_wait(
-                    SelectModal(
-                        f'Which list? {title}', list_contexts, allow_new=True
+                list_categories = (
+                    await asyncio.get_running_loop().run_in_executor(
+                        None, get_list_categories
                     )
                 )
+                list_category = await self.app.push_screen_wait(
+                    SelectModal(
+                        f'Which list? {title}',
+                        sorted(list_categories),
+                        allow_new=True,
+                    )
+                )
+                if list_category is None:
+                    return None
+                kwargs['list_category'] = list_category
             else:
+                contexts = await asyncio.get_running_loop().run_in_executor(
+                    None, get_select_options, 'Context'
+                )
                 context = await self.app.push_screen_wait(
                     SelectModal(f'Context: {title}', contexts, allow_new=True)
                 )
-            if context is None:
-                return None
-            kwargs['context'] = context
+                if context is None:
+                    return None
+                kwargs['context'] = context
 
         if status == 'List':
             props = build_property_update(**kwargs)
             await asyncio.get_running_loop().run_in_executor(
                 None, update_page, entry.page_id, props
             )
-            ctx = kwargs.get('context', entry.context)
-            self.app.notify(f'✓ "{title}" → List [{ctx}]')
+            cat = kwargs.get('list_category', entry.list_category)
+            self.app.notify(f'✓ "{title}" → List [{cat}]')
             return True
 
         if not entry.next_step:
@@ -3225,12 +3234,13 @@ class SomedayContent(BaseEntryContent):
 
     @work
     async def action_move_to_list(self) -> None:
-        from gtd.storage import load_list_categories  # noqa: PLC0415
+        from gtd.notion.client import get_list_categories  # noqa: PLC0415
 
         entry = self._current_entry()
         if not entry:
             return
-        categories = load_list_categories(LIST_CONTEXTS)
+        loop = asyncio.get_running_loop()
+        categories = await loop.run_in_executor(None, get_list_categories)
         cat = await self.app.push_screen_wait(
             SelectModal('Add to which list?', sorted(categories))
         )
@@ -3286,24 +3296,11 @@ class SnoozedContent(BaseEntryContent):
 
 # ── Lists content ────────────────────────────────────────────────────────────
 
-LIST_CONTEXTS: list[str] = [
-    'Weekend Trips to Take',
-    'Fun Things to Do with Elliott',
-    'Restaurants to Try',
-    'Recipes to Try',
-    'Books to Read',
-    'Watchlist',
-    'Websites to Surf',
-    'Software to Try',
-    'Musicals to See',
-    'Bands to See',
-]
-
 
 def _render_list_item_detail(entry: ProjectEntry, notes: str | None) -> str:
     lines = [
         f'[bold cyan]{entry.header.strip()}[/bold cyan]',
-        f'[dim]{entry.context}[/dim]' if entry.context else '',
+        f'[dim]{entry.list_category}[/dim]' if entry.list_category else '',
         '',
     ]
     if notes is None:
@@ -3338,33 +3335,43 @@ class ListsContent(BaseEntryContent):
     def __init__(self) -> None:
         super().__init__()
         self._list_filter: str | None = None
-        self._categories: list[str] = []
+        self._notion_categories: list[str] = []
 
     def on_mount(self) -> None:
-        from gtd.storage import load_list_categories  # noqa: PLC0415
-
-        self._categories = load_list_categories(LIST_CONTEXTS)
+        self._load_notion_categories()
         super().on_mount()
+
+    @work(thread=True)
+    def _load_notion_categories(self) -> None:
+        """Load list categories from Notion."""
+        from gtd.notion.client import get_list_categories  # noqa: PLC0415
+
+        try:
+            self._notion_categories = get_list_categories()
+        except Exception:
+            self._notion_categories = []
 
     def _build_filter(self) -> dict:
         return {'property': 'Status', 'select': {'equals': 'List'}}
 
     def _set_entries(self, entries: list[ProjectEntry]) -> None:
-        entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
+        entries.sort(
+            key=lambda e: (e.list_category or '\xff', e.header.lower())
+        )
         self._entries = entries
         with contextlib.suppress(Exception):
             self.query_one('#entry-loading', LoadingIndicator).display = False
         self._rebuild_list()
 
     def _all_categories(self) -> list[str]:
-        """Persisted categories + any extra contexts from Notion entries."""
-        seen = set(self._categories)
+        """Return all list categories from Notion + any extras from entries."""
+        seen = set(self._notion_categories)
         extras = sorted(
-            e.context
+            e.list_category
             for e in self._entries
-            if e.context and e.context not in seen
+            if e.list_category and e.list_category not in seen
         )
-        return sorted(self._categories) + list(dict.fromkeys(extras))
+        return sorted(self._notion_categories) + list(dict.fromkeys(extras))
 
     def _rebuild_list(self) -> None:
         categories = (
@@ -3372,14 +3379,14 @@ class ListsContent(BaseEntryContent):
             if self._list_filter
             else self._all_categories()
         )
-        by_ctx: dict[str, list[ProjectEntry]] = {}
+        by_cat: dict[str, list[ProjectEntry]] = {}
         for e in self._entries:
-            by_ctx.setdefault(e.context or '', []).append(e)
+            by_cat.setdefault(e.list_category or '', []).append(e)
 
         lv = self.query_one('#entry-list', VimListView)
         lv.clear()
         for cat in categories:
-            items = by_ctx.get(cat, [])
+            items = by_cat.get(cat, [])
             items.sort(key=lambda e: (e.success_condition or '\xff', e.header))
             n = len(items)
             label = f'{cat}  ({n})' if n else f'{cat}  [dim](empty)[/dim]'
@@ -3388,7 +3395,7 @@ class ListsContent(BaseEntryContent):
                 lv.append(ListEntryListItem(entry))
 
         total = len(self._entries)
-        shown = sum(len(by_ctx.get(c, [])) for c in categories)
+        shown = sum(len(by_cat.get(c, [])) for c in categories)
         header = self.query_one('#entry-list-header', Static)
         ctx_badge = (
             f'  [yellow][{self._list_filter}][/yellow]'
@@ -3592,8 +3599,7 @@ class ListsContent(BaseEntryContent):
             props = build_property_update(status=dest)
         else:
             props = {
-                **build_property_update(status='List'),
-                'Context': {'select': {'name': dest}},
+                **build_property_update(status='List', list_category=dest),
             }
         await loop.run_in_executor(
             None, lambda: update_page(entry.page_id, props)
@@ -3601,9 +3607,8 @@ class ListsContent(BaseEntryContent):
         self._remove_entry_and_refocus(entry.page_id)
         self.app.notify(f'✓ "{entry.header.strip()}" → {dest}')
 
-    @work
     async def action_add_category(self) -> None:
-        from gtd.storage import save_list_categories  # noqa: PLC0415
+        from gtd.notion.client import add_list_category  # noqa: PLC0415
 
         name = await self.app.push_screen_wait(
             InputModal('New list category', 'Category name')
@@ -3611,30 +3616,30 @@ class ListsContent(BaseEntryContent):
         if not name or not name.strip():
             return
         name = name.strip()
-        if name in self._categories:
+        if name in self._notion_categories:
             self.app.notify(f'"{name}" already exists', severity='warning')
             return
-        self._categories.append(name)
-        self._categories.sort()
-        save_list_categories(self._categories)
-        self._rebuild_list()
-        self.app.notify(f'✓ Added category "{name}"')
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, add_list_category, name)
+            self._notion_categories = sorted([*self._notion_categories, name])
+            self._rebuild_list()
+            self.app.notify(f'✓ Added category "{name}"')
+        except Exception as e:
+            self.app.notify(f'Failed to add category: {e}', severity='error')
 
-    @work
     async def action_remove_category(self) -> None:
-        from gtd.storage import save_list_categories  # noqa: PLC0415
+        from gtd.notion.client import remove_list_category  # noqa: PLC0415
 
-        if not self._categories:
-            self.app.notify(
-                'No saved categories to remove', severity='warning'
-            )
+        if not self._notion_categories:
+            self.app.notify('No categories to remove', severity='warning')
             return
         cat = await self.app.push_screen_wait(
-            SelectModal('Remove Area', self._categories)
+            SelectModal('Remove Area', sorted(self._notion_categories))
         )
         if not cat:
             return
-        items = [e for e in self._entries if e.context == cat]
+        items = [e for e in self._entries if e.list_category == cat]
         if items:
             confirmed = await self.app.push_screen_wait(
                 ConfirmModal(
@@ -3643,23 +3648,27 @@ class ListsContent(BaseEntryContent):
             )
             if not confirmed:
                 return
-        self._categories = [c for c in self._categories if c != cat]
-        save_list_categories(self._categories)
-        self._rebuild_list()
-        self.app.notify(f'✓ Removed category "{cat}"')
-
-    @work
-    async def action_rename_category(self) -> None:
-        from gtd.storage import save_list_categories  # noqa: PLC0415
-        from gtd.notion.client import update_page  # noqa: PLC0415
-
-        if not self._categories:
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, remove_list_category, cat)
+            self._notion_categories = [
+                c for c in self._notion_categories if c != cat
+            ]
+            self._rebuild_list()
+            self.app.notify(f'✓ Removed category "{cat}"')
+        except Exception as e:
             self.app.notify(
-                'No saved categories to rename', severity='warning'
+                f'Failed to remove category: {e}', severity='error'
             )
+
+    async def action_rename_category(self) -> None:
+        from gtd.notion.client import rename_list_category, update_page  # noqa: PLC0415
+
+        if not self._notion_categories:
+            self.app.notify('No categories to rename', severity='warning')
             return
         old = await self.app.push_screen_wait(
-            SelectModal('Rename which area?', sorted(self._categories))
+            SelectModal('Rename which area?', sorted(self._notion_categories))
         )
         if not old:
             return
@@ -3669,26 +3678,34 @@ class ListsContent(BaseEntryContent):
         if not new or not new.strip() or new.strip() == old:
             return
         new = new.strip()
-        if new in self._categories:
+        if new in self._notion_categories:
             self.app.notify(f'"{new}" already exists', severity='warning')
             return
-        self._categories = [new if c == old else c for c in self._categories]
-        self._categories.sort()
-        save_list_categories(self._categories)
-        loop = asyncio.get_running_loop()
-        affected = [e for e in self._entries if e.context == old]
-        for entry in affected:
-            await loop.run_in_executor(
-                None,
-                lambda eid=entry.page_id: update_page(
-                    eid, {'Context': {'select': {'name': new}}}
-                ),
+        try:
+            loop = asyncio.get_running_loop()
+            # Update schema
+            await loop.run_in_executor(None, rename_list_category, old, new)
+            # Update entries
+            affected = [e for e in self._entries if e.list_category == old]
+            for entry in affected:
+                await loop.run_in_executor(
+                    None,
+                    lambda eid=entry.page_id: update_page(
+                        eid, {'List Category': {'select': {'name': new}}}
+                    ),
+                )
+            self._notion_categories = [
+                new if c == old else c for c in self._notion_categories
+            ]
+            self._load_entries()
+            self.app.notify(
+                f'✓ Renamed "{old}" → "{new}"'
+                + (f' ({len(affected)} items updated)' if affected else '')
             )
-        self._load_entries()
-        self.app.notify(
-            f'✓ Renamed "{old}" → "{new}"'
-            + (f' ({len(affected)} items updated)' if affected else '')
-        )
+        except Exception as e:
+            self.app.notify(
+                f'Failed to rename category: {e}', severity='error'
+            )
 
     @work
     async def action_filter_list(self) -> None:

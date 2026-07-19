@@ -5,6 +5,7 @@ from dateutil import parser as dateparser
 from gtd.notion.client import (
     archive_page,
     build_property_update,
+    get_list_categories,
     get_page_body,
     get_select_options,
     query_database,
@@ -45,7 +46,7 @@ def _get_triage_entries() -> list[ProjectEntry]:
     return [ProjectEntry.from_page(p) for p in pages]
 
 
-def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, PLR0912
+def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, PLR0912, PLR0915
     """Process one triage item. Returns True if processed, False if skipped."""
     body = get_page_body(entry.page_id)
     preview = _escape_for_shell(_entry_preview_text(entry, body))
@@ -77,22 +78,36 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, 
     if not context:
         return False
 
-    # Next Actionable Step
-    if status == 'Waiting For':
-        next_step = prompt_input(
-            'Who/what are you waiting on? ',
+    # List Category (for List status)
+    list_category = None
+    if status == 'List':
+        categories = get_list_categories()
+        list_category = fzf_on_a_list(
+            categories,
+            prompt=f'"{entry.header}" → List Category',
         )
-    else:
-        next_step = prompt_input('Next actionable step: ')
-    if next_step is None:
-        return False
+        if not list_category:
+            return False
 
-    # Success Condition
-    success_condition = prompt_input(
-        'Success condition (what does done look like?): ',
-    )
-    if success_condition is None:
-        return False
+    # Next Actionable Step
+    next_step = None
+    success_condition = None
+    if status != 'List':
+        if status == 'Waiting For':
+            next_step = prompt_input(
+                'Who/what are you waiting on? ',
+            )
+        else:
+            next_step = prompt_input('Next actionable step: ')
+        if next_step is None:
+            return False
+
+        # Success Condition
+        success_condition = prompt_input(
+            'Success condition (what does done look like?): ',
+        )
+        if success_condition is None:
+            return False
 
     # Optional Due Date
     due_date_input = prompt_input(
@@ -135,6 +150,7 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, 
     props = build_property_update(
         status=status,
         context=context,
+        list_category=list_category,
         next_step=next_step or None,
         success_condition=success_condition or None,
         due_date=due_iso,

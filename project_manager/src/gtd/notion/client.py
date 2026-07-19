@@ -9,14 +9,18 @@ from gtd.notion.config import get_config_value
 
 __all__ = [
     'NotionAPIError',
+    'add_list_category',
     'append_page_note',
     'archive_page',
     'build_property_update',
+    'get_list_categories',
     'get_page_body',
     'get_projects_db_id',
     'get_select_options',
     'get_token',
     'query_database',
+    'remove_list_category',
+    'rename_list_category',
     'replace_page_body',
     'update_page',
 ]
@@ -169,6 +173,68 @@ def get_select_options(property_name: str) -> list[str]:
     return [o['name'] for o in options]
 
 
+def get_list_categories() -> list[str]:
+    """Get available list categories."""
+    return get_select_options('List Category')
+
+
+def add_list_category(name: str) -> None:
+    """Add a new list category to the Notion schema."""
+    schema = get_database_schema()
+    existing = {
+        o['name']
+        for o in schema['properties']['List Category']['select']['options']
+    }
+    if name in existing:
+        return
+
+    db_id = get_projects_db_id()
+    new_opts = schema['properties']['List Category']['select']['options'] + [
+        {'name': name}
+    ]
+    url = f'{NOTION_API_URL}/databases/{db_id}'
+    payload = {
+        'properties': {'List Category': {'select': {'options': new_opts}}}
+    }
+    response = _patch(url, json=payload)
+    _handle_response(response)
+
+
+def remove_list_category(name: str) -> None:
+    """Remove a list category from the Notion schema."""
+    schema = get_database_schema()
+    opts = schema['properties']['List Category']['select']['options']
+    new_opts = [o for o in opts if o['name'] != name]
+
+    if len(new_opts) == len(opts):
+        return  # Category doesn't exist
+
+    db_id = get_projects_db_id()
+    url = f'{NOTION_API_URL}/databases/{db_id}'
+    payload = {
+        'properties': {'List Category': {'select': {'options': new_opts}}}
+    }
+    response = _patch(url, json=payload)
+    _handle_response(response)
+
+
+def rename_list_category(old_name: str, new_name: str) -> None:
+    """Rename a list category in the Notion schema."""
+    schema = get_database_schema()
+    opts = schema['properties']['List Category']['select']['options']
+    new_opts = [
+        {'name': new_name} if o['name'] == old_name else o for o in opts
+    ]
+
+    db_id = get_projects_db_id()
+    url = f'{NOTION_API_URL}/databases/{db_id}'
+    payload = {
+        'properties': {'List Category': {'select': {'options': new_opts}}}
+    }
+    response = _patch(url, json=payload)
+    _handle_response(response)
+
+
 def update_page(page_id: str, properties: dict) -> dict:
     """Update a Notion page's properties."""
     url = f'{NOTION_API_URL}/pages/{page_id}'
@@ -299,11 +365,12 @@ def replace_page_body(page_id: str, text: str) -> None:
             _handle_response(resp)
 
 
-def build_property_update(
+def build_property_update(  # noqa: C901, PLR0912
     *,
     name: str | None = None,
     status: str | None = None,
     context: str | None = None,
+    list_category: str | None = None,
     next_step: str | None = None,
     success_condition: str | None = None,
     due_date: str | None = None,
@@ -316,7 +383,15 @@ def build_property_update(
     if status is not None:
         props['Status'] = {'select': {'name': status}}
     if context is not None:
-        props['Context'] = {'select': {'name': context}}
+        if context == '':
+            props['Context'] = {'select': None}
+        else:
+            props['Context'] = {'select': {'name': context}}
+    if list_category is not None:
+        if list_category == '':
+            props['List Category'] = {'select': None}
+        else:
+            props['List Category'] = {'select': {'name': list_category}}
     if next_step is not None:
         props['Next Actionable Step'] = {
             'rich_text': [{'text': {'content': next_step}}],
