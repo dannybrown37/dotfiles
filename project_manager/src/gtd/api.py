@@ -17,6 +17,7 @@ from gtd.notion.capture import _create_page
 from gtd.notion.client import (
     archive_page,
     build_property_update,
+    get_list_categories,
     get_select_options,
     query_database,
     update_page,
@@ -68,6 +69,12 @@ def contexts() -> Any:
     return jsonify(contexts=get_select_options('Context'))
 
 
+@app.get('/list-categories')
+@require_auth
+def list_categories() -> Any:
+    return jsonify(list_categories=get_list_categories())
+
+
 @app.post('/done/<page_id>')
 @require_auth
 def done(page_id: str) -> Any:
@@ -84,7 +91,14 @@ def update_entry(page_id: str) -> Any:
         return jsonify(
             error=f'Invalid status. Must be one of: {STATUSES}'
         ), 400
-    fields = ('status', 'context', 'next_step', 'due_date', 'follow_up_date')
+    fields = (
+        'status',
+        'context',
+        'list_category',
+        'next_step',
+        'due_date',
+        'follow_up_date',
+    )
     kwargs = {k: body[k] for k in fields if body.get(k) is not None}
     if not kwargs:
         return jsonify(error='No fields provided'), 400

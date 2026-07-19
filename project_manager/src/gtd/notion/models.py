@@ -49,6 +49,7 @@ class ProjectEntry:
     due_date: str | None
     follow_up_date: str | None
     created_date: str
+    list_category: str = ''
     updated_date: str = ''
 
     @classmethod
@@ -68,6 +69,7 @@ class ProjectEntry:
             due_date=_get_date(props.get('Due Date', {})),
             follow_up_date=_get_date(props.get('Follow-Up Date', {})),
             created_date=page.get('created_time', ''),
+            list_category=_get_select(props.get('List Category', {})),
             updated_date=page.get('last_edited_time', ''),
         )
 
