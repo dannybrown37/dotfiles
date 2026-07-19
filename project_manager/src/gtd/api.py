@@ -45,6 +45,11 @@ def _entry_dict(e: ProjectEntry) -> dict:
     return asdict(e)
 
 
+# region Endpoints
+
+# Endpoint definitions should be alphabetical
+
+
 @app.post('/capture')
 @require_auth
 def capture() -> Any:
@@ -56,42 +61,11 @@ def capture() -> Any:
     return jsonify(page_id=page['id'], header=header), 201
 
 
-@app.get('/today')
-@require_auth
-def today() -> Any:
-    return jsonify([_entry_dict(e) for e in _get_today_entries()])
-
-
-@app.get('/inbox')
-@require_auth
-def inbox() -> Any:
-    pages = query_database(
-        filter_obj={'property': 'Status', 'select': {'equals': 'Triage'}},
-    )
-    return jsonify([_entry_dict(ProjectEntry.from_page(p)) for p in pages])
-
-
 @app.post('/done/<page_id>')
 @require_auth
 def done(page_id: str) -> Any:
     archive_page(page_id)
     return jsonify(page_id=page_id, status='archived')
-
-
-@app.post('/snooze/<page_id>')
-@require_auth
-def snooze(page_id: str) -> Any:
-    body = request.get_json(force=True, silent=True) or {}
-    until = body.get('until')
-    days = body.get('days', 1)
-    if until:
-        date = _parse_date_input(until)
-        if not date:
-            return jsonify(error=f'Could not parse date: {until!r}'), 400
-    else:
-        date = (datetime.now() + timedelta(days=days)).strftime('%Y-%m-%d')
-    update_page(page_id, build_property_update(follow_up_date=date))
-    return jsonify(page_id=page_id, follow_up_date=date)
 
 
 @app.patch('/entry/<page_id>')
@@ -111,7 +85,55 @@ def update_entry(page_id: str) -> Any:
     return jsonify(page_id=page_id, updated=kwargs)
 
 
+@app.get('/inbox')
+@require_auth
+def inbox() -> Any:
+    pages = query_database(
+        filter_obj={'property': 'Status', 'select': {'equals': 'Triage'}},
+    )
+    return jsonify([_entry_dict(ProjectEntry.from_page(p)) for p in pages])
+
+
+@app.get('/next-steps')
+@require_auth
+def next_steps() -> Any:
+    pages = query_database(
+        filter_obj={
+            'property': 'Status',
+            'select': {'equals': 'Current Project'},
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    context = request.args.get('context')
+    if context:
+        entries = [e for e in entries if e.context == context]
+    entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
+    return jsonify([_entry_dict(e) for e in entries])
+
+
+@app.post('/snooze/<page_id>')
+@require_auth
+def snooze(page_id: str) -> Any:
+    body = request.get_json(force=True, silent=True) or {}
+    until = body.get('until')
+    days = body.get('days', 1)
+    if until:
+        date = _parse_date_input(until)
+        if not date:
+            return jsonify(error=f'Could not parse date: {until!r}'), 400
+    else:
+        date = (datetime.now() + timedelta(days=days)).strftime('%Y-%m-%d')
+    update_page(page_id, build_property_update(follow_up_date=date))
+    return jsonify(page_id=page_id, follow_up_date=date)
+
+
 @app.get('/statuses')
 @require_auth
 def statuses() -> Any:
     return jsonify(STATUSES)
+
+
+@app.get('/today')
+@require_auth
+def today() -> Any:
+    return jsonify([_entry_dict(e) for e in _get_today_entries()])
