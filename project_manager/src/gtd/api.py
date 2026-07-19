@@ -17,6 +17,7 @@ from gtd.notion.capture import _create_page
 from gtd.notion.client import (
     archive_page,
     build_property_update,
+    get_select_options,
     query_database,
     update_page,
 )
@@ -59,6 +60,12 @@ def capture() -> Any:
         return jsonify(error='header is required'), 400
     page = _create_page(header)
     return jsonify(page_id=page['id'], header=header), 201
+
+
+@app.get('/contexts')
+@require_auth
+def contexts() -> Any:
+    return jsonify(contexts=get_select_options('Context'))
 
 
 @app.post('/done/<page_id>')
@@ -108,8 +115,7 @@ def next_steps() -> Any:
     if context:
         entries = [e for e in entries if e.context == context]
     for entry in entries:
-        next_step = entry.next_step.split('\n')[0]
-        entry.next_step = next_step
+        entry.next_step = entry.next_step.split('\n')[0].replace('1. ', '')
     entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
     return jsonify([_entry_dict(e) for e in entries])
 
@@ -140,3 +146,6 @@ def statuses() -> Any:
 @require_auth
 def today() -> Any:
     return jsonify([_entry_dict(e) for e in _get_today_entries()])
+
+
+# endregion
