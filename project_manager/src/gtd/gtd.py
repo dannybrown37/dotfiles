@@ -281,6 +281,70 @@ def areas_notes(name: str, notes: str) -> None:
     click.echo(f'Area "{name}" not found.')
 
 
+@cli.group(invoke_without_command=True)
+@click.pass_context
+def contexts(ctx: click.Context) -> None:
+    """Manage GTD contexts (Computer, Home, Phone, etc.)."""
+    if ctx.invoked_subcommand is None:
+        from gtd.notion.client import get_contexts  # noqa: PLC0415
+
+        context_list = sorted(get_contexts())
+        if not context_list:
+            click.echo('No contexts defined. Use: gtd contexts add "Home"')
+            return
+        for i, c in enumerate(context_list, 1):
+            click.echo(f'{i}. {c}')
+
+
+@contexts.command('add')
+@click.argument('name')
+def contexts_add(name: str) -> None:
+    """Add a new context."""
+    from gtd.notion.client import add_context, get_contexts  # noqa: PLC0415
+
+    if name in get_contexts():
+        click.echo(f'Context "{name}" already exists.')
+        return
+    add_context(name)
+    click.echo(f'Added: {name}')
+
+
+@contexts.command('remove')
+@click.argument('name')
+def contexts_remove(name: str) -> None:
+    """Remove a context."""
+    from gtd.notion.client import (  # noqa: PLC0415
+        get_contexts,
+        remove_context,
+    )
+
+    if name not in get_contexts():
+        click.echo(f'Context "{name}" not found.')
+        return
+    remove_context(name)
+    click.echo(f'Removed: {name}')
+
+
+@contexts.command('rename')
+@click.argument('old_name')
+@click.argument('new_name')
+def contexts_rename(old_name: str, new_name: str) -> None:
+    """Rename a context."""
+    from gtd.notion.client import (  # noqa: PLC0415
+        get_contexts,
+        rename_context,
+    )
+
+    if old_name not in get_contexts():
+        click.echo(f'Context "{old_name}" not found.')
+        return
+    if new_name in get_contexts():
+        click.echo(f'Context "{new_name}" already exists.')
+        return
+    rename_context(old_name, new_name)
+    click.echo(f'Renamed: {old_name} → {new_name}')
+
+
 @cli.command()
 def dump() -> None:
     """Rapid-fire brain dump — capture everything, triage later."""

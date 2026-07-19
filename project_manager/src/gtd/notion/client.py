@@ -9,17 +9,21 @@ from gtd.notion.config import get_config_value
 
 __all__ = [
     'NotionAPIError',
+    'add_context',
     'add_list_category',
     'append_page_note',
     'archive_page',
     'build_property_update',
+    'get_contexts',
     'get_list_categories',
     'get_page_body',
     'get_projects_db_id',
     'get_select_options',
     'get_token',
     'query_database',
+    'remove_context',
     'remove_list_category',
+    'rename_context',
     'rename_list_category',
     'replace_page_body',
     'update_page',
@@ -231,6 +235,61 @@ def rename_list_category(old_name: str, new_name: str) -> None:
     payload = {
         'properties': {'List Category': {'select': {'options': new_opts}}}
     }
+    response = _patch(url, json=payload)
+    _handle_response(response)
+
+
+def get_contexts() -> list[str]:
+    """Get available contexts."""
+    return get_select_options('Context')
+
+
+def add_context(name: str) -> None:
+    """Add a new context to the Notion schema."""
+    schema = get_database_schema()
+    existing = {
+        o['name'] for o in schema['properties']['Context']['select']['options']
+    }
+    if name in existing:
+        return
+
+    db_id = get_projects_db_id()
+    new_opts = schema['properties']['Context']['select']['options'] + [
+        {'name': name}
+    ]
+    url = f'{NOTION_API_URL}/databases/{db_id}'
+    payload = {'properties': {'Context': {'select': {'options': new_opts}}}}
+    response = _patch(url, json=payload)
+    _handle_response(response)
+
+
+def remove_context(name: str) -> None:
+    """Remove a context from the Notion schema."""
+    schema = get_database_schema()
+    opts = schema['properties']['Context']['select']['options']
+    new_opts = [o for o in opts if o['name'] != name]
+
+    if len(new_opts) == len(opts):
+        return  # Context doesn't exist
+
+    db_id = get_projects_db_id()
+    url = f'{NOTION_API_URL}/databases/{db_id}'
+    payload = {'properties': {'Context': {'select': {'options': new_opts}}}}
+    response = _patch(url, json=payload)
+    _handle_response(response)
+
+
+def rename_context(old_name: str, new_name: str) -> None:
+    """Rename a context in the Notion schema."""
+    schema = get_database_schema()
+    opts = schema['properties']['Context']['select']['options']
+    new_opts = [
+        {'name': new_name} if o['name'] == old_name else o for o in opts
+    ]
+
+    db_id = get_projects_db_id()
+    url = f'{NOTION_API_URL}/databases/{db_id}'
+    payload = {'properties': {'Context': {'select': {'options': new_opts}}}}
     response = _patch(url, json=payload)
     _handle_response(response)
 

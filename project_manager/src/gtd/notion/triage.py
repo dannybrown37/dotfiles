@@ -69,14 +69,16 @@ def _process_single_entry(entry: ProjectEntry) -> bool:  # noqa: C901, PLR0911, 
         print('  Cancelled.')
         return False
 
-    # Context
-    contexts = get_select_options('Context')
-    context = fzf_on_a_list(
-        contexts,
-        prompt=f'"{entry.header}" → Context',
-    )
-    if not context:
-        return False
+    # Context (skip for List items)
+    context = None
+    if status != 'List':
+        contexts = get_select_options('Context')
+        context = fzf_on_a_list(
+            contexts,
+            prompt=f'"{entry.header}" → Context',
+        )
+        if not context:
+            return False
 
     # List Category (for List status)
     list_category = None
