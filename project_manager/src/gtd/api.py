@@ -107,6 +107,9 @@ def next_steps() -> Any:
     context = request.args.get('context')
     if context:
         entries = [e for e in entries if e.context == context]
+    for entry in entries:
+        next_step = entry.next_step.split('\n')[0]
+        entry.next_step = next_step
     entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
     return jsonify([_entry_dict(e) for e in entries])
 
