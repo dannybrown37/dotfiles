@@ -910,12 +910,13 @@ async def _shared_log_and_reschedule(
     entry: ProjectEntry,
     notes_cache: dict[str, str],
 ) -> str | None:
-    """Edit notes then prompt/infer next follow-up.
+    """Edit notes, update context, then prompt/infer next follow-up.
 
     Returns the new follow-up date string, or None if cancelled.
     """
     from gtd.notion.client import (  # noqa: PLC0415
         get_page_body,
+        get_select_options,
         replace_page_body,
     )
 
@@ -935,6 +936,16 @@ async def _shared_log_and_reschedule(
         )
         notes_cache[entry.page_id] = new_body
         app.notify('Notes saved')
+
+    # Prompt to update context for next step
+    contexts = await loop.run_in_executor(None, get_select_options, 'Context')
+    new_context = await app.push_screen_wait(
+        SelectModal(
+            f'Context for next step? ({entry.context or "none"})',
+            contexts,
+            allow_new=False,
+        )
+    )
 
     from gtd.notion.log import _infer_reschedule_days  # noqa: PLC0415
 
@@ -958,11 +969,15 @@ async def _shared_log_and_reschedule(
 
     from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
 
+    props = build_property_update(follow_up_date=next_date)
+    if new_context:
+        props = {**props, **build_property_update(context=new_context)}
+
     await loop.run_in_executor(
         None,
         update_page,
         entry.page_id,
-        build_property_update(follow_up_date=next_date),
+        props,
     )
     return next_date
 
