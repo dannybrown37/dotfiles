@@ -81,9 +81,12 @@ komo:
 secrets-save:
 	bash -c "pass insert -m ahk/secrets < $(root_dir)/ahk/secrets.ahk"
 	bash -c "pass insert -m bash/secrets < $(root_dir)/config/.secrets"
+	bash -c "pass insert -m project_manager/env < $(root_dir)/project_manager/.env"
 
 secrets-load:
 	bash -c "mv $(root_dir)/ahk/secrets.ahk $(root_dir)/ahk/secrets.ahk.bak"
 	bash -c "pass ahk/secrets > $(root_dir)/ahk/secrets.ahk"
 	bash -c "mv $(root_dir)/config/.secrets $(root_dir)/config/.secrets.bak"
 	bash -c "pass bash/secrets > $(root_dir)/config/.secrets"
+	bash -c "mv $(root_dir)/project_manager/.env $(root_dir)/project_manager/.env.bak"
+	bash -c "pass project_manager/env > $(root_dir)/project_manager/.env"
