@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from functools import wraps
 from typing import Any, TYPE_CHECKING
 from urllib.parse import unquote_plus
@@ -19,7 +19,6 @@ from gtd.notion.client import (
     archive_page,
     build_property_update,
     get_list_categories,
-    get_select_options,
     query_database,
     update_page,
 )
@@ -67,7 +66,21 @@ def capture() -> Any:
 @app.get('/contexts')
 @require_auth
 def contexts() -> Any:
-    return jsonify(contexts=sorted(get_select_options('Context')))
+    today_str = date.today().isoformat()
+    pages = query_database(
+        filter_obj={
+            'property': 'Status',
+            'select': {'equals': 'Current Project'},
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    active_contexts = {
+        e.context
+        for e in entries
+        if e.context
+        and (not e.follow_up_date or e.follow_up_date <= today_str)
+    }
+    return jsonify(contexts=sorted(active_contexts))
 
 
 @app.get('/list-categories')
