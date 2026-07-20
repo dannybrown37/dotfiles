@@ -43,8 +43,8 @@ def require_auth(fn: Callable) -> Callable:
     return wrapper
 
 
-def _entry_dict(e: ProjectEntry) -> dict:
-    return asdict(e)
+def _entry_dict(e: ProjectEntry, excluded: list[str] | None = None) -> dict:
+    return {k: v for k, v in asdict(e).items() if k not in excluded}
 
 
 # region Endpoints
@@ -128,7 +128,7 @@ def next_steps() -> Any:
     context = request.args.get('context')
     if context:
         entries = [e for e in entries if e.context == context]
-    unneeded_attributes = [
+    exclude_these = [
         'created_date',
         'list_category',
         'success_condition',
@@ -136,10 +136,8 @@ def next_steps() -> Any:
     ]
     for entry in entries:
         entry.next_step = entry.next_step.split('\n')[0].replace('1. ', '')
-        for attr in unneeded_attributes:
-            delattr(entry, attr)
     entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
-    return jsonify([_entry_dict(e) for e in entries])
+    return jsonify([_entry_dict(e, exclude_these) for e in entries])
 
 
 @app.post('/snooze/<page_id>')
