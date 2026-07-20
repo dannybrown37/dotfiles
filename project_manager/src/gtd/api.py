@@ -66,7 +66,7 @@ def capture() -> Any:
 @app.get('/contexts')
 @require_auth
 def contexts() -> Any:
-    return jsonify(contexts=get_select_options('Context'))
+    return jsonify(contexts=sorted(get_select_options('Context')))
 
 
 @app.get('/list-categories')
@@ -128,8 +128,16 @@ def next_steps() -> Any:
     context = request.args.get('context')
     if context:
         entries = [e for e in entries if e.context == context]
+    unneeded_attributes = [
+        'created_date',
+        'list_category',
+        'success_condition',
+        'updated_date',
+    ]
     for entry in entries:
         entry.next_step = entry.next_step.split('\n')[0].replace('1. ', '')
+        for attr in unneeded_attributes:
+            delattr(entry, attr)
     entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
     return jsonify([_entry_dict(e) for e in entries])
 
