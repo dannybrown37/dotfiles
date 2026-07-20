@@ -3549,7 +3549,7 @@ class ListsContent(BaseEntryContent):
         service = await self.app.push_screen_wait(
             InputModal(
                 f'Add to {target}',
-                'Streaming service (optional)',
+                'Extra info (optional)',
             )
         )
 
@@ -3565,7 +3565,7 @@ class ListsContent(BaseEntryContent):
         props: dict = {
             'Header': {'title': [{'text': {'content': name.strip()}}]},
             'Status': {'select': {'name': 'List'}},
-            'Context': {'select': {'name': target}},
+            'List Category': {'select': {'name': target}},
             'Created Date': {
                 'date': {
                     'start': _dt.now(tz=UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -3592,7 +3592,7 @@ class ListsContent(BaseEntryContent):
         entry = self._current_entry()
         if not entry:
             return
-        fields = ['Name', 'Streaming Service', 'Context']
+        fields = ['Name', 'Extra info', 'Context']
         choice = await self.app.push_screen_wait(
             SelectModal('Update which field?', fields)
         )
@@ -3605,11 +3605,11 @@ class ListsContent(BaseEntryContent):
             if not value:
                 return
             props = build_property_update(name=value.strip())
-        elif choice == 'Streaming Service':
+        elif choice == 'Extra info':
             value = await self.app.push_screen_wait(
                 InputModal(
-                    'Streaming Service',
-                    'e.g. Netflix, blank to clear',
+                    'Extra info',
+                    'blank to clear',
                     initial=entry.success_condition or '',
                 )
             )
