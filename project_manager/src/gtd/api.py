@@ -140,6 +140,12 @@ def next_steps() -> Any:
     for entry in entries:
         entry.next_step = entry.next_step.split('\n')[0].replace('1. ', '')
     entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
+    entries.sort(
+        key=lambda e: (
+            e.follow_up_date or '9999-99-99',
+            e.due_date or '9999-99-99',
+        ),
+    )
     return jsonify([_entry_dict(e, exclude_these) for e in entries])
 
 
