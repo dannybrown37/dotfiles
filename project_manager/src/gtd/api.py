@@ -7,6 +7,7 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, TYPE_CHECKING
+from urllib.parse import unquote_plus
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -127,6 +128,7 @@ def next_steps() -> Any:
     entries = [ProjectEntry.from_page(p) for p in pages]
     context = request.args.get('context')
     if context:
+        context = unquote_plus(context)
         entries = [e for e in entries if e.context == context]
     exclude_these = [
         'created_date',
