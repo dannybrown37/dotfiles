@@ -39,6 +39,7 @@ from textual.widgets import (
 )
 from textual.widgets._footer import FooterKey, FooterLabel
 
+from gtd.habits_tui import HabitsContent
 from gtd.models import Goal, Tactic, Update
 from gtd.notion.models import ProjectEntry
 from gtd.notion.schema import STATUSES, STATUS_ICONS
@@ -3977,6 +3978,8 @@ class GTDApp(App[None]):
                 yield SomedayContent()
             with TabPane('Lists', id='tab-lists'):
                 yield ListsContent()
+            with TabPane('Habits', id='tab-habits'):
+                yield HabitsContent()
             with TabPane('Goals', id='tab-goals'):
                 yield GoalsContent()
         yield SplitFooter()
