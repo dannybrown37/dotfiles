@@ -131,6 +131,7 @@ def next_steps() -> Any:
     exclude_these = [
         'created_date',
         'list_category',
+        'status',
         'success_condition',
         'updated_date',
     ]
