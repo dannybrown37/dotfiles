@@ -61,7 +61,7 @@ def capture() -> Any:
 @app.get('/contexts')
 @require_auth
 def contexts() -> Any:
-    today_str = date.today().isoformat()
+    today_str = date.today(tz=ZoneInfo('America/New_York')).isoformat()
     pages = query_database(
         filter_obj={
             'property': 'Status',
