@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict
-from datetime import date
+from datetime import datetime
 from functools import wraps
 from typing import Any, TYPE_CHECKING
 from urllib.parse import unquote_plus
@@ -24,6 +24,9 @@ from gtd.notion.models import ProjectEntry
 app = Flask(__name__)
 
 
+# region Utils
+
+
 def require_auth(fn: Callable) -> Callable:
     @wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -40,6 +43,10 @@ def require_auth(fn: Callable) -> Callable:
 
 def _entry_dict(e: ProjectEntry, excluded: list[str] | None = None) -> dict:
     return {k: v for k, v in asdict(e).items() if k not in excluded}
+
+
+def _get_timezone_iso_date() -> str:
+    return datetime.now(ZoneInfo('America/New_York')).date().isoformat()
 
 
 # region Endpoints
@@ -61,7 +68,7 @@ def capture() -> Any:
 @app.get('/contexts')
 @require_auth
 def contexts() -> Any:
-    today_str = date.today(tz=ZoneInfo('America/New_York')).isoformat()
+    today_str = _get_timezone_iso_date()
     pages = query_database(
         filter_obj={
             'property': 'Status',
@@ -81,7 +88,7 @@ def contexts() -> Any:
 @app.get('/next-steps')
 @require_auth
 def next_steps() -> Any:
-    today_str = date.today(tz=ZoneInfo('America/New_York')).isoformat()
+    today_str = _get_timezone_iso_date()
     pages = query_database(
         filter_obj={
             'or': [
