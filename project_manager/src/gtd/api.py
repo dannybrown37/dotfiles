@@ -8,6 +8,7 @@ from datetime import date
 from functools import wraps
 from typing import Any, TYPE_CHECKING
 from urllib.parse import unquote_plus
+from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -80,7 +81,7 @@ def contexts() -> Any:
 @app.get('/next-steps')
 @require_auth
 def next_steps() -> Any:
-    today_str = date.today().isoformat()
+    today_str = date.today(tz=ZoneInfo('America/New_York')).isoformat()
     pages = query_database(
         filter_obj={
             'or': [
