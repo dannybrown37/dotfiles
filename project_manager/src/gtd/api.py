@@ -132,6 +132,7 @@ def inbox() -> Any:
 @app.get('/next-steps')
 @require_auth
 def next_steps() -> Any:
+    today_str = date.today().isoformat()
     pages = query_database(
         filter_obj={
             'or': [
@@ -144,6 +145,11 @@ def next_steps() -> Any:
         },
     )
     entries = [ProjectEntry.from_page(p) for p in pages]
+    entries = [
+        e
+        for e in entries
+        if not e.follow_up_date or e.follow_up_date <= today_str
+    ]
     context = request.args.get('context')
     if context:
         context = unquote_plus(context)
