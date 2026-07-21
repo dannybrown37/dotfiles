@@ -134,8 +134,13 @@ def inbox() -> Any:
 def next_steps() -> Any:
     pages = query_database(
         filter_obj={
-            'property': 'Status',
-            'select': {'equals': 'Current Project'},
+            'or': [
+                {
+                    'property': 'Status',
+                    'select': {'equals': 'Current Project'},
+                },
+                {'property': 'Status', 'select': {'equals': 'Recurring'}},
+            ],
         },
     )
     entries = [ProjectEntry.from_page(p) for p in pages]
