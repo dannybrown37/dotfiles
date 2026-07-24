@@ -503,7 +503,8 @@ def triage(page_id: str) -> Any:  # noqa: PLR0911,C901
     context_result = _validate_and_set_context_or_list(
         status, context, list_category
     )
-    if isinstance(context_result[0], dict) and context_result[1] is not None:
+    # If validation returned an error tuple (Response, status_code), return it.
+    if context_result[1] is not None:
         return context_result
 
     kwargs: dict[str, str] = context_result[0]  # type: ignore[assignment]
