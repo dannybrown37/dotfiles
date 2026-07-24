@@ -63,3 +63,7 @@ Organizations design systems that mirror their own communication structure. If y
 ## Circle of Competence
 Know what you know — and more importantly, know what you don't. Operating outside your circle of competence without acknowledging it is how smart people make catastrophic mistakes.
 [Circle of Competence](https://fs.blog/circle-of-competence/)
+
+## Fredkin's Paradox
+The more equally attractive of two similar choices may be hard to discern. The more time we spend choosing between these types of differences, the less those choices ultimately matter. Solution: strive for a "good enough" mindset
+[Fredkin's paradox](https://en.wikipedia.org/wiki/Fredkin%27s_paradox)
