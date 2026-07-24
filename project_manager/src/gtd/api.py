@@ -411,6 +411,28 @@ def list_categories() -> Any:
         return jsonify(error='Could not retrieve list categories'), 500
 
 
+@app.post('/debug/echo')
+@require_auth
+def debug_echo() -> Any:
+    """Debug endpoint that echoes parsed JSON body and headers.
+
+    Call this from Shortcuts to see exactly what the shortcut is
+    sending (authorization header is redacted in the response).
+    """
+    try:
+        body = request.get_json(force=True)
+    except Exception:
+        body = request.get_data(as_text=True)
+
+    headers = {
+        k: ('<redacted>' if k.lower() == 'authorization' else v)
+        for k, v in request.headers.items()
+    }
+
+    logger.debug('Debug echo headers=%s body=%s', headers, body)
+    return jsonify(headers=headers, body=body)
+
+
 @app.post('/triage/<page_id>')
 @require_auth
 def triage(page_id: str) -> Any:  # noqa: PLR0911,C901
