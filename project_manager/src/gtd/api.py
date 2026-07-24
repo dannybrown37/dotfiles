@@ -193,6 +193,21 @@ def _apply_triage_updates(
 # Endpoint definitions should be alphabetical
 
 
+@app.get('/inbox')
+@require_auth
+def inbox() -> Any:
+    """Get all Triage entries (inbox)."""
+    pages = query_database(
+        filter_obj={
+            'property': 'Status',
+            'select': {'equals': 'Triage'},
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    entries.sort(key=lambda e: (e.due_date or '9999-99-99', e.header))
+    return jsonify([_entry_dict(e) for e in entries])
+
+
 @app.post('/capture')
 @require_auth
 def capture() -> Any:
