@@ -29,10 +29,14 @@ from gtd.notion.client import (
 from gtd.notion.models import ProjectEntry
 from gtd.notion.triage import TRIAGE_STATUSES
 
+import logging
+
 NOTION_API_URL = 'https://api.notion.com/v1'
 NOTION_API_VERSION = '2022-06-28'
 
 app = Flask(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 # region Utils
@@ -101,35 +105,63 @@ def _validate_and_set_context_or_list(
     """Validate and set context or list_category.
 
     Returns (error_response, 400) if invalid, or (kwargs_dict, None) if valid.
+    Performs case-insensitive matching and logs failures for debugging.
     """
     kwargs: dict = {}
+    error: tuple[dict, int] | None = None
 
     if status == 'List':
         if not list_category:
-            msg = 'list_category is required for List status'
-            return jsonify(error=msg), 400
-        available = get_list_categories()
-        if list_category not in available:
-            msg = (
-                f'Invalid list_category "{list_category}". '
-                f'Valid categories: {", ".join(sorted(available))}'
+            error = (
+                jsonify(error='list_category is required for List status'),
+                400,
             )
-            return jsonify(error=msg), 400
-        kwargs['list_category'] = list_category
+        else:
+            try:
+                available = get_list_categories()
+            except Exception:
+                logger.exception('Failed to fetch list categories from Notion')
+                return jsonify(error='Could not retrieve list categories'), 500
+
+            normalized = {c.strip().lower(): c for c in available}
+            key = list_category.strip().lower()
+            if key not in normalized:
+                msg = (
+                    f'Invalid list_category "{list_category}". '
+                    f'Valid categories: {", ".join(sorted(available))}'
+                )
+                logger.debug(
+                    'Triage validation failed for list_category: %s',
+                    list_category,
+                )
+                error = (jsonify(error=msg), 400)
+            else:
+                kwargs['list_category'] = normalized[key]
+    elif not context:
+        error = (
+            jsonify(error=f'context is required for {status} status'),
+            400,
+        )
     else:
-        if not context:
-            msg = f'context is required for {status} status'
-            return jsonify(error=msg), 400
-        available = get_contexts()
-        if context not in available:
+        try:
+            available = get_contexts()
+        except Exception:
+            logger.exception('Failed to fetch contexts from Notion')
+            return jsonify(error='Could not retrieve contexts'), 500
+
+        normalized = {c.strip().lower(): c for c in available}
+        key = context.strip().lower()
+        if key not in normalized:
             msg = (
                 f'Invalid context "{context}". '
                 f'Valid contexts: {", ".join(sorted(available))}'
             )
-            return jsonify(error=msg), 400
-        kwargs['context'] = context
+            logger.debug('Triage validation failed for context: %s', context)
+            error = (jsonify(error=msg), 400)
+        else:
+            kwargs['context'] = normalized[key]
 
-    return kwargs, None
+    return error if error is not None else (kwargs, None)
 
 
 def _parse_triage_dates(
