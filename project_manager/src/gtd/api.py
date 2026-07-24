@@ -54,6 +54,7 @@ def require_auth(fn: Callable) -> Callable:
 
 
 def _entry_dict(e: ProjectEntry, excluded: list[str] | None = None) -> dict:
+    excluded = excluded or []
     return {k: v for k, v in asdict(e).items() if k not in excluded}
 
 
@@ -196,11 +197,19 @@ def _apply_triage_updates(
 @app.get('/inbox')
 @require_auth
 def inbox() -> Any:
-    """Get all Triage entries (inbox)."""
+    """Get all Triage entries (inbox) — includes items with no status."""
     pages = query_database(
         filter_obj={
-            'property': 'Status',
-            'select': {'equals': 'Triage'},
+            'or': [
+                {
+                    'property': 'Status',
+                    'select': {'equals': 'Triage'},
+                },
+                {
+                    'property': 'Status',
+                    'is_empty': True,
+                },
+            ],
         },
     )
     entries = [ProjectEntry.from_page(p) for p in pages]
