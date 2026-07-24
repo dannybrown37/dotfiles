@@ -197,19 +197,11 @@ def _apply_triage_updates(
 @app.get('/inbox')
 @require_auth
 def inbox() -> Any:
-    """Get all Triage entries (inbox) — includes items with no status."""
+    """Get all Triage entries (inbox)."""
     pages = query_database(
         filter_obj={
-            'or': [
-                {
-                    'property': 'Status',
-                    'select': {'equals': 'Triage'},
-                },
-                {
-                    'property': 'Status',
-                    'select': {'is_empty': True},
-                },
-            ],
+            'property': 'Status',
+            'select': {'equals': 'Triage'},
         },
     )
     entries = [ProjectEntry.from_page(p) for p in pages]
