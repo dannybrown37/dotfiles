@@ -223,6 +223,15 @@ def capture() -> Any:
 @app.get('/contexts')
 @require_auth
 def contexts() -> Any:
+    """Get active contexts.
+
+    'Work' only shown during work hours (7am-5:30pm ET, Mon-Fri).
+    """
+    work_start_hour = 7
+    work_end_hour = 17
+    work_end_minute = 30
+    friday = 4
+
     today_str = _get_timezone_iso_date()
     pages = query_database(
         filter_obj={
@@ -237,6 +246,25 @@ def contexts() -> Any:
         if e.context
         and (not e.follow_up_date or e.follow_up_date <= today_str)
     }
+
+    # Filter out 'Work' if not during work hours
+    now = datetime.now(ZoneInfo('America/New_York'))
+    weekday = now.weekday()  # 0=Monday, 6=Sunday
+    hour = now.hour
+    minute = now.minute
+
+    is_work_hours = (
+        weekday <= friday
+        and hour >= work_start_hour
+        and not (
+            hour > work_end_hour
+            or (hour == work_end_hour and minute >= work_end_minute)
+        )
+    )
+
+    if not is_work_hours:
+        active_contexts.discard('Work')
+
     return jsonify(contexts=sorted(active_contexts))
 
 
