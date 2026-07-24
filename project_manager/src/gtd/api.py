@@ -25,6 +25,7 @@ from gtd.notion.client import (
     get_list_categories,
     query_database,
     update_page,
+    archive_page,
 )
 from gtd.notion.models import ProjectEntry
 from gtd.notion.triage import TRIAGE_STATUSES
@@ -36,6 +37,9 @@ NOTION_API_VERSION = '2022-06-28'
 
 app = Flask(__name__)
 
+# Configure logging
+GTD_DEBUG = os.environ.get('GTD_DEBUG') == '1'
+logging.basicConfig(level=logging.DEBUG if GTD_DEBUG else logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -47,9 +51,30 @@ def require_auth(fn: Callable) -> Callable:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         expected = os.environ.get('GTD_API_KEY')
         if not expected:
+            logger.error('GTD_API_KEY not set on server')
             return jsonify(error='GTD_API_KEY not set on server'), 500
         auth = request.headers.get('Authorization', '')
+        # Log request metadata for debugging when enabled
+        if GTD_DEBUG:
+            try:
+                body_text = request.get_data(as_text=True)
+            except Exception:
+                body_text = '<could not read body>'
+            headers_preview = {
+                k: ('<redacted>' if k.lower() == 'authorization' else v)
+                for k, v in request.headers.items()
+            }
+            logger.debug(
+                'Request %s %s headers=%s body=%s',
+                request.method,
+                request.path,
+                headers_preview,
+                body_text,
+            )
         if not auth.startswith('Bearer ') or auth[7:] != expected:
+            logger.warning(
+                'Authorization failed for request to %s', request.path
+            )
             return jsonify(error='Invalid API key'), 401
         return fn(*args, **kwargs)
 
@@ -346,10 +371,17 @@ def next_steps() -> Any:
 @app.get('/triage-schema')
 @require_auth
 def triage_schema() -> Any:
-    """Get schema for triage workflow: statuses and contexts per status."""
-    available_contexts = get_contexts()
-    # Query Notion for list categories dynamically
-    list_categories = get_list_categories()
+    """Get schema for triage workflow: statuses and contexts per status.
+
+    Returns canonical options fetched live from Notion so Shortcuts can
+    validate user choices before calling /triage.
+    """
+    try:
+        available_contexts = get_contexts()
+        list_categories = get_list_categories()
+    except Exception:
+        logger.exception('Failed to fetch Notion schema for triage-schema')
+        return jsonify(error='Could not fetch schema from Notion'), 500
 
     schema = {
         'statuses': TRIAGE_STATUSES,
@@ -365,9 +397,23 @@ def triage_schema() -> Any:
     return jsonify(schema)
 
 
+@app.get('/list-categories')
+@require_auth
+def list_categories() -> Any:
+    """Return canonical list categories from Notion (for debugging/UI use)."""
+    try:
+        cats = get_list_categories()
+        return jsonify(list_categories=sorted(cats))
+    except Exception:
+        logger.exception(
+            'Failed to fetch list categories for /list-categories'
+        )
+        return jsonify(error='Could not retrieve list categories'), 500
+
+
 @app.post('/triage/<page_id>')
 @require_auth
-def triage(page_id: str) -> Any:  # noqa: PLR0911
+def triage(page_id: str) -> Any:  # noqa: PLR0911,C901
     """Atomically triage an entry with full data.
 
     Request body:
@@ -384,19 +430,30 @@ def triage(page_id: str) -> Any:  # noqa: PLR0911
 
     Returns: updated ProjectEntry or error
     """
-    from gtd.notion.client import archive_page
+    try:
+        body = request.get_json(force=True) or {}
+    except Exception:
+        # Fall back to raw body text
+        body_text = request.get_data(as_text=True)
+        logger.debug(
+            'Failed to parse JSON body for triage %s: %s', page_id, body_text
+        )
+        return jsonify(error='Request body must be valid JSON'), 400
 
-    body = request.get_json(force=True) or {}
-    status = body.get('status', '').strip()
-    context = body.get('context', '').strip()
-    list_category = body.get('list_category', '').strip()
-    next_step = body.get('next_step', '').strip()
-    success_condition = body.get('success_condition', '').strip()
+    # Log incoming triage request for debugging
+    if GTD_DEBUG:
+        logger.debug('Triage request for page_id=%s body=%s', page_id, body)
+
+    status = (body.get('status') or '').strip()
+    context = (body.get('context') or '').strip()
+    list_category = (body.get('list_category') or '').strip()
+    next_step = (body.get('next_step') or '').strip()
+    success_condition = (body.get('success_condition') or '').strip()
     due_date_str = (
-        body.get('due_date', '').strip() if body.get('due_date') else None
+        (body.get('due_date') or '').strip() if body.get('due_date') else None
     )
     follow_up_str = (
-        body.get('follow_up_date', '').strip()
+        (body.get('follow_up_date') or '').strip()
         if body.get('follow_up_date')
         else None
     )
@@ -404,8 +461,8 @@ def triage(page_id: str) -> Any:  # noqa: PLR0911
     # Get the entry to verify it exists
     page_data = _get_page_by_id(page_id)
     if not page_data:
+        logger.debug('Triage: entry not found %s', page_id)
         return jsonify(error=f'Entry {page_id} not found'), 404
-
     # Handle Delete
     if status == 'Delete':
         try:
@@ -445,7 +502,13 @@ def triage(page_id: str) -> Any:  # noqa: PLR0911
     kwargs.update(dates_result[0])
 
     # Apply updates and return result
-    return _apply_triage_updates(page_id, kwargs)
+    try:
+        return _apply_triage_updates(page_id, kwargs)
+    except Exception:
+        logger.exception(
+            'Unexpected error while applying triage updates for %s', page_id
+        )
+        return jsonify(error='Internal server error'), 500
 
 
 # endregion
