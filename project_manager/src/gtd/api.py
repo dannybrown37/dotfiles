@@ -22,13 +22,12 @@ from gtd.notion.capture import _create_page
 from gtd.notion.client import (
     build_property_update,
     get_contexts,
+    get_list_categories,
     query_database,
     update_page,
 )
 from gtd.notion.models import ProjectEntry
-from gtd.notion.schema import DEFAULT_LIST_CATEGORIES
 from gtd.notion.triage import TRIAGE_STATUSES
-from gtd.storage import load_list_categories
 
 NOTION_API_URL = 'https://api.notion.com/v1'
 NOTION_API_VERSION = '2022-06-28'
@@ -109,7 +108,7 @@ def _validate_and_set_context_or_list(
         if not list_category:
             msg = 'list_category is required for List status'
             return jsonify(error=msg), 400
-        available = load_list_categories(DEFAULT_LIST_CATEGORIES)
+        available = get_list_categories()
         if list_category not in available:
             msg = (
                 f'Invalid list_category "{list_category}". '
@@ -317,7 +316,8 @@ def next_steps() -> Any:
 def triage_schema() -> Any:
     """Get schema for triage workflow: statuses and contexts per status."""
     available_contexts = get_contexts()
-    list_categories = load_list_categories(DEFAULT_LIST_CATEGORIES)
+    # Query Notion for list categories dynamically
+    list_categories = get_list_categories()
 
     schema = {
         'statuses': TRIAGE_STATUSES,
