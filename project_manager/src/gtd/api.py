@@ -206,8 +206,10 @@ def inbox() -> Any:
                     'select': {'equals': 'Triage'},
                 },
                 {
-                    'property': 'Status',
-                    'is_empty': True,
+                    'not': {
+                        'property': 'Status',
+                        'select': {'is_not_empty': True},
+                    }
                 },
             ],
         },
