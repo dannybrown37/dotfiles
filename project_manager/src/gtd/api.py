@@ -433,7 +433,7 @@ def get_list(category: str) -> Any:
     canonical_category = normalized[key]
     pages = query_database(
         filter_obj={
-            'property': 'List',
+            'property': 'List Category',
             'select': {'equals': canonical_category},
         },
     )
