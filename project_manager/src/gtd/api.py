@@ -35,6 +35,14 @@ import logging
 NOTION_API_URL = 'https://api.notion.com/v1'
 NOTION_API_VERSION = '2022-06-28'
 
+EXCLUDE_THESE = [  # attributes not currently ever needed in iOS Shortcuts
+    'created_date',
+    'list_category',
+    'status',
+    'success_condition',
+    'updated_date',
+]
+
 app = Flask(__name__)
 
 # Configure logging
@@ -349,13 +357,6 @@ def next_steps() -> Any:
     if context:
         context = unquote_plus(context)
         entries = [e for e in entries if e.context == context]
-    exclude_these = [
-        'created_date',
-        'list_category',
-        'status',
-        'success_condition',
-        'updated_date',
-    ]
     for entry in entries:
         entry.next_step = entry.next_step.split('\n')[0].replace('1. ', '')
     entries.sort(key=lambda e: (e.context or '\xff', e.header.lower()))
@@ -365,7 +366,7 @@ def next_steps() -> Any:
             e.due_date or '9999-99-99',
         ),
     )
-    return jsonify([_entry_dict(e, exclude_these) for e in entries])
+    return jsonify([_entry_dict(e, EXCLUDE_THESE) for e in entries])
 
 
 @app.get('/triage-schema')
@@ -439,29 +440,7 @@ def get_list(category: str) -> Any:
     )
     entries = [ProjectEntry.from_page(p) for p in pages]
     entries.sort(key=lambda e: (e.due_date or '9999-99-99', e.header))
-    return jsonify([_entry_dict(e) for e in entries])
-
-
-@app.post('/debug/echo')
-@require_auth
-def debug_echo() -> Any:
-    """Debug endpoint that echoes parsed JSON body and headers.
-
-    Call this from Shortcuts to see exactly what the shortcut is
-    sending (authorization header is redacted in the response).
-    """
-    try:
-        body = request.get_json(force=True)
-    except Exception:
-        body = request.get_data(as_text=True)
-
-    headers = {
-        k: ('<redacted>' if k.lower() == 'authorization' else v)
-        for k, v in request.headers.items()
-    }
-
-    logger.debug('Debug echo headers=%s body=%s', headers, body)
-    return jsonify(headers=headers, body=body)
+    return jsonify([_entry_dict(e, EXCLUDE_THESE) for e in entries])
 
 
 @app.post('/triage/<page_id>')
