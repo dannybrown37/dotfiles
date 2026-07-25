@@ -440,7 +440,6 @@ def get_list(category: str) -> Any:
     )
     extra_excludes = [
         *EXCLUDE_THESE,
-        'next_step',
         'follow_up_date',
         'due_date',
         'context',
