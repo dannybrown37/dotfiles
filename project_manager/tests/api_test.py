@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from gtd import api
+from gtd.notion.models import ProjectEntry
 
 if TYPE_CHECKING:
     from flask.testing import FlaskClient
@@ -27,6 +28,8 @@ def auth_header() -> dict[str, str]:
 
 ROUTES = [
     ('post', '/capture'),
+    ('get', '/list-categories'),
+    ('get', '/list/test'),
 ]
 
 
@@ -74,3 +77,131 @@ def test_capture_rejects_empty_header(
         '/capture', json={'header': '   '}, headers=auth_header
     )
     assert response.status_code == 400
+
+
+def test_list_categories_returns_sorted_categories(
+    client: FlaskClient,
+    auth_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        api,
+        'get_list_categories',
+        MagicMock(return_value=['Books to Read', 'Movies', 'Articles']),
+    )
+    response = client.get('/list-categories', headers=auth_header)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['list_categories'] == ['Articles', 'Books to Read', 'Movies']
+
+
+def test_list_categories_handles_notion_error(
+    client: FlaskClient,
+    auth_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        api,
+        'get_list_categories',
+        MagicMock(side_effect=Exception('Notion error')),
+    )
+    response = client.get('/list-categories', headers=auth_header)
+    assert response.status_code == 500
+    assert 'error' in response.get_json()
+
+
+def test_list_by_category_returns_entries(
+    client: FlaskClient,
+    auth_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mock_entry = {
+        'id': 'entry-1',
+        'header': 'Read Python Book',
+        'list_category': 'Books to Read',
+        'due_date': '2026-08-01',
+    }
+    mock_project_entry = ProjectEntry(
+        page_id='entry-1',
+        header='Read Python Book',
+        status='List',
+        context=None,
+        list_category='Books to Read',
+        next_step='',
+        success_condition='',
+        due_date='2026-08-01',
+        follow_up_date=None,
+        created_date='2026-07-24',
+        updated_date='2026-07-24',
+    )
+    monkeypatch.setattr(
+        api,
+        'get_list_categories',
+        MagicMock(return_value=['Books to Read', 'Movies']),
+    )
+    monkeypatch.setattr(
+        api,
+        'query_database',
+        MagicMock(return_value=[mock_entry]),
+    )
+    monkeypatch.setattr(
+        api.ProjectEntry,
+        'from_page',
+        MagicMock(return_value=mock_project_entry),
+    )
+    response = client.get('/list/Books%20to%20Read', headers=auth_header)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert len(data) == 1
+    assert data[0]['header'] == 'Read Python Book'
+    assert data[0]['list_category'] == 'Books to Read'
+
+
+def test_list_by_category_invalid_returns_404(
+    client: FlaskClient,
+    auth_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        api,
+        'get_list_categories',
+        MagicMock(return_value=['Books to Read', 'Movies']),
+    )
+    response = client.get('/list/InvalidCategory', headers=auth_header)
+    assert response.status_code == 404
+    assert 'error' in response.get_json()
+
+
+def test_list_by_category_case_insensitive(
+    client: FlaskClient,
+    auth_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        api,
+        'get_list_categories',
+        MagicMock(return_value=['Books to Read']),
+    )
+    monkeypatch.setattr(
+        api,
+        'query_database',
+        MagicMock(return_value=[]),
+    )
+    response = client.get('/list/books%20to%20read', headers=auth_header)
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+
+def test_list_by_category_handles_notion_error(
+    client: FlaskClient,
+    auth_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        api,
+        'get_list_categories',
+        MagicMock(side_effect=Exception('Notion error')),
+    )
+    response = client.get('/list/test', headers=auth_header)
+    assert response.status_code == 500
+    assert 'error' in response.get_json()
