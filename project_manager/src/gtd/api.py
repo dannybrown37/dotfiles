@@ -411,6 +411,37 @@ def list_categories() -> Any:
         return jsonify(error='Could not retrieve list categories'), 500
 
 
+@app.get('/list/<category>')
+@require_auth
+def get_list(category: str) -> Any:
+    """Get all entries in a specific list category."""
+    try:
+        available = get_list_categories()
+    except Exception:
+        logger.exception('Failed to fetch list categories')
+        return jsonify(error='Could not retrieve list categories'), 500
+
+    normalized = {c.strip().lower(): c for c in available}
+    key = category.strip().lower()
+    if key not in normalized:
+        msg = (
+            f'Invalid list category "{category}". '
+            f'Valid categories: {", ".join(sorted(available))}'
+        )
+        return jsonify(error=msg), 404
+
+    canonical_category = normalized[key]
+    pages = query_database(
+        filter_obj={
+            'property': 'List',
+            'select': {'equals': canonical_category},
+        },
+    )
+    entries = [ProjectEntry.from_page(p) for p in pages]
+    entries.sort(key=lambda e: (e.due_date or '9999-99-99', e.header))
+    return jsonify([_entry_dict(e) for e in entries])
+
+
 @app.post('/debug/echo')
 @require_auth
 def debug_echo() -> Any:
