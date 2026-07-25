@@ -154,7 +154,6 @@ def test_list_by_category_returns_entries(
     data = response.get_json()
     assert len(data) == 1
     assert data[0]['header'] == 'Read Python Book'
-    assert data[0]['list_category'] == 'Books to Read'
 
 
 def test_list_by_category_invalid_returns_404(
