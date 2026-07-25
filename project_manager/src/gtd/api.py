@@ -438,9 +438,17 @@ def get_list(category: str) -> Any:
             'select': {'equals': canonical_category},
         },
     )
+    extra_excludes = [
+        *EXCLUDE_THESE,
+        'next_step',
+        'follow_up_date',
+        'due_date',
+        'context',
+    ]
+
     entries = [ProjectEntry.from_page(p) for p in pages]
     entries.sort(key=lambda e: (e.due_date or '9999-99-99', e.header))
-    return jsonify([_entry_dict(e, EXCLUDE_THESE) for e in entries])
+    return jsonify([_entry_dict(e, extra_excludes) for e in entries])
 
 
 @app.post('/triage/<page_id>')
