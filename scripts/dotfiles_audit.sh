@@ -171,7 +171,6 @@ check_symlink ".tmux.conf"         "$HOME/.tmux.conf"           "$DOTFILES_DIR/c
 check_symlink "starship.toml"      "$HOME/.config/starship.toml" "$DOTFILES_DIR/config/starship.toml"
 check_symlink "lazygit config"     "$HOME/.config/lazygit/config.yml" "$DOTFILES_DIR/config/lazygit.yml"
 check_symlink "nvim config"        "$HOME/.config/nvim"         "$DOTFILES_DIR/nvim"
-check_symlink ".password-store"    "$HOME/.password-store"      "$DOTFILES_DIR/pass"
 
 if [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
     ok "tmux tpm" "installed"
@@ -261,10 +260,19 @@ fi
 
 check "pass" "pass --version 2>&1 | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+'" "sudo apt install pass"
 
-if [[ -d "$HOME/.password-store" ]]; then
-    ok "password-store" "present"
+if [[ -d "$HOME/.password-store/.git" ]]; then
+    ok "password-store" "present, own git repo"
+elif [[ -d "$HOME/.password-store" ]]; then
+    warn "password-store" "present but not a git repo — sync won't work"
 else
     warn "password-store" "~/.password-store missing — run: make bash"
+fi
+
+HOOKS_PATH=$(git -C "$DOTFILES_DIR" config --get core.hooksPath 2>/dev/null)
+if [[ "$HOOKS_PATH" == "githooks" ]]; then
+    ok "git hooks" "core.hooksPath -> githooks"
+else
+    fail "git hooks" "run: make bash  (sets core.hooksPath so push/pull sync password-store)"
 fi
 
 if grep -q "systemd=true" /etc/wsl.conf 2>/dev/null; then

@@ -140,6 +140,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `aws/` | AWS helper scripts and configuration |
 | `bin/` | Sourced shell scripts loaded into the current session |
 | `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
+| `githooks/` | Tracked git hooks (core.hooksPath) that sync the private password-store on dotfiles push/pull |
 | `install/` | Bootstrap install scripts invoked via Make targets |
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `project_manager/` | Python CLI for GTD and 12-Week Year planning |
@@ -167,6 +168,12 @@ Manages local gitignored files via the encrypted `password-store`.
 
 The store lives at `~/.password-store` and is its own private git repo, so nothing about it
 lands in this repo. `pass` commits on every insert; the make targets push and pull.
+
+**New machine setup:** `make bash` clones the store if `~/.password-store` doesn't exist yet —
+export `PASSWORD_STORE_REMOTE` beforehand (a private, non-repo location) or answer the prompt it
+falls back to. It also sets `core.hooksPath` to the tracked `githooks/` dir, so a plain
+`git push`/`git pull` on this repo also syncs the password-store in the background.
+Requires your GPG private key already imported — that transfer stays manual/out-of-band.
 
 ## Initial Windows Setup Notes
 

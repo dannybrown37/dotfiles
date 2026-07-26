@@ -206,12 +206,23 @@ ln -s ~/projects/dotfiles/config/.inputrc ~/.inputrc &&
 ln -s ~/projects/dotfiles/config/.tmux.conf ~/.tmux.conf &&
     echo "Symlinked .tmux.conf"
 
-if [ ! -L "${HOME}/.password-store" ]; then
-    ln -s ~/projects/dotfiles/pass ~/.password-store
-    echo "Symlinked pass/ to ~/.password-store"
+if [ ! -d "${HOME}/.password-store" ]; then
+    store_remote="${PASSWORD_STORE_REMOTE:-}"
+    if [ -z "${store_remote}" ]; then
+        read -rp "Git remote for your private password-store (blank to skip): " store_remote
+    fi
+    if [ -n "${store_remote}" ]; then
+        git clone "${store_remote}" ~/.password-store &&
+            echo "Cloned password-store"
+    else
+        echo "Skipped password-store clone -- set PASSWORD_STORE_REMOTE and re-run, or run 'pass init <gpg-id>' manually"
+    fi
 else
-    echo "password-store has already been symlinked"
+    echo "password-store already present"
 fi
+
+git -C ~/projects/dotfiles config core.hooksPath githooks &&
+    echo "Configured git hooks -- dotfiles push/pull now syncs password-store"
 
 if [ ! -L "${HOME}/.config/nvim" ]; then
     mkdir ~/.config
