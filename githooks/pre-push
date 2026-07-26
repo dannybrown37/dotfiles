@@ -2,12 +2,21 @@
 
 set -euo pipefail
 
-store="${PASSWORD_STORE_DIR:-${HOME}/.password-store}"
+# Git can export these to hooks; left set, they would point password-store's
+# own git commands at this repo instead.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
-if [[ -d "${store}/.git" ]]; then
-    if ! git -C "${store}" push 2>&1 | sed 's/^/[password-store] /'; then
-        echo "[password-store] push failed -- not blocking dotfiles push" >&2
-    fi
+store="${PASSWORD_STORE_DIR:-${HOME}/.password-store}"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+
+if [[ ! -d "${store}/.git" || ! -x "${repo_root}/scripts/secrets.sh" ]]; then
+    exit 0
+fi
+
+# stdin carries the ref list for this hook -- keep it away from the child.
+if ! "${repo_root}/scripts/secrets.sh" save </dev/null 2>&1 |
+    sed 's/^/[password-store] /'; then
+    echo "[password-store] save failed -- not blocking dotfiles push" >&2
 fi
 
 exit 0

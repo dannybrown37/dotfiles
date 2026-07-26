@@ -169,11 +169,22 @@ Manages local gitignored files via the encrypted `password-store`.
 The store lives at `~/.password-store` and is its own private git repo, so nothing about it
 lands in this repo. `pass` commits on every insert; the make targets push and pull.
 
+**Automatic sync:** `make bash` sets `core.hooksPath` to the tracked `githooks/` dir. From then
+on a plain `git push` here runs `secrets-save` first (encrypt changed files, push the store) and
+a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so
+editing `.queue` and pushing is enough to carry it to the other machine. Unchanged entries are
+skipped so the store doesn't collect a commit per push. If the store errors, the hook warns but
+never blocks the dotfiles push/pull.
+
 **New machine setup:** `make bash` clones the store if `~/.password-store` doesn't exist yet —
 export `PASSWORD_STORE_REMOTE` beforehand (a private, non-repo location) or answer the prompt it
-falls back to. It also sets `core.hooksPath` to the tracked `githooks/` dir, so a plain
-`git push`/`git pull` on this repo also syncs the password-store in the background.
-Requires your GPG private key already imported — that transfer stays manual/out-of-band.
+falls back to. Requires your GPG private key already imported — that transfer stays
+manual/out-of-band.
+
+**Caveat:** entries are encrypted blobs, so git can't merge them. If both machines change the
+same entry before syncing, the store push is rejected and you resolve by picking a side
+(`git -C ~/.password-store checkout --ours/--theirs <entry>.gpg`), not by merging. Pushing
+before switching machines avoids this.
 
 ## Initial Windows Setup Notes
 
