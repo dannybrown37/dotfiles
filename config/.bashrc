@@ -78,7 +78,7 @@ PATH="${DOTFILES_DIR}/bin:${HOME}/.local/bin:${PATH}"
 ## WSL Specific Setup
 ##
 
-if [[ -n "${WSL_DISTRO_NAME}" || "${MSYSTEM}" = "MINGW64" ]]; then
+if [[ -n "${WSL_DISTRO_NAME}" ]]; then
     export ON_WINDOWS=true
     # shellcheck disable=SC2016
     [[ -z "${WINDOWS_USERNAME:-}" ]] && export WINDOWS_USERNAME=$(powershell.exe '$env:UserName' | tr -d '\r\n')
@@ -192,8 +192,6 @@ elif [[ "${WSL_DISTRO_NAME}" = 'Ubuntu' ]]; then
     PROMPT_SYMBOL=⚙
 elif [[ "${HOSTNAME}" == *"raspberrypi"* ]]; then
     PROMPT_SYMBOL=🍓
-elif [[ "${MSYSTEM}" = "MINGW64" ]]; then
-    PROMPT_SYMBOL=🪟
 fi
 
 if ! command -v starship >/dev/null 2>&1; then
