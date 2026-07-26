@@ -4,7 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from gtd import storage
-from gtd.gtd import cli
+from gtd.cli import cli
 
 
 @pytest.fixture(autouse=True)

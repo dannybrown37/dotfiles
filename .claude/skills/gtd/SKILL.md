@@ -1,13 +1,13 @@
 ---
-name: project-manager
-description: "Invoke when working on the project_manager package — the GTD TUI app backed by Notion and local JSON."
+name: gtd
+description: "Invoke when working on the gtd package — the GTD TUI app backed by Notion and local JSON."
 user-invocable: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
-# Project Manager
+# GTD
 
-A personal productivity CLI at `project_manager/` implementing David Allen's **Getting Things Done** (GTD) method, backed by Notion. Entry point: `gtd` (runs the TUI by default).
+A personal productivity CLI at `gtd/` implementing David Allen's **Getting Things Done** (GTD) method, backed by Notion. Entry point: `gtd` (runs the TUI by default).
 
 12-Week Year goal tracking (local-JSON goals/tactics, scoring, the Goals tab) was removed — GTD only now. If you see references to `Goal`, `Tactic`, cadences, or a Goals tab elsewhere, they're stale.
 
@@ -17,7 +17,7 @@ A personal productivity CLI at `project_manager/` implementing David Allen's **G
 
 ```
 src/gtd/
-├── gtd.py          # CLI entry point (click group); gtd / gtd fzf / gtd tui / gtd triage / gtd api / etc.
+├── cli.py          # CLI entry point (click group); gtd / gtd fzf / gtd tui / gtd triage / gtd api / etc.
 ├── gtd_tui.py      # Unified Textual TUI — GTDApp (main), all tab content widgets
 ├── tui.py          # Shared Textual widgets: modals, DetailPane, VimListView
 ├── api.py          # Flask HTTP wrapper for iOS Shortcuts / mobile access

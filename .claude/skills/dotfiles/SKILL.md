@@ -17,10 +17,10 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux 
 ├── bin/            **Sourced** scripts — loaded into the current shell session, no shebang
 ├── config/         Dotfiles symlinked to ~ (.bashrc, .gitconfig, .tmux.conf, .ruff.toml, etc.)
 │   └── .secrets    Untracked secrets file managed via password-store
+├── gtd/            Python package (uv, pytest, ruff) — GTD CLI/TUI
 ├── install/        Per-tool bootstrap scripts invoked by Make targets
 ├── nvim/           Neovim config (lazy.nvim, Lua)
 ├── pass/           password-store related config
-├── project_manager/ Python package (uv, pytest, ruff) for project management
 ├── scripts/        **Non-sourced** scripts — standalone executables, use shebang + set -euo pipefail
 ├── wsl/            WSL-specific scripts and config
 ├── .vscode/        VS Code settings and extension list
@@ -92,4 +92,4 @@ Managed via `.pre-commit-config.yaml`. Active hooks:
 - **Measure:** `hyperfine --warmup 3 'bash -i -c exit'` for startup; uncomment the `_bt_show` lines at the bottom of `.bashrc` for prompt lag.
 
 - Config files use relative symlinks — don't move them without updating the bash install script.
-- The `project_manager/` directory is a standalone Python package with its own `pyproject.toml` and venv.
+- The `gtd/` directory is a standalone Python package with its own `pyproject.toml` and venv.

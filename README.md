@@ -142,9 +142,9 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `bin/` | Sourced shell scripts loaded into the current session |
 | `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
 | `githooks/` | Tracked git hooks (core.hooksPath) that sync the private password-store on dotfiles push/pull |
+| `gtd/` | Python CLI for GTD, backed by Notion |
 | `install/` | Bootstrap install scripts invoked via Make targets |
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
-| `project_manager/` | Python CLI for GTD and 12-Week Year planning |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
 | `scripts/` | Non-sourced standalone executable scripts |
 | `wsl/` | WSL-specific settings, functions, and komorebi config |

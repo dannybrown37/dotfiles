@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Update README.md menu section from gtd.py source."""
+"""Update README.md menu section from cli.py source."""
 
 import ast
 import re
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-GTD_SOURCE = PROJECT_ROOT / 'src' / 'gtd' / 'gtd.py'
+GTD_SOURCE = PROJECT_ROOT / 'src' / 'gtd' / 'cli.py'
 README = PROJECT_ROOT / 'README.md'
 
 BEGIN_MARKER = '<!-- BEGIN MENU -->'
@@ -14,7 +14,7 @@ END_MARKER = '<!-- END MENU -->'
 
 
 def extract_menu_items() -> list[tuple[str, str]]:
-    """Parse gtd.py AST to extract menu_items list."""
+    """Parse cli.py AST to extract menu_items list."""
     tree = ast.parse(GTD_SOURCE.read_text())
 
     for node in ast.walk(tree):
@@ -33,7 +33,7 @@ def extract_menu_items() -> list[tuple[str, str]]:
                     items.append((cat.value, action.value))
                 return items
 
-    msg = 'Could not find menu_items in gtd.py'
+    msg = 'Could not find menu_items in cli.py'
     raise RuntimeError(msg)
 
 
