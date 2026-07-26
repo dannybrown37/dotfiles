@@ -39,7 +39,6 @@ from textual.widgets import (
 )
 from textual.widgets._footer import FooterKey, FooterLabel
 
-from gtd.habits_tui import HabitsContent
 from gtd.models import Goal, Tactic, Update
 from gtd.notion.models import ProjectEntry
 from gtd.notion.schema import STATUSES, STATUS_ICONS
@@ -388,7 +387,7 @@ _GOAL_SCORING_HINT = """\
 
 
 def _habit_done_this_week(key: str) -> bool:
-    from gtd.storage import get_weekly_habit_date  # noqa: PLC0415
+    from gtd.storage import get_weekly_habit_date
 
     last = get_weekly_habit_date(key)
     if not last:
@@ -397,8 +396,8 @@ def _habit_done_this_week(key: str) -> bool:
 
 
 def _render_habit_detail(key: str, label: str) -> str:
-    from gtd.storage import get_weekly_habit_date  # noqa: PLC0415
-    from gtd.storage import get_stored_goal_names, load_goal  # noqa: PLC0415
+    from gtd.storage import get_weekly_habit_date
+    from gtd.storage import get_stored_goal_names, load_goal
 
     last = get_weekly_habit_date(key)
     if last:
@@ -692,8 +691,8 @@ async def _prompt_and_get_props(
     choice: str,
 ) -> dict | None:
     """Prompt for a field value; return kwargs for build_property_update."""
-    from gtd.notion.client import get_select_options  # noqa: PLC0415
-    from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
+    from gtd.notion.client import get_select_options
+    from gtd.notion.entries import _parse_date_input
 
     loop = asyncio.get_running_loop()
     props: dict | None = None
@@ -745,7 +744,7 @@ async def _shared_update_entry(
     refresh_cb: Callable[[], None],
 ) -> None:
     """Update entry fields — shared across tab widgets."""
-    from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+    from gtd.notion.client import build_property_update, update_page
 
     fields = [
         'Name',
@@ -797,7 +796,7 @@ async def _open_steps_editor(app: App, initial_text: str = '') -> str:
     content = Path(tmp_path).read_text()
     Path(tmp_path).unlink(missing_ok=True)
     lines = [ln for ln in content.split('\n') if not ln.startswith('#')]
-    from gtd.notion.models import format_steps, parse_steps  # noqa: PLC0415
+    from gtd.notion.models import format_steps, parse_steps
 
     steps = parse_steps('\n'.join(lines))
     return format_steps(steps)
@@ -863,7 +862,7 @@ class EditNotesModal(ModalScreen[str | None]):
 
 
 def _use_inline_editor() -> bool:
-    from gtd.notion.config import get_config_value  # noqa: PLC0415
+    from gtd.notion.config import get_config_value
 
     return get_config_value('notes_editor') == 'inline'
 
@@ -890,7 +889,7 @@ async def _shared_edit_notes(
     refresh_cb: Callable[[], None],
 ) -> None:
     """Edit notes via inline modal or external $EDITOR per config."""
-    from gtd.notion.client import get_page_body, replace_page_body  # noqa: PLC0415
+    from gtd.notion.client import get_page_body, replace_page_body
 
     loop = asyncio.get_running_loop()
     body = await loop.run_in_executor(None, get_page_body, entry.page_id)
@@ -915,7 +914,7 @@ async def _shared_log_and_reschedule(
 
     Returns the new follow-up date string, or None if cancelled.
     """
-    from gtd.notion.client import (  # noqa: PLC0415
+    from gtd.notion.client import (
         get_page_body,
         get_select_options,
         replace_page_body,
@@ -948,7 +947,7 @@ async def _shared_log_and_reschedule(
         )
     )
 
-    from gtd.notion.log import _infer_reschedule_days  # noqa: PLC0415
+    from gtd.notion.log import _infer_reschedule_days
 
     inferred = _infer_reschedule_days(entry.header)
     if inferred:
@@ -961,14 +960,14 @@ async def _shared_log_and_reschedule(
         )
         if not date_str:
             return None
-        from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
+        from gtd.notion.entries import _parse_date_input
 
         next_date = _parse_date_input(date_str)
         if not next_date:
             app.notify('Could not parse date', severity='warning')
             return None
 
-    from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+    from gtd.notion.client import build_property_update, update_page
 
     props = build_property_update(follow_up_date=next_date)
     if new_context:
@@ -1039,7 +1038,7 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _load_entries(self) -> None:
-        from gtd.notion.client import query_database  # noqa: PLC0415
+        from gtd.notion.client import query_database
 
         try:
             pages = query_database(filter_obj=self._build_filter())
@@ -1093,7 +1092,7 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True, exclusive=True)
     def _load_notes(self, page_id: str) -> None:
-        from gtd.notion.client import get_page_body  # noqa: PLC0415
+        from gtd.notion.client import get_page_body
 
         try:
             body = get_page_body(page_id)
@@ -1166,7 +1165,7 @@ class BaseEntryContent(Vertical):
         entry = self._current_entry()
         if not entry:
             return
-        from gtd.notion.log import _is_recurring  # noqa: PLC0415
+        from gtd.notion.log import _is_recurring
 
         if _is_recurring(entry):
             choice = await self.app.push_screen_wait(
@@ -1206,14 +1205,14 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _done_worker(self, page_id: str) -> None:
-        from gtd.notion.client import NotionAPIError, archive_page  # noqa: PLC0415
+        from gtd.notion.client import NotionAPIError, archive_page
 
         with contextlib.suppress(NotionAPIError):
             archive_page(page_id)
 
     @work(thread=True)
     def _update_worker(self, page_id: str, props: dict) -> None:
-        from gtd.notion.client import (  # noqa: PLC0415
+        from gtd.notion.client import (
             NotionAPIError,
             build_property_update,
             update_page,
@@ -1250,14 +1249,14 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _drop_worker(self, page_id: str) -> None:
-        from gtd.notion.client import NotionAPIError, archive_page  # noqa: PLC0415
+        from gtd.notion.client import NotionAPIError, archive_page
 
         with contextlib.suppress(NotionAPIError):
             archive_page(page_id)
 
     @work
     async def action_complete_step(self) -> None:
-        from gtd.notion.models import advance_steps  # noqa: PLC0415
+        from gtd.notion.models import advance_steps
 
         entry = self._current_entry()
         if not entry or not entry.next_step:
@@ -1281,7 +1280,7 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _advance_step_worker(self, page_id: str, new_text: str) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import build_property_update, update_page
 
         update_page(page_id, build_property_update(next_step=new_text))
 
@@ -1295,7 +1294,7 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _activate_worker(self, page_id: str) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import build_property_update, update_page
 
         update_page(page_id, build_property_update(status='Current Project'))
 
@@ -1309,7 +1308,7 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _someday_worker(self, page_id: str) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import build_property_update, update_page
 
         update_page(page_id, build_property_update(status='Someday/Maybe'))
 
@@ -1325,7 +1324,7 @@ class BaseEntryContent(Vertical):
 
     @work(thread=True)
     def _capture_worker(self, header: str) -> None:
-        from gtd.notion.capture import _create_page  # noqa: PLC0415
+        from gtd.notion.capture import _create_page
 
         _create_page(header)
 
@@ -1464,7 +1463,7 @@ class ProjectsBrowseScreen(ModalScreen):
 
 async def _review_projects(app: App) -> int:
     """Browse Current Projects. Returns count."""
-    from gtd.notion.client import (  # noqa: PLC0415
+    from gtd.notion.client import (
         archive_page,
         build_property_update,
         query_database,
@@ -1640,7 +1639,7 @@ class WaitingForBrowseScreen(ModalScreen):
 
 async def _review_waiting_for(app: App) -> int:
     """Browse Waiting For items. Returns count."""
-    from gtd.notion.client import (  # noqa: PLC0415
+    from gtd.notion.client import (
         archive_page,
         build_property_update,
         query_database,
@@ -1681,12 +1680,12 @@ async def _review_waiting_for(app: App) -> int:
 
 async def _review_someday(app: App) -> int:
     """Browse Someday/Maybe items — perusal, not per-item triage."""
-    from gtd.notion.client import (  # noqa: PLC0415
+    from gtd.notion.client import (
         build_property_update,
         query_database,
         update_page,
     )
-    from gtd.notion.client import archive_page  # noqa: PLC0415
+    from gtd.notion.client import archive_page
 
     loop = asyncio.get_running_loop()
     pages = await loop.run_in_executor(
@@ -1839,8 +1838,8 @@ class SomedayBrowseScreen(ModalScreen):
 
 async def _review_areas(app: App) -> int:
     """Walk through Horizons of Focus, prompt for inbox captures."""
-    from gtd.notion.capture import _create_page  # noqa: PLC0415
-    from gtd.storage import load_areas  # noqa: PLC0415
+    from gtd.notion.capture import _create_page
+    from gtd.storage import load_areas
 
     areas = load_areas()
     if not areas:
@@ -1953,7 +1952,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
         return steps
 
     def _restore_state(self) -> None:
-        from gtd.storage import load_review_state  # noqa: PLC0415
+        from gtd.storage import load_review_state
 
         saved = load_review_state(len(self._steps))
         for i, done in enumerate(saved):
@@ -1961,7 +1960,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
                 self._steps[i]['done'] = True
 
     def _save_state(self) -> None:
-        from gtd.storage import save_review_state  # noqa: PLC0415
+        from gtd.storage import save_review_state
 
         save_review_state([s['done'] for s in self._steps])
 
@@ -2071,7 +2070,7 @@ class WeeklyReviewScreen(ModalScreen[bool]):
         )
         if not confirmed:
             return
-        from gtd.storage import reset_review_state  # noqa: PLC0415
+        from gtd.storage import reset_review_state
 
         reset_review_state()
         for step in self._steps:
@@ -2126,7 +2125,7 @@ class TodayContent(BaseEntryContent):
 
     @work(thread=True)
     def _load_entries(self) -> None:
-        from gtd.notion.entries import _get_today_entries  # noqa: PLC0415
+        from gtd.notion.entries import _get_today_entries
 
         try:
             entries = _get_today_entries()
@@ -2174,7 +2173,7 @@ class TodayContent(BaseEntryContent):
         with contextlib.suppress(Exception):
             self.query_one('#entry-loading', LoadingIndicator).display = False
 
-        from gtd.storage import get_stored_goal_names, load_goal  # noqa: PLC0415
+        from gtd.storage import get_stored_goal_names, load_goal
 
         self._habit_items = [
             WeeklyHabitItem(key, label)
@@ -2292,8 +2291,8 @@ class TodayContent(BaseEntryContent):
             self._dismiss_habit_item(item)
 
     async def _run_goal_scoring_flow(self) -> bool:
-        from gtd.storage import get_stored_goal_names, load_goal, save_goal  # noqa: PLC0415
-        from gtd.tui import ScorecardScreen  # noqa: PLC0415
+        from gtd.storage import get_stored_goal_names, load_goal, save_goal
+        from gtd.tui import ScorecardScreen
 
         scored_any = False
         for name in get_stored_goal_names():
@@ -2321,7 +2320,7 @@ class TodayContent(BaseEntryContent):
         inbox_entries: list[ProjectEntry] = []
         inbox_count = 0
         try:
-            from gtd.notion.client import query_database  # noqa: PLC0415
+            from gtd.notion.client import query_database
 
             inbox_filter = {
                 'or': [
@@ -2371,7 +2370,7 @@ class TodayContent(BaseEntryContent):
         )
 
     def _dismiss_habit_item(self, item: WeeklyHabitItem) -> None:
-        from gtd.storage import set_weekly_habit_date  # noqa: PLC0415
+        from gtd.storage import set_weekly_habit_date
 
         set_weekly_habit_date(item.habit_key)
         lv = self.query_one('#entry-list', VimListView)
@@ -2429,7 +2428,7 @@ class TodayContent(BaseEntryContent):
 
     @work(thread=True)
     def _snooze_worker(self, page_id: str, date: str) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import build_property_update, update_page
 
         props = build_property_update(follow_up_date=date)
         update_page(page_id, props)
@@ -2451,7 +2450,7 @@ class TodayContent(BaseEntryContent):
         if not result:
             return
         waiting_on, followup_str = result
-        from gtd.notion.entries import _parse_date_input  # noqa: PLC0415
+        from gtd.notion.entries import _parse_date_input
 
         follow_date = _parse_date_input(followup_str) if followup_str else None
         self._waiting_for_worker(entry.page_id, waiting_on, follow_date)
@@ -2462,7 +2461,7 @@ class TodayContent(BaseEntryContent):
     def _waiting_for_worker(
         self, page_id: str, waiting_on: str, follow_date: str | None
     ) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import build_property_update, update_page
 
         kwargs: dict = {'status': 'Waiting For'}
         if waiting_on:
@@ -2500,7 +2499,7 @@ class TodayContent(BaseEntryContent):
         )
         if not note:
             return
-        from gtd.storage import get_stored_goal_names, load_goal, save_goal  # noqa: PLC0415
+        from gtd.storage import get_stored_goal_names, load_goal, save_goal
 
         for name in get_stored_goal_names():
             if name != tactic_item.goal_name:
@@ -2526,7 +2525,7 @@ class TodayContent(BaseEntryContent):
         tactic_item = self._current_tactic_item()
         if not tactic_item:
             return
-        from gtd.storage import get_stored_goal_names, load_goal, save_goal  # noqa: PLC0415
+        from gtd.storage import get_stored_goal_names, load_goal, save_goal
 
         for name in get_stored_goal_names():
             if name != tactic_item.goal_name:
@@ -2661,14 +2660,14 @@ class InboxContent(BaseEntryContent):
 
         Returns True if saved, False if skipped/deleted, None if cancelled.
         """
-        from dateutil import parser as dateparser  # noqa: PLC0415
-        from gtd.notion.client import (  # noqa: PLC0415
+        from dateutil import parser as dateparser
+        from gtd.notion.client import (
             archive_page,
             build_property_update,
             get_select_options,
             update_page,
         )
-        from gtd.notion.triage import TRIAGE_STATUSES  # noqa: PLC0415
+        from gtd.notion.triage import TRIAGE_STATUSES
 
         title = entry.header.strip()
         kwargs: dict = {}
@@ -2735,7 +2734,7 @@ class InboxContent(BaseEntryContent):
 
         if not entry.context:
             if status == 'List':
-                from gtd.notion.client import get_list_categories  # noqa: PLC0415
+                from gtd.notion.client import get_list_categories
 
                 list_categories = (
                     await asyncio.get_running_loop().run_in_executor(
@@ -2753,7 +2752,7 @@ class InboxContent(BaseEntryContent):
                     return None
                 kwargs['list_category'] = list_category
             else:
-                from gtd.notion.client import (  # noqa: PLC0415
+                from gtd.notion.client import (
                     add_context,
                     remove_context,
                 )
@@ -2909,7 +2908,7 @@ class InboxContent(BaseEntryContent):
 
     @work
     async def action_update_entry(self) -> None:  # noqa: PLR0911
-        from gtd.notion.client import (  # noqa: PLC0415
+        from gtd.notion.client import (
             build_property_update,
             get_select_options,
             update_page,
@@ -3297,7 +3296,7 @@ class SomedayContent(BaseEntryContent):
 
     @work
     async def action_move_to_list(self) -> None:
-        from gtd.notion.client import get_list_categories  # noqa: PLC0415
+        from gtd.notion.client import get_list_categories
 
         entry = self._current_entry()
         if not entry:
@@ -3315,7 +3314,7 @@ class SomedayContent(BaseEntryContent):
 
     @work(thread=True)
     def _move_to_list_worker(self, page_id: str, category: str) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import build_property_update, update_page
 
         update_page(
             page_id,
@@ -3407,7 +3406,7 @@ class ListsContent(BaseEntryContent):
     @work(thread=True)
     def _load_notion_categories(self) -> None:
         """Load list categories from Notion."""
-        from gtd.notion.client import get_list_categories  # noqa: PLC0415
+        from gtd.notion.client import get_list_categories
 
         try:
             self._notion_categories = get_list_categories()
@@ -3525,15 +3524,15 @@ class ListsContent(BaseEntryContent):
 
     @work
     async def action_add_item(self) -> None:
-        from gtd.notion.client import (  # noqa: PLC0415
+        from gtd.notion.client import (
             get_projects_db_id,
             get_token,
             NOTION_API_URL,
             NOTION_VERSION,
         )
-        import httpx  # noqa: PLC0415
-        from gtd.notion.client import _handle_response  # noqa: PLC0415
-        from datetime import UTC, datetime as _dt  # noqa: PLC0415
+        import httpx
+        from gtd.notion.client import _handle_response
+        from datetime import UTC, datetime as _dt
 
         target = await self.app.push_screen_wait(
             SelectModal('Add to which list?', self._all_categories())
@@ -3588,7 +3587,7 @@ class ListsContent(BaseEntryContent):
 
     @work
     async def action_update_item(self) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import build_property_update, update_page
 
         entry = self._current_entry()
         if not entry:
@@ -3620,7 +3619,7 @@ class ListsContent(BaseEntryContent):
                 success_condition=value.strip() or ''
             )
         elif choice == 'Context':
-            from gtd.notion.client import get_select_options  # noqa: PLC0415
+            from gtd.notion.client import get_select_options
 
             loop = asyncio.get_running_loop()
             contexts = await loop.run_in_executor(
@@ -3641,7 +3640,7 @@ class ListsContent(BaseEntryContent):
 
     @work
     async def action_move_item(self) -> None:
-        from gtd.notion.client import build_property_update, update_page  # noqa: PLC0415
+        from gtd.notion.client import build_property_update, update_page
 
         entry = self._current_entry()
         if not entry:
@@ -3671,7 +3670,7 @@ class ListsContent(BaseEntryContent):
         self.app.notify(f'✓ "{entry.header.strip()}" → {dest}')
 
     async def action_add_category(self) -> None:
-        from gtd.notion.client import add_list_category  # noqa: PLC0415
+        from gtd.notion.client import add_list_category
 
         name = await self.app.push_screen_wait(
             InputModal('New list category', 'Category name')
@@ -3692,7 +3691,7 @@ class ListsContent(BaseEntryContent):
             self.app.notify(f'Failed to add category: {e}', severity='error')
 
     async def action_remove_category(self) -> None:
-        from gtd.notion.client import remove_list_category  # noqa: PLC0415
+        from gtd.notion.client import remove_list_category
 
         if not self._notion_categories:
             self.app.notify('No categories to remove', severity='warning')
@@ -3725,7 +3724,7 @@ class ListsContent(BaseEntryContent):
             )
 
     async def action_rename_category(self) -> None:
-        from gtd.notion.client import rename_list_category, update_page  # noqa: PLC0415
+        from gtd.notion.client import rename_list_category, update_page
 
         if not self._notion_categories:
             self.app.notify('No categories to rename', severity='warning')
@@ -3784,7 +3783,7 @@ class ListsContent(BaseEntryContent):
 
 def _classify_network_error(err: Exception) -> tuple[str, str]:
     """(message, severity) for network errors; ('', '') means re-raise."""
-    import httpx  # noqa: PLC0415
+    import httpx
 
     if isinstance(err, httpx.TimeoutException):
         return 'Notion timed out — try again', 'warning'
@@ -3827,7 +3826,7 @@ class GTDSearchProvider(Provider):
     _goal_index: list[tuple[str, Goal, Tactic | None]]
 
     async def startup(self) -> None:
-        from gtd.storage import get_stored_goal_names, load_goal  # noqa: PLC0415
+        from gtd.storage import get_stored_goal_names, load_goal
 
         self._goal_index = []
         for name in get_stored_goal_names():
@@ -3852,7 +3851,7 @@ class GTDSearchProvider(Provider):
 
     @staticmethod
     def _fetch_all_entries() -> list[ProjectEntry]:
-        from gtd.notion.client import query_database  # noqa: PLC0415
+        from gtd.notion.client import query_database
 
         pages = query_database(
             filter_obj={
@@ -3978,8 +3977,6 @@ class GTDApp(App[None]):
                 yield SomedayContent()
             with TabPane('Lists', id='tab-lists'):
                 yield ListsContent()
-            with TabPane('Habits', id='tab-habits'):
-                yield HabitsContent()
             with TabPane('Goals', id='tab-goals'):
                 yield GoalsContent()
         yield SplitFooter()
@@ -4055,7 +4052,7 @@ class GTDApp(App[None]):
             pass
 
     def _handle_exception(self, error: Exception) -> None:
-        from textual.worker import WorkerFailed  # noqa: PLC0415
+        from textual.worker import WorkerFailed
 
         if isinstance(error, WorkerFailed) and error.__cause__ is not None:
             msg, severity = _classify_network_error(error.__cause__)
