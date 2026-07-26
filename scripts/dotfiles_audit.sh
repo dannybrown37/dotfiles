@@ -146,16 +146,25 @@ else
 fi
 
 GIT_NAME=$(git config user.name 2>/dev/null)
-GIT_EMAIL=$(git config user.email 2>/dev/null)
 if [[ -n "$GIT_NAME" ]]; then
     ok "git user.name" "$GIT_NAME"
 else
     fail "git user.name" "run: git config --global user.name \"Your Name\""
 fi
+
+# Email is resolved per-repo from the remote, so it has to be checked inside a
+# known repo rather than wherever the audit happens to be run from.
+GIT_EMAIL=$(git -C "$DOTFILES_DIR" config --get user.email 2>/dev/null)
 if [[ -n "$GIT_EMAIL" ]]; then
-    ok "git user.email" "$GIT_EMAIL"
+    ok "git user.email (dotfiles)" "$GIT_EMAIL"
 else
-    fail "git user.email" "run: git config --global user.email \"you@example.com\""
+    fail "git user.email (dotfiles)" "no includeIf matched — check config/.gitconfig"
+fi
+
+if [[ "$(git config --get user.useConfigOnly 2>/dev/null)" == "true" ]]; then
+    ok "identity fail-loud" "useConfigOnly — unmatched repos refuse to commit"
+else
+    warn "identity fail-loud" "user.useConfigOnly not set — wrong-account commits can slip through"
 fi
 
 # ── Config Symlinks ───────────────────────────────────────────────────────────
@@ -172,6 +181,11 @@ check_symlink "starship.toml"      "$HOME/.config/starship.toml" "$DOTFILES_DIR/
 check_symlink "lazygit config"     "$HOME/.config/lazygit/config.yml" "$DOTFILES_DIR/config/lazygit.yml"
 check_symlink "nvim config"        "$HOME/.config/nvim"         "$DOTFILES_DIR/nvim"
 check_symlink ".gitconfig-personal" "$HOME/.gitconfig-personal"  "$DOTFILES_DIR/config/.gitconfig-personal"
+if [[ -e "$HOME/.gitconfig-private" ]]; then
+    check_symlink ".gitconfig-private" "$HOME/.gitconfig-private" "$DOTFILES_DIR/config/.gitconfig-private"
+else
+    warn ".gitconfig-private" "absent — only personal remotes have an identity on this machine"
+fi
 
 if [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
     ok "tmux tpm" "installed"

@@ -1,7 +1,12 @@
-#  Pulled in by includeIf for repos tied to the personal GitHub account.
+#  Pulled in by includeIf for repos whose remote belongs to the personal
+#  account. Sets both who commits are authored by and which token pushes them,
+#  so the two can never disagree.
 #  The empty helper resets the inherited list so gh's helper (which reads
 #  GITHUB_TOKEN, the work token) does not also get a say.
 
+[user]
+    name = Danny Brown
+    email = dannybrown37@gmail.com
 [credential "https://github.com"]
     helper =
     helper = !~/projects/dotfiles/scripts/git-credential-personal.sh

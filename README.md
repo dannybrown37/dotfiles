@@ -186,17 +186,29 @@ same entry before syncing, the store push is rejected and you resolve by picking
 (`git -C ~/.password-store checkout --ours/--theirs <entry>.gpg`), not by merging. Pushing
 before switching machines avoids this.
 
-### Personal vs Work GitHub Tokens
+### Multiple GitHub Accounts
 
-On a work machine `GITHUB_TOKEN` holds the work token, but this repo and `~/.password-store`
-must authenticate as the personal account. Rather than prefixing every push, `config/.gitconfig`
-uses `includeIf` to pull in `.gitconfig-personal` for exactly those two directories, which
-points the credential helper at `scripts/git-credential-personal.sh`. That script emits
-`$MY_GITHUB_TOKEN`, falling back to `gh` when it isn't set. Every other repo keeps the default
-`gh`/`GITHUB_TOKEN` behavior, so a plain `git push` does the right thing everywhere.
+More than one GitHub account shares these machines. Both the commit author and the push token
+are chosen from the repo's **remote**, via `includeIf "hasconfig:remote.*.url:..."` — not from
+its directory, so a repo cloned somewhere unexpected still gets the right account.
 
-No token is stored in the repo — the helper only reads the environment. The dotfiles audit
-verifies the wiring.
+| Remote | Author | Token |
+| --- | --- | --- |
+| personal account | personal email | `$MY_GITHUB_TOKEN` |
+| anything else | *none — commit refused* | `gh` / `$GITHUB_TOKEN` |
+
+The global `[user]` block deliberately has **no email** and sets `useConfigOnly = true`, so a
+repo matching no rule fails with *"Author identity unknown"* rather than quietly committing as
+the wrong person.
+
+Any **non-personal** identity — the addresses, and the remote patterns that select them — lives
+in `~/.gitconfig-private`, which is gitignored and never enters this repo. It reaches other
+machines through the password store, not through git. Machines without that file simply inherit
+the fail-loud default, since git ignores a missing include.
+
+Personal repos get their token from `scripts/git-credential-personal.sh`, which emits
+`$MY_GITHUB_TOKEN` and falls back to `gh` when unset. No token is stored in the repo — the
+helper only reads the environment. The dotfiles audit verifies the whole wiring.
 
 ## Initial Windows Setup Notes
 

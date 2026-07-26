@@ -206,6 +206,13 @@ ln -s ~/projects/dotfiles/config/.inputrc ~/.inputrc &&
 ln -s ~/projects/dotfiles/config/.gitconfig-personal ~/.gitconfig-personal &&
     echo "Symlinked .gitconfig-personal"
 
+# Untracked: holds any non-personal git identity. Delivered by secrets-load, so
+# only symlink it once the file actually exists.
+if [ -f ~/projects/dotfiles/config/.gitconfig-private ]; then
+    ln -sf ~/projects/dotfiles/config/.gitconfig-private ~/.gitconfig-private &&
+        echo "Symlinked .gitconfig-private"
+fi
+
 ln -s ~/projects/dotfiles/config/.tmux.conf ~/.tmux.conf &&
     echo "Symlinked .tmux.conf"
 

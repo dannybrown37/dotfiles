@@ -1,5 +1,6 @@
 ahk/secrets.ahk*
 config/.secrets*
+config/.gitconfig-private*
 **/.env
 **/__pycache__/
 .worktrees/
