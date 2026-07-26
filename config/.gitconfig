@@ -44,3 +44,10 @@
     helper = !/usr/bin/gh auth git-credential
 [credential "https://gist.github.com"]
     helper = !/usr/bin/gh auth git-credential
+
+# Repos owned by the personal account override the helper above so they never
+# authenticate with a work GITHUB_TOKEN. Keep gitdir patterns trailing-slashed.
+[includeIf "gitdir:~/projects/dotfiles/"]
+    path = ~/.gitconfig-personal
+[includeIf "gitdir:~/.password-store/"]
+    path = ~/.gitconfig-personal
