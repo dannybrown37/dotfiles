@@ -18,7 +18,7 @@ src/gtd/
 ├── gtd.py          # CLI entry point (click group); gtd / gtd fzf / gtd tui / gtd triage / gtd api / etc.
 ├── gtd_tui.py      # Unified Textual TUI — GTDApp (main), all tab content widgets
 ├── tui.py          # Shared Textual widgets: modals, GoalsApp, GoalsContent, VimListView, ScorecardScreen
-├── api.py          # FastAPI HTTP wrapper for iOS Shortcuts / mobile access
+├── api.py          # Flask HTTP wrapper for iOS Shortcuts / mobile access
 ├── models.py       # Pydantic: Goal, Tactic, Todo, Update
 ├── storage.py      # Local JSON I/O for goals + weekly habits (~/.local/share/gtd/)
 ├── cli.py          # 12WY fzf-based CLI (legacy pm command)
@@ -180,10 +180,10 @@ Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_ta
 
 ## HTTP API (api.py)
 
-A FastAPI app for mobile/iOS Shortcuts access. Requires the `api` optional dependency group.
+A Flask app for mobile/iOS Shortcuts access. Requires the `api` optional dependency group.
 
 **Install**: `uv pip install "gtd[api]"`  
-**Run**: `gtd api` (default: `0.0.0.0:8000`) or `gtd api --port 9000 --reload`  
+**Run**: `gtd api` (default: `0.0.0.0:8000`) or `gtd api --port 9000`  
 **Auth**: Bearer token — set `GTD_API_KEY` env var on the server; pass as `Authorization: Bearer <key>` header.
 
 | Method | Path | Description |
@@ -204,5 +204,5 @@ All responses are JSON. Entry objects match `ProjectEntry` fields.
 - **ruff** for lint/format — `uv run ruff check src/` must pass before shipping
 - **pytest** for tests — `uv run pytest`
 - Python 3.12+, Textual ≥ 0.71, Pydantic ≥ 2, httpx, click, python-dateutil
-- Optional: fastapi ≥ 0.115, uvicorn ≥ 0.34 (install with `uv pip install "gtd[api]"`)
+- Optional: Flask ≥ 3.1 (install with `uv pip install "gtd[api]"`)
 - After any code change: `uv tool install -e .` to update the installed `gtd` binary
