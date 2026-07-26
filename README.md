@@ -37,8 +37,8 @@ Environment-Specific:
   komo            Reset komorebi (useful for after configuration changes)
 
 Secrets (requires GPG keys):
-  secrets-save    Save local secrets to password-store
-  secrets-load    Load secrets from password-store to local files
+  secrets-save    Save local secrets to password-store, push to private repo
+  secrets-load    Pull private repo, load secrets from password-store to local files
 ```
 
 ## Commands Available
@@ -142,7 +142,6 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
 | `install/` | Bootstrap install scripts invoked via Make targets |
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
-| `pass/` | password-store (pass) configuration and GPG setup |
 | `project_manager/` | Python CLI for GTD and 12-Week Year planning |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
 | `scripts/` | Non-sourced standalone executable scripts |
@@ -160,11 +159,14 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 Assuming you are properly authorized to do so on the machine in question:
 
 ```bash
-make secrets-save    # local → password-store
-make secrets-load    # password-store → local (backs up existing files first)
+make secrets-save    # local → password-store → git push
+make secrets-load    # git pull → password-store → local (backs up changed files first)
 ```
 
-Manages `./config/.secrets` and `./ahk/secrets.ahk` via the encrypted `password-store`.
+Manages local gitignored files via the encrypted `password-store`.
+
+The store lives at `~/.password-store` and is its own private git repo, so nothing about it
+lands in this repo. `pass` commits on every insert; the make targets push and pull.
 
 ## Initial Windows Setup Notes
 
