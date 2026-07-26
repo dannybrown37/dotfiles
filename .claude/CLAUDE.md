@@ -11,7 +11,7 @@
 ## Communication Style
 
 - Very few to no comments in generated code unless explicitly requested. Comments should be "why", not "what". i.e., if a comment is needed to explain what the code does, the code should be rewritten to be more readable.
-- Be brief and snappy. Get to the point.
+- When reporting information to me, be as concise as possible. Sacrifice grammar for the sake of concision.
 - Don't restate questions. Don't apologize. Match my mood.
 - Admit when you don't know. Cite sources if uncertain.
 - If multiple approaches exist, briefly state which and why to choose, then list alternatives. Cite sources.
@@ -34,19 +34,6 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 - Always use type hints for function parameters (all languages where available).
 - Write tests using `test.each` (JS/TS) or `pytest.mark.parametrize` (Python) for DRY reusable test code.
 - You have read-only access to git. Don't write with git unless permission is explicitly given.
-
-## Queue System
-
-`.queue` at the repo root holds work items to pick up later, one per `##` header. Completed
-items move to `.queue-complete` with start/end timestamps. Both files are gitignored and sync
-between machines through the password store rather than through git.
-
-**Invoke the `queue` skill to work an item.** It owns the file format, the `queue` CLI
-(`list` / `next` / `complete`), and the selection-and-discussion flow — including that you ask
-which item to work on rather than assuming the first one. Deliberately not restated here, so
-there is one place to keep correct.
-
-Autonomous off-hours processing is not built yet; it is itself a queued item.
 
 ## Documentation
 
