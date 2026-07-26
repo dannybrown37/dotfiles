@@ -17,23 +17,26 @@ The output of `make` in the root directory:
 ```txt
 Usage: make [option]
 
-Bootstrap scripts:
-  bash            Install Bash profile (tmux, apt packages, etc.)
+Languages & Runtimes:
   python          Install Python environment (uv, select uv tools)
   node            Install Node.js environment (n, Node 22, select global packages)
   deno            Install Deno 2
   golang          Install Go environment (latest Golang version)
   rust            Install Rust environment (latest Rust version, select global packages)
+
+Developer Tools:
+  bash            Install Bash profile (tmux, apt packages, etc.)
   nvim            Install Neovim
   lazygit         Install lazygit TUI git client
   vscode          Install VS Code extensions and settings
-  all             Install all of the above
+
+Environment-Specific:
   gnome           Install Gnome extensions
   windows         Install Windows extensions (NerdFonts and Komorebi)
   wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
   komo            Reset komorebi (useful for after configuration changes)
 
-These commands require GPG keys and secrets:
+Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store
   secrets-load    Load secrets from password-store to local files
 ```
