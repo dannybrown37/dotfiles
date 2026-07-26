@@ -21,8 +21,11 @@ store_is_git() {
 }
 
 read_manifest() {
-    pass show "${MANIFEST}" 2>/dev/null ||
-        die "no '${MANIFEST}' entry in password-store (expected 'entry:relative/path' per line)"
+    # Report gpg's own error -- a decrypt or agent failure is not the same
+    # problem as a missing entry, and they need different fixes.
+    if ! pass show "${MANIFEST}" 2>"${WORK_DIR}/manifest.err"; then
+        die "cannot read '${MANIFEST}' from password-store: $(<"${WORK_DIR}/manifest.err")"
+    fi
 }
 
 save_entry() {

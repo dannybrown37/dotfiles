@@ -46,6 +46,14 @@ export NOTES_DIR="${HOME}/notes"
 export EDITOR="nvim"
 export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
+# Without this, gpg cannot find a terminal to prompt on when it is invoked with
+# stdin redirected -- which is how git hooks run pass. Guarded because `tty`
+# prints "not a tty" (rather than failing) in non-interactive shells.
+if [[ -t 0 ]]; then
+    GPG_TTY="$(tty)"
+    export GPG_TTY
+fi
+
 LS_IGNORE_PATTERNS=(
     ".git"
     "node_modules"
