@@ -1,12 +1,18 @@
 """Tests for scripts/claude_stats.py."""
 
 import json
-from datetime import date
+from collections import Counter
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
 
-from claude_stats import collect_stats
+from claude_stats import (
+    UsageStats,
+    collect_stats,
+    format_report,
+    supports_color,
+)
 
 STAMP = '2026-07-26T09:00:00.000Z'
 REPLY_OUTPUT_TOKENS = 10
@@ -16,6 +22,8 @@ EXPECTED_GENUINE_PROMPTS = 2
 EXPECTED_ADDED_LINES = 2
 EXPECTED_REMOVED_LINES = 1
 EXPECTED_BASH_USES = 2
+NARROW_WIDTH = 60
+WIDE_WIDTH = 200
 
 
 def _assistant(**overrides: object) -> dict:
@@ -221,3 +229,122 @@ def test_tracks_longest_prompt(tmp_path: Path) -> None:
     stats = collect_stats([tmp_path])
 
     assert stats.longest_prompt_chars == LONG_PROMPT_CHARS
+
+
+def _stats_with_full_report_data() -> UsageStats:
+    return UsageStats(
+        session_ids={'s1'},
+        prompts=5,
+        replies=5,
+        output_tokens=1000,
+        input_tokens=500,
+        cache_read_tokens=200,
+        cache_write_tokens=100,
+        lines_added=10,
+        lines_removed=3,
+        thinking_blocks=2,
+        subagent_runs=1,
+        longest_prompt_chars=42,
+        models=Counter(
+            {'claude-opus-5': 3, 'claude-haiku-4-5-20251001': 2},
+        ),
+        tools=Counter({'Bash': 4, 'Read': 2}),
+        first_seen=datetime.fromisoformat(STAMP.replace('Z', '+00:00')),
+        last_seen=datetime.fromisoformat(STAMP.replace('Z', '+00:00')),
+    )
+
+
+def _lines_mentioning_both(
+    report: str,
+    left_needle: str,
+    right_needle: str,
+) -> list[str]:
+    return [
+        line
+        for line in report.split('\n')
+        if left_needle in line and right_needle in line
+    ]
+
+
+def test_format_report_stacks_totals_and_tokens_when_narrow() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=NARROW_WIDTH,
+        color=False,
+    )
+
+    assert not _lines_mentioning_both(report, 'sessions', 'tokens out')
+
+
+def test_format_report_columns_totals_and_tokens_when_wide() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert _lines_mentioning_both(report, 'sessions', 'tokens out')
+
+
+def test_format_report_stacks_models_and_tools_when_narrow() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=NARROW_WIDTH,
+        color=False,
+    )
+
+    assert not _lines_mentioning_both(report, 'model mix', 'top tools')
+
+
+def test_format_report_columns_models_and_tools_when_wide() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert _lines_mentioning_both(report, 'model mix', 'top tools')
+
+
+def test_format_report_includes_ansi_codes_when_color_enabled() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=True,
+    )
+
+    assert '\x1b[' in report
+
+
+def test_format_report_omits_ansi_codes_when_color_disabled() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert '\x1b[' not in report
+
+
+@pytest.mark.parametrize(
+    ('is_a_tty', 'no_color_env', 'expected'),
+    [
+        (True, None, True),
+        (False, None, False),
+        (True, '1', False),
+    ],
+)
+def test_supports_color_reflects_tty_and_no_color_env(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    is_a_tty: bool,
+    no_color_env: str | None,
+    expected: bool,
+) -> None:
+    monkeypatch.setattr('sys.stdout.isatty', lambda: is_a_tty)
+    if no_color_env is None:
+        monkeypatch.delenv('NO_COLOR', raising=False)
+    else:
+        monkeypatch.setenv('NO_COLOR', no_color_env)
+
+    assert supports_color() is expected
