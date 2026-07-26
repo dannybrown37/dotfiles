@@ -4,7 +4,7 @@
 # May need to Powershell Admin run: `Set-ExecutionPolicy RemoteSigned`
 
 if [[ -z "${ON_WINDOWS}" ]]; then
-    echo "AHK is only available from WSL or Git Bash"
+    echo "AHK is only available from WSL"
     exit 1
 fi
 
@@ -36,20 +36,12 @@ elif [[ "$1" = "kill" ]]; then
     )
     for pid in ${ahk_pids}; do
         echo "Starting ${pid}"
-        if [[ -n "${WSL_DISTRO_NAME}" ]]; then # handle WSL
-            powershell.exe -Command "Stop-Process -Id ${pid} '-Force'"
-        else # handle Git Bash
-            powershell.exe -Command "Stop-Process -Id ${pid} -Force"
-        fi
+        powershell.exe -Command "Stop-Process -Id ${pid} '-Force'"
     done
 else
     for ahk_file in "${all_ahk_files[@]}"; do
         echo "Starting ${ahk_file}"
-        if [[ -n "${WSL_DISTRO_NAME}" ]]; then # handle WSL
-            win_drive_path=$(wslpath -w -a "${ahk_file}")
-        else # handle Git Bash
-            win_drive_path=$(cygpath -w -a "${ahk_file}")
-        fi
+        win_drive_path=$(wslpath -w -a "${ahk_file}")
         powershell.exe \
             -Command "Start-Process '${win_drive_path}'" 2>/dev/null
     done
