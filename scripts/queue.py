@@ -176,11 +176,11 @@ def list_titles(queue_path: Path) -> list[str]:
 
 def show_item(item: QueueItem) -> None:
     """Display an item for review."""
-    print(f"\n{'='*70}")
+    print(f'\n{"=" * 70}')
     print(f'📋 {item.title}')
-    print(f"{'='*70}")
+    print(f'{"=" * 70}')
     print(item.content)
-    print(f"{'='*70}\n")
+    print(f'{"=" * 70}\n')
 
 
 def action_next(queue_path: Path) -> None:
