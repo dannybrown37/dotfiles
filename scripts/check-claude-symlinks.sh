@@ -27,17 +27,24 @@ check_symlink() {
     fi
 }
 
-check_symlink ".claude/CLAUDE.md" ".github/copilot-instructions.md"
+# .claude/ holds the real files; .github/ mirrors them with symlinks so Copilot
+# reads the same content Claude does.
+check_symlink ".github/copilot-instructions.md" ".claude/CLAUDE.md"
 
-for dir in .github/skills/*/; do
+if [[ -L ".claude/CLAUDE.md" || ! -f ".claude/CLAUDE.md" ]]; then
+    echo "ERROR: .claude/CLAUDE.md should be a real file, not a symlink" >&2
+    exit_code=1
+fi
+
+for dir in .claude/skills/*/; do
     name=$(basename "$dir")
-    check_symlink ".claude/skills/${name}" "${dir%/}"
+    check_symlink ".github/skills/${name}" "${dir%/}"
 done
 
-for entry in .claude/skills/*/; do
+for entry in .github/skills/*; do
     name=$(basename "$entry")
-    if [[ ! -d ".github/skills/${name}" ]]; then
-        echo "ERROR: .claude/skills/${name} has no matching .github/skills/${name} source" >&2
+    if [[ ! -d ".claude/skills/${name}" ]]; then
+        echo "ERROR: .github/skills/${name} has no matching .claude/skills/${name} source" >&2
         exit_code=1
     fi
 done
