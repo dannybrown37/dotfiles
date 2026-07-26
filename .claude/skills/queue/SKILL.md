@@ -23,7 +23,11 @@ More details.
 
 - `queue list` — preview the next items (title + first line)
 - `queue next` — show the full first item
-- `queue complete --item-title "..." --start-time "<iso>" --end-time "<iso>"` — move an item to `.queue-complete` with timestamps
+- `queue titles` — bare titles, one per line (what the picker reads)
+- `queue complete [--item-title "..."] [--start-time "<iso>"] [--end-time "<iso>"]` — move an item to `.queue-complete` with timestamps
+
+With no `--item-title`, `queue complete` opens fzf over the current titles; timestamps default
+to now when omitted. Pass `--start-time` explicitly to record a real duration.
 
 `bin/` is sourced only by interactive shells, so `queue` is often **not** on `PATH` in a tool
 call. Call the script directly instead of assuming the function exists:
@@ -43,7 +47,10 @@ uv run python scripts/queue.py --queue-path .queue --complete-path .queue-comple
    ```
    queue complete --item-title "<exact title>" --start-time "<start>" --end-time "<end>"
    ```
-   The title must match the `##` header **exactly** — `queue.py` matches by exact string equality.
+   Pass all three from a tool call: the fzf picker needs a terminal, and the recorded start
+   time is the only way the duration reflects the real work. The title must match the `##`
+   header **exactly** — `queue.py` matches by exact string equality, and omitting it in a
+   non-interactive context just prints the available titles and exits 1.
 7. Confirm the item moved to `.queue-complete`.
 
 ## Notes
