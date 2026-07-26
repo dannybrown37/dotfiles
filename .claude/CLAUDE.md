@@ -29,6 +29,12 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 - **gtd** — TUI and API written in Python for personal GTD implementation. Invoke when working on this package.
 - **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue. See "Queue System" below.
 
+## Model Delegation
+
+- For a sub-task that's mechanical and fully specified (rename across files, run-and-report, known-pattern lookup, template-driven boilerplate), delegate it to the `quick-task` subagent (`.claude/agents/quick-task.md`, pinned to Haiku) instead of doing it inline.
+- Keep judgment calls, multi-file architectural reasoning, and anything the user is actively iterating on in the main session.
+- Full decision framework: `.claude/references/model-strategy.md`. This is a difficulty-based delegation heuristic.
+
 ## Code Style (General)
 
 - Always use type hints for function parameters (all languages where available).
