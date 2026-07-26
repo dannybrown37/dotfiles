@@ -44,6 +44,7 @@ repos:
         types: [python]
         exclude: ^gtd/
         pass_filenames: true
+        require_serial: true
 
       - id: ruff-format-gtd
         name: Ruff format (gtd/)
@@ -52,6 +53,7 @@ repos:
         types: [python]
         files: ^gtd/
         pass_filenames: true
+        require_serial: true
 
       - id: sync-readme-commands
         name: Sync README @doc commands
