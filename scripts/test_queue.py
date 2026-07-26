@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 
 from queue import (
+    IN_PROGRESS_MARKER,
+    action_claim,
     action_complete,
     list_titles,
     parse_queue_file,
@@ -80,7 +82,6 @@ def test_action_complete_removes_item_from_active_queue(
         queue_path,
         complete_path,
         'First Item',
-        '2026-01-01T00:00:00',
         '2026-01-01T01:00:00',
     )
 
@@ -119,16 +120,11 @@ def test_list_titles_preserves_titles_containing_markup(
 
 
 @pytest.mark.parametrize(
-    ('start_time', 'end_time'),
-    [
-        (None, None),
-        (None, '2026-01-01T01:00:00'),
-        ('2026-01-01T00:00:00', None),
-    ],
+    'end_time',
+    [None, '2026-01-01T01:00:00'],
 )
-def test_action_complete_defaults_missing_timestamps_to_now(
+def test_action_complete_defaults_missing_end_time_to_now(
     tmp_path: Path,
-    start_time: str | None,
     end_time: str | None,
 ) -> None:
     queue_path = _write_queue(tmp_path, TWO_ITEM_QUEUE)
@@ -139,22 +135,112 @@ def test_action_complete_defaults_missing_timestamps_to_now(
         queue_path,
         complete_path,
         'First Item',
-        start_time,
         end_time,
     )
 
     written = complete_path.read_text()
-    stamps = re.findall(r'- (?:Started|Completed): (.+)', written)
-    given_times = (start_time, end_time)
-    assert len(stamps) == len(given_times)
+    stamps = re.findall(r'- Completed: (.+)', written)
+    assert len(stamps) == 1
 
-    for given, stamp in zip(given_times, stamps, strict=True):
-        parsed = datetime.fromisoformat(stamp)
-        if given is None:
-            assert parsed >= before
-        else:
-            assert parsed == datetime.fromisoformat(given)
+    parsed = datetime.fromisoformat(stamps[0])
+    if end_time is None:
+        assert parsed >= before
+    else:
+        assert parsed == datetime.fromisoformat(end_time)
 
     assert [item.title for item in parse_queue_file(queue_path)] == [
         'Second Item',
     ]
+
+
+def test_action_complete_does_not_write_started_timestamp(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(tmp_path, TWO_ITEM_QUEUE)
+    complete_path = tmp_path / '.queue-complete'
+
+    action_complete(queue_path, complete_path, 'First Item')
+
+    assert 'Started' not in complete_path.read_text()
+
+
+def test_parse_queue_file_detects_in_progress_marker(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(
+        tmp_path,
+        f'# Queue\n\n## First Item{IN_PROGRESS_MARKER}\n\nbody\n',
+    )
+
+    items = parse_queue_file(queue_path)
+
+    assert items[0].title == f'First Item{IN_PROGRESS_MARKER}'
+    assert items[0].in_progress is True
+
+
+def test_parse_queue_file_treats_unmarked_item_as_not_in_progress(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(tmp_path, TWO_ITEM_QUEUE)
+
+    items = parse_queue_file(queue_path)
+
+    assert all(not item.in_progress for item in items)
+
+
+def test_action_claim_adds_marker_to_queue_file(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(tmp_path, TWO_ITEM_QUEUE)
+
+    action_claim(queue_path, 'First Item')
+
+    items = parse_queue_file(queue_path)
+    first = next(item for item in items if 'First Item' in item.title)
+    second = next(item for item in items if item.title == 'Second Item')
+
+    assert first.in_progress is True
+    assert second.in_progress is False
+
+
+def test_action_claim_errors_when_item_not_found(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    queue_path = _write_queue(tmp_path, TWO_ITEM_QUEUE)
+
+    with pytest.raises(SystemExit) as exc_info:
+        action_claim(queue_path, 'Nonexistent Item')
+
+    assert exc_info.value.code == 1
+    assert 'not found' in capsys.readouterr().err
+
+
+def test_action_claim_errors_when_item_already_in_progress(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    queue_path = _write_queue(tmp_path, TWO_ITEM_QUEUE)
+    action_claim(queue_path, 'First Item')
+
+    with pytest.raises(SystemExit) as exc_info:
+        action_claim(queue_path, 'First Item')
+
+    assert exc_info.value.code == 1
+    assert 'already in progress' in capsys.readouterr().err
+
+
+def test_action_complete_matches_item_regardless_of_marker(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(tmp_path, TWO_ITEM_QUEUE)
+    complete_path = tmp_path / '.queue-complete'
+    action_claim(queue_path, 'First Item')
+
+    action_complete(queue_path, complete_path, 'First Item')
+
+    remaining_titles = [item.title for item in parse_queue_file(queue_path)]
+    assert remaining_titles == ['Second Item']
+    completed = complete_path.read_text()
+    assert 'First Item' in completed
+    assert IN_PROGRESS_MARKER not in completed

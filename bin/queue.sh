@@ -17,10 +17,11 @@ queue() {
     repo_root="$(git rev-parse --show-toplevel 2>/dev/null || echo "${DOTFILES}")"
 
     # Titles have to match exactly, so offer them instead of retyping one.
-    if [[ "${1:-}" == "complete" && "$*" != *--item-title* ]]; then
+    if [[ ("${1:-}" == "complete" || "${1:-}" == "claim") && "$*" != *--item-title* ]]; then
+        local action="$1"
         local title
         title="$(_queue_py "${repo_root}" titles |
-            fzf --prompt='Complete which item? ' --height=40% --reverse)"
+            fzf --prompt="${action^} which item? " --height=40% --reverse)"
 
         if [[ -z "${title}" ]]; then
             echo "queue: nothing selected" >&2
@@ -28,7 +29,7 @@ queue() {
         fi
 
         shift
-        set -- complete --item-title "${title}" "$@"
+        set -- "${action}" --item-title "${title}" "$@"
     fi
 
     _queue_py "${repo_root}" "$@"

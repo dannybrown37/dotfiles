@@ -6,6 +6,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+IN_PROGRESS_MARKER = ' [in-progress]'
+
 
 class QueueItem:
     """A single work item from the queue."""
@@ -15,10 +17,35 @@ class QueueItem:
         self.content = content
         self.raw_section = raw_section
 
+    @property
+    def in_progress(self) -> bool:
+        return self.title.endswith(IN_PROGRESS_MARKER.strip())
+
     def __repr__(self) -> str:
         lines = self.content.split('\n')
         preview = lines[0][:60] if lines else ''
         return f'{self.title}\n  {preview}...'
+
+
+def strip_in_progress_marker(title: str) -> str:
+    """Drop the trailing in-progress marker, if present, from a title."""
+    marker = IN_PROGRESS_MARKER.strip()
+    if title.endswith(marker):
+        return title[: -len(marker)].rstrip()
+    return title
+
+
+def find_item(items: list[QueueItem], title: str) -> QueueItem | None:
+    """Find an item by title, ignoring whether it's marked in-progress."""
+    target = strip_in_progress_marker(title)
+    return next(
+        (
+            item
+            for item in items
+            if strip_in_progress_marker(item.title) == target
+        ),
+        None,
+    )
 
 
 def parse_queue_file(file_path: Path) -> list[QueueItem]:
@@ -70,20 +97,18 @@ def remove_item_from_queue(queue_path: Path, item: QueueItem) -> None:
 def add_to_completed(
     complete_path: Path,
     item: QueueItem,
-    start_time: datetime,
     end_time: datetime,
 ) -> None:
-    """Add completed item to .queue-complete with timestamps."""
+    """Add completed item to .queue-complete with a completion timestamp."""
     if not complete_path.exists():
         complete_path.write_text('# Completed\n\n')
 
     existing = complete_path.read_text()
 
-    start_str = start_time.strftime('%Y-%m-%d %H:%M:%S')
     end_str = end_time.strftime('%Y-%m-%d %H:%M:%S')
+    title = strip_in_progress_marker(item.title)
 
-    entry = f"""## {item.title}
-- Started: {start_str}
+    entry = f"""## {title}
 - Completed: {end_str}
 
 {item.content}
@@ -94,6 +119,16 @@ def add_to_completed(
 
     new_content = existing.rstrip() + '\n\n' + entry
     complete_path.write_text(new_content)
+
+
+def mark_item_in_progress(queue_path: Path, item: QueueItem) -> None:
+    """Append the in-progress marker to an item's header in .queue."""
+    content = queue_path.read_text()
+    old_header = f'## {item.title}'
+    new_header = f'## {item.title}{IN_PROGRESS_MARKER}'
+    new_raw_section = new_header + item.raw_section[len(old_header) :]
+    updated = content.replace(item.raw_section, new_raw_section, 1)
+    queue_path.write_text(updated)
 
 
 def get_next_item(
@@ -165,28 +200,44 @@ def action_titles(queue_path: Path) -> None:
         print(title)
 
 
-def action_complete(
-    queue_path: Path,
-    complete_path: Path,
-    item_title: str,
-    start_time: str | None = None,
-    end_time: str | None = None,
-) -> None:
-    """Mark item complete and move to .queue-complete."""
+def action_claim(queue_path: Path, item_title: str) -> None:
+    """Mark an item in-progress so other agents know it's taken."""
     items = parse_queue_file(queue_path)
-    item = next((i for i in items if i.title == item_title), None)
+    item = find_item(items, item_title)
     if not item:
         msg = f"Error: Item '{item_title}' not found"
         print(msg, file=sys.stderr)
         sys.exit(1)
 
-    now = datetime.now()
-    start_dt = datetime.fromisoformat(start_time) if start_time else now
-    end_dt = datetime.fromisoformat(end_time) if end_time else now
+    if item.in_progress:
+        title = strip_in_progress_marker(item.title)
+        msg = f"Error: '{title}' is already in progress"
+        print(msg, file=sys.stderr)
+        sys.exit(1)
 
-    add_to_completed(complete_path, item, start_dt, end_dt)
+    mark_item_in_progress(queue_path, item)
+    print(f'→ Claimed: {item.title}')
+
+
+def action_complete(
+    queue_path: Path,
+    complete_path: Path,
+    item_title: str,
+    end_time: str | None = None,
+) -> None:
+    """Mark item complete and move to .queue-complete."""
+    items = parse_queue_file(queue_path)
+    item = find_item(items, item_title)
+    if not item:
+        msg = f"Error: Item '{item_title}' not found"
+        print(msg, file=sys.stderr)
+        sys.exit(1)
+
+    end_dt = datetime.fromisoformat(end_time) if end_time else datetime.now()
+
+    add_to_completed(complete_path, item, end_dt)
     remove_item_from_queue(queue_path, item)
-    print(f'✓ Completed: {item.title}')
+    print(f'✓ Completed: {strip_in_progress_marker(item.title)}')
 
 
 def main() -> None:
@@ -198,7 +249,7 @@ def main() -> None:
     )
     parser.add_argument(
         'action',
-        choices=['next', 'list', 'titles', 'complete'],
+        choices=['next', 'list', 'titles', 'claim', 'complete'],
         help='Queue action to perform',
     )
     parser.add_argument(
@@ -214,19 +265,14 @@ def main() -> None:
         help='Path to .queue-complete file (default: ./.queue-complete)',
     )
     parser.add_argument(
-        '--start-time',
-        type=str,
-        help='ISO format start time for complete action (default: now)',
-    )
-    parser.add_argument(
         '--end-time',
         type=str,
-        help='ISO format end time for complete action (default: now)',
+        help='ISO format completion time for complete action (default: now)',
     )
     parser.add_argument(
         '--item-title',
         type=str,
-        help='Title of item to complete',
+        help='Title of item to claim or complete',
     )
 
     args = parser.parse_args()
@@ -240,7 +286,7 @@ def main() -> None:
         action_list(queue_path)
     elif args.action == 'titles':
         action_titles(queue_path)
-    elif args.action == 'complete':
+    elif args.action in ('claim', 'complete'):
         if not args.item_title:
             # The shell wrapper picks a title with fzf; anything else gets the
             # list so the exact string is easy to copy.
@@ -249,13 +295,15 @@ def main() -> None:
                 print(f'  {title}', file=sys.stderr)
             sys.exit(1)
 
-        action_complete(
-            queue_path,
-            complete_path,
-            args.item_title,
-            args.start_time,
-            args.end_time,
-        )
+        if args.action == 'claim':
+            action_claim(queue_path, args.item_title)
+        else:
+            action_complete(
+                queue_path,
+                complete_path,
+                args.item_title,
+                args.end_time,
+            )
 
 
 if __name__ == '__main__':
