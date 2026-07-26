@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 IN_PROGRESS_MARKER = ' [in-progress]'
+MAX_COMPLETED_CONTENT_LINES = 50
 
 
 class QueueItem:
@@ -94,6 +95,20 @@ def remove_item_from_queue(queue_path: Path, item: QueueItem) -> None:
     queue_path.write_text(updated + '\n')
 
 
+def trim_content(
+    content: str,
+    max_lines: int = MAX_COMPLETED_CONTENT_LINES,
+) -> str:
+    """Cap content at max_lines and note the trim so it's unambiguous."""
+    lines = content.split('\n')
+    if len(lines) <= max_lines:
+        return content
+
+    kept = '\n'.join(lines[:max_lines])
+    note = f'_[Trimmed from {len(lines)} to {max_lines} lines]_'
+    return f'{kept}\n\n{note}'
+
+
 def add_to_completed(
     complete_path: Path,
     item: QueueItem,
@@ -111,7 +126,7 @@ def add_to_completed(
     entry = f"""## {title}
 - Completed: {end_str}
 
-{item.content}
+{trim_content(item.content)}
 
 ---
 

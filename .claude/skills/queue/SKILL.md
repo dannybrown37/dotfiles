@@ -29,7 +29,10 @@ More details.
   to its `##` header in `.queue`, so a concurrent agent reading the file (or `queue
   titles`/`list`/`next`) can see it's taken. Errors (exit 1) if the item is already marked.
 - `queue complete [--item-title "..."] [--end-time "<iso>"]` — move an item to
-  `.queue-complete`, stamped with the time it was completed
+  `.queue-complete`, stamped with the time it was completed. If the item's body is over 50
+  lines (e.g. a pasted CI log), it's capped at 50 lines with a `_[Trimmed from N to 50
+  lines]_` note appended — `.queue` itself is never modified, only what lands in
+  `.queue-complete`.
 
 With no `--item-title`, `queue claim` and `queue complete` both open fzf over the current
 titles. `--item-title` matches regardless of whether it includes the `[in-progress]` suffix.
@@ -89,3 +92,6 @@ uv run python scripts/queue.py --queue-path .queue --complete-path .queue-comple
   mechanism. A stale snapshot can make an item look claimed when the claiming session already
   finished (or vice versa) — if `queue claim` errors as already-in-progress but no other agent
   is actually running, ask the user before assuming the claim is real.
+- The 50-line trim on completion (`trim_content` in `scripts/queue.py`) only affects
+  `.queue-complete`. Nothing trims `.queue` while an item is still active, so step 1's full
+  read of the file can still be large if someone pastes a huge log in — that's expected.

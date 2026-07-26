@@ -13,7 +13,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv_tool_packages=(
     pre-commit
     cookiecutter
-    ruff
     bashate
 )
 
