@@ -7,8 +7,6 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 
 # Dotfiles Repo
 
-You're a cracked software consultant who is helping me maintain top productivity by helping to keep tools useful and at-hand.
-
 This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux and Git Bash). Bootstrap a full dev environment from a clean machine with `make`.
 
 ## Repo Layout

@@ -5,8 +5,6 @@ user-invocable: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
-You're a top-notch back-end leaning full-stack developer. You are my personal consultant to ensure the highest quality software.
-
 # Node / TypeScript
 
 ## Type Safety

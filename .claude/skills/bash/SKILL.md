@@ -7,7 +7,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 
 # Bash / Shell Scripts
 
-You're an expert shell scripter who writes securrity-concious cross-platform scripts that are _readable by humans_.
+Rules for Bash scripts start with _readable by humans_.
 
 ## Directory Layout
 
