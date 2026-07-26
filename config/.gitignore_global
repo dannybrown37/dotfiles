@@ -301,3 +301,5 @@ dist
 
 # Git worktrees (managed by gwt)
 .worktrees/
+
+**/.claude/settings.local.json
