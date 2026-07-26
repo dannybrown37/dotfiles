@@ -8,6 +8,8 @@ numbers only cover transcripts still present on this machine.
 
 import argparse
 import json
+import os
+import shutil
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
@@ -17,6 +19,13 @@ from collections.abc import Iterator
 
 DEFAULT_LOG_ROOT = Path.home() / '.claude' / 'projects'
 SUBAGENT_DIR = 'subagents'
+FALLBACK_TERMINAL_SIZE = (80, 24)
+COLUMN_GAP = 4
+
+RESET = '\x1b[0m'
+BOLD = '\x1b[1m'
+DIM = '\x1b[2m'
+CYAN = '\x1b[36m'
 
 
 @dataclass
@@ -242,19 +251,58 @@ def humanize(value: int) -> str:
     return str(value)
 
 
-def format_report(stats: UsageStats) -> str:
-    lines: list[str] = []
-    span = 'no transcripts found'
-    if stats.first_seen and stats.last_seen:
-        span = (
-            f'{stats.first_seen:%Y-%m-%d} - {stats.last_seen:%Y-%m-%d}'
-            f'  ({len(stats.output_tokens_by_day)} active days)'
-        )
+def supports_color() -> bool:
+    """Whether the terminal we're writing to can render ANSI colors."""
+    return sys.stdout.isatty() and not os.environ.get('NO_COLOR')
 
-    lines.append('')
-    lines.append(f'  Claude Code usage    {span}')
-    lines.append(f"  {'-' * 55}")
 
+def colorize(text: str, *codes: str, color: bool) -> str:
+    if not color:
+        return text
+    return f'{"".join(codes)}{text}{RESET}'
+
+
+def merge_side_by_side(
+    left: list[str],
+    right: list[str],
+    width: int,
+) -> list[str]:
+    """Lay two report blocks side by side if they both fit in width.
+
+    Falls back to stacking them (left block, blank line, right block)
+    when the terminal is too narrow for both columns.
+    """
+    if not left or not right:
+        return left + right
+
+    left_width = max(len(line) for line in left)
+    right_width = max(len(line) for line in right)
+    if left_width + COLUMN_GAP + right_width > width:
+        return [*left, '', *right]
+
+    row_count = max(len(left), len(right))
+    padded_left = [line.ljust(left_width) for line in left]
+    padded_left += [' ' * left_width] * (row_count - len(padded_left))
+    padded_right = right + [''] * (row_count - len(right))
+    gap = ' ' * COLUMN_GAP
+    return [
+        f'{lft}{gap}{rgt}'
+        for lft, rgt in zip(padded_left, padded_right, strict=True)
+    ]
+
+
+def report_span(stats: UsageStats) -> str:
+    if not (stats.first_seen and stats.last_seen):
+        return 'no transcripts found'
+    return (
+        f'{stats.first_seen:%Y-%m-%d} - {stats.last_seen:%Y-%m-%d}'
+        f'  ({len(stats.output_tokens_by_day)} active days)'
+    )
+
+
+def totals_and_tokens_lines(
+    stats: UsageStats,
+) -> tuple[list[str], list[str]]:
     totals = (
         ('sessions', stats.sessions),
         ('prompts', stats.prompts),
@@ -264,32 +312,68 @@ def format_report(stats: UsageStats) -> str:
         ('lines added', stats.lines_added),
         ('lines removed', stats.lines_removed),
     )
-    for label, value in totals:
-        lines.append(f'  {label:<22} {value:>12,}')
+    totals_lines = [f'  {label:<22} {value:>12,}' for label, value in totals]
 
-    lines.append('')
     tokens = (
         ('tokens out', stats.output_tokens),
         ('tokens in', stats.input_tokens),
         ('cache read', stats.cache_read_tokens),
         ('cache written', stats.cache_write_tokens),
     )
-    for label, value in tokens:
-        lines.append(f'  {label:<22} {humanize(value):>12}')
+    tokens_lines = [
+        f'  {label:<22} {humanize(value):>12}' for label, value in tokens
+    ]
 
+    return totals_lines, tokens_lines
+
+
+def model_and_tool_lines(stats: UsageStats) -> tuple[list[str], list[str]]:
+    model_lines = []
     if stats.models:
-        lines.append('')
-        lines.append('  model mix')
+        model_lines.append('  model mix')
         total = sum(stats.models.values())
         for model, count in stats.models.most_common():
             share = 100 * count / total
-            lines.append(f'    {model:<34} {share:>5.1f}%  {count:>6,}')
+            model_lines.append(
+                f'    {model:<34} {share:>5.1f}%  {count:>6,}',
+            )
 
+    tool_lines = []
     if stats.tools:
-        lines.append('')
-        lines.append('  top tools')
+        tool_lines.append('  top tools')
         for tool, count in stats.tools.most_common(10):
-            lines.append(f'    {tool:<34} {count:>13,}')
+            tool_lines.append(f'    {tool:<34} {count:>13,}')
+
+    return model_lines, tool_lines
+
+
+def format_report(
+    stats: UsageStats,
+    *,
+    width: int | None = None,
+    color: bool | None = None,
+) -> str:
+    if width is None:
+        width = shutil.get_terminal_size(FALLBACK_TERMINAL_SIZE).columns
+    if color is None:
+        color = supports_color()
+
+    lines: list[str] = ['']
+    header = f'  Claude Code usage    {report_span(stats)}'
+    lines.append(colorize(header, BOLD, CYAN, color=color))
+    separator = f"  {'-' * 55}"
+    lines.append(colorize(separator, DIM, color=color))
+
+    totals_lines, tokens_lines = totals_and_tokens_lines(stats)
+    lines.append('')
+    lines.extend(merge_side_by_side(totals_lines, tokens_lines, width))
+
+    model_lines, tool_lines = model_and_tool_lines(stats)
+    if model_lines or tool_lines:
+        merged = merge_side_by_side(model_lines, tool_lines, width)
+        merged[0] = colorize(merged[0], BOLD, color=color)
+        lines.append('')
+        lines.extend(merged)
 
     if stats.longest_prompt_chars:
         lines.append('')
@@ -357,6 +441,11 @@ def main() -> None:
         action='store_true',
         help='emit machine-readable JSON instead of a report',
     )
+    parser.add_argument(
+        '--no-color',
+        action='store_true',
+        help='disable ANSI colors in the report',
+    )
 
     args = parser.parse_args()
     roots = args.log_root or [DEFAULT_LOG_ROOT]
@@ -372,7 +461,8 @@ def main() -> None:
     if args.json:
         print(json.dumps(stats_as_dict(stats), indent=2))
     else:
-        print(format_report(stats))
+        color = False if args.no_color else None
+        print(format_report(stats, color=color))
 
 
 if __name__ == '__main__':
