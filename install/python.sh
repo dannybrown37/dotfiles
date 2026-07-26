@@ -20,6 +20,10 @@ for package in "${uv_tool_packages[@]}"; do
     uv tool install "${package}"
 done
 
+# Pinned (not left to float) so CI and local dev always run the same
+# ruff version -- see .github/workflows/ci.yml, which pins the same version.
+uv tool install "ruff==0.16.0"
+
 
 ##
 #### Commented out below is my legacy configuration for pyenv/pipx.
