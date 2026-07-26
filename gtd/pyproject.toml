@@ -11,7 +11,7 @@ api = ["flask>=3.1.0"]
 
 
 [project.scripts]
-gtd = "gtd.gtd:main"
+gtd = "gtd.cli:main"
 
 
 [tool.setuptools.packages.find]

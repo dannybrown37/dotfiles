@@ -70,18 +70,18 @@ repos:
         files: (Makefile|README\.md)$
         pass_filenames: false
 
-      - id: sync-pm-readme
+      - id: sync-gtd-readme
         name: Sync GTD README menu
-        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/project_manager" && uv run python scripts/update_readme.py && git add README.md'
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/gtd" && uv run python scripts/update_readme.py && git add README.md'
         language: system
-        files: ^project_manager/(src/gtd/gtd\.py|README\.md)$
+        files: ^gtd/(src/gtd/cli\.py|README\.md)$
         pass_filenames: false
 
-      - id: pm-tests
+      - id: gtd-tests
         name: GTD tests
-        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/project_manager" && uv run pytest tests/ -q'
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/gtd" && uv run pytest tests/ -q'
         language: system
-        files: ^project_manager/(?!\.venv/).*
+        files: ^gtd/(?!\.venv/).*
         pass_filenames: false
 
       - id: scripts-tests

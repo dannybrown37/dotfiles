@@ -6,7 +6,7 @@ set -euo pipefail
 PA_USERNAME="${PA_USERNAME:?set PA_USERNAME}"
 PA_DOMAIN="${PA_USERNAME}.pythonanywhere.com"
 REPO_DIR="/home/${PA_USERNAME}/dotfiles"
-PROJECT_DIR="${REPO_DIR}/project_manager"
+PROJECT_DIR="${REPO_DIR}/gtd"
 VENV_DIR="${PROJECT_DIR}/.venv"
 WSGI_FILE="/var/www/${PA_USERNAME//./_}_pythonanywhere_com_wsgi.py"
 
