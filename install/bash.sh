@@ -4,38 +4,8 @@
 ##  Sync bash profile with packages and symlinks
 ##  This script is designed to be idempotent and can be run multiple times
 ##
-apt_packages=(
-    asciinema
-    bash-completion
-    bat
-    cowsay
-    curl
-    direnv
-    faker
-    fd-find
-    fzf
-    git
-    gh
-    httpie
-    jq
-    make
-    man-db
-    lolcat
-    neofetch
-    openssh-server
-    pass
-    pipx
-    rename
-    ripgrep
-    shellcheck
-    shfmt
-    tldr
-    tmux
-    unzip
-    wget
-    xclip
-    zip
-)
+# shellcheck source=install/apt_packages.sh
+source "$(dirname "${BASH_SOURCE[0]}")/apt_packages.sh"
 
 sudo apt -y update
 sudo apt -y upgrade

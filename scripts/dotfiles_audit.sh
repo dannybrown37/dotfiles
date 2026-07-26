@@ -102,11 +102,8 @@ fi
 # ── Apt Packages ──────────────────────────────────────────────────────────────
 
 section "Apt Packages"
-apt_packages=(
-    asciinema bash-completion bat cowsay curl direnv faker fd-find fzf git gh
-    httpie jq make man-db lolcat neofetch openssh-server pass pipx rename
-    ripgrep shellcheck shfmt tldr tmux unzip wget xclip zip
-)
+# shellcheck source=install/apt_packages.sh
+source "${DOTFILES_DIR}/install/apt_packages.sh"
 for pkg in "${apt_packages[@]}"; do
     check_apt "$pkg"
 done
