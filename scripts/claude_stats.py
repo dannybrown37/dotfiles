@@ -361,7 +361,7 @@ def format_report(
     lines: list[str] = ['']
     header = f'  Claude Code usage    {report_span(stats)}'
     lines.append(colorize(header, BOLD, CYAN, color=color))
-    separator = f"  {'-' * 55}"
+    separator = f'  {"-" * 55}'
     lines.append(colorize(separator, DIM, color=color))
 
     totals_lines, tokens_lines = totals_and_tokens_lines(stats)
