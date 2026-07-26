@@ -8,11 +8,13 @@ import pytest
 
 from queue import (
     IN_PROGRESS_MARKER,
+    MAX_COMPLETED_CONTENT_LINES,
     action_claim,
     action_complete,
     list_titles,
     parse_queue_file,
     remove_item_from_queue,
+    trim_content,
 )
 
 TWO_ITEM_QUEUE = (
@@ -228,6 +230,63 @@ def test_action_claim_errors_when_item_already_in_progress(
 
     assert exc_info.value.code == 1
     assert 'already in progress' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ('line_count', 'expect_trimmed'),
+    [
+        (50, False),
+        (51, True),
+        (1500, True),
+    ],
+)
+def test_trim_content_only_trims_over_max_lines(
+    line_count: int,
+    *,
+    expect_trimmed: bool,
+) -> None:
+    content = '\n'.join(f'line {n}' for n in range(line_count))
+
+    result = trim_content(content)
+
+    if expect_trimmed:
+        max_lines = MAX_COMPLETED_CONTENT_LINES
+        assert len(result.split('\n')) > max_lines
+        assert f'Trimmed from {line_count} to {max_lines}' in result
+        assert 'line 0' in result
+        assert f'line {line_count - 1}' not in result
+    else:
+        assert result == content
+
+
+def test_action_complete_trims_oversized_content_in_complete_file(
+    tmp_path: Path,
+) -> None:
+    huge_body = '\n'.join(f'line {n}' for n in range(1500))
+    queue_path = _write_queue(
+        tmp_path,
+        f'# Queue\n\n## Huge Item\n\n{huge_body}\n',
+    )
+    complete_path = tmp_path / '.queue-complete'
+
+    action_complete(queue_path, complete_path, 'Huge Item')
+
+    completed = complete_path.read_text()
+    assert 'Trimmed from 1500 to 50 lines' in completed
+    assert 'line 1499' not in completed
+
+
+def test_action_complete_does_not_trim_short_content(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(tmp_path, TWO_ITEM_QUEUE)
+    complete_path = tmp_path / '.queue-complete'
+
+    action_complete(queue_path, complete_path, 'First Item')
+
+    completed = complete_path.read_text()
+    assert 'Trimmed' not in completed
+    assert 'First body text.' in completed
 
 
 def test_action_complete_matches_item_regardless_of_marker(
