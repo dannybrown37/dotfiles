@@ -12,7 +12,6 @@ from dateutil import parser as dateparser
 
 
 __all__ = [
-    'list_12_week_entries',
     'list_entries',
     'select_entry',
     'show_triage',
@@ -438,40 +437,6 @@ def list_entries(
         print(f'\n── {status} ({len(entries)}) ──')
         print(format_entry_list(entries, verbose=verbose))
         print()
-
-
-def list_12_week_entries(*, verbose: bool = False) -> None:
-    """List only 12-Week Goal entries."""
-    contexts = get_select_options('Context')
-    goal_contexts = [c for c in contexts if c.startswith('12-Week Goal')]
-
-    if not goal_contexts:
-        print('No 12-Week Goal contexts found.')
-        return
-
-    filter_obj: dict
-    if len(goal_contexts) == 1:
-        filter_obj = {
-            'property': 'Context',
-            'select': {'equals': goal_contexts[0]},
-        }
-    else:
-        filter_obj = {
-            'or': [
-                {'property': 'Context', 'select': {'equals': c}}
-                for c in goal_contexts
-            ],
-        }
-
-    pages = query_database(filter_obj=filter_obj)
-    entries = [ProjectEntry.from_page(p) for p in pages]
-    for ctx in sorted(goal_contexts):
-        group = [e for e in entries if e.context == ctx]
-        if group:
-            goal_name = ctx.removeprefix('12-Week Goal:').strip()
-            print(f'\n── 🎯 {goal_name} ({len(group)}) ──')
-            print(format_entry_list(group, verbose=verbose))
-    print()
 
 
 def show_triage(*, verbose: bool = False) -> None:

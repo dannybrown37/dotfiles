@@ -9,7 +9,6 @@ from gtd.notion.client import (
 from gtd.notion.entries import (
     _edit_notes,
     _parse_date_input,
-    list_12_week_entries,
     list_entries,
     select_entry,
     show_triage,
@@ -132,7 +131,6 @@ def notion_command(args: list[str]) -> None:
         pm notion             — list all entries grouped by status
         pm notion triage      — show items needing triage
         pm notion process     — interactively process triage items
-        pm notion goals       — show 12-week goal entries
         pm notion <context>   — filter by context name
         pm notion -v [...]    — verbose output (show details)
     """
@@ -148,8 +146,6 @@ def notion_command(args: list[str]) -> None:
             process_triage()
         except CancelAction:
             return
-    elif args[0] == 'goals':
-        list_12_week_entries(verbose=verbose)
     elif args[0] == 'help':
         print(notion_command.__doc__)
     else:
