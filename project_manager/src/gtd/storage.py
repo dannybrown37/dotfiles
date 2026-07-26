@@ -3,23 +3,17 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import re
 
-from gtd.models import Goal
-
 
 __all__ = [
     'ARCHIVE_PATH',
     'CONFIG_PATH',
     'OUTPUT_PATH',
     'ensure_dirs',
-    'get_archived_goal_names',
-    'get_stored_goal_names',
     'get_weekly_habit_date',
     'load_areas',
     'load_config',
-    'load_goal',
     'save_areas',
     'save_config',
-    'save_goal',
     'set_weekly_habit_date',
 ]
 
@@ -37,7 +31,7 @@ def ensure_dirs() -> None:
 
 
 def _safe_filename(name: str) -> str:
-    """Sanitize a goal name for use as a filename."""
+    """Sanitize a name for use as a filename."""
     safe = re.sub(r'[/<>:"\\|?*\x00-\x1f]', '-', name)
     safe = re.sub(r'-{2,}', '-', safe)
     return safe.strip('-. ') or 'unnamed'
@@ -112,19 +106,6 @@ def reset_review_state() -> None:
     HABITS_PATH.write_text(json.dumps(data, indent=2) + '\n')
 
 
-def save_goal(goal: Goal) -> None:
-    path = OUTPUT_PATH / f'{_safe_filename(goal.name)}.json'
-    with path.open('w') as f:
-        json.dump(goal.model_dump(), f, indent=2)
-
-
-def load_goal(name: str) -> Goal:
-    path = OUTPUT_PATH / f'{_safe_filename(name)}.json'
-    with path.open() as f:
-        data = json.load(f)
-    return Goal.model_validate(data)
-
-
 def load_areas() -> list[dict]:
     """Return list of area dicts: {name: str, notes: str}."""
     if not AREAS_PATH.exists():
@@ -134,24 +115,6 @@ def load_areas() -> list[dict]:
 
 def save_areas(areas: list[dict]) -> None:
     AREAS_PATH.write_text(json.dumps(areas, indent=2) + '\n')
-
-
-def get_stored_goal_names() -> list[str]:
-    excluded = {
-        'config.json',
-        'weekly_habits.json',
-        'areas.json',
-        'list_categories.json',
-    }
-    return [
-        f.stem
-        for f in sorted(OUTPUT_PATH.glob('*.json'))
-        if f.name not in excluded
-    ]
-
-
-def get_archived_goal_names() -> list[str]:
-    return [f.stem for f in sorted(ARCHIVE_PATH.glob('*.json'))]
 
 
 LIST_CATEGORIES_PATH = OUTPUT_PATH / 'list_categories.json'

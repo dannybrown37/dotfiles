@@ -1,21 +1,11 @@
 import subprocess
 from typing import Literal, overload
 
-from gtd.models import (
-    Goal,
-    SCORE_GREEN_THRESHOLD,
-    SCORE_YELLOW_THRESHOLD,
-)
-
-
 __all__ = [
     'CancelAction',
     'fzf_on_a_list',
     'pause',
     'prompt_input',
-    'score_indicator',
-    'score_pct',
-    'select_tactic_index',
 ]
 
 
@@ -76,34 +66,11 @@ def fzf_on_a_list(
     return [item.strip() for item in result.stdout.split('\n') if item.strip()]
 
 
-def select_tactic_index(
-    goal: Goal,
-    prompt: str = 'Select tactic',
-) -> int | None:
-    if not goal.tactics:
-        print(f'No tactics for "{goal.name}" yet.')
-        return None
-    descriptions = [t.description for t in goal.tactics]
-    selection = fzf_on_a_list(descriptions, prompt=prompt)
-    if selection is None:
-        return None
-    return descriptions.index(selection)
-
-
 def pause(label: str = 'Press Enter to go back to menu...') -> None:
     try:
         input(f'\n{label}')
     except KeyboardInterrupt:
         print()
-
-
-def score_indicator(pct: float) -> str:
-    """Return emoji indicator based on score percentage."""
-    if pct >= SCORE_GREEN_THRESHOLD:
-        return '🟢'
-    if pct >= SCORE_YELLOW_THRESHOLD:
-        return '🟡'
-    return '🔴'
 
 
 class CancelAction(Exception):  # noqa: N818
@@ -117,9 +84,3 @@ def prompt_input(label: str) -> str | None:
     except KeyboardInterrupt:
         print()
         raise CancelAction from None
-
-
-def score_pct(executed: int, total: int) -> str:
-    if total == 0:
-        return '—'
-    return f'{executed / total * 100:.0f}%'

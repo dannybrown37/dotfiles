@@ -1,4 +1,4 @@
-"""Unified GTD + Goals TUI."""
+"""Unified GTD TUI."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ import asyncio
 import contextlib
 import os
 import random
-import re
 import subprocess
 import tempfile
 from datetime import datetime, timedelta
@@ -39,12 +38,10 @@ from textual.widgets import (
 )
 from textual.widgets._footer import FooterKey, FooterLabel
 
-from gtd.models import Goal, Tactic, Update
 from gtd.notion.models import ProjectEntry
 from gtd.notion.schema import STATUSES, STATUS_ICONS
 from gtd.tui import (
     ConfirmModal,
-    GoalsContent,
     InputModal,
     SelectModal,
     TwoFieldModal,
@@ -195,176 +192,10 @@ def _render_entry_summary(entry: ProjectEntry) -> str:
     return f'{icon} {entry.header.strip()}{ctx}{due}{next_step}'
 
 
-# ── Tactic cadence helpers ───────────────────────────────────────────────────
-
-
-def _parse_cadence_per_week(cadence: str) -> int:
-    """Parse reminder_cadence string into times-per-week count."""
-    c = cadence.lower().strip()
-    if c in ('daily', 'every day'):
-        return 7
-    m = re.match(r'(\d+)x', c)
-    if m:
-        return int(m.group(1))
-    return 1
-
-
-_DAILY_CADENCE = 7  # sentinel: cadence that means "every day"
-_SPRINT_DAYS = 14  # sprint = one update per 2-week window
-
-
-def _is_sprint_cadence(cadence: str) -> bool:
-    return cadence.lower().strip() == 'sprint'
-
-
-def _week_start_iso() -> str:
-    today = datetime.now().date()
-    return (today - timedelta(days=today.weekday())).isoformat()
-
-
-def _current_week_label() -> str:
-    """Human-readable label for the current Mon-Sun window, e.g. 'Jul 7-13'."""
-    start = datetime.fromisoformat(_week_start_iso()).date()
-    end = start + timedelta(days=6)
-    if start.month == end.month:
-        return f'{start:%b %-d}-{end:%-d}'
-    return f'{start:%b %-d}-{end:%b %-d}'
-
-
-def _sprint_start_iso() -> str:
-    return (
-        datetime.now().date() - timedelta(days=_SPRINT_DAYS - 1)
-    ).isoformat()
-
-
-def _current_sprint_label() -> str:
-    """Human-readable label for the current 14-day sprint window."""
-    start = datetime.fromisoformat(_sprint_start_iso()).date()
-    end = datetime.now().date()
-    if start.month == end.month:
-        return f'{start:%b %-d}-{end:%-d}'
-    return f'{start:%b %-d}-{end:%b %-d}'
-
-
-def _count_updates_this_week(tactic: Tactic) -> int:
-    ws = _week_start_iso()
-    return sum(1 for u in tactic.updates if u.date >= ws)
-
-
-def _updated_in_sprint(tactic: Tactic) -> bool:
-    return any(u.date >= _sprint_start_iso() for u in tactic.updates)
-
-
-def _updated_today(tactic: Tactic) -> bool:
-    today = datetime.now().date().isoformat()
-    return any(u.date == today for u in tactic.updates)
-
-
-def _updated_yesterday(tactic: Tactic) -> bool:
-    yesterday = (datetime.now().date() - timedelta(days=1)).isoformat()
-    return any(u.date == yesterday for u in tactic.updates)
-
-
-def _tactic_is_due(tactic: Tactic) -> bool:
-    if _is_sprint_cadence(tactic.reminder_cadence):
-        return not _updated_in_sprint(tactic)
-    per_week = _parse_cadence_per_week(tactic.reminder_cadence)
-    if per_week >= _DAILY_CADENCE:
-        return not _updated_today(tactic)
-    return _count_updates_this_week(tactic) < per_week
-
-
-def _tactic_sort_key(tactic: Tactic) -> int:
-    """0 = overdue, 1 = partial, 2 = done — for sorting due items first."""
-    if _is_sprint_cadence(tactic.reminder_cadence):
-        return 0 if not _updated_in_sprint(tactic) else 2
-    per_week = _parse_cadence_per_week(tactic.reminder_cadence)
-    if per_week >= _DAILY_CADENCE:
-        return 0 if not _updated_today(tactic) else 2
-    n = _count_updates_this_week(tactic)
-    if n == 0:
-        return 0
-    return 1 if n < per_week else 2
-
-
-def _tactic_status_line(tactic: Tactic) -> str:
-    """One-line due/done status for the detail pane."""
-    if _is_sprint_cadence(tactic.reminder_cadence):
-        label = _current_sprint_label()
-        if _updated_in_sprint(tactic):
-            return f'[green]✓ Logged this sprint  [dim]({label})[/dim][/green]'
-        return f'[bold red]⚠ Due this sprint  [dim]({label})[/dim][/bold red]'
-    per_week = _parse_cadence_per_week(tactic.reminder_cadence)
-    today = datetime.now().date()
-    if per_week >= _DAILY_CADENCE:
-        done = f'[green]✓ Done today  [dim]({today:%b %-d})[/dim][/green]'
-        due = f'[bold red]⚠ Due today  [dim]({today:%b %-d})[/dim][/bold red]'
-        return done if _updated_today(tactic) else due
-    week_label = _current_week_label()
-    n = _count_updates_this_week(tactic)
-    if n >= per_week:
-        return (
-            f'[green]✓ Done this week ({n}/{per_week})'
-            f'  [dim]({week_label})[/dim][/green]'
-        )
-    if n > 0:
-        return (
-            f'[yellow]◑ In progress this week ({n}/{per_week})'
-            f'  [dim]({week_label})[/dim][/yellow]'
-        )
-    return (
-        f'[bold red]⚠ Due this week (0/{per_week})'
-        f'  [dim]({week_label})[/dim][/bold red]'
-    )
-
-
-def _render_tactic_detail(
-    goal_name: str, tactic: Tactic, goal: Goal | None
-) -> str:
-    lines: list[str] = [f'[bold cyan]{goal_name}[/bold cyan]']
-    if goal:
-        week = goal.current_week()
-        week_start = goal.week_start_date(week).date()
-        week_end = week_start + timedelta(days=6)
-        if week_start.month == week_end.month:
-            week_range = f'{week_start:%b %-d}-{week_end:%-d}'
-        else:
-            week_range = f'{week_start:%b %-d}-{week_end:%b %-d}'
-        start_d = datetime.fromisoformat(goal.start_date).date()
-        end_d = datetime.fromisoformat(goal.end_date).date()
-        goal_range = f'{start_d:%b %-d}-{end_d:%b %-d, %Y}'
-        lines.append(
-            f'[dim]Week {week}/12  ({week_range})  •  {goal_range}[/dim]'
-        )
-        bar = goal.progress_bar()
-        lines.append(f'[dim]{bar}[/dim]')
-    lines += ['', f'[bold]{tactic.description}[/bold]']
-    lines.append(f'Cadence: [dim]{tactic.reminder_cadence}[/dim]')
-    lines.append('')
-    lines.append(_tactic_status_line(tactic))
-
-    all_updates = sorted(tactic.updates, key=lambda u: u.date, reverse=True)
-    if all_updates:
-        lines += ['', '[dim]── Updates ──[/dim]']
-        today_iso = datetime.now().date().isoformat()
-        for u in all_updates:
-            try:
-                d = datetime.fromisoformat(u.date)
-                date_str = 'Today' if u.date == today_iso else f'{d:%b %-d}'
-            except ValueError:
-                date_str = u.date
-            lines.append(f'  [dim]{date_str}[/dim]  {u.note}')
-    else:
-        lines += ['', '[dim]No updates yet. Press N to log one.[/dim]']
-
-    return '\n'.join(lines)
-
-
 # ── Weekly habit helpers ─────────────────────────────────────────────────────
 
 WEEKLY_HABITS: list[tuple[str, str]] = [
     ('weekly_review', 'Weekly Review'),
-    ('goal_scoring', 'Score Goals'),
 ]
 
 _GTD_REVIEW_STEPS: list[tuple[str, str]] = [
@@ -381,9 +212,10 @@ _GTD_REVIEW_CHECKLIST = '\n'.join(
     f'  □ {label}' for label, _ in _GTD_REVIEW_STEPS
 )
 
-_GOAL_SCORING_HINT = """\
-  Navigate to the Goals tab (right) and press S on each goal.
-  Score 1-10 for how well you executed each tactic this week."""
+
+def _week_start_iso() -> str:
+    today = datetime.now().date()
+    return (today - timedelta(days=today.weekday())).isoformat()
 
 
 def _habit_done_this_week(key: str) -> bool:
@@ -397,7 +229,6 @@ def _habit_done_this_week(key: str) -> bool:
 
 def _render_habit_detail(key: str, label: str) -> str:
     from gtd.storage import get_weekly_habit_date
-    from gtd.storage import get_stored_goal_names, load_goal
 
     last = get_weekly_habit_date(key)
     if last:
@@ -432,30 +263,11 @@ def _render_habit_detail(key: str, label: str) -> str:
             '[dim]── GTD Weekly Review checklist ──[/dim]',
             _GTD_REVIEW_CHECKLIST,
         ]
-    elif key == 'goal_scoring':
-        goals = [
-            load_goal(n)
-            for n in get_stored_goal_names()
-            if not load_goal(n).is_complete
-        ]
-        if goals:
-            lines.append('[dim]── Goals to score ──[/dim]')
-            for g in goals:
-                week = g.current_week()
-                scored = str(week) in (
-                    g.tactics[0].weekly_scores if g.tactics else {}
-                )
-                mark = '[green]✓[/green]' if scored else '[red]·[/red]'
-                lines.append(f'  {mark} {g.name}  [dim]Week {week}[/dim]')
-            lines += ['', _GOAL_SCORING_HINT]
 
     if not done:
-        action_hint = (
-            'Plan your week' if key == 'weekly_review' else 'Score your goals'
-        )
         lines += [
             '',
-            f'[dim]Press W to {action_hint} and mark done.[/dim]',
+            '[dim]Press W to plan your week and mark done.[/dim]',
         ]
 
     return '\n'.join(lines)
@@ -587,48 +399,6 @@ class WeeklyHabitItem(ListItem):
             f'  [dim]not done this week[/dim]',
             markup=True,
         )
-
-
-class TacticListItem(ListItem):
-    def __init__(self, goal_name: str, tactic: Tactic) -> None:
-        super().__init__()
-        self.goal_name = goal_name
-        self.tactic = tactic
-
-    @property
-    def tactic_description(self) -> str:
-        return self.tactic.description
-
-    @property
-    def cadence(self) -> str:
-        return self.tactic.reminder_cadence
-
-    def _build_label(self) -> str:
-        desc = self.tactic.description
-        cad = self.tactic.reminder_cadence
-        done = not _tactic_is_due(self.tactic)
-        per_week = _parse_cadence_per_week(cad)
-        n = _count_updates_this_week(self.tactic)
-        is_partial = (
-            not _is_sprint_cadence(cad)
-            and per_week < _DAILY_CADENCE
-            and 0 < n < per_week
-        )
-        if done:
-            return f'[dim]✓ {desc}  {cad}[/dim]'
-        if is_partial:
-            return (
-                f'[yellow]◑[/yellow] {desc}  [dim]{cad} · {n}/{per_week}[/dim]'
-            )
-        return f'[bold red]●[/bold red] {desc}  [dim]{cad}[/dim]'
-
-    def compose(self) -> ComposeResult:
-        yield Label(self._build_label(), markup=True)
-
-    def refresh_display(self, tactic: Tactic) -> None:
-        """Update visual after tactic data changes."""
-        self.tactic = tactic
-        self.query_one(Label).update(self._build_label())
 
 
 class SeparatorListItem(ListItem):
@@ -2098,9 +1868,7 @@ class TodayContent(BaseEntryContent):
         Binding('S', 'edit_steps', 'Steps'),
         Binding('N', 'edit_notes', 'Notes'),
         Binding('D', 'mark_done', 'Done'),
-        Binding('L', 'log_tactic', 'Log Update'),
         Binding('U', 'update_entry', 'Update'),
-        Binding('U', 'unlog_tactic', 'Unlog Last'),
     ]
 
     _GTD_ACTIONS: ClassVar[set[str]] = {
@@ -2111,14 +1879,11 @@ class TodayContent(BaseEntryContent):
         'mark_done',
         'complete_step',
     }
-    _TACTIC_ACTIONS: ClassVar[set[str]] = {'log_tactic', 'unlog_tactic'}
     _HABIT_ACTIONS: ClassVar[set[str]] = {'complete_habit'}
 
     def __init__(self) -> None:
         super().__init__()
-        self._tactic_items: list[TacticListItem] = []
         self._habit_items: list[WeeklyHabitItem] = []
-        self._goals: dict[str, Goal] = {}
 
     def _build_filter(self) -> dict:
         return {}
@@ -2141,7 +1906,6 @@ class TodayContent(BaseEntryContent):
         self,
         lv: VimListView,
         entries: list[ProjectEntry],
-        goals_with_tactics: list[tuple[Goal, list[TacticListItem]]],
     ) -> None:
         lv.clear()
         for item in self._habit_items:
@@ -2150,30 +1914,11 @@ class TodayContent(BaseEntryContent):
             lv.append(SeparatorListItem('GTD'))
         for entry in entries:
             lv.append(NextStepListItem(entry))
-        if not goals_with_tactics:
-            return
-        total_due = sum(
-            1 for i in self._tactic_items if _tactic_is_due(i.tactic)
-        )
-        header_sep = '12-Week Goals'
-        if total_due:
-            header_sep += f' ({total_due} due)'
-        lv.append(SeparatorListItem(header_sep))
-        for goal, items in goals_with_tactics:
-            due = sum(1 for i in items if _tactic_is_due(i.tactic))
-            goal_label = f'  {goal.name}'
-            if due:
-                goal_label += f'  [red]{due} due[/red]'
-            lv.append(SeparatorListItem(goal_label))
-            for item in items:
-                lv.append(item)
 
     def _set_entries(self, entries: list[ProjectEntry]) -> None:
         self._entries = entries
         with contextlib.suppress(Exception):
             self.query_one('#entry-loading', LoadingIndicator).display = False
-
-        from gtd.storage import get_stored_goal_names, load_goal
 
         self._habit_items = [
             WeeklyHabitItem(key, label)
@@ -2181,27 +1926,12 @@ class TodayContent(BaseEntryContent):
             if not _habit_done_this_week(key)
         ]
 
-        self._goals = {}
-        goals_with_tactics: list[tuple[Goal, list[TacticListItem]]] = []
-        for name in get_stored_goal_names():
-            goal = load_goal(name)
-            if goal.is_complete or not goal.tactics:
-                continue
-            self._goals[goal.name] = goal
-            items = [TacticListItem(goal.name, t) for t in goal.tactics]
-            items.sort(key=lambda i: _tactic_sort_key(i.tactic))
-            goals_with_tactics.append((goal, items))
-
-        self._tactic_items = [
-            i for _, items in goals_with_tactics for i in items
-        ]
-
         lv = self.query_one('#entry-list', VimListView)
-        self._populate_list(lv, entries, goals_with_tactics)
+        self._populate_list(lv, entries)
 
         header = self.query_one('#entry-list-header', Static)
         detail = self.query_one('#entry-detail', Static)
-        has_content = entries or self._tactic_items or self._habit_items
+        has_content = entries or self._habit_items
         if not has_content:
             header.update('Today — nothing actionable 🎉')
             detail.update('[dim]All clear. Nice work.[/dim]')
@@ -2226,10 +1956,6 @@ class TodayContent(BaseEntryContent):
         item = self.query_one('#entry-list', VimListView).highlighted_child
         return item if isinstance(item, WeeklyHabitItem) else None
 
-    def _current_tactic_item(self) -> TacticListItem | None:
-        item = self.query_one('#entry-list', VimListView).highlighted_child
-        return item if isinstance(item, TacticListItem) else None
-
     def _update_detail(self) -> None:
         habit_item = self._current_habit_item()
         if habit_item is not None:
@@ -2237,15 +1963,6 @@ class TodayContent(BaseEntryContent):
                 habit_item.habit_key, habit_item.habit_label
             )
             self.query_one('#entry-detail', Static).update(detail)
-            return
-        tactic_item = self._current_tactic_item()
-        if tactic_item is not None:
-            goal = self._goals.get(tactic_item.goal_name)
-            self.query_one('#entry-detail', Static).update(
-                _render_tactic_detail(
-                    tactic_item.goal_name, tactic_item.tactic, goal
-                )
-            )
             return
         entry = self._current_entry()
         if not entry:
@@ -2263,13 +1980,10 @@ class TodayContent(BaseEntryContent):
         parameters: tuple[object, ...],  # noqa: ARG002
     ) -> bool | None:
         habit_focused = self._current_habit_item() is not None
-        tactic_focused = self._current_tactic_item() is not None
         if action in self._HABIT_ACTIONS:
             return habit_focused
-        if action in self._TACTIC_ACTIONS:
-            return tactic_focused
         if action in self._GTD_ACTIONS:
-            return not (tactic_focused or habit_focused)
+            return not habit_focused
         return None
 
     @work
@@ -2278,9 +1992,7 @@ class TodayContent(BaseEntryContent):
         if not item:
             return
 
-        if item.habit_key == 'goal_scoring':
-            confirmed = await self._run_goal_scoring_flow()
-        elif item.habit_key == 'weekly_review':
+        if item.habit_key == 'weekly_review':
             confirmed = await self._run_weekly_review_flow()
         else:
             confirmed = await self.app.push_screen_wait(
@@ -2289,30 +2001,6 @@ class TodayContent(BaseEntryContent):
 
         if confirmed:
             self._dismiss_habit_item(item)
-
-    async def _run_goal_scoring_flow(self) -> bool:
-        from gtd.storage import get_stored_goal_names, load_goal, save_goal
-        from gtd.tui import ScorecardScreen
-
-        scored_any = False
-        for name in get_stored_goal_names():
-            goal = load_goal(name)
-            if goal.is_complete or not goal.tactics:
-                continue
-            week = goal.current_week()
-            scores = await self.app.push_screen_wait(
-                ScorecardScreen(goal, week)
-            )
-            if scores is None:
-                continue
-            wk_key = str(week)
-            for i, tactic in enumerate(goal.tactics):
-                if str(i) in scores:
-                    tactic.weekly_scores[wk_key] = scores[str(i)]
-            save_goal(goal)
-            scored_any = True
-            self.app.notify(f'✓ Scored {goal.name} week {week}')
-        return scored_any
 
     async def _run_weekly_review_flow(self) -> bool:
         loop = asyncio.get_running_loop()
@@ -2471,87 +2159,372 @@ class TodayContent(BaseEntryContent):
         update_page(page_id, build_property_update(**kwargs))
 
     @work
-    async def action_log_tactic(self) -> None:
-        tactic_item = self._current_tactic_item()
-        if not tactic_item:
+    async def action_triage_entry(self) -> None:
+        entry = self._current_entry()
+        if not entry:
             return
-
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
-        if not _updated_yesterday(tactic_item.tactic):
-            choice = await self.app.push_screen_wait(
-                SelectModal(
-                    'Log for which day?',
-                    [
-                        f'Today ({today:%b %-d})',
-                        f'Yesterday ({yesterday:%b %-d})',
-                    ],
-                )
-            )
-            if choice is None:
-                return
-            log_date = yesterday if choice.startswith('Yesterday') else today
-        else:
-            log_date = today
-
-        note = await self.app.push_screen_wait(
-            InputModal('Log update', tactic_item.tactic_description)
-        )
-        if not note:
-            return
-        from gtd.storage import get_stored_goal_names, load_goal, save_goal
-
-        for name in get_stored_goal_names():
-            if name != tactic_item.goal_name:
-                continue
-            goal = load_goal(name)
-            for t in goal.tactics:
-                if t.description == tactic_item.tactic_description:
-                    t.updates.append(
-                        Update(
-                            date=log_date.isoformat(),
-                            note=note,
-                        )
-                    )
-                    save_goal(goal)
-                    self._goals[goal.name] = goal
-                    tactic_item.refresh_display(t)
-                    self._update_detail()
-                    self.app.notify(f'✓ Logged update on "{t.description}"')
-                    return
+        triaged = await self._triage_one(entry)
+        if triaged:
+            self._remove_entry(entry.page_id)
 
     @work
-    async def action_unlog_tactic(self) -> None:
-        tactic_item = self._current_tactic_item()
-        if not tactic_item:
-            return
-        from gtd.storage import get_stored_goal_names, load_goal, save_goal
+    async def action_triage_all(self) -> None:
+        await self.triage_entries(self._entries)
 
-        for name in get_stored_goal_names():
-            if name != tactic_item.goal_name:
-                continue
-            goal = load_goal(name)
-            for t in goal.tactics:
-                if t.description != tactic_item.tactic_description:
-                    continue
-                if not t.updates:
-                    self.app.notify('No updates to remove', severity='warning')
-                    return
-                last = t.updates[-1]
+    async def triage_entries(self, entries: list[ProjectEntry]) -> bool:
+        """Returns True if completed, False if cancelled."""
+        processed = 0
+        for entry in list(entries):
+            triaged = await self._triage_one(entry)
+            if triaged is None:
+                return False
+            if triaged:
+                processed += 1
+                self._remove_entry(entry.page_id)
+        if processed:
+            s = 's' if processed != 1 else ''
+            self.app.notify(f'✓ Triaged {processed} item{s}')
+        return True
+
+    async def _triage_one(self, entry: ProjectEntry) -> bool | None:  # noqa: PLR0911, PLR0912, C901, PLR0915
+        """Triage a single entry — only prompts for missing fields.
+
+        Returns True if saved, False if skipped/deleted, None if cancelled.
+        """
+        from dateutil import parser as dateparser
+        from gtd.notion.client import (
+            archive_page,
+            build_property_update,
+            get_select_options,
+            update_page,
+        )
+        from gtd.notion.triage import TRIAGE_STATUSES
+
+        title = entry.header.strip()
+        kwargs: dict = {}
+
+        needs_status = not entry.status or entry.status == 'Triage'
+
+        if entry.status == 'List' and entry.context:
+            return True
+        if needs_status:
+            status = await self.app.push_screen_wait(
+                SelectModal(f'Triage: {title}', TRIAGE_STATUSES)
+            )
+            if status is None:
+                return None
+            if status == 'Delete':
                 confirmed = await self.app.push_screen_wait(
-                    ConfirmModal(
-                        f'Remove update from {last.date}?\n"{last.note}"'
+                    ConfirmModal(f'Delete "{title}"?')
+                )
+                if confirmed:
+                    try:
+                        await asyncio.get_running_loop().run_in_executor(
+                            None, archive_page, entry.page_id
+                        )
+                    except Exception as e:
+                        self.app.notify(
+                            f'⚠ Delete failed: {e}',
+                            severity='error',
+                        )
+                        return False
+                    self.app.notify(f'✓ Deleted "{title}"')
+                    return True
+                return False
+            kwargs['status'] = status
+        else:
+            status = entry.status
+            action = await self.app.push_screen_wait(
+                SelectModal(
+                    f'{title}',
+                    ['Continue — fill in missing fields', 'Drop this item'],
+                )
+            )
+            if action is None:
+                return None
+            if action and action.startswith('Drop'):
+                confirmed = await self.app.push_screen_wait(
+                    ConfirmModal(f'Delete "{title}"?')
+                )
+                if confirmed:
+                    try:
+                        await asyncio.get_running_loop().run_in_executor(
+                            None, archive_page, entry.page_id
+                        )
+                    except Exception as e:
+                        self.app.notify(
+                            f'⚠ Delete failed: {e}',
+                            severity='error',
+                        )
+                        return False
+                    self.app.notify(f'✓ Deleted "{title}"')
+                    return True
+                return False
+
+        subtitle = title
+
+        if not entry.context:
+            if status == 'List':
+                from gtd.notion.client import get_list_categories
+
+                list_categories = (
+                    await asyncio.get_running_loop().run_in_executor(
+                        None, get_list_categories
                     )
                 )
-                if not confirmed:
-                    return
-                t.updates.pop()
-                save_goal(goal)
-                self._goals[goal.name] = goal
-                tactic_item.refresh_display(t)
-                self._update_detail()
-                self.app.notify(f'✓ Removed last update on "{t.description}"')
+                list_category = await self.app.push_screen_wait(
+                    SelectModal(
+                        f'Which list? {title}',
+                        sorted(list_categories),
+                        allow_new=True,
+                    )
+                )
+                if list_category is None:
+                    return None
+                kwargs['list_category'] = list_category
+            else:
+                from gtd.notion.client import (
+                    add_context,
+                    remove_context,
+                )
+
+                loop = asyncio.get_running_loop()
+                context = None
+                while True:
+                    contexts = await loop.run_in_executor(
+                        None, get_select_options, 'Context'
+                    )
+                    context = await self.app.push_screen_wait(
+                        SelectModal(
+                            f'Context: {title}',
+                            [
+                                *sorted(contexts),
+                                '──────────',
+                                '[+ Add new context]',
+                                '[- Remove context]',
+                            ],
+                            allow_new=False,
+                        )
+                    )
+                    if context is None:
+                        return None
+                    if context == '[+ Add new context]':
+                        new_name = await self.app.push_screen_wait(
+                            InputModal('New context name')
+                        )
+                        if new_name:
+                            await loop.run_in_executor(
+                                None, add_context, new_name
+                            )
+                            self.app.notify(f'✓ Added context: {new_name}')
+                        continue
+                    if context == '[- Remove context]':
+                        contexts_to_remove = await loop.run_in_executor(
+                            None, get_select_options, 'Context'
+                        )
+                        remove_name = await self.app.push_screen_wait(
+                            SelectModal(
+                                'Remove context',
+                                sorted(contexts_to_remove),
+                                allow_new=False,
+                            )
+                        )
+                        if remove_name:
+                            await loop.run_in_executor(
+                                None, remove_context, remove_name
+                            )
+                            msg = f'✓ Removed context: {remove_name}'
+                            self.app.notify(msg)
+                        continue
+                    if context != '──────────':
+                        break
+                kwargs['context'] = context
+
+        if status == 'List':
+            props = build_property_update(**kwargs)
+            await asyncio.get_running_loop().run_in_executor(
+                None, update_page, entry.page_id, props
+            )
+            cat = kwargs.get('list_category', entry.list_category)
+            self.app.notify(f'✓ "{title}" → List [{cat}]')
+            return True
+
+        if not entry.next_step:
+            if status == 'Waiting For':
+                next_step = await self.app.push_screen_wait(
+                    InputModal(
+                        'Who/what are you waiting on?',
+                        title,
+                        subtitle=subtitle,
+                    )
+                )
+                if next_step is None:
+                    return None
+                if next_step:
+                    kwargs['next_step'] = next_step
+            else:
+                val = await _open_steps_editor(self.app)
+                if val:
+                    kwargs['next_step'] = val
+
+        if not entry.success_condition:
+            success_condition = await self.app.push_screen_wait(
+                InputModal(
+                    'Success condition',
+                    'What does done look like?',
+                    subtitle=subtitle,
+                )
+            )
+            if success_condition is None:
+                return None
+            if success_condition:
+                kwargs['success_condition'] = success_condition
+
+        if not entry.due_date and status != 'Recurring':
+            due_str = await self.app.push_screen_wait(
+                InputModal(
+                    'Due date (blank to skip)',
+                    'e.g. Jul 15, 2026-08-01',
+                    subtitle=subtitle,
+                )
+            )
+            if due_str:
+                try:
+                    parsed = dateparser.parse(due_str, fuzzy=True)
+                    kwargs['due_date'] = parsed.strftime('%Y-%m-%d')
+                except Exception:
+                    self.app.notify(
+                        f'Could not parse "{due_str}", skipping due date.',
+                        severity='warning',
+                    )
+
+        if not entry.follow_up_date:
+            follow_up_prompt = (
+                'Follow-up date (required)'
+                if status == 'Waiting For'
+                else 'Follow-up date (blank to skip)'
+            )
+            follow_str = await self.app.push_screen_wait(
+                InputModal(
+                    follow_up_prompt,
+                    'e.g. Friday, in 3 days',
+                    subtitle=subtitle,
+                )
+            )
+            if follow_str:
+                try:
+                    parsed = dateparser.parse(follow_str, fuzzy=True)
+                    kwargs['follow_up_date'] = parsed.strftime('%Y-%m-%d')
+                except Exception:
+                    self.app.notify(
+                        f'Could not parse "{follow_str}", skipping follow-up.',
+                        severity='warning',
+                    )
+
+        if not kwargs:
+            return True
+
+        props = build_property_update(**kwargs)
+        try:
+            await asyncio.get_running_loop().run_in_executor(
+                None, update_page, entry.page_id, props
+            )
+        except Exception as e:
+            self.app.notify(f'⚠ Save failed: {e}', severity='error')
+            return False
+        final_status = kwargs.get('status', entry.status)
+        final_context = kwargs.get('context', entry.context)
+        self.app.notify(f'✓ "{title}" → {final_status} [{final_context}]')
+        return True
+
+    @work
+    async def action_update_entry(self) -> None:  # noqa: PLR0911
+        from gtd.notion.client import (
+            build_property_update,
+            get_select_options,
+            update_page,
+        )
+
+        entry = self._current_entry()
+        if not entry:
+            return
+
+        fields = [
+            'Name',
+            'Status',
+            'Context',
+            'Steps',
+            'Follow-up date',
+            'Due date',
+        ]
+        choice = await self.app.push_screen_wait(
+            SelectModal('Update which field?', fields)
+        )
+        if not choice:
+            return
+
+        if choice != 'Status':
+            props = await _prompt_and_get_props(self.app, entry, choice)
+            if props is None:
                 return
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                update_page,
+                entry.page_id,
+                build_property_update(**props),
+            )
+            self._load_entries()
+            self.app.notify(f'✓ "{entry.header.strip()}" updated')
+            return
+
+        # Setting Status requires Context + Next Actionable Step
+        status = await self.app.push_screen_wait(
+            SelectModal('Status', STATUSES)
+        )
+        if not status:
+            return
+
+        loop = asyncio.get_running_loop()
+        context = entry.context
+        if not context:
+            contexts = await loop.run_in_executor(
+                None, get_select_options, 'Context'
+            )
+            context = await self.app.push_screen_wait(
+                SelectModal(
+                    'Context (required to move out)',
+                    sorted(contexts),
+                    allow_new=True,
+                )
+            )
+            if not context:
+                self.app.notify(
+                    'Context required to move out of Inbox',
+                    severity='warning',
+                )
+                return
+
+        next_step = entry.next_step
+        if not next_step:
+            next_step = await _open_steps_editor(self.app)
+            if not next_step:
+                self.app.notify(
+                    'Steps required to move out of Inbox',
+                    severity='warning',
+                )
+                return
+
+        await loop.run_in_executor(
+            None,
+            update_page,
+            entry.page_id,
+            build_property_update(
+                status=status, context=context, next_step=next_step
+            ),
+        )
+        self._load_entries()
+        self.app.notify(f'✓ "{entry.header.strip()}" → {status}')
 
 
 # ── Inbox content ────────────────────────────────────────────────────────────
@@ -3800,7 +3773,6 @@ _TAB_LABELS: dict[str, str] = {
     'tab-snoozed': 'Incubation',
     'tab-recurring': 'Recurring',
     'tab-someday': 'Someday',
-    'tab-goals': 'Goals',
 }
 
 
@@ -3820,21 +3792,11 @@ def _entry_canonical_tab(entry: ProjectEntry, today: str) -> str:
 
 
 class GTDSearchProvider(Provider):
-    """Fuzzy search across all GTD entries, goals, and tactics."""
+    """Fuzzy search across all GTD entries."""
 
     _entry_index: list[tuple[str, str, ProjectEntry]]
-    _goal_index: list[tuple[str, Goal, Tactic | None]]
 
     async def startup(self) -> None:
-        from gtd.storage import get_stored_goal_names, load_goal
-
-        self._goal_index = []
-        for name in get_stored_goal_names():
-            goal = load_goal(name)
-            self._goal_index.append((goal.name, goal, None))
-            for tactic in goal.tactics:
-                self._goal_index.append((goal.name, goal, tactic))
-
         self._entry_index = []
         try:
             entries = await asyncio.to_thread(self._fetch_all_entries)
@@ -3873,31 +3835,6 @@ class GTDSearchProvider(Provider):
     async def search(self, query: str) -> Hits:
         matcher = self.matcher(query)
 
-        for goal_name, goal, tactic in self._goal_index:
-            if tactic is None:
-                search_text = goal_name
-                if goal.description:
-                    search_text += f' {goal.description}'
-                score = matcher.match(search_text)
-                if score > 0:
-                    yield Hit(
-                        score,
-                        matcher.highlight(goal_name),
-                        partial(self._navigate_goal, goal_name),
-                        help=f'Goal · {goal.description or "no description"}',
-                    )
-            else:
-                score = matcher.match(f'{tactic.description} {goal_name}')
-                if score > 0:
-                    yield Hit(
-                        score,
-                        matcher.highlight(tactic.description),
-                        partial(self._navigate_goal, goal_name),
-                        help=(
-                            f'Tactic · {goal_name} · {tactic.reminder_cadence}'
-                        ),
-                    )
-
         for tab_id, tab_label, entry in self._entry_index:
             search_text = entry.header
             if entry.context:
@@ -3914,13 +3851,6 @@ class GTDSearchProvider(Provider):
                     partial(self._navigate_entry, tab_id, entry.page_id),
                     help=f'{tab_label}{ctx}',
                 )
-
-    async def _navigate_goal(self, goal_name: str) -> None:
-        tc = self.app.query_one('#tabs', TabbedContent)
-        tc.active = 'tab-goals'
-        await asyncio.sleep(0.05)
-        with contextlib.suppress(Exception):
-            self.app.query_one(GoalsContent).select_goal(goal_name)
 
     async def _navigate_entry(self, tab_id: str, page_id: str) -> None:
         tc = self.app.query_one('#tabs', TabbedContent)
@@ -3977,8 +3907,6 @@ class GTDApp(App[None]):
                 yield SomedayContent()
             with TabPane('Lists', id='tab-lists'):
                 yield ListsContent()
-            with TabPane('Goals', id='tab-goals'):
-                yield GoalsContent()
         yield SplitFooter()
 
     @on(VimListView.FocusTabBar)
@@ -4024,10 +3952,7 @@ class GTDApp(App[None]):
             with contextlib.suppress(Exception):
                 pane.query_one(BaseEntryContent).action_refresh()
                 return
-            with contextlib.suppress(Exception):
-                pane.query_one(ListsContent).action_refresh()
-                return
-            pane.query_one(GoalsContent).action_refresh_goals()
+            pane.query_one(ListsContent).action_refresh()
 
     def action_tab_right(self) -> None:
         tc = self.query_one('#tabs', TabbedContent)

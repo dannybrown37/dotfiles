@@ -74,10 +74,6 @@ class ProjectEntry:
         )
 
     @property
-    def is_12_week_goal(self) -> bool:
-        return self.context == '12-Week Goal'
-
-    @property
     def steps(self) -> list[str]:
         """Parsed list of steps from next_step field."""
         return parse_steps(self.next_step)

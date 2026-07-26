@@ -2,13 +2,11 @@
 
 __all__ = ['brain_dump', 'review_someday', 'weekly_review']
 
-from gtd.models import TOTAL_WEEKS, Goal, Tactic
 from gtd.notion.capture import capture_item
 from gtd.notion.client import (
     archive_page,
     build_property_update,
     get_page_body,
-    get_select_options,
     query_database,
     update_page,
 )
@@ -18,22 +16,10 @@ from gtd.notion.entries import (
     _escape_for_shell,
     update_entry_by_ref,
 )
-from gtd.notion.log import _confirm_delete, _infer_cadence
+from gtd.notion.log import _confirm_delete
 from gtd.notion.models import ProjectEntry
 from gtd.notion.triage import _get_triage_entries, process_triage
-from gtd.storage import (
-    ensure_dirs,
-    get_stored_goal_names,
-    load_goal,
-    save_goal,
-)
-from gtd.ui import (
-    fzf_on_a_list,
-    pause,
-    prompt_input,
-    score_indicator,
-    score_pct,
-)
+from gtd.ui import fzf_on_a_list, pause
 
 
 def review_someday() -> None:  # noqa: C901
@@ -278,183 +264,12 @@ def _review_get_creative() -> None:
         print('  No new items captured.\n')
 
 
-def _review_check_goals() -> None:  # noqa: C901, PLR0912, PLR0915
-    """Phase 0: Check 12-Week Year goals — local + Notion."""
-    print('─── Phase 0: Check Goals ───')
-    print('  Goal: Review 12-Week Year execution. Score if needed.\n')
-
-    ensure_dirs()
-    local_names = get_stored_goal_names()
-
-    notion_goal_groups: dict[str, list[ProjectEntry]] = {}
-    try:
-        contexts = get_select_options('Context')
-        goal_contexts = [c for c in contexts if c.startswith('12-Week Goal')]
-        if goal_contexts:
-            pages = query_database(
-                filter_obj={
-                    'or': [
-                        {
-                            'property': 'Context',
-                            'select': {'equals': c},
-                        }
-                        for c in goal_contexts
-                    ],
-                },
-            )
-            for p in pages:
-                entry = ProjectEntry.from_page(p)
-                notion_goal_groups.setdefault(
-                    entry.context,
-                    [],
-                ).append(entry)
-    except SystemExit:
-        pass
-    except Exception as exc:
-        print(f'  (Notion query failed: {exc})\n')
-
-    if not local_names and not notion_goal_groups:
-        print('  No 12-Week Year goals configured.\n')
-        return
-
-    goals_to_score: list[tuple] = []
-    for name in local_names:
-        goal = load_goal(name)
-        week = goal.current_week()
-        print(f'  📊 {goal.name}')
-        print(f'     {goal.progress_bar()}')
-
-        ex, tot = goal.overall_score()
-        if tot > 0:
-            pct = score_pct(ex, tot)
-            indicator = score_indicator(ex / tot)
-            print(f'     {indicator} Execution: {pct} ({ex}/{tot})')
-        else:
-            print('     No scores yet')
-
-        if not goal.is_complete:
-            weeks_to_check = []
-            if week > 1:
-                prev_key = str(week - 1)
-                prev_unscored = [
-                    t for t in goal.tactics if prev_key not in t.weekly_scores
-                ]
-                if prev_unscored:
-                    weeks_to_check.append(week - 1)
-                    print(
-                        f'     ⚠ Week {week - 1}/{TOTAL_WEEKS}: '
-                        f'{len(prev_unscored)} tactic(s) unscored',
-                    )
-
-            cur_key = str(week)
-            cur_unscored = [
-                t for t in goal.tactics if cur_key not in t.weekly_scores
-            ]
-            if cur_unscored:
-                weeks_to_check.append(week)
-                print(
-                    f'     ⚠ Week {week}/{TOTAL_WEEKS}: '
-                    f'{len(cur_unscored)} tactic(s) unscored',
-                )
-
-            for w in weeks_to_check:
-                goals_to_score.append((goal, w))
-        print()
-
-    local_set = {n.lower() for n in local_names}
-    for ctx, entries in sorted(notion_goal_groups.items()):
-        goal_name = ctx.removeprefix('12-Week Goal:').strip()
-        if goal_name.lower() in local_set:
-            continue
-
-        print(f'  🎯 {goal_name} (Notion, {len(entries)} items)')
-        for entry in entries:
-            due = f' (due {entry.due_date})' if entry.due_date else ''
-            print(f'     • {entry.header.strip()}{due}')
-
-        print(f'\n  ⚠ No local scoring file for "{goal_name}"')
-        create = fzf_on_a_list(
-            ['Create local goal for scoring', 'Skip'],
-            prompt=f'"{goal_name}"',
-        )
-        if create and create.startswith('Create'):
-            tactics = []
-            for entry in entries:
-                header = entry.header.strip()
-                cadence = _infer_cadence(header)
-                tactics.append(
-                    Tactic(
-                        description=header,
-                        reminder_cadence=cadence,
-                    )
-                )
-
-            if local_names:
-                ref = load_goal(local_names[0])
-                goal = Goal(
-                    name=goal_name,
-                    description=ctx,
-                    start_date=ref.start_date,
-                    end_date=ref.end_date,
-                    tactics=tactics,
-                )
-            else:
-                goal = Goal.new(
-                    name=goal_name,
-                    description=ctx,
-                )
-                goal.tactics = tactics
-
-            save_goal(goal)
-            week = goal.current_week()
-            print(
-                f'  ✓ Created "{goal_name}" with {len(tactics)} tactic(s)',
-            )
-            goals_to_score.append((goal, week))
-        print()
-
-    if not goals_to_score:
-        return
-
-    action = fzf_on_a_list(
-        ['Score unscored weeks', 'Skip scoring'],
-        prompt='12-Week Goals',
-    )
-    if action != 'Score unscored weeks':
-        return
-
-    for goal, week in goals_to_score:
-        wk_key = str(week)
-        print(f'\n  ── {goal.name} (Week {week}) ──\n')
-        max_len = max(len(t.description) for t in goal.tactics)
-        for tactic in goal.tactics:
-            current = tactic.weekly_scores.get(wk_key)
-            if current is not None:
-                continue
-            padded = tactic.description.ljust(max_len)
-            answer = prompt_input(
-                f'  {padded}  | score 1-10: ',
-            )
-            if answer and answer.isdigit():
-                score = max(1, min(10, int(answer)))
-                tactic.weekly_scores[wk_key] = score
-        save_goal(goal)
-
-        sc, mx = goal.week_score(week)
-        if mx > 0:
-            pct = score_pct(sc, mx)
-            print(f'\n  Week {week}: {pct} ({sc}/{mx})')
-    print()
-
-
 def weekly_review() -> None:
-    """Guided weekly review: Goals → Clear → Current → Creative."""
+    """Guided weekly review: Clear → Current → Creative."""
     print('\n══════════════════════════════════')
     print('       📋 GTD Weekly Review')
     print('══════════════════════════════════\n')
 
-    _review_check_goals()
-    pause('Press Enter to continue to next step...')
     _review_get_clear()
     pause('Press Enter to continue to next step...')
     _review_get_current()

@@ -1,13 +1,15 @@
 ---
 name: project-manager
-description: "Invoke when working on the project_manager package — the GTD + 12-Week Year TUI app backed by Notion and local JSON."
+description: "Invoke when working on the project_manager package — the GTD TUI app backed by Notion and local JSON."
 user-invocable: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
 # Project Manager
 
-A personal productivity CLI at `project_manager/` combining David Allen's **Getting Things Done** (GTD) with **12-Week Year** (12WY) goal tracking. Entry point: `gtd` (runs the TUI by default). Legacy fzf menu: `gtd fzf`.
+A personal productivity CLI at `project_manager/` implementing David Allen's **Getting Things Done** (GTD) method, backed by Notion. Entry point: `gtd` (runs the TUI by default).
+
+12-Week Year goal tracking (local-JSON goals/tactics, scoring, the Goals tab) was removed — GTD only now. If you see references to `Goal`, `Tactic`, cadences, or a Goals tab elsewhere, they're stale.
 
 **Install**: `uv tool install -e .` — must be re-run after every code change for the installed `gtd` binary to pick up changes.
 
@@ -17,14 +19,10 @@ A personal productivity CLI at `project_manager/` combining David Allen's **Gett
 src/gtd/
 ├── gtd.py          # CLI entry point (click group); gtd / gtd fzf / gtd tui / gtd triage / gtd api / etc.
 ├── gtd_tui.py      # Unified Textual TUI — GTDApp (main), all tab content widgets
-├── tui.py          # Shared Textual widgets: modals, GoalsApp, GoalsContent, VimListView, ScorecardScreen
+├── tui.py          # Shared Textual widgets: modals, DetailPane, VimListView
 ├── api.py          # Flask HTTP wrapper for iOS Shortcuts / mobile access
-├── models.py       # Pydantic: Goal, Tactic, Todo, Update
-├── storage.py      # Local JSON I/O for goals + weekly habits (~/.local/share/gtd/)
-├── cli.py          # 12WY fzf-based CLI (legacy pm command)
+├── storage.py      # Local JSON I/O for weekly review state, areas, list categories (~/.local/share/gtd/)
 ├── ui.py           # fzf helpers (fzf_on_a_list), CancelAction
-├── views.py        # Goal display builders (progress bars, headers)
-├── actions.py      # Goal mutations (scoring, editing, tactic/todo management)
 └── notion/
     ├── client.py   # Notion REST API client (httpx)
     ├── commands.py # GTD command implementations (update, defer, snooze, done)
@@ -41,7 +39,7 @@ src/gtd/
 
 ## TUI Layout (GTDApp)
 
-Eight tabs: **Today | Inbox | Projects | Recurring | Waiting For | Snoozed | Someday | Goals**
+Tabs: **Today | Next Steps | Inbox | Projects | Waiting For | Incubation | Recurring | Someday | Lists**
 
 All entry tabs extend `BaseEntryContent(Vertical)` with stable IDs (`#entry-list`, `#entry-detail`, etc.) and shared infrastructure. Override `_build_filter()` to define what Notion entries appear. `TodayContent` overrides `_load_entries()` entirely (uses `_get_today_entries()`).
 
@@ -51,23 +49,15 @@ The Today tab has three sections in the left list:
 
 1. **Weekly habit reminders** (top, always) — shown when not done this week:
    - `● Weekly Review` — `W` opens a guided 6-step flow via `WeeklyReviewScreen` modal. Steps: (1) Triage Inbox, (2) Review Projects, (3) Review Waiting For, (4) Review Someday/Maybe [uses `SomedayBrowseScreen`], (5) Review Areas of Focus, (6) Plan next week's priorities + Review Calendar [manual steps]. State persisted per-week in `weekly_habits.json` under `review_state`; resumes at first incomplete step.
-   - `● Score Goals` — `W` opens `ScorecardScreen` for each active goal sequentially
-   - Both use `check_action` to show `W` only when habit item is focused
+   - Uses `check_action` to show `W` only when habit item is focused
    - Completion stored in `~/.local/share/gtd/weekly_habits.json`; resets each Monday
 
 2. **GTD entries** — standard entries from Notion, separated with `── GTD ──` when habits are present
 
-3. **12-Week Goals section** — tactics grouped by goal with per-goal sub-separators:
-   - `── 12-Week Goals (N due) ──` header
-   - `── Goal Name  N due ──` per-goal sub-header
-   - `TacticListItem`s sorted within each goal: due → partial → done
-   - Visual: `● tactic  cadence` (red=due), `◑ tactic  cadence · n/total` (yellow=partial), `✓ tactic  cadence` (dim=done)
-
-**`check_action` in TodayContent** — three mutually exclusive modes:
+**`check_action` in TodayContent** — two mutually exclusive modes:
 - `_HABIT_ACTIONS = {'complete_habit'}` — only active when habit focused
-- `_TACTIC_ACTIONS = {'log_tactic'}` — only active when tactic focused  
 - `_GTD_ACTIONS = {log, snooze, waiting_for, update_entry, edit_notes, mark_done}` — only active when GTD entry focused
-- Returns explicit `True`/`False` (not `None`) for all three sets
+- Returns explicit `True`/`False` (not `None`) for both sets
 
 ### Inbox tab
 
@@ -88,9 +78,8 @@ Changes are collected (`_to_done: list`, `_status_changes: dict[str, str]`) and 
 
 - **Recurring** — Status == 'Recurring'; `L` log+reschedule (stays in list), `D` drop
 - **Waiting For** — Status == 'Waiting For'
-- **Snoozed** — Current Project + follow_up > today
+- **Incubation** — Current Project + follow_up > today
 - **Projects / Someday** — standard status filters
-- **Goals** — `GoalsContent` widget (from `tui.py`); `E` opens edit sub-menu
 
 ## Weekly Review — Areas of Focus (step 5)
 
@@ -108,32 +97,15 @@ Two-mode design: opens in **browse mode** (ListView focused, j/k navigate). **Ta
 
 `ModalScreen` used during Weekly Review step 4 (Review Someday/Maybe). Shows a scrollable list of Someday items — scroll with j/k, optionally **a** to activate or **d** to drop any item. No forced per-item decision; user browses at will and dismisses when done.
 
-## GoalsContent (tui.py)
-
-`E` → sub-menu: Name & description / Start & end dates / Edit a tactic / Remove a tactic. All async actions decorated with `@work` (required when called from GTDApp context). `ScorecardScreen` is importable from `tui.py`.
-
-## Tactic Cadence System
-
-Cadences parsed in `_parse_cadence_per_week()` in `gtd_tui.py`:
-- `daily` / `every day` → 7x/week (checks `_updated_today`)
-- `Nx/week` → N times (checks `_count_updates_this_week`)
-- `sprint` → 1x per 14-day rolling window (checks `_updated_in_sprint`)
-- anything else → 1x/week
-
-Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_tactic_status_line`, `_DAILY_CADENCE = 7`, `_SPRINT_DAYS = 14`.
-
 ## Data Stores
 
 | Data | Store | Location |
 |------|-------|----------|
 | GTD projects/inbox | Notion database | `NOTION_PROJECTS_DB_ID` env var |
-| 12WY goals/tactics/todos | Local JSON | `~/.local/share/gtd/<goal-name>.json` |
 | Weekly habit completion | Local JSON | `~/.local/share/gtd/weekly_habits.json` |
 | Areas of Focus | Local JSON | `~/.local/share/gtd/areas.json` |
 | List categories | Local JSON | `~/.local/share/gtd/list_categories.json` |
 | GTD config | Local JSON | `~/.config/gtd/config.json` |
-
-`get_stored_goal_names()` excludes `config.json`, `weekly_habits.json`, and `areas.json` from glob results.
 
 ## Areas of Focus
 
@@ -149,10 +121,6 @@ Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_ta
 
 **ProjectEntry** (Notion-backed): `page_id`, `header`, `status`, `context`, `next_step`, `due_date`, `follow_up_date`
 
-**Goal** (local JSON, Pydantic): `name`, `description`, `start_date`, `end_date`, `tactics: list[Tactic]`, `todos: list[Todo]`
-
-**Tactic**: `description`, `reminder_cadence` (e.g. `"daily"`, `"2x/week"`, `"sprint"`, `"weekly"`), `updates: list[Update]`, `weekly_scores: dict[str, int]`
-
 **STATUSES** (schema.py): includes `'Recurring'` — items surface on Today when follow_up_date ≤ today; `action_mark_done` on recurring items offers Reschedule vs Permanently complete. Run `gtd init --upgrade` to add new statuses to an existing Notion DB.
 
 ## Shared Action Helpers (gtd_tui.py module-level)
@@ -167,9 +135,8 @@ Key helpers: `_tactic_is_due`, `_tactic_sort_key`, `_render_tactic_detail`, `_ta
 - `DetailPane(ScrollableContainer)` — `can_focus = False` so Tab skips it
 - `SeparatorListItem(ListItem)` — `disabled=True`, used as visual dividers; supports markup in label
 - `WeeklyHabitItem(ListItem)` — habit reminder item with `habit_key` and `habit_label` attrs
-- `TacticListItem(ListItem)` — holds full `Tactic` object; `refresh_display(tactic)` updates label in-place
-- Modals: `InputModal`, `SelectModal`, `ConfirmModal`, `TwoFieldModal`, `ScorecardScreen`, `SomedayBrowseScreen` — all `ModalScreen`
-- `ENABLE_COMMAND_PALETTE = False` on both App classes
+- Modals: `InputModal`, `SelectModal`, `ConfirmModal`, `TwoFieldModal`, `SomedayBrowseScreen` — all `ModalScreen`
+- `ENABLE_COMMAND_PALETTE = False` on `GTDApp`
 - Use `@work` for ALL async actions that call `push_screen_wait` — required in both standalone and embedded contexts. `@work(thread=True)` for blocking Notion calls.
 - **Never `await` a `@work`-decorated method** — it returns a `Worker` object. Extract core logic into a plain `async def` and have both `@work` action and other callers use that.
 - Always call `self.app.refresh_bindings()` after selection changes that affect `check_action`

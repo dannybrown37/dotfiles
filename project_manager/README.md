@@ -1,24 +1,14 @@
 # Project Manager
 
-A CLI for personal productivity combining [GTD (Getting Things Done)](https://gettingthingsdone.com/) with the [12-Week Year](https://12weekyear.com/) planning method.
+A CLI for personal productivity built around [GTD (Getting Things Done)](https://gettingthingsdone.com/).
 
 ## What it does
-
-### GTD (`gtd` command) — Notion-backed
 
 - Capture items to an inbox and triage them into projects
 - Track projects with contexts, next actions, and follow-up dates
 - Log completions and auto-reschedule recurring items
 - Defer, snooze, and review Someday/Maybe lists
 - Filter by context for focused work sessions
-
-### 12-Week Year (`pm` command) — local JSON
-
-- Create goals with a 12-week time horizon
-- Define tactics (recurring actions) with cadences like daily, weekly, 2x/week
-- Score tactics weekly on a 1–10 scale to track execution
-- Manage to-dos with optional due dates
-- View progress bars, score history, and overall execution percentage
 
 ## Requirements
 
@@ -62,7 +52,6 @@ Opens the fzf-powered GTD menu:
 | Review | Weekly Review |
 | Review | Review Someday/Maybe |
 | View | View all projects |
-| View | 12-Week Goals |
 | View | Filter by context |
 <!-- END MENU -->
 
@@ -74,23 +63,12 @@ gtd init --upgrade   # Add missing properties/options to existing DB
 gtd triage           # Process inbox items
 gtd review           # Guided weekly review ritual
 gtd dump             # Rapid-fire brain dump
-gtd goals            # 12-Week Year interactive menu
-gtd goals status     # Print goal progress (no fzf needed)
-gtd goals notion     # Show 12-week goal entries from Notion
 gtd filter work      # Filter projects by context
 gtd today            # Show today's actionable items
 gtd capture          # Quick-capture to inbox
 gtd done             # Mark a project as done
 gtd update           # Update project fields
 gtd defer            # Defer a project
-```
-
-### 12-Week Year
-
-```bash
-gtd goals            # Interactive menu (scoring, tactics, todos)
-gtd goals status     # Quick snapshot (no fzf needed)
-gtd goals notion     # View Notion items tagged as 12-Week Goals
 ```
 
 ## Updating this README
@@ -104,19 +82,16 @@ python scripts/update_readme.py
 ## Data storage
 
 - **GTD**: Notion database (configured via `gtd init` or `NOTION_NOTES_TOKEN` / `NOTION_PROJECTS_DB_ID` env vars)
-- **12-Week Year**: JSON files in `~/.local/share/gtd/`
+- **Weekly review state, Areas of Focus, list categories**: JSON files in `~/.local/share/gtd/`
 
 ## Project structure
 
 ```
 src/gtd/
-├── cli.py           # 12-Week Year menu routing and entry point
 ├── gtd.py           # GTD interactive menu and CLI commands
-├── models.py        # Pydantic models (Goal, Tactic, Todo)
+├── gtd_tui.py       # Textual TUI
 ├── storage.py       # File I/O and path management
 ├── ui.py            # fzf helpers, prompts, formatting
-├── views.py         # Display builders (headers, progress bars)
-├── actions.py       # Goal actions (scoring, editing, cycling)
 └── notion/
     ├── client.py    # Notion API client
     ├── config.py    # Config file management (~/.config/gtd/)
