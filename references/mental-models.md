@@ -65,5 +65,5 @@ Know what you know — and more importantly, know what you don't. Operating outs
 [Circle of Competence](https://fs.blog/circle-of-competence/)
 
 ## Fredkin's Paradox
-The more equally attractive of two similar choices may be hard to discern. The more time we spend choosing between these types of differences, the less those choices ultimately matter. Solution: strive for a "good enough" mindset
+Strive for a "good enough" mindset; we spend the most time on the least important decisions.
 [Fredkin's paradox](https://en.wikipedia.org/wiki/Fredkin%27s_paradox)
