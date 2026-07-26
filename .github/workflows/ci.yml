@@ -15,7 +15,8 @@ jobs:
 
       - name: Install ruff and pre-commit
         run: |
-          uv tool install ruff
+          # Pinned to match install/python.sh -- keeps CI and local dev in lockstep.
+          uv tool install "ruff==0.16.0"
           uv tool install pre-commit
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 

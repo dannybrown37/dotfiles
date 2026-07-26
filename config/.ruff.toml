@@ -55,10 +55,10 @@ select = [
 ignore = [
   "S311",  # not using randomness for cryptography
   "S101",  # assert is awesome
-  "ANN101",  # self does not need a type annotation
   "I001",  # I do not care for its sorting choices
   "S113",  # requests calls without timeouts are fine
   "PLR0913",  # sometimes tests need 6+ fixtures
+  "PLC0415",  # deliberate lazy imports (CLI startup time, circular imports)
 ]
 
 [lint.flake8-quotes]
