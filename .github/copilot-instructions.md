@@ -1,4 +1,4 @@
-# Copilot Instructions
+# LLM Instructions
 
 ## General Approach
 
@@ -21,7 +21,7 @@
 
 ## Skills
 
-- **bash** -- Shell scripts, files in `bin/`, dotfile config (zsh, bash, shell utilities). Use whever writing Bash.
+- **bash** -- Shell scripts, files in `bin/`, dotfile config (zsh, bash, shell utilities). Use whenever writing Bash.
 - **node** -- TypeScript/JavaScript code, Node.js tooling, ESLint/Prettier config. Use whenever writing TS/JS.
 - **python** -- Python code, pytest, ruff/linting config. Use whenever writing Python.
 - **dotfiles** -- description of this repo and its structure. Use whenever updating code here. Update automatically as file structure changes.
