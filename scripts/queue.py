@@ -119,6 +119,11 @@ def list_items(
     return items[:limit]
 
 
+def list_titles(queue_path: Path) -> list[str]:
+    """Every queued title, one per item, for an external picker to offer."""
+    return [item.title for item in parse_queue_file(queue_path)]
+
+
 def show_item(item: QueueItem) -> None:
     """Display an item for review."""
     print(f"\n{'='*70}")
@@ -154,12 +159,18 @@ def action_list(queue_path: Path) -> None:
         print()
 
 
+def action_titles(queue_path: Path) -> None:
+    """Print bare titles, one per line, for piping into fzf."""
+    for title in list_titles(queue_path):
+        print(title)
+
+
 def action_complete(
     queue_path: Path,
     complete_path: Path,
     item_title: str,
-    start_time: str,
-    end_time: str,
+    start_time: str | None = None,
+    end_time: str | None = None,
 ) -> None:
     """Mark item complete and move to .queue-complete."""
     items = parse_queue_file(queue_path)
@@ -169,8 +180,9 @@ def action_complete(
         print(msg, file=sys.stderr)
         sys.exit(1)
 
-    start_dt = datetime.fromisoformat(start_time)
-    end_dt = datetime.fromisoformat(end_time)
+    now = datetime.now()
+    start_dt = datetime.fromisoformat(start_time) if start_time else now
+    end_dt = datetime.fromisoformat(end_time) if end_time else now
 
     add_to_completed(complete_path, item, start_dt, end_dt)
     remove_item_from_queue(queue_path, item)
@@ -186,7 +198,7 @@ def main() -> None:
     )
     parser.add_argument(
         'action',
-        choices=['next', 'list', 'complete'],
+        choices=['next', 'list', 'titles', 'complete'],
         help='Queue action to perform',
     )
     parser.add_argument(
@@ -204,12 +216,12 @@ def main() -> None:
     parser.add_argument(
         '--start-time',
         type=str,
-        help='ISO format start time for --complete action',
+        help='ISO format start time for complete action (default: now)',
     )
     parser.add_argument(
         '--end-time',
         type=str,
-        help='ISO format end time for --complete action',
+        help='ISO format end time for complete action (default: now)',
     )
     parser.add_argument(
         '--item-title',
@@ -226,14 +238,15 @@ def main() -> None:
         action_next(queue_path)
     elif args.action == 'list':
         action_list(queue_path)
+    elif args.action == 'titles':
+        action_titles(queue_path)
     elif args.action == 'complete':
         if not args.item_title:
-            msg = '--item-title required for complete action'
-            print(f'Error: {msg}', file=sys.stderr)
-            sys.exit(1)
-        if not args.start_time or not args.end_time:
-            msg = '--start-time and --end-time required for complete action'
-            print(f'Error: {msg}', file=sys.stderr)
+            # The shell wrapper picks a title with fzf; anything else gets the
+            # list so the exact string is easy to copy.
+            print('Error: --item-title required', file=sys.stderr)
+            for title in list_titles(queue_path):
+                print(f'  {title}', file=sys.stderr)
             sys.exit(1)
 
         action_complete(
