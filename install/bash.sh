@@ -131,6 +131,12 @@ curl -o ~/.git-completion.bash https://raw.githubusercontent.com/git/git/master/
 gh extension install dlvhdr/gh-dash
 
 ##
+## Install lazygit (TUI git client) + symlink its config
+##
+
+bash "$(dirname "${BASH_SOURCE[0]}")/lazygit.sh"
+
+##
 ## Install croc file sharing tool
 ##
 
@@ -217,14 +223,4 @@ if [ ! -L "${HOME}/.config/starship.toml" ]; then
         echo "Symlinked starship.toml to ~/.config/starship.toml"
 else
     echo "starship.toml has already been symlinked"
-fi
-
-lazygit_config_dir="${HOME}/.config/lazygit"
-lazygit_config_dest="${lazygit_config_dir}/config.yml"
-if [ ! -L "${lazygit_config_dest}" ]; then
-    mkdir -p "${lazygit_config_dir}"
-    ln -s ~/projects/dotfiles/config/lazygit.yml "${lazygit_config_dest}" &&
-        echo "Symlinked lazygit config to ${lazygit_config_dest}"
-else
-    echo "lazygit config has already been symlinked"
 fi

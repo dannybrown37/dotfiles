@@ -29,11 +29,7 @@ help:
 
 root_dir := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-ifeq ($(MSYSTEM), MINGW64)
-    bash_bootstrap_script := $(root_dir)/install/git_bash.sh
-else
-    bash_bootstrap_script := $(root_dir)/install/bash.sh
-endif
+bash_bootstrap_script := $(root_dir)/install/bash.sh
 
 # installs
 
