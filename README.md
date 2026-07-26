@@ -112,6 +112,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `queue` | AI work queue -- add items, discuss, track completion | queue list | `bin/queue.sh` |
 | `quick_google` | Ctrl+Shift+G - Search Google for selected text | `ahk/quick_google.ahk` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
+| `skills` | Export a dotfiles skill into another repo (.claude + .github bridge) | skill-export <name> [target-dir] | `bin/skills.sh` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
 | `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
 | `teams_toggle` | Ctrl+Shift+D - Toggle Microsoft Teams focus | `ahk/teams_toggle.ahk` |
