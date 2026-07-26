@@ -23,16 +23,34 @@ repos:
     hooks:
       - id: ruff-check
         name: Ruff check
+        entry: ruff check --fix --config config/.ruff.toml
+        language: system
+        types: [python]
+        exclude: ^gtd/
+        pass_filenames: true
+
+      - id: ruff-check-gtd
+        name: Ruff check (gtd/)
         entry: ruff check --fix
         language: system
         types: [python]
+        files: ^gtd/
         pass_filenames: true
 
       - id: ruff-format
         name: Ruff format
+        entry: bash -c 'ruff format --config config/.ruff.toml "$@" && git add "$@"' --
+        language: system
+        types: [python]
+        exclude: ^gtd/
+        pass_filenames: true
+
+      - id: ruff-format-gtd
+        name: Ruff format (gtd/)
         entry: bash -c 'ruff format "$@" && git add "$@"' --
         language: system
         types: [python]
+        files: ^gtd/
         pass_filenames: true
 
       - id: sync-readme-commands

@@ -189,6 +189,7 @@
   "security.allowedUNCHosts": ["wsl.localhost"],
   "shellcheck.customArgs": ["-x"],
   "task.autoDetect": "off",
+  "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font",
   "typescript.tsc.autoDetect": "off",
   "vim.enableNeovim": true,
   "vim.neovimPath": "/usr/bin/nvim",
