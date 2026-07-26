@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# pre-commit can't own .git/hooks here (core.hooksPath points at this dir
+# instead), so forward to it manually rather than running `pre-commit install`.
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+
+if ! command -v pre-commit &>/dev/null || [[ ! -f "${repo_root}/.pre-commit-config.yaml" ]]; then
+    exit 0
+fi
+
+exec pre-commit run --hook-stage pre-commit

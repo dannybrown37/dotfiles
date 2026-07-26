@@ -64,11 +64,11 @@ _gwt_bootstrap() {
 
     echo "Bootstrapping dependencies..."
 
-    # pre-commit: shares hooks via core.hooksPath or reinstall
+    # pre-commit: hooks run via githooks/pre-commit (core.hooksPath), just warm the envs
     if [[ -f "${wt_path}/.pre-commit-config.yaml" ]]; then
         if command -v pre-commit &>/dev/null; then
-            echo "  -> Installing pre-commit hooks"
-            (cd "${wt_path}" && pre-commit install --install-hooks) 2>&1 | sed 's/^/     /'
+            echo "  -> Installing pre-commit hook environments"
+            (cd "${wt_path}" && pre-commit install-hooks) 2>&1 | sed 's/^/     /'
         fi
     fi
 
