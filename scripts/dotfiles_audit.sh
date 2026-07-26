@@ -171,6 +171,7 @@ check_symlink ".tmux.conf"         "$HOME/.tmux.conf"           "$DOTFILES_DIR/c
 check_symlink "starship.toml"      "$HOME/.config/starship.toml" "$DOTFILES_DIR/config/starship.toml"
 check_symlink "lazygit config"     "$HOME/.config/lazygit/config.yml" "$DOTFILES_DIR/config/lazygit.yml"
 check_symlink "nvim config"        "$HOME/.config/nvim"         "$DOTFILES_DIR/nvim"
+check_symlink ".gitconfig-personal" "$HOME/.gitconfig-personal"  "$DOTFILES_DIR/config/.gitconfig-personal"
 
 if [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
     ok "tmux tpm" "installed"
@@ -273,6 +274,19 @@ if [[ "$HOOKS_PATH" == "githooks" ]]; then
     ok "git hooks" "core.hooksPath -> githooks"
 else
     fail "git hooks" "run: make bash  (sets core.hooksPath so push/pull sync password-store)"
+fi
+
+if git -C "$DOTFILES_DIR" config --get-all credential.https://github.com.helper 2>/dev/null |
+    grep -q "git-credential-personal"; then
+    ok "personal git credentials" "dotfiles uses MY_GITHUB_TOKEN"
+else
+    fail "personal git credentials" "run: make bash  (includeIf -> ~/.gitconfig-personal)"
+fi
+
+if [[ -n "${MY_GITHUB_TOKEN:-}" ]]; then
+    ok "MY_GITHUB_TOKEN" "set"
+else
+    warn "MY_GITHUB_TOKEN" "not set — personal repos fall back to gh/GITHUB_TOKEN"
 fi
 
 if grep -q "systemd=true" /etc/wsl.conf 2>/dev/null; then

@@ -186,6 +186,18 @@ same entry before syncing, the store push is rejected and you resolve by picking
 (`git -C ~/.password-store checkout --ours/--theirs <entry>.gpg`), not by merging. Pushing
 before switching machines avoids this.
 
+### Personal vs Work GitHub Tokens
+
+On a work machine `GITHUB_TOKEN` holds the work token, but this repo and `~/.password-store`
+must authenticate as the personal account. Rather than prefixing every push, `config/.gitconfig`
+uses `includeIf` to pull in `.gitconfig-personal` for exactly those two directories, which
+points the credential helper at `scripts/git-credential-personal.sh`. That script emits
+`$MY_GITHUB_TOKEN`, falling back to `gh` when it isn't set. Every other repo keeps the default
+`gh`/`GITHUB_TOKEN` behavior, so a plain `git push` does the right thing everywhere.
+
+No token is stored in the repo — the helper only reads the environment. The dotfiles audit
+verifies the wiring.
+
 ## Initial Windows Setup Notes
 
 For when you're truly starting from scratch.

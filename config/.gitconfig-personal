@@ -1,0 +1,10 @@
+#  Pulled in by includeIf for repos tied to the personal GitHub account.
+#  The empty helper resets the inherited list so gh's helper (which reads
+#  GITHUB_TOKEN, the work token) does not also get a say.
+
+[credential "https://github.com"]
+    helper =
+    helper = !~/projects/dotfiles/scripts/git-credential-personal.sh
+[credential "https://gist.github.com"]
+    helper =
+    helper = !~/projects/dotfiles/scripts/git-credential-personal.sh

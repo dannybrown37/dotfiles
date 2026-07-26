@@ -203,6 +203,9 @@ ln -s ~/projects/dotfiles/config/.eslintrc ~/.eslintrc &&
 ln -s ~/projects/dotfiles/config/.inputrc ~/.inputrc &&
     echo "Symlinked .inputrc"
 
+ln -s ~/projects/dotfiles/config/.gitconfig-personal ~/.gitconfig-personal &&
+    echo "Symlinked .gitconfig-personal"
+
 ln -s ~/projects/dotfiles/config/.tmux.conf ~/.tmux.conf &&
     echo "Symlinked .tmux.conf"
 
