@@ -51,7 +51,13 @@ uv run python scripts/queue.py --queue-path .queue --complete-path .queue-comple
    time is the only way the duration reflects the real work. The title must match the `##`
    header **exactly** — `queue.py` matches by exact string equality, and omitting it in a
    non-interactive context just prints the available titles and exits 1.
-7. Confirm the item moved to `.queue-complete`.
+7. Confirm the item moved to `.queue-complete`. There's no tool that lets the assistant clear
+   the session directly, so the assistant MUST end its own reply with a loud, unmissable
+   reminder written in markdown (big heading, bold, emoji — vary the wording each time) telling
+   the user to run `/clear`. Do this every single time, immediately after confirming
+   completion — never silently move on. This only matters for this LLM-driven flow; `queue.py`
+   itself has no banner-printing code since raw terminal output doesn't render in the chat
+   transcript anyway.
 
 ## Notes
 
