@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Wrapper for queue.py — invoke from sourced bin/
 
-queue() {   # @doc AI work queue — add items, discuss, track completion | queue list
+# @doc AI work queue -- add items, discuss, track completion | queue list
+
+queue() {
     local repo_root
     repo_root="$(git rev-parse --show-toplevel 2>/dev/null || echo "${DOTFILES}")"
 

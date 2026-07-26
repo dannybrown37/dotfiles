@@ -40,6 +40,8 @@ cmds() {
             while IFS= read -r line; do
                 if [[ "$line" =~ ^#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
                     entries+=$'[cmd]\t'"${name}"$'\t'"${source_label}"$'\t'"${BASH_REMATCH[1]}"$'\n'
+                elif [[ "$line" =~ ^[[:space:]]*(function[[:space:]]+)?([a-zA-Z0-9_-]+)\(\).*#[[:space:]]*@doc[[:space:]]+(.*) ]]; then
+                    entries+=$'[cmd]\t'"${BASH_REMATCH[2]}"$'\t'"${source_label}"$'\t'"${BASH_REMATCH[3]}"$'\n'
                 fi
             done < "$file"
         done
