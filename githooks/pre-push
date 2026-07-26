@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+store="${PASSWORD_STORE_DIR:-${HOME}/.password-store}"
+
+if [[ -d "${store}/.git" ]]; then
+    if ! git -C "${store}" push 2>&1 | sed 's/^/[password-store] /'; then
+        echo "[password-store] push failed -- not blocking dotfiles push" >&2
+    fi
+fi
+
+exit 0
