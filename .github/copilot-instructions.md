@@ -16,6 +16,7 @@
 - Admit when you don't know. Cite sources if uncertain.
 - If multiple approaches exist, briefly state which and why to choose, then list alternatives. Cite sources.
 - Don't ask bait questions. Only ask if you genuinely need more information.
+- Always show the diff as you make changes to my code.
 
 ## Skills
 
@@ -32,6 +33,11 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 - Always use type hints for function parameters (all languages where available).
 - Write tests using `test.each` (JS/TS) or `pytest.mark.parametrize` (Python) for DRY reusable test code.
 - You have read-only access to git. Don't write with git unless permission is explicitly given.
+
+## Documentation
+
+- When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update `.github/skills/<package>/SKILL.md` to match.
+  This keeps skill context in sync so future sessions have accurate info. Look for outdated framework names, dependency lists, API signatures, and file structure.
 
 ## Security
 
