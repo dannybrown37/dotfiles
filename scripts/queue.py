@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Queue management for AI-assisted work items."""
 
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -31,24 +32,26 @@ def parse_queue_file(file_path: Path) -> list[QueueItem]:
     items = []
     current_title = None
     current_content = []
+    current_raw_lines = []
+
+    def finalize_current_item() -> None:
+        item_content = '\n'.join(current_content).strip()
+        raw_section = '\n'.join(current_raw_lines)
+        items.append(QueueItem(current_title, item_content, raw_section))
 
     for line in lines:
         if line.startswith('## '):
             if current_title is not None:
-                item_content = '\n'.join(current_content).strip()
-                raw = f'## {current_title}\n{item_content}'
-                items.append(
-                    QueueItem(current_title, item_content, raw),
-                )
+                finalize_current_item()
             current_title = line[3:].strip()
             current_content = []
+            current_raw_lines = [line]
         elif current_title is not None:
             current_content.append(line)
+            current_raw_lines.append(line)
 
     if current_title is not None:
-        item_content = '\n'.join(current_content).strip()
-        raw = f'## {current_title}\n{item_content}'
-        items.append(QueueItem(current_title, item_content, raw))
+        finalize_current_item()
 
     return items
 
@@ -59,7 +62,8 @@ def remove_item_from_queue(queue_path: Path, item: QueueItem) -> None:
         return
 
     content = queue_path.read_text()
-    updated = content.replace(item.raw_section, '', 1).strip()
+    updated = content.replace(item.raw_section, '', 1)
+    updated = re.sub(r'\n{3,}', '\n\n', updated).strip()
     queue_path.write_text(updated + '\n')
 
 
