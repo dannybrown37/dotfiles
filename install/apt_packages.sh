@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2034
+
+##
+## Single source of truth for apt packages this repo depends on.
+## Sourced by install/bash.sh (to install) and scripts/dotfiles_audit.sh (to check).
+##
+apt_packages=(
+    asciinema
+    bash-completion
+    bat
+    cowsay
+    curl
+    direnv
+    faker
+    fd-find
+    fzf
+    git
+    gh
+    httpie
+    jq
+    make
+    man-db
+    lolcat
+    neofetch
+    openssh-server
+    pass
+    pipx
+    rename
+    ripgrep
+    shellcheck
+    shfmt
+    tldr
+    tmux
+    unzip
+    wget
+    xclip
+    zip
+)
