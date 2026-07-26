@@ -3,3 +3,5 @@ config/.secrets*
 **/.env
 **/__pycache__/
 .worktrees/
+.queue
+.queue-complete
