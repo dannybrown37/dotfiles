@@ -267,10 +267,10 @@ done
 section "Dev Tooling"
 check "pre-commit" "pre-commit --version | awk '{print \$2}'" "uv tool install pre-commit"
 
-if [[ -f "${DOTFILES_DIR}/.git/hooks/pre-commit" ]]; then
-    ok "pre-commit hooks" "installed"
+if [[ -x "${DOTFILES_DIR}/githooks/pre-commit" ]]; then
+    ok "pre-commit hooks" "wired via githooks/pre-commit"
 else
-    warn "pre-commit hooks" "not installed — run: pre-commit install  (in $DOTFILES_DIR)"
+    warn "pre-commit hooks" "githooks/pre-commit missing or not executable"
 fi
 
 check "pass" "pass --version 2>&1 | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+'" "sudo apt install pass"
