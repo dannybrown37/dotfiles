@@ -7,6 +7,10 @@ ROOT="$(git rev-parse --show-toplevel)"
 # The list of what to sync lives inside the store, not in this repo.
 readonly MANIFEST="manifest"
 
+WORK_DIR="$(mktemp -d)"
+readonly WORK_DIR
+trap 'rm -rf "${WORK_DIR}"' EXIT
+
 die() {
     echo "ERROR: $*" >&2
     exit 1
@@ -27,7 +31,13 @@ save_entry() {
         echo "  skip   $2 (missing)"
         return
     fi
-    pass insert -m "${name}" <"${file}" >/dev/null
+    # Encryption is non-deterministic, so re-inserting unchanged content would
+    # produce a new commit on every push.
+    if pass show "${name}" 2>/dev/null | cmp -s - "${file}"; then
+        echo "  same   $2"
+        return
+    fi
+    pass insert -m -f "${name}" <"${file}" >/dev/null
     echo "  saved  $2"
 }
 
@@ -38,8 +48,7 @@ load_entry() {
         return
     fi
 
-    tmp="$(mktemp)"
-    trap 'rm -f "${tmp}"' RETURN
+    tmp="${WORK_DIR}/entry"
 
     pass show "${name}" >"${tmp}"
     if [[ -f "${file}" ]] && ! cmp -s "${tmp}" "${file}"; then
@@ -51,7 +60,12 @@ load_entry() {
 }
 
 for_each_entry() {
-    local action="$1" line name path
+    local action="$1" manifest_text line name path
+
+    # Read up front: inside a process substitution, a failure here would only
+    # kill the subshell and leave the caller reporting a successful no-op.
+    manifest_text="$(read_manifest)"
+
     while IFS= read -r line; do
         if [[ -z "${line}" || "${line}" == \#* ]]; then
             continue
@@ -59,7 +73,7 @@ for_each_entry() {
         name="${line%%:*}"
         path="${line#*:}"
         "${action}" "${name}" "${path}"
-    done < <(read_manifest)
+    done <<<"${manifest_text}"
 }
 
 save_all() {
