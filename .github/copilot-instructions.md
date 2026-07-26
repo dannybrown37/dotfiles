@@ -27,6 +27,7 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 - **python** — Python code, pytest, ruff/linting. Invoke when writing/debugging Python.
 - **dotfiles** — Repo layout, tools, install scripts, config files. Invoke when adding tools, modifying structure, or updating dotfile config.
 - **project-manager** — TUI and API written in Python for personal GTD implementation. Invoke when working on this package.
+- **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue. See "Queue System" below.
 
 ## Code Style (General)
 
@@ -36,30 +37,16 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 
 ## Queue System
 
-Work items can be queued for Claude to process. The `.queue` file (gitignored) holds items in markdown format:
+`.queue` at the repo root holds work items to pick up later, one per `##` header. Completed
+items move to `.queue-complete` with start/end timestamps. Both files are gitignored and sync
+between machines through the password store rather than through git.
 
-```markdown
-# Queue
+**Invoke the `queue` skill to work an item.** It owns the file format, the `queue` CLI
+(`list` / `next` / `complete`), and the selection-and-discussion flow — including that you ask
+which item to work on rather than assuming the first one. Deliberately not restated here, so
+there is one place to keep correct.
 
-## Item Title
-Description and details. Can be multi-line.
-
-## Another Item
-More details here.
-```
-
-**Manual flow:**
-1. Add items to `.queue` with `##` headers
-2. Run `queue next` to show the first item
-3. Discuss what to build in chat
-4. I work on it autonomously once approved
-5. Completed items move to `.queue-complete` with start/end timestamps
-
-**Automation (late-night):**
-- Eventually set up scheduled agent to process queue during off-hours
-- Runs autonomously, processes one item per trigger
-
-Use `queue list` to see next items, `queue next` to discuss the first item.
+Autonomous off-hours processing is not built yet; it is itself a queued item.
 
 ## Documentation
 

@@ -25,6 +25,13 @@ More details.
 - `queue next` — show the full first item
 - `queue complete --item-title "..." --start-time "<iso>" --end-time "<iso>"` — move an item to `.queue-complete` with timestamps
 
+`bin/` is sourced only by interactive shells, so `queue` is often **not** on `PATH` in a tool
+call. Call the script directly instead of assuming the function exists:
+
+```bash
+uv run python scripts/queue.py --queue-path .queue --complete-path .queue-complete <action> ...
+```
+
 ## Manual invocation flow
 
 1. Read `.queue` directly (not just `queue list`) so you have the full text of every item, not just previews.
@@ -42,4 +49,8 @@ More details.
 ## Notes
 
 - `.queue` and `.queue-complete` are both gitignored — this is a local working queue, not tracked history.
+- Both files sync between machines through the password store (`make secrets-save` / `secrets-load`,
+  and the git hooks that call them). A `load` overwrites the local file from the store, so a stale
+  store snapshot can **resurrect an already-completed item** into `.queue`. If an item appears in
+  both files, that is what happened — verify against `.queue-complete` before working it again.
 - Autonomous/late-night processing (no discussion step, just pick the first item and run) is a separate future mode — don't skip the discussion/selection step unless the user has explicitly asked for autonomous execution.
