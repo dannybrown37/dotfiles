@@ -1,6 +1,10 @@
 [user]
     name = Danny Brown
-    email = dannybrown37@gmail.com
+    # No email here on purpose. Identity comes from the includeIf blocks at the
+    # bottom, matched on the remote. useConfigOnly makes git refuse to guess an
+    # address from the hostname, so an unmatched repo fails instead of quietly
+    # committing as the wrong account.
+    useConfigOnly = true
 [branch]
     sort = -committerdate
 [core]
@@ -45,9 +49,23 @@
 [credential "https://gist.github.com"]
     helper = !/usr/bin/gh auth git-credential
 
-# Repos owned by the personal account override the helper above so they never
-# authenticate with a work GITHUB_TOKEN. Keep gitdir patterns trailing-slashed.
-[includeIf "gitdir:~/projects/dotfiles/"]
+# Identity and credentials follow the remote, not the directory -- a repo
+# cloned somewhere unexpected still gets the right account. Anything matching
+# nothing here has no email and refuses to commit (see user.useConfigOnly).
+[includeIf "hasconfig:remote.*.url:https://github.com/dannybrown37/**"]
     path = ~/.gitconfig-personal
+[includeIf "hasconfig:remote.*.url:git@github.com:dannybrown37/**"]
+    path = ~/.gitconfig-personal
+[includeIf "hasconfig:remote.*.url:ssh://git@github.com/dannybrown37/**"]
+    path = ~/.gitconfig-personal
+
+# The password store has a personal remote, so it is covered above. This keeps
+# it working even before a remote is configured on a fresh machine.
 [includeIf "gitdir:~/.password-store/"]
     path = ~/.gitconfig-personal
+
+# Any non-personal identity is defined outside this repo -- see the private
+# include below. Missing file is ignored, so machines without one just inherit
+# the fail-loud default.
+[include]
+    path = ~/.gitconfig-private
