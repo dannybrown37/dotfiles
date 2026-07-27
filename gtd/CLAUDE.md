@@ -1,10 +1,3 @@
----
-name: gtd
-description: "Invoke when working on the gtd package — the GTD TUI app backed by Notion and local JSON."
-user-invocable: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
----
-
 # GTD
 
 A personal productivity CLI at `gtd/` implementing David Allen's **Getting Things Done** (GTD) method, backed by Notion. Entry point: `gtd` (runs the TUI by default).
