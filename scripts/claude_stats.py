@@ -54,6 +54,21 @@ class UsageStats:
     def sessions(self) -> int:
         return len(self.session_ids)
 
+    @property
+    def cache_hit_ratio(self) -> float | None:
+        """Share of input tokens served from cache rather than sent fresh."""
+        denominator = self.cache_read_tokens + self.input_tokens
+        if denominator == 0:
+            return None
+        return self.cache_read_tokens / denominator
+
+    @property
+    def cache_efficiency(self) -> float | None:
+        """Cache reads per cache write -- how many times a write paid off."""
+        if self.cache_write_tokens == 0:
+            return None
+        return self.cache_read_tokens / self.cache_write_tokens
+
 
 def find_logs(roots: list[Path]) -> list[Path]:
     """Every transcript under the given roots, newest last."""
@@ -327,6 +342,21 @@ def totals_and_tokens_lines(
     return totals_lines, tokens_lines
 
 
+def cache_efficiency_lines(stats: UsageStats) -> list[str]:
+    lines = []
+    if stats.cache_hit_ratio is not None:
+        lines.append(
+            f'  {"cache hit ratio":<22} {stats.cache_hit_ratio:>11.1%} '
+            '  (cache_read / (cache_read + input))',
+        )
+    if stats.cache_efficiency is not None:
+        lines.append(
+            f'  {"cache efficiency":<22} {stats.cache_efficiency:>10.1f}x '
+            '  (cache_read / cache_write; >=2 is healthy @ 5m TTL)',
+        )
+    return lines
+
+
 def model_and_tool_lines(stats: UsageStats) -> tuple[list[str], list[str]]:
     model_lines = []
     if stats.models:
@@ -368,6 +398,11 @@ def format_report(
     lines.append('')
     lines.extend(merge_side_by_side(totals_lines, tokens_lines, width))
 
+    efficiency_lines = cache_efficiency_lines(stats)
+    if efficiency_lines:
+        lines.append('')
+        lines.extend(efficiency_lines)
+
     model_lines, tool_lines = model_and_tool_lines(stats)
     if model_lines or tool_lines:
         merged = merge_side_by_side(model_lines, tool_lines, width)
@@ -405,6 +440,8 @@ def stats_as_dict(stats: UsageStats) -> dict:
             'cache_read': stats.cache_read_tokens,
             'cache_write': stats.cache_write_tokens,
         },
+        'cache_hit_ratio': stats.cache_hit_ratio,
+        'cache_efficiency': stats.cache_efficiency,
         'models': dict(stats.models.most_common()),
         'tools': dict(stats.tools.most_common()),
         'longest_prompt_chars': stats.longest_prompt_chars,
