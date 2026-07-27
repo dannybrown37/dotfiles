@@ -9,7 +9,7 @@ set -euo pipefail
 sudo apt-get install -y -qq jq
 
 latest_version=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | jq -r '.tag_name' | sed 's/v//')
-current_version=$(lazygit --version 2>/dev/null | grep -oP 'version=\K[^,]+' || echo "none")
+current_version=$(lazygit --version 2>/dev/null | grep -oP '(?<!git )version=\K[^,]+' || echo "none")
 
 if [[ "${current_version}" == "${latest_version}" ]]; then
     echo "lazygit ${latest_version} already installed"

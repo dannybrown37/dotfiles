@@ -17,6 +17,10 @@ The output of `make` in the root directory:
 ```txt
 Usage: make [option]
 
+Start Here:
+
+  bash            Install Bash profile (tmux, apt packages, etc.)
+
 Languages & Runtimes:
   python          Install Python environment (uv, select uv tools)
   node            Install Node.js environment (n, Node 22, select global packages)
@@ -25,7 +29,6 @@ Languages & Runtimes:
   rust            Install Rust environment (latest Rust version, select global packages)
 
 Developer Tools:
-  bash            Install Bash profile (tmux, apt packages, etc.)
   nvim            Install Neovim
   lazygit         Install lazygit TUI git client
   vscode          Install VS Code extensions and settings

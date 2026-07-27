@@ -3,6 +3,10 @@
 help:
 	@echo "Usage: make [option]"
 	@echo ""
+	@echo "Start Here:"
+	@echo ""
+	@echo "  bash            Install Bash profile (tmux, apt packages, etc.)"
+	@echo ""
 	@echo "Languages & Runtimes:"
 	@echo "  python          Install Python environment (uv, select uv tools)"
 	@echo "  node            Install Node.js environment (n, Node 22, select global packages)"
@@ -11,7 +15,6 @@ help:
 	@echo "  rust            Install Rust environment (latest Rust version, select global packages)"
 	@echo ""
 	@echo "Developer Tools:"
-	@echo "  bash            Install Bash profile (tmux, apt packages, etc.)"
 	@echo "  nvim            Install Neovim"
 	@echo "  lazygit         Install lazygit TUI git client"
 	@echo "  vscode          Install VS Code extensions and settings"
