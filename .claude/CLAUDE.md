@@ -53,6 +53,7 @@ Read these references before writing code in the following domains:
 - Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
 - A `pre-push` git hook prints a reminder of this — it does not block the push or call any AI review itself.
 - Full checklist: `.claude/references/code-review-checklist.md`.
+- For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, spawn the `adversarial-review` subagent manually — `.claude/agents/adversarial-review.md`. Never spawn it automatically/proactively; it's expensive and user-triggered only, like `/code-review ultra`. Do proactively suggest it to the user when changes seem to make it worthwhile. Especially useful for `password-store` operations and other auth/secrets, `queue_cli.py`, and `gtd/`
 
 ## Code Style (General)
 
