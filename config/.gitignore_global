@@ -299,7 +299,4 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# Git worktrees (managed by gwt)
-.worktrees/
-
 **/.claude/settings.local.json

@@ -13,12 +13,15 @@ gwt() {  # @doc git-worktree: gwt <add|list|rm|cd> [branch] [options]
 }
 
 _gwt_base_dir() {
-    local git_root
-    git_root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    local common_dir
+    common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || {
         echo "Error: not in a git repository" >&2
         return 1
     }
-    echo "${git_root}/.worktrees"
+    local git_root="${common_dir%/.git}"
+    local repo_name
+    repo_name="$(basename "${git_root}")"
+    echo "$(dirname "${git_root}")/${repo_name}-worktrees"
 }
 
 _gwt_add() {

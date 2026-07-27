@@ -3,7 +3,6 @@ config/.secrets*
 config/.gitconfig-private*
 **/.env
 **/__pycache__/
-.worktrees/
 .queue
 .queue-complete
 pass/
