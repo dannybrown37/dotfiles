@@ -120,7 +120,7 @@ check "delta"      "delta --version | awk '{print \$2}'"                    "mak
 check "atuin"      "atuin --version | awk '{print \$2}'"                    "make bash"
 check "croc"       "croc --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'" "make bash  (installs to ~/.local/bin)"
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "make wsl-fonts"
-check "lazygit"    "lazygit --version 2>&1 | grep -oE '[^a-z]version=[0-9.]+' | head -1 | cut -d= -f2" "make lazygit"
+check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "make lazygit"
 check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "make nvim"
 
 # ── GitHub & Auth ─────────────────────────────────────────────────────────────
