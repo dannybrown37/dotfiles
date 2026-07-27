@@ -9,7 +9,7 @@ clip() {  # @doc Copy a screen recording to OneDrive with fzf selection: clip [-
 
     if [[ -z "${CLIP_DEST:-}" ]]; then
         echo "CLIP_DEST is not set (Windows path to destination folder)" >&2
-        echo "e.g. export CLIP_DEST='C:\\Users\\me\\whelen.com\\Recordings'" >&2
+        echo "e.g. export CLIP_DEST='C:\\Users\\me\\company.com\\Recordings'" >&2
         return 1
     fi
 
