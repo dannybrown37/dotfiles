@@ -22,13 +22,17 @@
 
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
-- **bash** — Shell scripts, `bin/` utilities, bash config. Invoke when writing/debugging shell code.
-- **node** — TypeScript/JavaScript, Node.js tooling, ESLint/Prettier config. Invoke when writing/debugging TS/JS.
 - **python** — Python code, pytest, ruff/linting. Invoke when writing/debugging Python.
 - **dotfiles** — Repo layout, tools, install scripts, config files. Invoke when adding tools, modifying structure, or updating dotfile config.
 - **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue. See "Queue System" below.
 
-`gtd/` is a standalone package with its own `gtd/CLAUDE.md` — no skill needed, it loads automatically when working in that directory.
+## References
+
+Read these references before writing code in the following domains:
+
+- Read directly when writing Bash code: `.claude/references/bash-style.md`
+- Read directly when writing TypeScript/JavaScript/Node code: `.claude/references/node-style.md`
+- `gtd/` is a standalone package with its own `gtd/CLAUDE.md` — no skill needed, it loads automatically when working in that directory.
 
 ## Model Delegation
 
