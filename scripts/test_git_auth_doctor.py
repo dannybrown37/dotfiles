@@ -376,3 +376,161 @@ def test_token_scope_reporting(
 ) -> None:
     output = org_repo.run({**ORG_ENV, 'STUB_SCOPES': scopes})
     assert symbol_of(output, 'token scopes') == expected
+
+
+# ── Red-team regressions ────────────────────────────────────────────────────
+
+ALIAS_SSH = 'git@github-work:AcmeEngineering/acme-aws.git'
+
+# ~/.ssh/config Host aliases are the standard two-account SSH setup, and each
+# alias can carry its own IdentityFile. This stub accepts only the alias.
+ALIAS_ONLY_SSH_STUB = """#!/usr/bin/env bash
+if [[ "${!#}" == *github-work ]]; then
+    echo "Hi AcmeEngineering/acme-aws! You've successfully" \
+         "authenticated, but GitHub does not provide shell access." >&2
+    exit 1
+fi
+echo "git@github.com: Permission denied (publickey)." >&2
+exit 255
+"""
+
+# The mirror image: the default key works, the alias the remote actually uses
+# does not. A push would fail; the doctor must not report success.
+DEFAULT_ONLY_SSH_STUB = """#!/usr/bin/env bash
+if [[ "${!#}" == *github-work ]]; then
+    echo "git@github-work: Permission denied (publickey)." >&2
+    exit 255
+fi
+echo "Hi dannybrown37! You've successfully authenticated," \
+     "but GitHub does not provide shell access." >&2
+exit 1
+"""
+
+# GitHub documents the personal access token as either the username or the
+# password of an HTTPS credential; git-credential-store entries written by a
+# `https://<token>@github.com/...` clone use the username slot.
+TOKEN_AS_USERNAME_HELPER_STUB = """#!/usr/bin/env bash
+[[ "${1:-}" == "get" ]] || exit 0
+echo "username=${STUB_PERSONAL_TOKEN:-}"
+echo "password=x-oauth-basic"
+"""  # noqa: S105
+
+OLD_GIT_STUB = """#!/usr/bin/env bash
+if [[ "${{1:-}}" == "--version" ]]; then
+    echo "git version 2.25.1"
+    exit 0
+fi
+exec {git} "$@"
+"""
+
+
+class TestSshHostAlias:
+    """The doctor probes git@github.com regardless of what the remote uses."""
+
+    def test_broken_alias_is_not_reported_as_working_ssh(
+        self,
+        harness: DoctorHarness,
+    ) -> None:
+        harness.install_stub('ssh', DEFAULT_ONLY_SSH_STUB)
+        harness.write_gitconfig('!gh auth git-credential')
+        harness.init_repo(ALIAS_SSH)
+        output = harness.run({**ORG_ENV, 'STUB_AGENT_KEYS': '1'})
+        assert symbol_of(output, 'ssh auth') != '✅', (
+            'push over github-work alias fails, doctor said ssh auth is fine'
+        )
+
+    def test_working_alias_is_not_reported_as_broken_ssh(
+        self,
+        harness: DoctorHarness,
+    ) -> None:
+        harness.install_stub('ssh', ALIAS_ONLY_SSH_STUB)
+        harness.write_gitconfig('!gh auth git-credential')
+        harness.init_repo(ALIAS_SSH)
+        output = harness.run({**ORG_ENV, 'STUB_AGENT_KEYS': '1'})
+        assert symbol_of(output, 'ssh auth') != '❌'
+
+
+@pytest.mark.parametrize(
+    'remote_url',
+    [
+        ALIAS_SSH,
+        'ssh://git@github.com:22/dannybrown37/dotfiles.git',
+        'git@gitlab.com:group/sub/proj.git',
+    ],
+)
+def test_never_recommends_a_remote_url_with_an_empty_owner(
+    harness: DoctorHarness,
+    remote_url: str,
+) -> None:
+    """A copy-pasteable set-url command must not point at github.com//repo."""
+    harness.write_gitconfig('!gh auth git-credential')
+    harness.init_repo(remote_url)
+    output = harness.run(ORG_ENV)
+    assert 'github.com//' not in output, output
+
+
+def test_owner_case_difference_is_still_the_personal_account(
+    harness: DoctorHarness,
+) -> None:
+    """GitHub logins are case-insensitive; both URL spellings push fine."""
+    helper = harness.install_stub(
+        'git-credential-personal.sh',
+        PERSONAL_HELPER_STUB,
+    )
+    harness.write_gitconfig(f'!{helper}')
+    harness.init_repo('https://github.com/DannyBrown37/dotfiles.git')
+    output = harness.run(
+        {
+            'MY_GITHUB_TOKEN': PERSONAL_TOKEN,
+            'STUB_PERSONAL_TOKEN': PERSONAL_TOKEN,
+            'STUB_USER_LOGIN': 'dannybrown37',
+        },
+    )
+    assert symbol_of(output, 'helper script') == '✅'
+    assert symbol_of(output, 'token source') == '✅'
+
+
+def test_no_credential_ever_reaches_stdout_verbatim(
+    harness: DoctorHarness,
+) -> None:
+    """Output is safe to paste; username slot not exempt from redaction."""
+    helper = harness.install_stub(
+        'git-credential-personal.sh',
+        TOKEN_AS_USERNAME_HELPER_STUB,
+    )
+    harness.write_gitconfig(f'!{helper}')
+    harness.init_repo(PERSONAL_HTTPS)
+    output = harness.run(
+        {
+            'MY_GITHUB_TOKEN': PERSONAL_TOKEN,
+            'STUB_PERSONAL_TOKEN': PERSONAL_TOKEN,
+            'STUB_USER_LOGIN': 'dannybrown37',
+        },
+    )
+    assert PERSONAL_TOKEN not in output, output
+
+
+def test_unrelated_failure_is_not_blamed_on_ssh(
+    ssh_repo: DoctorHarness,
+) -> None:
+    """On Ubuntu 20.04, git 2.25 fails; SSH works fine, git is the problem."""
+    ssh_repo.install_stub('git', OLD_GIT_STUB.format(git=GIT))
+    output = ssh_repo.run(
+        {**ORG_ENV, 'STUB_SSH_OK': '1', 'STUB_AGENT_KEYS': '1'},
+    )
+    summary = output.rsplit('Summary', 1)[-1]
+    assert 'SSH is broken' not in summary, output
+    assert 'SSH auth is broken' not in summary, output
+
+
+@pytest.mark.parametrize(
+    'scopes',
+    ['repo:status, read:org', 'public_repo', 'read:repo_hook, gist'],
+)
+def test_repo_prefixed_scopes_do_not_count_as_push_access(
+    org_repo: DoctorHarness,
+    scopes: str,
+) -> None:
+    """None of these grant git push; all contain the substring 'repo'."""
+    output = org_repo.run({**ORG_ENV, 'STUB_SCOPES': scopes})
+    assert symbol_of(output, 'token scopes') != '✅', scopes
