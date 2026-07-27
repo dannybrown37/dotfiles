@@ -6,13 +6,19 @@ from pathlib import Path
 
 import pytest
 
-from queue import (
+from queue_script import (
     IN_PROGRESS_MARKER,
     MAX_COMPLETED_CONTENT_LINES,
     action_claim,
     action_complete,
+    action_merge_completed,
+    action_merge_queue,
+    completed_titles,
     list_titles,
+    merge_completed_text,
+    merge_queue_text,
     parse_queue_file,
+    parse_queue_text,
     remove_item_from_queue,
     trim_content,
 )
@@ -303,3 +309,314 @@ def test_action_complete_matches_item_regardless_of_marker(
     completed = complete_path.read_text()
     assert 'First Item' in completed
     assert IN_PROGRESS_MARKER not in completed
+
+
+def _queue(*titles: str) -> str:
+    sections = ''.join(f'## {t}\n\n{t} body.\n\n' for t in titles)
+    return f'# Queue\n\n{sections}'
+
+
+def _titles(queue_text: str) -> list[str]:
+    return [item.title for item in parse_queue_text(queue_text)]
+
+
+def _completed(*pairs: tuple[str, str]) -> str:
+    entries = ''.join(
+        f'## {title}\n- Completed: {stamp}\n\n{title} body.\n\n---\n\n'
+        for title, stamp in pairs
+    )
+    return f'# Completed\n\n{entries}'
+
+
+def test_merge_queue_text_keeps_items_added_on_the_other_machine(
+    tmp_path: Path,
+) -> None:
+    """The reported bug: a pull replaced .queue instead of merging it."""
+    queue_path = _write_queue(tmp_path, _queue('Local Only'))
+    complete_path = tmp_path / '.queue-complete'
+    incoming_path = tmp_path / 'incoming'
+    incoming_path.write_text(_queue('Remote Only'))
+
+    action_merge_queue(queue_path, complete_path, incoming_path, 'incoming')
+
+    assert _titles(queue_path.read_text()) == ['Local Only', 'Remote Only']
+
+
+@pytest.mark.parametrize('prefer', ['local', 'incoming'])
+def test_merge_queue_text_unions_both_sides(prefer: str) -> None:
+    merged = merge_queue_text(
+        _queue('Shared', 'Local Only'),
+        _queue('Shared', 'Remote Only'),
+        tombstones=set(),
+        prefer=prefer,
+    )
+
+    assert sorted(_titles(merged)) == [
+        'Local Only',
+        'Remote Only',
+        'Shared',
+    ]
+
+
+def test_merge_queue_text_drops_titles_completed_on_the_other_machine() -> (
+    None
+):
+    merged = merge_queue_text(
+        _queue('Still Open', 'Done Elsewhere'),
+        _queue('Still Open', 'Done Elsewhere'),
+        tombstones={'Done Elsewhere'},
+        prefer='local',
+    )
+
+    assert _titles(merged) == ['Still Open']
+
+
+def test_merge_queue_text_tombstone_matches_an_in_progress_title() -> None:
+    merged = merge_queue_text(
+        _queue(f'Done Elsewhere{IN_PROGRESS_MARKER}'),
+        '# Queue\n',
+        tombstones={'Done Elsewhere'},
+        prefer='local',
+    )
+
+    assert _titles(merged) == []
+
+
+@pytest.mark.parametrize(
+    ('prefer', 'expected'),
+    [
+        ('local', ['B', 'A']),
+        ('incoming', ['A', 'B']),
+    ],
+)
+def test_merge_queue_text_orders_shared_items_by_preferred_side(
+    prefer: str,
+    expected: list[str],
+) -> None:
+    merged = merge_queue_text(
+        _queue('B', 'A'),
+        _queue('A', 'B'),
+        tombstones=set(),
+        prefer=prefer,
+    )
+
+    assert _titles(merged) == expected
+
+
+def test_merge_queue_text_sorts_side_exclusive_items_for_convergence() -> None:
+    """Without a shared anchor, both machines must agree on the order."""
+    from_local = merge_queue_text(
+        _queue('Zebra'),
+        _queue('Apple'),
+        tombstones=set(),
+        prefer='local',
+    )
+    from_remote = merge_queue_text(
+        _queue('Apple'),
+        _queue('Zebra'),
+        tombstones=set(),
+        prefer='local',
+    )
+
+    assert _titles(from_local) == ['Apple', 'Zebra']
+    assert from_local == from_remote
+
+
+def test_merge_queue_text_converges_after_concurrent_adds() -> None:
+    """A save then a load on the other machine must reach a fixed point."""
+    store = merge_queue_text(
+        _queue('Shared', 'Added Here'),
+        _queue('Shared'),
+        tombstones=set(),
+        prefer='local',
+    )
+    other = merge_queue_text(
+        _queue('Shared', 'Added There'),
+        store,
+        tombstones=set(),
+        prefer='incoming',
+    )
+    store_after_other_saves = merge_queue_text(
+        other,
+        store,
+        tombstones=set(),
+        prefer='local',
+    )
+    back_home = merge_queue_text(
+        store,
+        store_after_other_saves,
+        tombstones=set(),
+        prefer='incoming',
+    )
+
+    assert back_home == store_after_other_saves
+    assert sorted(_titles(back_home)) == [
+        'Added Here',
+        'Added There',
+        'Shared',
+    ]
+
+
+@pytest.mark.parametrize('prefer', ['local', 'incoming'])
+def test_merge_queue_text_keeps_in_progress_claimed_on_either_side(
+    prefer: str,
+) -> None:
+    merged = merge_queue_text(
+        _queue(f'Taken{IN_PROGRESS_MARKER}'),
+        _queue('Taken'),
+        tombstones=set(),
+        prefer=prefer,
+    )
+
+    assert _titles(merged) == [f'Taken{IN_PROGRESS_MARKER}']
+
+
+@pytest.mark.parametrize(
+    ('prefer', 'expected'),
+    [
+        ('local', 'local body'),
+        ('incoming', 'incoming body'),
+    ],
+)
+def test_merge_queue_text_resolves_body_conflict_to_preferred_side(
+    prefer: str,
+    expected: str,
+) -> None:
+    merged = merge_queue_text(
+        '# Queue\n\n## Same\n\nlocal body\n',
+        '# Queue\n\n## Same\n\nincoming body\n',
+        tombstones=set(),
+        prefer=prefer,
+    )
+
+    assert parse_queue_text(merged)[0].content == expected
+
+
+def test_merge_queue_text_drops_a_stray_empty_header() -> None:
+    merged = merge_queue_text(
+        '# Queue\n\n## Real Item\n\nbody\n\n## \n\n',
+        '# Queue\n',
+        tombstones=set(),
+        prefer='local',
+    )
+
+    assert _titles(merged) == ['Real Item']
+
+
+def test_merge_queue_text_keeps_a_titleless_item_that_has_a_body() -> None:
+    """Dropping it would silently lose whatever was written under it."""
+    merged = merge_queue_text(
+        '# Queue\n\n## \n\nnotes with no header\n',
+        '# Queue\n',
+        tombstones=set(),
+        prefer='local',
+    )
+
+    assert parse_queue_text(merged)[0].content == 'notes with no header'
+
+
+def test_merge_queue_text_handles_an_empty_side() -> None:
+    merged = merge_queue_text(
+        _queue('Only Item'),
+        '',
+        tombstones=set(),
+        prefer='local',
+    )
+
+    assert _titles(merged) == ['Only Item']
+
+
+def test_merge_completed_text_unions_records_from_both_machines() -> None:
+    merged = merge_completed_text(
+        _completed(('Here', '2026-01-02 03:04:05')),
+        _completed(('There', '2026-01-01 01:00:00')),
+    )
+
+    assert _titles(merged) == ['There', 'Here']
+
+
+def test_merge_completed_text_dedupes_the_same_record() -> None:
+    same = _completed(('Done', '2026-01-01 01:00:00'))
+
+    merged = merge_completed_text(same, same)
+
+    assert _titles(merged) == ['Done']
+
+
+def test_merge_completed_text_keeps_reruns_of_the_same_title() -> None:
+    merged = merge_completed_text(
+        _completed(('Done', '2026-01-01 01:00:00')),
+        _completed(('Done', '2026-02-02 02:00:00')),
+    )
+
+    assert _titles(merged) == ['Done', 'Done']
+
+
+def test_merge_completed_text_is_order_independent() -> None:
+    here = _completed(('Here', '2026-01-02 03:04:05'))
+    there = _completed(('There', '2026-01-01 01:00:00'))
+
+    assert merge_completed_text(here, there) == merge_completed_text(
+        there,
+        here,
+    )
+
+
+def test_completed_titles_strips_the_in_progress_marker(
+    tmp_path: Path,
+) -> None:
+    complete_path = tmp_path / '.queue-complete'
+    complete_path.write_text(
+        _completed((f'Done{IN_PROGRESS_MARKER}', '2026-01-01 01:00:00')),
+    )
+
+    assert completed_titles(complete_path) == {'Done'}
+
+
+def test_completed_titles_is_empty_when_the_file_is_missing(
+    tmp_path: Path,
+) -> None:
+    assert completed_titles(tmp_path / 'nope') == set()
+
+
+def test_action_merge_completed_writes_the_union_to_disk(
+    tmp_path: Path,
+) -> None:
+    complete_path = tmp_path / '.queue-complete'
+    complete_path.write_text(_completed(('Here', '2026-01-02 03:04:05')))
+    incoming_path = tmp_path / 'incoming'
+    incoming_path.write_text(_completed(('There', '2026-01-01 01:00:00')))
+
+    action_merge_completed(complete_path, incoming_path)
+
+    assert _titles(complete_path.read_text()) == ['There', 'Here']
+
+
+def test_action_merge_queue_output_stays_parseable_by_the_cli(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(tmp_path, _queue('Keep Me'))
+    complete_path = tmp_path / '.queue-complete'
+    incoming_path = tmp_path / 'incoming'
+    incoming_path.write_text(_queue('New From Remote'))
+
+    action_merge_queue(queue_path, complete_path, incoming_path, 'local')
+    action_claim(queue_path, 'New From Remote')
+    action_complete(queue_path, complete_path, 'New From Remote')
+
+    assert list_titles(queue_path) == ['Keep Me']
+    assert 'New From Remote' in complete_path.read_text()
+
+
+def test_action_merge_queue_drops_items_completed_on_the_other_machine(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(tmp_path, _queue('Open', 'Done There'))
+    complete_path = tmp_path / '.queue-complete'
+    complete_path.write_text(_completed(('Done There', '2026-01-01 01:00:00')))
+    incoming_path = tmp_path / 'incoming'
+    incoming_path.write_text(_queue('Open'))
+
+    action_merge_queue(queue_path, complete_path, incoming_path, 'incoming')
+
+    assert list_titles(queue_path) == ['Open']

@@ -85,9 +85,18 @@ uv run python scripts/queue.py --queue-path .queue --complete-path .queue-comple
 
 - `.queue` and `.queue-complete` are both gitignored — this is a local working queue, not tracked history.
 - Both files sync between machines through the password store (`make secrets-save` / `secrets-load`,
-  and the git hooks that call them). A `load` overwrites the local file from the store, so a stale
-  store snapshot can **resurrect an already-completed item** into `.queue`. If an item appears in
-  both files, that is what happened — verify against `.queue-complete` before working it again.
+  and the git hooks that call them). Both directions **merge** rather than overwrite: `secrets.sh`
+  routes these two paths through `queue.py merge-queue` / `merge-completed` instead of copying, so
+  items added on either machine survive a sync. `.queue` is the union of both sides by title, minus
+  every title recorded in the merged `.queue-complete` — completions are the tombstones, which is why
+  an already-completed item no longer resurrects.
+- Consequence: **complete items, don't hand-delete them.** Deleting a `##` section from `.queue`
+  without running `queue complete` leaves no tombstone, so the other machine's copy syncs it back.
+- `secrets.sh` reconciles `.queue-complete` before `.queue` (`MERGE_PATHS`), independent of the order
+  the store's manifest lists them in — the queue merge needs the tombstones already merged.
+- Pulling `~/.password-store` by hand does **not** update `.queue`; it only moves the encrypted blob.
+  The decrypted files are rewritten solely by `scripts/secrets.sh load`, which runs from the dotfiles
+  `post-merge` hook or `make secrets-load` (and does its own `pass git pull` first).
 - Autonomous/late-night processing (no discussion step, just pick the first item and run) is a separate future mode — don't skip the discussion/selection step unless the user has explicitly asked for autonomous execution.
 - The `[in-progress]` marker lives in `.queue` itself, so it syncs through the same password-store
   mechanism. A stale snapshot can make an item look claimed when the claiming session already
