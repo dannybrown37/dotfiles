@@ -33,6 +33,7 @@ Read these references before writing code in the following domains:
 - Read directly when writing TypeScript/JavaScript/Node code: `.claude/references/node-style.md`
 - Read directly when writing Python code: `.claude/references/python-style.md`
 - Read directly for this repo's (`dotfiles`) layout, conventions, pre-commit hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
+- Read directly when a `.queue` / `.queue-complete` sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `.claude/references/queue-sync-model.md`
 - `gtd/` is a standalone package with its own `gtd/CLAUDE.md` — no skill needed, it loads automatically when working in that directory.
 
 ## Model Delegation
@@ -65,7 +66,26 @@ Read these references before writing code in the following domains:
 
 - When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, e.g. `gtd/CLAUDE.md`) to match.
   This keeps skill/package context in sync so future sessions have accurate info. Look for outdated framework names, dependency lists, API signatures, and file structure.
-- `.claude/skills/<name>/` are mirrored into `.github/skills/<name>` via symlink (so Copilot sees the same skills). When adding or removing a skill directory, add or remove the matching symlink in `.github/skills/` too.
+- `.claude/skills/<name>/` are mirrored into `.github/skills/<name>` via symlink (so Copilot sees the same skills). When adding or removing a skill directory, add or remove the matching symlink in `.github/skills/` too. The symlink is directory-level, so bundled subdirectories come along for free.
+
+### Skill Structure
+
+Skills are built in three layers, loaded progressively — keep each one in its lane:
+
+1. **Metadata** — the SKILL.md frontmatter (`name`, `description`, `user-invocable`, `allowed-tools`). Always in context, so it must be short and its `description` must say exactly when to invoke.
+2. **Playbook** — the SKILL.md body. Loaded when the skill triggers. Steps to follow, not background theory.
+3. **Resources** — the tools and docs the skill points at, loaded only on demand.
+
+**Layer 3 lives in the repo's normal locations, not inside the skill directory.** Executables go in `scripts/` next to their siblings, background docs go in `.claude/references/`, and worked examples are whichever real file already demonstrates the pattern. The skill body just names the path.
+
+Bundle a file inside `.claude/skills/<name>/` only when it is useless outside that skill *and* no human would ever invoke it directly. That bar is high and rarely met here — a resource humans never touch is one nobody notices has rotted, and a repo script hidden in a skill folder is invisible to `cmds`, the README, pre-commit, and the audit.
+
+Two anti-patterns worth naming, both found and reverted in this repo:
+
+- A verification script buried in a skill folder while its siblings (`check-dirdesc.sh`, `check-claude-symlinks.sh`) sit in `scripts/`.
+- A synthetic template duplicating a real file. Prefer pointing at the real one: it gets executed, so it cannot drift silently. Don't write a template at all when the cases genuinely differ — `install/` spans 3 to 252 lines with no common skeleton.
+
+`scripts/check_skill_structure.py` (pre-commit) enforces layer 1, and still checks the executable bit on anything bundled under a skill's `scripts/` for the rare case that clears the bar.
 
 ## Security
 
