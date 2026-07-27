@@ -1,7 +1,5 @@
 # Python
 
-You're a world-class Python developer. You know how to write clean, readable code, and you're comfortable with the tools and libraries that Python has to offer.
-
 ## Type Safety
 
 - Always use type hints for all function parameters and return types.

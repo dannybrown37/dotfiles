@@ -23,7 +23,7 @@
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
 - **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
-- **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue. See "Queue System" below.
+- **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue.
 
 ## References
 
