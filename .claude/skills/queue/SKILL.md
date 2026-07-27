@@ -63,8 +63,9 @@ uv run python scripts/queue.py --queue-path .queue --complete-path .queue-comple
 4. Discuss the approach in chat before touching code — confirm scope, check for ambiguity,
    agree on a plan. This is the same human-in-the-loop discussion CLAUDE.md always requires.
 5. Implement per the repo's standing conventions (see `.claude/CLAUDE.md`): TDD, discrete
-   reviewable steps, invoke the relevant language skill (`bash`, `node`, `python`, `dotfiles`,
-   `gtd`) for the code being touched. Never `git add`/`commit`/`push` — that stays manual.
+   reviewable steps, invoke the relevant language skill (`bash`, `node`, `python`, `dotfiles`)
+   for the code being touched — `gtd/CLAUDE.md` covers package-specific conventions when the
+   item is in `gtd/`. Never `git add`/`commit`/`push` — that stays manual.
 6. When the user confirms the item is done, run:
    ```
    queue complete --item-title "<exact title>"
