@@ -24,6 +24,7 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 
 - **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
 - **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue.
+- **audit-skills** — Reviewing `.claude/skills`/`.claude/references` for structural drift, staleness, or skill-vs-reference misclassification. Invoke when asked to review, audit, or trim skills, or after adding/renaming one.
 
 ## References
 
