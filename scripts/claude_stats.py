@@ -21,11 +21,55 @@ DEFAULT_LOG_ROOT = Path.home() / '.claude' / 'projects'
 SUBAGENT_DIR = 'subagents'
 FALLBACK_TERMINAL_SIZE = (80, 24)
 COLUMN_GAP = 4
+DEFAULT_PRICING_PATH = Path(__file__).resolve().parent / 'model_pricing.json'
+PRICING_STALE_AFTER_DAYS = 60
+TOKENS_PER_MILLION = 1_000_000
 
 RESET = '\x1b[0m'
 BOLD = '\x1b[1m'
 DIM = '\x1b[2m'
 CYAN = '\x1b[36m'
+
+
+@dataclass
+class ModelUsage:
+    """Per-model token totals -- needed because prices differ by model."""
+
+    output_tokens: int = 0
+    input_tokens: int = 0
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
+
+
+@dataclass(frozen=True)
+class ModelPrice:
+    """Dollars per million tokens for one model, from model_pricing.json."""
+
+    input_per_million: float
+    output_per_million: float
+    expires: date | None = None
+    note: str | None = None
+
+
+@dataclass(frozen=True)
+class PricingTable:
+    as_of: date
+    cache_write_multiplier: float
+    cache_read_multiplier: float
+    models: dict[str, ModelPrice]
+
+
+@dataclass
+class CostBreakdown:
+    """Estimated spend for a UsageStats snapshot, priced via a PricingTable."""
+
+    total: float
+    by_category: dict[str, float]
+    by_model: dict[str, float]
+    unpriced_models: set[str]
+    expired_models: set[str]
+    pricing_as_of: date
+    pricing_stale: bool
 
 
 @dataclass
@@ -46,6 +90,7 @@ class UsageStats:
     longest_prompt_chars: int = 0
     models: Counter = field(default_factory=Counter)
     tools: Counter = field(default_factory=Counter)
+    model_usage: dict[str, ModelUsage] = field(default_factory=dict)
     output_tokens_by_day: dict[date, int] = field(default_factory=dict)
     first_seen: datetime | None = None
     last_seen: datetime | None = None
@@ -174,17 +219,25 @@ def tally_assistant(stats: UsageStats, record: dict, day: date | None) -> None:
     stats.replies += 1
 
     model = message.get('model')
-    if model:
-        stats.models[model] += 1
 
     usage = message.get('usage') or {}
     output = usage.get('output_tokens', 0) or 0
+    input_ = usage.get('input_tokens', 0) or 0
+    cache_read = usage.get('cache_read_input_tokens', 0) or 0
+    cache_write = usage.get('cache_creation_input_tokens', 0) or 0
+
     stats.output_tokens += output
-    stats.input_tokens += usage.get('input_tokens', 0) or 0
-    stats.cache_read_tokens += usage.get('cache_read_input_tokens', 0) or 0
-    stats.cache_write_tokens += (
-        usage.get('cache_creation_input_tokens', 0) or 0
-    )
+    stats.input_tokens += input_
+    stats.cache_read_tokens += cache_read
+    stats.cache_write_tokens += cache_write
+
+    if model:
+        stats.models[model] += 1
+        model_usage = stats.model_usage.setdefault(model, ModelUsage())
+        model_usage.output_tokens += output
+        model_usage.input_tokens += input_
+        model_usage.cache_read_tokens += cache_read
+        model_usage.cache_write_tokens += cache_write
 
     if day is not None and output:
         stats.output_tokens_by_day[day] = (
@@ -256,6 +309,111 @@ def collect_stats(
             tally_record(stats, record, stamp.date() if stamp else None)
 
     return stats
+
+
+def load_pricing(path: Path) -> PricingTable:
+    """Load scripts/model_pricing.json (or an override path)."""
+    data = json.loads(path.read_text())
+    models = {
+        name: ModelPrice(
+            input_per_million=entry['input'],
+            output_per_million=entry['output'],
+            expires=(
+                date.fromisoformat(entry['expires'])
+                if entry.get('expires')
+                else None
+            ),
+            note=entry.get('note'),
+        )
+        for name, entry in data['models'].items()
+    }
+    return PricingTable(
+        as_of=date.fromisoformat(data['as_of']),
+        cache_write_multiplier=data['cache_write_multiplier'],
+        cache_read_multiplier=data['cache_read_multiplier'],
+        models=models,
+    )
+
+
+def find_model_price(model: str, pricing: PricingTable) -> ModelPrice | None:
+    """Longest-prefix match, so dated model IDs (…-20251001) still resolve."""
+    matches = [name for name in pricing.models if model.startswith(name)]
+    if not matches:
+        return None
+    return pricing.models[max(matches, key=len)]
+
+
+def compute_cost(
+    stats: UsageStats,
+    pricing: PricingTable,
+    *,
+    today: date | None = None,
+) -> CostBreakdown:
+    """Estimate spend per token category and per model.
+
+    Cache write/read costs use the pricing table's flat multipliers rather
+    than a per-request TTL, since the JSONL logs don't record which TTL a
+    given cache write used.
+    """
+    today = today or date.today()
+    by_category = {
+        'output': 0.0,
+        'input': 0.0,
+        'cache_read': 0.0,
+        'cache_write': 0.0,
+    }
+    by_model: dict[str, float] = {}
+    unpriced_models: set[str] = set()
+    expired_models: set[str] = set()
+
+    for model, usage in stats.model_usage.items():
+        price = find_model_price(model, pricing)
+        if price is None:
+            unpriced_models.add(model)
+            continue
+        if price.expires is not None and today > price.expires:
+            expired_models.add(model)
+
+        output_cost = (
+            usage.output_tokens / TOKENS_PER_MILLION * price.output_per_million
+        )
+        input_cost = (
+            usage.input_tokens / TOKENS_PER_MILLION * price.input_per_million
+        )
+        cache_read_cost = (
+            usage.cache_read_tokens
+            / TOKENS_PER_MILLION
+            * price.input_per_million
+            * pricing.cache_read_multiplier
+        )
+        cache_write_cost = (
+            usage.cache_write_tokens
+            / TOKENS_PER_MILLION
+            * price.input_per_million
+            * pricing.cache_write_multiplier
+        )
+
+        by_category['output'] += output_cost
+        by_category['input'] += input_cost
+        by_category['cache_read'] += cache_read_cost
+        by_category['cache_write'] += cache_write_cost
+        by_model[model] = (
+            output_cost + input_cost + cache_read_cost + cache_write_cost
+        )
+
+    stale = (today - pricing.as_of).days > PRICING_STALE_AFTER_DAYS or bool(
+        expired_models,
+    )
+
+    return CostBreakdown(
+        total=sum(by_category.values()),
+        by_category=by_category,
+        by_model=by_model,
+        unpriced_models=unpriced_models,
+        expired_models=expired_models,
+        pricing_as_of=pricing.as_of,
+        pricing_stale=stale,
+    )
 
 
 def humanize(value: int) -> str:
@@ -342,18 +500,71 @@ def totals_and_tokens_lines(
     return totals_lines, tokens_lines
 
 
+CACHE_ROW_WIDTH = 20
+CACHE_VALUE_WIDTH = 10
+
+
 def cache_efficiency_lines(stats: UsageStats) -> list[str]:
-    lines = []
+    rows = []
     if stats.cache_hit_ratio is not None:
-        lines.append(
-            f'  {"cache hit ratio":<22} {stats.cache_hit_ratio:>11.1%} '
-            '  (cache_read / (cache_read + input))',
-        )
+        rows.append(('cache hit ratio', f'{stats.cache_hit_ratio:.1%}'))
     if stats.cache_efficiency is not None:
+        rows.append(('cache efficiency', f'{stats.cache_efficiency:.1f}x'))
+    if not rows:
+        return []
+
+    lines = ['  caching']
+    lines.extend(
+        f'    {label:<{CACHE_ROW_WIDTH}} {value:>{CACHE_VALUE_WIDTH}}'
+        for label, value in rows
+    )
+    lines.append(
+        '    hit ratio = cache_read / (cache_read + input);'
+        ' efficiency = cache_read / cache_write (>=2x healthy @ 5m TTL)',
+    )
+    return lines
+
+
+COST_CATEGORY_LABELS = (
+    ('output', 'output'),
+    ('input', 'input (uncached)'),
+    ('cache_read', 'cache read'),
+    ('cache_write', 'cache write'),
+)
+COST_ROW_WIDTH = 20
+COST_PERCENT_WIDTH = 6
+COST_AMOUNT_WIDTH = 9
+
+
+def cost_row(label: str, percent: str, amount: float) -> str:
+    return (
+        f'    {label:<{COST_ROW_WIDTH}} {percent:>{COST_PERCENT_WIDTH}}'
+        f'  $ {amount:>{COST_AMOUNT_WIDTH}.2f}'
+    )
+
+
+def cost_lines(cost: CostBreakdown) -> list[str]:
+    lines = ['  estimated spend', cost_row('total', '', cost.total)]
+
+    for key, label in COST_CATEGORY_LABELS:
+        amount = cost.by_category[key]
+        share = 100 * amount / cost.total if cost.total else 0.0
+        lines.append(cost_row(label, f'{share:.1f}%', amount))
+
+    if cost.unpriced_models:
+        names = ', '.join(sorted(cost.unpriced_models))
+        lines.append(f'    (excluded, no pricing on file: {names})')
+
+    if cost.pricing_stale:
+        expired = ''
+        if cost.expired_models:
+            names = ', '.join(sorted(cost.expired_models))
+            expired = f'expired pricing for {names}; '
         lines.append(
-            f'  {"cache efficiency":<22} {stats.cache_efficiency:>10.1f}x '
-            '  (cache_read / cache_write; >=2 is healthy @ 5m TTL)',
+            f'    pricing dated {cost.pricing_as_of} looks stale -- {expired}'
+            'ask Claude to refresh scripts/model_pricing.json',
         )
+
     return lines
 
 
@@ -382,6 +593,7 @@ def format_report(
     *,
     width: int | None = None,
     color: bool | None = None,
+    cost: CostBreakdown | None = None,
 ) -> str:
     if width is None:
         width = shutil.get_terminal_size(FALLBACK_TERMINAL_SIZE).columns
@@ -400,8 +612,15 @@ def format_report(
 
     efficiency_lines = cache_efficiency_lines(stats)
     if efficiency_lines:
+        efficiency_lines[0] = colorize(efficiency_lines[0], BOLD, color=color)
         lines.append('')
         lines.extend(efficiency_lines)
+
+    if cost is not None:
+        spend_lines = cost_lines(cost)
+        spend_lines[0] = colorize(spend_lines[0], BOLD, color=color)
+        lines.append('')
+        lines.extend(spend_lines)
 
     model_lines, tool_lines = model_and_tool_lines(stats)
     if model_lines or tool_lines:
@@ -420,7 +639,24 @@ def format_report(
     return '\n'.join(lines)
 
 
-def stats_as_dict(stats: UsageStats) -> dict:
+def cost_as_dict(cost: CostBreakdown | None) -> dict | None:
+    if cost is None:
+        return None
+    return {
+        'total': cost.total,
+        'by_category': cost.by_category,
+        'by_model': cost.by_model,
+        'unpriced_models': sorted(cost.unpriced_models),
+        'expired_models': sorted(cost.expired_models),
+        'pricing_as_of': cost.pricing_as_of.isoformat(),
+        'pricing_stale': cost.pricing_stale,
+    }
+
+
+def stats_as_dict(
+    stats: UsageStats,
+    cost: CostBreakdown | None = None,
+) -> dict:
     first, last = stats.first_seen, stats.last_seen
     return {
         'span': {
@@ -442,6 +678,7 @@ def stats_as_dict(stats: UsageStats) -> dict:
         },
         'cache_hit_ratio': stats.cache_hit_ratio,
         'cache_efficiency': stats.cache_efficiency,
+        'cost': cost_as_dict(cost),
         'models': dict(stats.models.most_common()),
         'tools': dict(stats.tools.most_common()),
         'longest_prompt_chars': stats.longest_prompt_chars,
@@ -483,6 +720,12 @@ def main() -> None:
         action='store_true',
         help='disable ANSI colors in the report',
     )
+    parser.add_argument(
+        '--pricing-path',
+        type=Path,
+        default=DEFAULT_PRICING_PATH,
+        help=f'model pricing file (default: {DEFAULT_PRICING_PATH})',
+    )
 
     args = parser.parse_args()
     roots = args.log_root or [DEFAULT_LOG_ROOT]
@@ -495,11 +738,21 @@ def main() -> None:
 
     stats = collect_stats(roots, since=args.since, until=args.until)
 
+    cost = None
+    if args.pricing_path.exists():
+        cost = compute_cost(stats, load_pricing(args.pricing_path))
+    else:
+        print(
+            f'No pricing file at {args.pricing_path} -- '
+            'spend estimates disabled',
+            file=sys.stderr,
+        )
+
     if args.json:
-        print(json.dumps(stats_as_dict(stats), indent=2))
+        print(json.dumps(stats_as_dict(stats, cost), indent=2))
     else:
         color = False if args.no_color else None
-        print(format_report(stats, color=color))
+        print(format_report(stats, color=color, cost=cost))
 
 
 if __name__ == '__main__':
