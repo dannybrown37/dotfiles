@@ -11,6 +11,7 @@ from claude_stats import (
     UsageStats,
     collect_stats,
     format_report,
+    stats_as_dict,
     supports_color,
 )
 
@@ -24,6 +25,8 @@ EXPECTED_REMOVED_LINES = 1
 EXPECTED_BASH_USES = 2
 NARROW_WIDTH = 60
 WIDE_WIDTH = 200
+EXPECTED_CACHE_HIT_RATIO = 200 / 700
+EXPECTED_CACHE_EFFICIENCY = 2.0
 
 
 def _assistant(**overrides: object) -> dict:
@@ -348,3 +351,68 @@ def test_supports_color_reflects_tty_and_no_color_env(
         monkeypatch.setenv('NO_COLOR', no_color_env)
 
     assert supports_color() is expected
+
+
+def test_cache_hit_ratio_computes_share_of_input_served_from_cache() -> None:
+    stats = _stats_with_full_report_data()
+
+    assert stats.cache_hit_ratio == pytest.approx(EXPECTED_CACHE_HIT_RATIO)
+
+
+def test_cache_hit_ratio_is_none_without_reads_or_input() -> None:
+    stats = UsageStats()
+
+    assert stats.cache_hit_ratio is None
+
+
+def test_cache_efficiency_computes_reads_per_write() -> None:
+    stats = _stats_with_full_report_data()
+
+    assert stats.cache_efficiency == pytest.approx(EXPECTED_CACHE_EFFICIENCY)
+
+
+def test_cache_efficiency_is_none_without_cache_writes() -> None:
+    stats = UsageStats(cache_read_tokens=100)
+
+    assert stats.cache_efficiency is None
+
+
+def test_format_report_includes_cache_efficiency_when_present() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert 'cache hit ratio' in report
+    assert 'cache efficiency' in report
+
+
+def test_format_report_omits_cache_efficiency_without_activity() -> None:
+    stats = UsageStats(
+        session_ids={'s1'},
+        prompts=1,
+        replies=1,
+        output_tokens=10,
+        first_seen=datetime.fromisoformat(STAMP.replace('Z', '+00:00')),
+        last_seen=datetime.fromisoformat(STAMP.replace('Z', '+00:00')),
+    )
+
+    report = format_report(stats, width=WIDE_WIDTH, color=False)
+
+    assert 'cache hit ratio' not in report
+    assert 'cache efficiency' not in report
+
+
+def test_stats_as_dict_includes_cache_efficiency_metrics() -> None:
+    data = stats_as_dict(_stats_with_full_report_data())
+
+    assert data['cache_hit_ratio'] == pytest.approx(EXPECTED_CACHE_HIT_RATIO)
+    assert data['cache_efficiency'] == pytest.approx(EXPECTED_CACHE_EFFICIENCY)
+
+
+def test_stats_as_dict_cache_metrics_are_none_without_data() -> None:
+    data = stats_as_dict(UsageStats())
+
+    assert data['cache_hit_ratio'] is None
+    assert data['cache_efficiency'] is None
