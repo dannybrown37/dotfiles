@@ -1,10 +1,3 @@
----
-name: node
-description: "Invoke when the user is writing or debugging TypeScript or JavaScript code, working with Node.js tooling, or asking about ESLint/Prettier configuration."
-user-invocable: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
----
-
 # Node / TypeScript
 
 ## Type Safety

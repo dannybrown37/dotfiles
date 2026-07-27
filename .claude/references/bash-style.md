@@ -1,10 +1,3 @@
----
-name: bash
-description: "Invoke when the user is writing or debugging shell scripts, working with files in bin/ or scripts/, or asking about dotfile configuration (zsh, bash, shell utilities)."
-user-invocable: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
----
-
 # Bash / Shell Scripts
 
 Rules for Bash scripts start with _readable by humans_.
