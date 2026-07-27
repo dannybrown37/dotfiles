@@ -193,15 +193,41 @@ ln -s ~/projects/dotfiles/config/.tmux.conf ~/.tmux.conf &&
     echo "Symlinked .tmux.conf"
 
 if [ ! -d "${HOME}/.password-store" ]; then
-    store_remote="${PASSWORD_STORE_REMOTE:-}"
-    if [ -z "${store_remote}" ]; then
-        read -rp "Git remote for your private password-store (blank to skip): " store_remote
+    cloned=""
+
+    if command -v gh &>/dev/null; then
+        if ! gh auth status &>/dev/null; then
+            read -rp "gh isn't logged in. Run 'gh auth login' now to clone password-store without handling a token by hand? [Y/n] " run_login
+            if [[ "${run_login}" != "n" && "${run_login}" != "N" ]]; then
+                gh auth login
+            fi
+        fi
+
+        if gh auth status &>/dev/null; then
+            gh_repo="${MY_GITHUB_USER:-dannybrown37}/password-store"
+            if gh repo clone "${gh_repo}" ~/.password-store; then
+                echo "Cloned password-store via gh"
+                cloned="1"
+            else
+                echo "gh couldn't clone ${gh_repo} -- wrong account, or no access? Falling back."
+            fi
+        fi
     fi
-    if [ -n "${store_remote}" ]; then
-        git clone "${store_remote}" ~/.password-store &&
-            echo "Cloned password-store"
-    else
-        echo "Skipped password-store clone -- set PASSWORD_STORE_REMOTE and re-run, or run 'pass init <gpg-id>' manually"
+
+    if [ -z "${cloned}" ]; then
+        store_remote="${PASSWORD_STORE_REMOTE:-}"
+        if [ -z "${store_remote}" ]; then
+            read -rp "Git remote for your private password-store (blank to skip): " store_remote
+        fi
+        if [ -n "${store_remote}" ]; then
+            git clone "${store_remote}" ~/.password-store &&
+                echo "Cloned password-store" &&
+                cloned="1"
+        fi
+    fi
+
+    if [ -z "${cloned}" ]; then
+        echo "Skipped password-store clone -- run 'gh auth login' and re-run this script, set PASSWORD_STORE_REMOTE and re-run, or run 'pass init <gpg-id>' manually"
     fi
 else
     echo "password-store already present"
