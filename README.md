@@ -80,6 +80,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
+| `gitdoctor` | Diagnose the git HTTPS credential chain for a repo: gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
@@ -214,6 +215,14 @@ the fail-loud default, since git ignores a missing include.
 Personal repos get their token from `scripts/git-credential-personal.sh`, which emits
 `$MY_GITHUB_TOKEN` and falls back to `gh` when unset. No token is stored in the repo — the
 helper only reads the environment. The dotfiles audit verifies the whole wiring.
+
+When a push demands credentials it should already have, run `gitdoctor` in the offending repo.
+It walks the chain end to end — git version, which includes resolved, helper order, whether the
+token is actually exported into git's subprocess environment, what `git credential fill` hands
+back, and which GitHub account that token resolves to — and names the first broken link. The
+account check is the one the audit cannot do: a present-but-wrong or expired token passes every
+config-level check and only fails at push time. Tokens are printed as a prefix plus digest, so
+the output is safe to paste.
 
 ## Initial Windows Setup Notes
 
