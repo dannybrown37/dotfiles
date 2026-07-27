@@ -83,25 +83,15 @@ uv run python scripts/queue_cli.py --queue-path .queue --complete-path .queue-co
 
 ## Notes
 
-- `.queue` and `.queue-complete` are both gitignored — this is a local working queue, not tracked history.
-- Both files sync between machines through the password store (`make secrets-save` / `secrets-load`,
-  and the git hooks that call them). Both directions **merge** rather than overwrite: `secrets.sh`
-  routes these two paths through `queue_cli.py merge-queue` / `merge-completed` instead of copying, so
-  items added on either machine survive a sync. `.queue` is the union of both sides by title, minus
-  every title recorded in the merged `.queue-complete` — completions are the tombstones, which is why
-  an already-completed item no longer resurrects.
-- Consequence: **complete items, don't hand-delete them.** Deleting a `##` section from `.queue`
-  without running `queue complete` leaves no tombstone, so the other machine's copy syncs it back.
-- `secrets.sh` reconciles `.queue-complete` before `.queue` (`MERGE_PATHS`), independent of the order
-  the store's manifest lists them in — the queue merge needs the tombstones already merged.
-- Pulling `~/.password-store` by hand does **not** update `.queue`; it only moves the encrypted blob.
-  The decrypted files are rewritten solely by `scripts/secrets.sh load`, which runs from the dotfiles
-  `post-merge` hook or `make secrets-load` (and does its own `pass git pull` first).
-- Autonomous/late-night processing (no discussion step, just pick the first item and run) is a separate future mode — don't skip the discussion/selection step unless the user has explicitly asked for autonomous execution.
-- The `[in-progress]` marker lives in `.queue` itself, so it syncs through the same password-store
-  mechanism. A stale snapshot can make an item look claimed when the claiming session already
-  finished (or vice versa) — if `queue claim` errors as already-in-progress but no other agent
-  is actually running, ask the user before assuming the claim is real.
-- The 50-line trim on completion (`trim_content` in `scripts/queue_cli.py`) only affects
-  `.queue-complete`. Nothing trims `.queue` while an item is still active, so step 1's full
-  read of the file can still be large if someone pastes a huge log in — that's expected.
+- `.queue` and `.queue-complete` are gitignored and sync between machines through the
+  password store. **Complete items, don't hand-delete them** — completions are the
+  tombstones that stop an item resurrecting on the other machine.
+- Autonomous/late-night processing (no discussion step, just pick the first item and run) is a
+  separate future mode — don't skip the discussion/selection step unless the user has
+  explicitly asked for autonomous execution.
+- Nothing trims `.queue` while an item is active, so step 1's full read can be large if
+  someone pasted a big log in. That's expected.
+
+- `.claude/references/queue-sync-model.md` — how the password-store merge works:
+  tombstones, merge ordering, stale `[in-progress]` markers, the 50-line completion trim.
+  Read it when a sync looks wrong; it is not needed for a normal queue pull.
