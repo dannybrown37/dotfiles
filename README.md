@@ -183,9 +183,9 @@ skipped so the store doesn't collect a commit per push. If the store errors, the
 never blocks the dotfiles push/pull.
 
 **New machine setup:** `make bash` clones the store if `~/.password-store` doesn't exist yet —
-export `PASSWORD_STORE_REMOTE` beforehand (a private, non-repo location) or answer the prompt it
-falls back to. Requires your GPG private key already imported — that transfer stays
-manual/out-of-band.
+tries `gh auth login` + `gh repo clone` first (no token to copy by hand), falling back to a
+`PASSWORD_STORE_REMOTE` prompt (may embed a token — treat as a raw secret) if `gh` can't. Requires
+your GPG private key already imported — that transfer stays manual/out-of-band.
 
 **Caveat:** entries are encrypted blobs, so git can't merge them. If both machines change the
 same entry before syncing, the store push is rejected and you resolve by picking a side
