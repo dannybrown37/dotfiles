@@ -9,6 +9,12 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 store="${PASSWORD_STORE_DIR:-${HOME}/.password-store}"
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 
+cat >&2 <<'EOF'
+[code-review] Before pushing: run /code-review (and /security-review if it touches
+[code-review] auth, secrets, external input, or dependencies). Checklist:
+[code-review]   .claude/references/code-review-checklist.md
+EOF
+
 if [[ ! -d "${store}/.git" || ! -x "${repo_root}/scripts/secrets.sh" ]]; then
     exit 0
 fi

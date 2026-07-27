@@ -35,6 +35,19 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 - Keep judgment calls, multi-file architectural reasoning, and anything the user is actively iterating on in the main session.
 - Full decision framework: `.claude/references/model-strategy.md`. This is a difficulty-based delegation heuristic.
 
+## Multi-Agent & Agentic Patterns
+
+- Default to inline execution. Delegate to a fresh `Agent` only for genuinely independent work (research, a second opinion, a specialized agent like `quick-task`/`Explore`); use `fork` when the sub-task shares current context but its raw tool output (large greps, file dumps) isn't worth keeping around.
+- Batch independent tool calls (e.g. `git status`/`diff`/`log` at review start) in one message; keep dependent calls sequential.
+- For long-running or async work, prefer `run_in_background` + `Monitor` over sleep-polling, and don't fabricate a fork/background result before its notification actually arrives.
+- Full patterns and examples: `.claude/references/agentic-patterns.md`.
+
+## Code Review
+
+- Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
+- A `pre-push` git hook prints a reminder of this — it does not block the push or call any AI review itself.
+- Full checklist: `.claude/references/code-review-checklist.md`.
+
 ## Code Style (General)
 
 - Always use type hints for function parameters (all languages where available).
