@@ -2,7 +2,7 @@
 
 import json
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -18,6 +18,7 @@ from claude_stats import (
     find_model_price,
     format_report,
     load_pricing,
+    percentile,
     stats_as_dict,
     supports_color,
 )
@@ -692,3 +693,246 @@ def test_stats_as_dict_cost_is_none_without_cost_arg() -> None:
     data = stats_as_dict(_stats_with_full_report_data())
 
     assert data['cost'] is None
+
+
+def _turn_duration(duration_ms: int, **overrides: object) -> dict:
+    record = {
+        'type': 'system',
+        'subtype': 'turn_duration',
+        'sessionId': 's1',
+        'timestamp': STAMP,
+        'durationMs': duration_ms,
+    }
+    record.update(overrides)
+    return record
+
+
+def _at(offset_seconds: float) -> str:
+    """Timestamp `offset_seconds` after STAMP, for turn-timing tests."""
+    base = datetime.fromisoformat(STAMP.replace('Z', '+00:00'))
+    moment = base + timedelta(seconds=offset_seconds)
+    return moment.isoformat().replace('+00:00', 'Z')
+
+
+def _tool_result(**overrides: object) -> dict:
+    record = {
+        'type': 'user',
+        'sessionId': 's1',
+        'timestamp': STAMP,
+        'toolUseResult': {'stdout': 'x'},
+        'message': {'role': 'user', 'content': 'tool output'},
+    }
+    record.update(overrides)
+    return record
+
+
+SAMPLE_DURATIONS_MS = [1000, 2000, 3000]
+EXPECTED_P50_MS = 2000
+EXPECTED_P95_MS = 3000
+OPUS_TURN_MS = 5000
+HAIKU_TURN_MS = 500
+FIRST_REPLY_SECONDS = 3
+TOOL_GAP_SECONDS = 7
+SECOND_REPLY_SECONDS = 2
+EXPECTED_MODEL_MS = (FIRST_REPLY_SECONDS + SECOND_REPLY_SECONDS) * 1000
+IDLE_SECONDS = 900
+
+
+@pytest.mark.parametrize(
+    ('values', 'fraction', 'expected'),
+    [
+        ([10, 20, 30], 0.5, 20),
+        ([10, 20, 30], 0.95, 30),
+        ([30, 10, 20], 0.5, 20),
+        ([42], 0.5, 42),
+        ([42], 0.95, 42),
+        ([10, 20], 0.5, 10),
+    ],
+)
+def test_percentile_uses_nearest_rank(
+    values: list[int],
+    fraction: float,
+    expected: float,
+) -> None:
+    assert percentile(values, fraction) == pytest.approx(expected)
+
+
+def test_collects_wall_durations_from_system_records(tmp_path: Path) -> None:
+    _write_log(
+        tmp_path,
+        [_turn_duration(ms) for ms in SAMPLE_DURATIONS_MS],
+    )
+
+    stats = collect_stats([tmp_path])
+
+    assert sorted(stats.wall_durations_ms) == SAMPLE_DURATIONS_MS
+
+
+def test_model_time_counts_only_gaps_ending_at_a_reply(
+    tmp_path: Path,
+) -> None:
+    """Gaps ending at a tool result hold tool runs and approval waits."""
+    tool_moment = FIRST_REPLY_SECONDS + TOOL_GAP_SECONDS
+    _write_log(
+        tmp_path,
+        [
+            _prompt(timestamp=_at(0)),
+            _assistant(timestamp=_at(FIRST_REPLY_SECONDS)),
+            _tool_result(timestamp=_at(tool_moment)),
+            _assistant(timestamp=_at(tool_moment + SECOND_REPLY_SECONDS)),
+            _turn_duration(
+                OPUS_TURN_MS,
+                timestamp=_at(tool_moment + SECOND_REPLY_SECONDS),
+            ),
+        ],
+    )
+
+    stats = collect_stats([tmp_path])
+
+    assert stats.model_durations_ms == [pytest.approx(EXPECTED_MODEL_MS)]
+
+
+def test_model_time_excludes_idle_time_between_turns(
+    tmp_path: Path,
+) -> None:
+    """A turn starts at your prompt, not when the previous turn ended."""
+    _write_log(
+        tmp_path,
+        [
+            _prompt(timestamp=_at(0)),
+            _assistant(timestamp=_at(FIRST_REPLY_SECONDS)),
+            _turn_duration(OPUS_TURN_MS, timestamp=_at(FIRST_REPLY_SECONDS)),
+            _prompt(timestamp=_at(IDLE_SECONDS)),
+            _assistant(
+                timestamp=_at(IDLE_SECONDS + SECOND_REPLY_SECONDS),
+            ),
+            _turn_duration(
+                HAIKU_TURN_MS,
+                timestamp=_at(IDLE_SECONDS + SECOND_REPLY_SECONDS),
+            ),
+        ],
+    )
+
+    stats = collect_stats([tmp_path])
+
+    assert stats.model_durations_ms == [
+        pytest.approx(FIRST_REPLY_SECONDS * 1000),
+        pytest.approx(SECOND_REPLY_SECONDS * 1000),
+    ]
+
+
+def test_attributes_model_time_to_the_turns_dominant_model(
+    tmp_path: Path,
+) -> None:
+    """A turn that delegates to a subagent still belongs to the driver."""
+    haiku = 'claude-haiku-4-5-20251001'
+    haiku_message = {'model': haiku, 'content': [], 'usage': {}}
+    _write_log(
+        tmp_path,
+        [
+            _prompt(timestamp=_at(0)),
+            _assistant(timestamp=_at(1)),
+            _assistant(timestamp=_at(2)),
+            _assistant(timestamp=_at(3), message=haiku_message),
+            _turn_duration(OPUS_TURN_MS, timestamp=_at(3)),
+            _prompt(timestamp=_at(4)),
+            _assistant(timestamp=_at(5), message=haiku_message),
+            _turn_duration(HAIKU_TURN_MS, timestamp=_at(5)),
+        ],
+    )
+
+    stats = collect_stats([tmp_path])
+
+    assert stats.model_durations_ms_by_model == {
+        'claude-opus-5': [pytest.approx(3000)],
+        haiku: [pytest.approx(1000)],
+    }
+
+
+def test_turn_without_preceding_reply_is_unattributed(
+    tmp_path: Path,
+) -> None:
+    _write_log(tmp_path, [_turn_duration(OPUS_TURN_MS)])
+
+    stats = collect_stats([tmp_path])
+
+    assert stats.wall_durations_ms == [OPUS_TURN_MS]
+    assert stats.model_durations_ms == []
+    assert stats.model_durations_ms_by_model == {}
+
+
+def test_turn_state_does_not_leak_across_transcripts(tmp_path: Path) -> None:
+    """Each file is its own turn stream; a dangling reply must not carry."""
+    haiku = 'claude-haiku-4-5-20251001'
+    _write_log(tmp_path, [_prompt(timestamp=_at(0)), _assistant()], name='one')
+    _write_log(
+        tmp_path,
+        [
+            _prompt(timestamp=_at(0)),
+            _assistant(
+                timestamp=_at(1),
+                message={'model': haiku, 'content': [], 'usage': {}},
+            ),
+            _turn_duration(HAIKU_TURN_MS, timestamp=_at(1)),
+        ],
+        name='two',
+    )
+
+    stats = collect_stats([tmp_path])
+
+    assert stats.model_durations_ms_by_model == {haiku: [pytest.approx(1000)]}
+
+
+def _stats_with_turn_durations() -> UsageStats:
+    stats = _stats_with_full_report_data()
+    stats.wall_durations_ms = list(SAMPLE_DURATIONS_MS)
+    stats.model_durations_ms = [float(ms) for ms in SAMPLE_DURATIONS_MS]
+    stats.model_durations_ms_by_model = {
+        'claude-opus-5': [float(ms) for ms in SAMPLE_DURATIONS_MS],
+    }
+    return stats
+
+
+def test_format_report_includes_turn_duration_when_present() -> None:
+    report = format_report(
+        _stats_with_turn_durations(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert 'turn duration' in report
+    assert 'model time' in report
+    assert 'wall clock' in report
+    assert 'claude-opus-5' in report
+
+
+def test_format_report_omits_turn_duration_without_turns() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert 'turn duration' not in report
+
+
+def test_stats_as_dict_includes_turn_duration_metrics() -> None:
+    data = stats_as_dict(_stats_with_turn_durations())
+
+    model_time = data['turn_duration_ms']['model_time']
+    assert model_time['turns'] == len(SAMPLE_DURATIONS_MS)
+    assert model_time['p50'] == pytest.approx(EXPECTED_P50_MS)
+    assert model_time['p95'] == pytest.approx(EXPECTED_P95_MS)
+    assert data['turn_duration_ms']['wall_clock']['p50'] == pytest.approx(
+        EXPECTED_P50_MS,
+    )
+    by_model = data['turn_duration_ms']['by_model']['claude-opus-5']
+    assert by_model['p50'] == pytest.approx(EXPECTED_P50_MS)
+
+
+def test_stats_as_dict_turn_duration_is_empty_without_turns() -> None:
+    data = stats_as_dict(UsageStats())
+
+    assert data['turn_duration_ms']['model_time']['turns'] == 0
+    assert data['turn_duration_ms']['model_time']['p50'] is None
+    assert data['turn_duration_ms']['by_model'] == {}

@@ -8,6 +8,7 @@ numbers only cover transcripts still present on this machine.
 
 import argparse
 import json
+import math
 import os
 import shutil
 import sys
@@ -19,6 +20,10 @@ from collections.abc import Iterator
 
 DEFAULT_LOG_ROOT = Path.home() / '.claude' / 'projects'
 SUBAGENT_DIR = 'subagents'
+TURN_DURATION_SUBTYPE = 'turn_duration'
+P50 = 0.5
+P95 = 0.95
+MILLISECONDS_PER_SECOND = 1000
 FALLBACK_TERMINAL_SIZE = (80, 24)
 COLUMN_GAP = 4
 DEFAULT_PRICING_PATH = Path(__file__).resolve().parent / 'model_pricing.json'
@@ -92,6 +97,11 @@ class UsageStats:
     tools: Counter = field(default_factory=Counter)
     model_usage: dict[str, ModelUsage] = field(default_factory=dict)
     output_tokens_by_day: dict[date, int] = field(default_factory=dict)
+    wall_durations_ms: list[int] = field(default_factory=list)
+    model_durations_ms: list[float] = field(default_factory=list)
+    model_durations_ms_by_model: dict[str, list[float]] = field(
+        default_factory=dict,
+    )
     first_seen: datetime | None = None
     last_seen: datetime | None = None
 
@@ -113,6 +123,63 @@ class UsageStats:
         if self.cache_write_tokens == 0:
             return None
         return self.cache_read_tokens / self.cache_write_tokens
+
+
+@dataclass
+class TurnTracker:
+    """Per-turn timing, rebuilt from the gaps between records.
+
+    A turn's `turn_duration` record names no model, so the turn is credited
+    to whichever model produced the most replies inside it -- a turn that
+    delegates to a subagent still belongs to the model driving it.
+
+    Model time counts only the gaps that end at a reply. A gap ending at a
+    tool result is where tool execution and any wait for the human's approval
+    live, so excluding those yields generation time alone rather than trying
+    to subtract an approval wait that is never logged.
+    """
+
+    models: Counter = field(default_factory=Counter)
+    previous_stamp: datetime | None = None
+    model_ms: float = 0.0
+
+    def begin_turn(self, stamp: datetime | None) -> None:
+        self.models.clear()
+        self.model_ms = 0.0
+        self.previous_stamp = stamp
+
+    def note_record(
+        self,
+        stamp: datetime | None,
+        *,
+        from_model: bool,
+    ) -> None:
+        if stamp is None:
+            return
+        if from_model and self.previous_stamp is not None:
+            gap = (stamp - self.previous_stamp).total_seconds()
+            self.model_ms += max(gap, 0.0) * MILLISECONDS_PER_SECOND
+        self.previous_stamp = stamp
+
+    def note_reply(self, model: str | None, stamp: datetime | None) -> None:
+        if model:
+            self.models[model] += 1
+        self.note_record(stamp, from_model=True)
+
+    def close_turn(self) -> tuple[str | None, float]:
+        dominant = self.models.most_common(1)
+        model_ms = self.model_ms
+        self.begin_turn(None)
+        return (dominant[0][0] if dominant else None), model_ms
+
+
+def percentile(values: list[float], fraction: float) -> float | None:
+    """Nearest-rank percentile, or None for an empty sample."""
+    if not values:
+        return None
+    ordered = sorted(values)
+    rank = math.ceil(fraction * len(ordered))
+    return float(ordered[max(rank - 1, 0)])
 
 
 def find_logs(roots: list[Path]) -> list[Path]:
@@ -261,15 +328,55 @@ def track_span(stats: UsageStats, stamp: datetime) -> None:
         stats.last_seen = stamp
 
 
-def tally_record(stats: UsageStats, record: dict, day: date | None) -> None:
+def is_turn_boundary(record: dict) -> bool:
+    return (
+        record.get('type') == 'system'
+        and record.get('subtype') == TURN_DURATION_SUBTYPE
+    )
+
+
+def tally_turn_duration(
+    stats: UsageStats,
+    record: dict,
+    turn: TurnTracker,
+) -> None:
+    duration = record.get('durationMs')
+    model, model_ms = turn.close_turn()
+
+    if isinstance(duration, int):
+        stats.wall_durations_ms.append(duration)
+    if model_ms <= 0:
+        return
+
+    stats.model_durations_ms.append(model_ms)
+    if model:
+        stats.model_durations_ms_by_model.setdefault(model, []).append(
+            model_ms,
+        )
+
+
+def tally_record(
+    stats: UsageStats,
+    record: dict,
+    stamp: datetime | None,
+    turn: TurnTracker,
+) -> None:
+    day = stamp.date() if stamp else None
+
     if record.get('type') == 'assistant':
         tally_assistant(stats, record, day)
+        turn.note_reply(record.get('message', {}).get('model'), stamp)
+    elif is_turn_boundary(record):
+        tally_turn_duration(stats, record, turn)
     elif is_prompt(record):
         stats.prompts += 1
         stats.longest_prompt_chars = max(
             stats.longest_prompt_chars,
             len(prompt_text(record)),
         )
+        turn.begin_turn(stamp)
+    elif record.get('type') == 'user':
+        turn.note_record(stamp, from_model=False)
 
     result = record.get('toolUseResult')
     if isinstance(result, dict):
@@ -289,6 +396,7 @@ def collect_stats(
     for path in find_logs(roots):
         is_subagent = path.parent.name == SUBAGENT_DIR
         counted_subagent = False
+        turn = TurnTracker()
 
         for record in iter_records(path):
             stamp = parse_timestamp(record.get('timestamp'))
@@ -306,7 +414,7 @@ def collect_stats(
                 stats.subagent_runs += 1
                 counted_subagent = True
 
-            tally_record(stats, record, stamp.date() if stamp else None)
+            tally_record(stats, record, stamp, turn)
 
     return stats
 
@@ -525,6 +633,50 @@ def cache_efficiency_lines(stats: UsageStats) -> list[str]:
     return lines
 
 
+TURN_LABEL_WIDTH = 30
+TURN_STAT_WIDTH = 8
+
+
+def turn_duration_row(label: str, durations: list[float]) -> str:
+    p50 = percentile(durations, P50) or 0.0
+    p95 = percentile(durations, P95) or 0.0
+    return (
+        f'    {label:<{TURN_LABEL_WIDTH}}'
+        f' {p50 / MILLISECONDS_PER_SECOND:>{TURN_STAT_WIDTH}.1f}s'
+        f' {p95 / MILLISECONDS_PER_SECOND:>{TURN_STAT_WIDTH}.1f}s'
+        f' {len(durations):>7,}'
+    )
+
+
+def turn_duration_lines(stats: UsageStats) -> list[str]:
+    if not (stats.model_durations_ms or stats.wall_durations_ms):
+        return []
+
+    header = (
+        f'    {"":<{TURN_LABEL_WIDTH}}'
+        f' {"p50":>{TURN_STAT_WIDTH + 1}}'
+        f' {"p95":>{TURN_STAT_WIDTH + 1}}'
+        f' {"turns":>7}'
+    )
+    lines = ['  turn duration', header]
+    lines.append(turn_duration_row('model time', stats.model_durations_ms))
+    lines.append(turn_duration_row('wall clock', stats.wall_durations_ms))
+
+    by_model = sorted(
+        stats.model_durations_ms_by_model.items(),
+        key=lambda item: len(item[1]),
+        reverse=True,
+    )
+    lines.extend(
+        turn_duration_row(model, durations) for model, durations in by_model
+    )
+    lines.append(
+        '    model time = gaps ending at a reply, so tool runs and approval '
+        'waits are excluded; per-model rows are model time',
+    )
+    return lines
+
+
 COST_CATEGORY_LABELS = (
     ('output', 'output'),
     ('input', 'input (uncached)'),
@@ -616,6 +768,12 @@ def format_report(
         lines.append('')
         lines.extend(efficiency_lines)
 
+    turn_lines = turn_duration_lines(stats)
+    if turn_lines:
+        turn_lines[0] = colorize(turn_lines[0], BOLD, color=color)
+        lines.append('')
+        lines.extend(turn_lines)
+
     if cost is not None:
         spend_lines = cost_lines(cost)
         spend_lines[0] = colorize(spend_lines[0], BOLD, color=color)
@@ -653,6 +811,27 @@ def cost_as_dict(cost: CostBreakdown | None) -> dict | None:
     }
 
 
+def duration_as_dict(durations: list[float]) -> dict:
+    return {
+        'turns': len(durations),
+        'p50': percentile(durations, P50),
+        'p95': percentile(durations, P95),
+    }
+
+
+def turn_duration_as_dict(stats: UsageStats) -> dict:
+    by_model = stats.model_durations_ms_by_model.items()
+    return {
+        'model_time': duration_as_dict(stats.model_durations_ms),
+        'wall_clock': duration_as_dict(
+            [float(ms) for ms in stats.wall_durations_ms],
+        ),
+        'by_model': {
+            model: duration_as_dict(durations) for model, durations in by_model
+        },
+    }
+
+
 def stats_as_dict(
     stats: UsageStats,
     cost: CostBreakdown | None = None,
@@ -678,6 +857,7 @@ def stats_as_dict(
         },
         'cache_hit_ratio': stats.cache_hit_ratio,
         'cache_efficiency': stats.cache_efficiency,
+        'turn_duration_ms': turn_duration_as_dict(stats),
         'cost': cost_as_dict(cost),
         'models': dict(stats.models.most_common()),
         'tools': dict(stats.tools.most_common()),
