@@ -193,11 +193,9 @@ def _render_entry_summary(entry: ProjectEntry) -> str:
     return f'{icon} {entry.header.strip()}{ctx}{due}{next_step}'
 
 
-# ── Weekly habit helpers ─────────────────────────────────────────────────────
+# ── Weekly review reminder ───────────────────────────────────────────────────
 
-WEEKLY_HABITS: list[tuple[str, str]] = [
-    ('weekly_review', 'Weekly Review'),
-]
+_WEEKLY_REVIEW_LABEL = 'Weekly Review'
 
 _GTD_REVIEW_STEPS: list[tuple[str, str]] = [
     ('Process Inbox', 'triage'),
@@ -214,24 +212,19 @@ _GTD_REVIEW_CHECKLIST = '\n'.join(
 )
 
 
-def _week_start_iso() -> str:
-    today = datetime.now().date()
-    return (today - timedelta(days=today.weekday())).isoformat()
+def _weekly_review_done_this_week() -> bool:
+    from gtd.storage import current_week_start, get_weekly_review_done
 
-
-def _habit_done_this_week(key: str) -> bool:
-    from gtd.storage import get_weekly_habit_date
-
-    last = get_weekly_habit_date(key)
+    last = get_weekly_review_done()
     if not last:
         return False
-    return last >= _week_start_iso()
+    return last >= current_week_start()
 
 
-def _render_habit_detail(key: str, label: str) -> str:
-    from gtd.storage import get_weekly_habit_date
+def _render_weekly_review_detail() -> str:
+    from gtd.storage import get_weekly_review_done
 
-    last = get_weekly_habit_date(key)
+    last = get_weekly_review_done()
     if last:
         try:
             d = datetime.fromisoformat(last)
@@ -244,26 +237,22 @@ def _render_habit_detail(key: str, label: str) -> str:
     else:
         last_str = 'never'
 
-    done = _habit_done_this_week(key)
+    done = _weekly_review_done_this_week()
     if done:
         status = '[green]✓ Done this week[/green]'
     else:
         status = '[bold red]⚠ Not done this week[/bold red]'
 
     lines = [
-        f'[bold red]● {label}[/bold red]'
+        f'[bold red]● {_WEEKLY_REVIEW_LABEL}[/bold red]'
         if not done
-        else f'[dim]✓ {label}[/dim]',
+        else f'[dim]✓ {_WEEKLY_REVIEW_LABEL}[/dim]',
         '',
         f'{status}   [dim]last: {last_str}[/dim]',
         '',
+        '[dim]── GTD Weekly Review checklist ──[/dim]',
+        _GTD_REVIEW_CHECKLIST,
     ]
-
-    if key == 'weekly_review':
-        lines += [
-            '[dim]── GTD Weekly Review checklist ──[/dim]',
-            _GTD_REVIEW_CHECKLIST,
-        ]
 
     if not done:
         lines += [
@@ -388,15 +377,10 @@ class ListEntryListItem(ListItem):
         yield Label(self._text, markup=True)
 
 
-class WeeklyHabitItem(ListItem):
-    def __init__(self, key: str, label: str) -> None:
-        super().__init__()
-        self.habit_key = key
-        self.habit_label = label
-
+class WeeklyReviewItem(ListItem):
     def compose(self) -> ComposeResult:
         yield Label(
-            f'[bold red]●[/bold red] {self.habit_label}'
+            f'[bold red]●[/bold red] {_WEEKLY_REVIEW_LABEL}'
             f'  [dim]not done this week[/dim]',
             markup=True,
         )
@@ -1876,7 +1860,7 @@ class TodayContent(BaseEntryContent):
     EMPTY_MSG: ClassVar[str] = 'All clear. Nice work.'
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding('W', 'complete_habit', 'Complete'),
+        Binding('W', 'complete_review', 'Complete'),
         Binding('T', 'wait_tomorrow', 'Tomorrow'),
         Binding('S', 'edit_steps', 'Steps'),
         Binding('N', 'edit_notes', 'Notes'),
@@ -1892,11 +1876,11 @@ class TodayContent(BaseEntryContent):
         'mark_done',
         'complete_step',
     }
-    _HABIT_ACTIONS: ClassVar[set[str]] = {'complete_habit'}
+    _REVIEW_ACTIONS: ClassVar[set[str]] = {'complete_review'}
 
     def __init__(self) -> None:
         super().__init__()
-        self._habit_items: list[WeeklyHabitItem] = []
+        self._review_items: list[WeeklyReviewItem] = []
 
     def _build_filter(self) -> dict:
         return {}
@@ -1920,8 +1904,8 @@ class TodayContent(BaseEntryContent):
         lv: VimListView,
         entries: list[ProjectEntry],
     ) -> None:
-        items: list[ListItem] = list(self._habit_items)
-        if self._habit_items and entries:
+        items: list[ListItem] = list(self._review_items)
+        if self._review_items and entries:
             items.append(SeparatorListItem('GTD'))
         items.extend(NextStepListItem(entry) for entry in entries)
         await repopulate(lv, items)
@@ -1931,18 +1915,16 @@ class TodayContent(BaseEntryContent):
         with contextlib.suppress(Exception):
             self.query_one('#entry-loading', LoadingIndicator).display = False
 
-        self._habit_items = [
-            WeeklyHabitItem(key, label)
-            for key, label in WEEKLY_HABITS
-            if not _habit_done_this_week(key)
-        ]
+        self._review_items = (
+            [] if _weekly_review_done_this_week() else [WeeklyReviewItem()]
+        )
 
         lv = self.query_one('#entry-list', VimListView)
         await self._populate_list(lv, entries)
 
         header = self.query_one('#entry-list-header', Static)
         detail = self.query_one('#entry-detail', Static)
-        has_content = entries or self._habit_items
+        has_content = entries or self._review_items
         if not has_content:
             header.update('Today — nothing actionable 🎉')
             detail.update('[dim]All clear. Nice work.[/dim]')
@@ -1962,17 +1944,15 @@ class TodayContent(BaseEntryContent):
         pid = item.page_id
         return next((e for e in self._entries if e.page_id == pid), None)
 
-    def _current_habit_item(self) -> WeeklyHabitItem | None:
+    def _current_review_item(self) -> WeeklyReviewItem | None:
         item = self.query_one('#entry-list', VimListView).highlighted_child
-        return item if isinstance(item, WeeklyHabitItem) else None
+        return item if isinstance(item, WeeklyReviewItem) else None
 
     def _update_detail(self) -> None:
-        habit_item = self._current_habit_item()
-        if habit_item is not None:
-            detail = _render_habit_detail(
-                habit_item.habit_key, habit_item.habit_label
+        if self._current_review_item() is not None:
+            self.query_one('#entry-detail', Static).update(
+                _render_weekly_review_detail()
             )
-            self.query_one('#entry-detail', Static).update(detail)
             return
         entry = self._current_entry()
         if not entry:
@@ -1989,28 +1969,21 @@ class TodayContent(BaseEntryContent):
         action: str,
         parameters: tuple[object, ...],  # noqa: ARG002
     ) -> bool | None:
-        habit_focused = self._current_habit_item() is not None
-        if action in self._HABIT_ACTIONS:
-            return habit_focused
+        review_focused = self._current_review_item() is not None
+        if action in self._REVIEW_ACTIONS:
+            return review_focused
         if action in self._GTD_ACTIONS:
-            return not habit_focused
+            return not review_focused
         return None
 
     @work
-    async def action_complete_habit(self) -> None:
-        item = self._current_habit_item()
-        if not item:
+    async def action_complete_review(self) -> None:
+        if self._current_review_item() is None:
             return
 
-        if item.habit_key == 'weekly_review':
-            confirmed = await self._run_weekly_review_flow()
-        else:
-            confirmed = await self.app.push_screen_wait(
-                ConfirmModal(f'Mark "{item.habit_label}" done for this week?')
-            )
-
+        confirmed = await self._run_weekly_review_flow()
         if confirmed:
-            self._dismiss_habit_item(item)
+            self._dismiss_review_item()
 
     async def _run_weekly_review_flow(self) -> bool:
         loop = asyncio.get_running_loop()
@@ -2032,20 +2005,20 @@ class TodayContent(BaseEntryContent):
             or False
         )
 
-    def _dismiss_habit_item(self, item: WeeklyHabitItem) -> None:
-        from gtd.storage import set_weekly_habit_date
+    def _dismiss_review_item(self) -> None:
+        from gtd.storage import set_weekly_review_done
 
-        set_weekly_habit_date(item.habit_key)
+        set_weekly_review_done()
         lv = self.query_one('#entry-list', VimListView)
         idx = lv.index
-        item.remove()
-        self._habit_items = [
-            h for h in self._habit_items if h.habit_key != item.habit_key
-        ]
+        item = self._current_review_item()
+        if item is not None:
+            item.remove()
+        self._review_items = []
         lv.index = max(0, (idx or 1) - 1)
         self._update_detail()
         self.app.refresh_bindings()
-        self.app.notify(f'✓ {item.habit_label} done for this week')
+        self.app.notify(f'✓ {_WEEKLY_REVIEW_LABEL} done for this week')
 
     def action_refresh_today(self) -> None:
         self.action_refresh()

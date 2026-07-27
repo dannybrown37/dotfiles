@@ -5,45 +5,46 @@ from pathlib import Path
 
 __all__ = [
     'OUTPUT_PATH',
-    'get_weekly_habit_date',
+    'current_week_start',
+    'get_weekly_review_done',
     'load_areas',
     'save_areas',
-    'set_weekly_habit_date',
+    'set_weekly_review_done',
 ]
 
 OUTPUT_PATH = Path.home() / '.local' / 'share' / 'gtd'
-HABITS_PATH = OUTPUT_PATH / 'weekly_habits.json'
+WEEKLY_REVIEW_PATH = OUTPUT_PATH / 'weekly_review.json'
 AREAS_PATH = OUTPUT_PATH / 'areas.json'
 
 
-def get_weekly_habit_date(key: str) -> str | None:
-    """Return the ISO date this habit was last marked done, or None."""
-    if not HABITS_PATH.exists():
+def get_weekly_review_done() -> str | None:
+    """Return the ISO date the weekly review was last completed, or None."""
+    if not WEEKLY_REVIEW_PATH.exists():
         return None
-    return json.loads(HABITS_PATH.read_text()).get(key)
+    return json.loads(WEEKLY_REVIEW_PATH.read_text()).get('done_date')
 
 
-def set_weekly_habit_date(key: str) -> None:
-    """Mark a habit done today."""
+def set_weekly_review_done() -> None:
+    """Mark the weekly review done today."""
     data: dict = {}
-    if HABITS_PATH.exists():
-        data = json.loads(HABITS_PATH.read_text())
-    data[key] = datetime.now().date().isoformat()
-    HABITS_PATH.write_text(json.dumps(data, indent=2) + '\n')
+    if WEEKLY_REVIEW_PATH.exists():
+        data = json.loads(WEEKLY_REVIEW_PATH.read_text())
+    data['done_date'] = datetime.now().date().isoformat()
+    WEEKLY_REVIEW_PATH.write_text(json.dumps(data, indent=2) + '\n')
 
 
-def _current_week_start() -> str:
+def current_week_start() -> str:
     today = datetime.now().date()
     return (today - timedelta(days=today.weekday())).isoformat()
 
 
 def load_review_state(num_steps: int) -> list[bool]:
     """Return saved step completion list for this week, or all-False."""
-    if not HABITS_PATH.exists():
+    if not WEEKLY_REVIEW_PATH.exists():
         return [False] * num_steps
-    data = json.loads(HABITS_PATH.read_text())
+    data = json.loads(WEEKLY_REVIEW_PATH.read_text())
     state = data.get('review_state', {})
-    if state.get('week_start') != _current_week_start():
+    if state.get('week_start') != current_week_start():
         return [False] * num_steps
     saved = state.get('steps_done', [])
     if len(saved) != num_steps:
@@ -54,23 +55,23 @@ def load_review_state(num_steps: int) -> list[bool]:
 def save_review_state(steps_done: list[bool]) -> None:
     """Persist step completion for this week."""
     data: dict = {}
-    if HABITS_PATH.exists():
-        data = json.loads(HABITS_PATH.read_text())
+    if WEEKLY_REVIEW_PATH.exists():
+        data = json.loads(WEEKLY_REVIEW_PATH.read_text())
     data['review_state'] = {
-        'week_start': _current_week_start(),
+        'week_start': current_week_start(),
         'steps_done': steps_done,
     }
-    HABITS_PATH.write_text(json.dumps(data, indent=2) + '\n')
+    WEEKLY_REVIEW_PATH.write_text(json.dumps(data, indent=2) + '\n')
 
 
 def reset_review_state() -> None:
     """Clear the saved weekly review state and completion marker."""
-    if not HABITS_PATH.exists():
+    if not WEEKLY_REVIEW_PATH.exists():
         return
-    data = json.loads(HABITS_PATH.read_text())
+    data = json.loads(WEEKLY_REVIEW_PATH.read_text())
     data.pop('review_state', None)
-    data.pop('weekly_review', None)
-    HABITS_PATH.write_text(json.dumps(data, indent=2) + '\n')
+    data.pop('done_date', None)
+    WEEKLY_REVIEW_PATH.write_text(json.dumps(data, indent=2) + '\n')
 
 
 def load_areas() -> list[dict]:

@@ -40,15 +40,15 @@ All entry tabs extend `BaseEntryContent(Vertical)` with stable IDs (`#entry-list
 
 The Today tab has three sections in the left list:
 
-1. **Weekly habit reminders** (top, always) — shown when not done this week:
-   - `● Weekly Review` — `W` opens a guided 6-step flow via `WeeklyReviewScreen` modal. Steps: (1) Triage Inbox, (2) Review Projects, (3) Review Waiting For, (4) Review Someday/Maybe [uses `SomedayBrowseScreen`], (5) Review Areas of Focus, (6) Plan next week's priorities + Review Calendar [manual steps]. State persisted per-week in `weekly_habits.json` under `review_state`; resumes at first incomplete step.
-   - Uses `check_action` to show `W` only when habit item is focused
-   - Completion stored in `~/.local/share/gtd/weekly_habits.json`; resets each Monday
+1. **Weekly review reminder** (top, shown when not done this week):
+   - `● Weekly Review` — `W` opens a guided 6-step flow via `WeeklyReviewScreen` modal. Steps: (1) Triage Inbox, (2) Review Projects, (3) Review Waiting For, (4) Review Someday/Maybe [uses `SomedayBrowseScreen`], (5) Review Areas of Focus, (6) Plan next week's priorities + Review Calendar [manual steps]. State persisted per-week in `weekly_review.json` under `review_state`; resumes at first incomplete step.
+   - Uses `check_action` to show `W` only when the review item is focused
+   - Completion stored in `~/.local/share/gtd/weekly_review.json`; resets each Monday
 
-2. **GTD entries** — standard entries from Notion, separated with `── GTD ──` when habits are present
+2. **GTD entries** — standard entries from Notion, separated with `── GTD ──` when the review reminder is present
 
 **`check_action` in TodayContent** — two mutually exclusive modes:
-- `_HABIT_ACTIONS = {'complete_habit'}` — only active when habit focused
+- `_REVIEW_ACTIONS = {'complete_review'}` — only active when the review item is focused
 - `_GTD_ACTIONS = {log, snooze, waiting_for, update_entry, edit_notes, mark_done}` — only active when GTD entry focused
 - Returns explicit `True`/`False` (not `None`) for both sets
 
@@ -95,7 +95,7 @@ Two-mode design: opens in **browse mode** (ListView focused, j/k navigate). **Ta
 | Data | Store | Location |
 |------|-------|----------|
 | GTD projects/inbox | Notion database | `NOTION_PROJECTS_DB_ID` env var |
-| Weekly habit completion | Local JSON | `~/.local/share/gtd/weekly_habits.json` |
+| Weekly review completion | Local JSON | `~/.local/share/gtd/weekly_review.json` |
 | Areas of Focus | Local JSON | `~/.local/share/gtd/areas.json` |
 | List categories | Notion select options | `List Category` property on the projects DB |
 | GTD config | Local JSON | `~/.config/gtd/config.json` |
@@ -127,7 +127,7 @@ Two-mode design: opens in **browse mode** (ListView focused, j/k navigate). **Ta
 - `VimListView(ListView)` — adds j/k/G/gg bindings; k at index 0 posts `FocusTabBar`. `G`/`gg` move the *highlight* to the last/first enabled item (skipping `SeparatorListItem`s), not just the scroll offset. `gg` is a two-key sequence: the first `g` sets `_awaiting_second_g`, and `on_key` clears it on any other key.
 - `DetailPane(ScrollableContainer)` — `can_focus = False` so Tab skips it
 - `SeparatorListItem(ListItem)` — `disabled=True`, used as visual dividers; supports markup in label
-- `WeeklyHabitItem(ListItem)` — habit reminder item with `habit_key` and `habit_label` attrs
+- `WeeklyReviewItem(ListItem)` — the weekly review reminder item shown at the top of Today when not done this week
 - Modals: `InputModal`, `SelectModal`, `ConfirmModal`, `TwoFieldModal`, `SomedayBrowseScreen` — all `ModalScreen`
 - `ENABLE_COMMAND_PALETTE = False` on `GTDApp`
 - Use `@work` for ALL async actions that call `push_screen_wait` — required in both standalone and embedded contexts. `@work(thread=True)` for blocking Notion calls.
