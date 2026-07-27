@@ -70,8 +70,61 @@ header_status() {
     awk 'toupper($1) ~ /^HTTP/ {code=$2} END {sub(/\r$/, "", code); print code}' "$1"
 }
 
+# Last match wins: curl -L appends a header block per hop, and only the final
+# response's headers describe what actually answered.
 header_value() {
-    awk -v want="$1" -F': ' 'tolower($1) == want {sub(/\r$/, "", $2); print $2}' "$2"
+    awk -v want="$1" -F': ' '
+        tolower($1) == want { sub(/\r$/, "", $2); value = $2 }
+        END { print value }
+    ' "$2"
+}
+
+# A credential is a secret in whichever slot it arrives in — GitHub accepts a
+# PAT as the username, and credential-store entries written from a tokenised
+# clone URL put it there. Never print one just because it came back as a name.
+redact_if_secret() {
+    local value="$1"
+    if [[ "$value" =~ ^gh[pousr]_ || "${#value}" -ge 40 ]]; then
+        token_fingerprint "$value"
+    else
+        printf '%s' "$value"
+    fi
+}
+
+# Splits any GitHub-ish remote into host/owner/repo. Host aliases from
+# ~/.ssh/config are the standard two-account SSH setup, so the host is whatever
+# the URL says, not an assumed github.com.
+parse_remote() {
+    local url="$1" rest=""
+    if [[ "$url" =~ ^https?://([^/]+)/(.+)$ ]]; then
+        remote_host="${BASH_REMATCH[1]}"
+        rest="${BASH_REMATCH[2]}"
+    elif [[ "$url" =~ ^ssh://([^@/]+@)?([^:/]+)(:[0-9]+)?/(.+)$ ]]; then
+        remote_host="${BASH_REMATCH[2]}"
+        rest="${BASH_REMATCH[4]}"
+    elif [[ "$url" =~ ^([^@/]+@)?([^:/]+):(.+)$ ]]; then
+        remote_host="${BASH_REMATCH[2]}"
+        rest="${BASH_REMATCH[3]}"
+    else
+        return 1
+    fi
+
+    rest="${rest%/}"
+    rest="${rest%.git}"
+    [[ "$rest" == */* ]] || return 1
+    remote_owner="${rest%%/*}"
+    remote_repo="${rest##*/}"
+    [[ -n "$remote_owner" && -n "$remote_repo" ]]
+}
+
+# `ssh -G` prints the effective config for a host, which is the only way to
+# learn that `github-work` is really github.com.
+resolve_ssh_host() {
+    local host="$1" real=""
+    if command -v ssh &>/dev/null; then
+        real=$(ssh -G "$host" 2>/dev/null | awk '/^hostname /{print $2; exit}')
+    fi
+    printf '%s' "${real:-$host}"
 }
 
 # ── Target repo ───────────────────────────────────────────────────────────────
@@ -118,28 +171,45 @@ if [[ -z "$remote_url" ]]; then
 fi
 ok "remote origin" "$remote_url"
 
-if [[ "$remote_url" =~ ^https://github\.com/([^/]+)/ ]] ||
-    [[ "$remote_url" =~ ^git@github\.com:([^/]+)/ ]] ||
-    [[ "$remote_url" =~ ^ssh://git@github\.com/([^/]+)/ ]]; then
-    remote_owner="${BASH_REMATCH[1]}"
+remote_host=""
+remote_owner=""
+remote_repo=""
+if parse_remote "$remote_url"; then
     ok "remote owner" "$remote_owner"
 else
     warn "remote owner" "could not parse from $remote_url — skipping account checks"
-    remote_owner=""
-fi
-
-remote_repo=$(basename "$remote_url" .git)
-https_url="https://github.com/${remote_owner}/${remote_repo}.git"
-
-expects_personal_helper=false
-if [[ -n "$remote_owner" && "$remote_owner" == "$PERSONAL_GITHUB_USER" ]]; then
-    expects_personal_helper=true
 fi
 
 is_ssh=false
-if [[ "$remote_url" != https://* ]]; then
-    is_ssh=true
+[[ "$remote_url" == https://* ]] || is_ssh=true
+
+# The alias may point anywhere; only a host that really resolves to github.com
+# gets GitHub-specific advice or API calls.
+resolved_host="$remote_host"
+if [[ "$is_ssh" == true && -n "$remote_host" ]]; then
+    resolved_host=$(resolve_ssh_host "$remote_host")
+fi
+
+is_github=false
+[[ "$resolved_host" == "github.com" ]] && is_github=true
+
+https_url=""
+if [[ "$is_github" == true && -n "$remote_owner" && -n "$remote_repo" ]]; then
+    https_url="https://github.com/${remote_owner}/${remote_repo}.git"
+fi
+
+# GitHub logins are case-insensitive and the remote URL keeps whatever was
+# typed, so a case difference must not flip which helper is expected.
+expects_personal_helper=false
+if [[ -n "$remote_owner" && "${remote_owner,,}" == "${PERSONAL_GITHUB_USER,,}" ]]; then
+    expects_personal_helper=true
+fi
+
+if [[ "$is_ssh" == true ]]; then
     warn "protocol" "SSH remote — identity and tokens here are routed by HTTPS URL, so SSH bypasses all of it"
+fi
+if [[ "$is_github" == false ]]; then
+    warn "host" "${resolved_host:-unknown} is not github.com — GitHub account checks and the HTTPS recommendation are skipped"
 fi
 
 # ── SSH remote ────────────────────────────────────────────────────────────────
@@ -147,6 +217,7 @@ fi
 # Printed twice on purpose: once beside the SSH failures that motivate it, and
 # again in the summary, which is the part anyone actually reads.
 recommend_https_switch() {
+    [[ -n "$https_url" ]] || return 0
     echo ""
     printf "  ⇢   Switch this remote to HTTPS — one command:\n\n"
     printf "          git remote set-url origin %s\n" "$https_url"
@@ -175,26 +246,34 @@ check_ssh_auth() {
         return
     fi
 
+    # Probe the host the remote actually names. Probing github.com instead would
+    # clear a broken `github-work` alias, or condemn a working one, since each
+    # alias can carry its own IdentityFile.
+    local target="${remote_host:-github.com}"
+
     # BatchMode keeps a missing key or unknown host from blocking on a prompt;
     # host key checking is left at its default so this stays read-only.
     local output login
-    output=$(ssh -T -o BatchMode=yes -o ConnectTimeout="$SSH_TIMEOUT" git@github.com 2>&1)
+    output=$(ssh -T -o BatchMode=yes -o ConnectTimeout="$SSH_TIMEOUT" "git@${target}" 2>&1)
 
     if [[ "$output" == *"successfully authenticated"* ]]; then
         login="${output#*Hi }"
         login="${login%%!*}"
-        ok "ssh auth" "github.com accepted the key as '$login'"
+        ok "ssh auth" "$target accepted the key as '$login'"
     else
         fail "ssh auth" "$(printf '%s' "$output" | tr '\n' ' ' | cut -c1-88)"
     fi
 }
 
+# Counted as a delta, not a snapshot of the running total: an earlier failure
+# (an old git, a missing include) would otherwise be blamed on SSH.
 ssh_failures=0
 if [[ "$is_ssh" == true ]]; then
+    failures_before_ssh=$FAILURES
     section "SSH remote"
     check_ssh_agent
     check_ssh_auth
-    ssh_failures=$FAILURES
+    ssh_failures=$((FAILURES - failures_before_ssh))
     recommend_https_switch
 fi
 
@@ -322,7 +401,7 @@ filled_pass=$(printf '%s\n' "$fill_output" | sed -n 's/^password=//p')
 if [[ -z "$filled_pass" ]]; then
     fail "credential fill" "no helper returned a password — git would prompt (or fail) on push"
 else
-    ok "credential fill" "username=${filled_user:-<none>}  password=$(token_fingerprint "$filled_pass")"
+    ok "credential fill" "username=$(redact_if_secret "${filled_user:-<none>}")  password=$(token_fingerprint "$filled_pass")"
 
     filled_digest=$(token_digest "$filled_pass")
     if [[ "$expects_personal_helper" == true && -n "${MY_GITHUB_TOKEN:-}" ]]; then
@@ -348,14 +427,25 @@ fi
 
 section "Account identity"
 
+# The token goes through a 0600 config file rather than argv, which is world
+# readable in /proc/<pid>/cmdline for the life of the request. -L follows the
+# 301 GitHub answers for a renamed or transferred repo, which git push follows
+# transparently and so must not be reported as a failure.
 github_api() {
-    curl -sS --max-time "$API_TIMEOUT" -D "$2" \
-        -H "Authorization: Bearer ${filled_pass}" \
-        -H "Accept: application/vnd.github+json" \
-        "$1" 2>/dev/null
+    local url="$1" headers="$2" config
+    config=$(mktemp)
+    {
+        printf 'header = "Authorization: Bearer %s"\n' "$filled_pass"
+        printf 'header = "Accept: application/vnd.github+json"\n'
+    } >"$config"
+
+    curl -sS -L --max-time "$API_TIMEOUT" -D "$headers" --config "$config" "$url" 2>/dev/null
+    rm -f "$config"
 }
 
-if [[ -z "$filled_pass" ]]; then
+if [[ "$is_github" == false ]]; then
+    warn "account" "skipped — ${resolved_host:-this host} is not github.com"
+elif [[ -z "$filled_pass" ]]; then
     warn "account" "skipped — no credential to resolve"
 elif ! command -v curl &>/dev/null; then
     warn "account" "skipped — curl not installed"
@@ -374,10 +464,15 @@ else
     else
         ok "account" "$api_login"
 
+        # Whole-scope match. A substring test passes 'repo:status',
+        # 'read:repo_hook' and 'repo_deployment', none of which grant a push.
+        scope_list=",${api_scopes// /},"
         if [[ -z "$api_scopes" ]]; then
             warn "token scopes" "none reported — fine-grained token; verify it grants Contents:write on this repo"
-        elif [[ "$api_scopes" == *repo* ]]; then
+        elif [[ "$scope_list" == *,repo,* ]]; then
             ok "token scopes" "$api_scopes"
+        elif [[ "$scope_list" == *,public_repo,* ]]; then
+            warn "token scopes" "$api_scopes — 'public_repo' pushes to public repos only; a private repo will be denied"
         else
             fail "token scopes" "$api_scopes — missing 'repo', pushes over HTTPS will be denied"
         fi
