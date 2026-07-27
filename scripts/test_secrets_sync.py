@@ -84,7 +84,7 @@ def harness(tmp_path: Path) -> SyncHarness:
     setup = SyncHarness(tmp_path)
 
     (setup.repo / 'scripts').mkdir(parents=True)
-    for script in ('secrets.sh', 'queue.py'):
+    for script in ('secrets.sh', 'queue_cli.py'):
         shutil.copy(SCRIPTS_DIR / script, setup.repo / 'scripts' / script)
     (setup.repo / 'scripts' / 'secrets.sh').chmod(0o755)
     subprocess.run(  # noqa: S603

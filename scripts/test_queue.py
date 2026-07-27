@@ -1,4 +1,4 @@
-"""Regression tests for scripts/queue.py."""
+"""Regression tests for scripts/queue_cli.py."""
 
 import re
 from datetime import datetime
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from queue_script import (
+from queue_cli import (
     IN_PROGRESS_MARKER,
     MAX_COMPLETED_CONTENT_LINES,
     action_claim,
@@ -119,7 +119,7 @@ def test_list_titles_returns_one_title_per_item(
 def test_list_titles_preserves_titles_containing_markup(
     tmp_path: Path,
 ) -> None:
-    """fzf matches on the exact string queue.py later looks up."""
+    """fzf matches on the exact string queue_cli.py later looks up."""
     body = '# Queue\n\n## Add `.queue` to pass -- now\n\nbody\n'
 
     assert list_titles(_write_queue(tmp_path, body)) == [

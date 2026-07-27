@@ -6,7 +6,7 @@ _queue_py() {
     local repo_root="$1"
     shift
 
-    uv run python "${repo_root}/scripts/queue.py" \
+    uv run python "${repo_root}/scripts/queue_cli.py" \
         --queue-path "${repo_root}/.queue" \
         --complete-path "${repo_root}/.queue-complete" \
         "$@"

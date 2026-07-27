@@ -7,7 +7,7 @@ ROOT="$(git rev-parse --show-toplevel)"
 # The list of what to sync lives inside the store, not in this repo.
 readonly MANIFEST="manifest"
 
-readonly QUEUE_SCRIPT="scripts/queue.py"
+readonly QUEUE_SCRIPT="scripts/queue_cli.py"
 
 # Files a straight copy would corrupt: each machine edits its own copy, so both
 # sides have to survive a sync. Order matters -- the queue merge asks
