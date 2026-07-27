@@ -22,7 +22,7 @@
 
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
-- **dotfiles** — Repo layout, tools, install scripts, config files. Invoke when adding tools, modifying structure, or updating dotfile config.
+- **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
 - **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue. See "Queue System" below.
 
 ## References
@@ -32,6 +32,7 @@ Read these references before writing code in the following domains:
 - Read directly when writing Bash code: `.claude/references/bash-style.md`
 - Read directly when writing TypeScript/JavaScript/Node code: `.claude/references/node-style.md`
 - Read directly when writing Python code: `.claude/references/python-style.md`
+- Read directly for this repo's (`dotfiles`) layout, conventions, pre-commit hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
 - `gtd/` is a standalone package with its own `gtd/CLAUDE.md` — no skill needed, it loads automatically when working in that directory.
 
 ## Model Delegation
@@ -63,6 +64,7 @@ Read these references before writing code in the following domains:
 
 - When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, e.g. `gtd/CLAUDE.md`) to match.
   This keeps skill/package context in sync so future sessions have accurate info. Look for outdated framework names, dependency lists, API signatures, and file structure.
+- `.claude/skills/<name>/` are mirrored into `.github/skills/<name>` via symlink (so Copilot sees the same skills). When adding or removing a skill directory, add or remove the matching symlink in `.github/skills/` too.
 
 ## Security
 
