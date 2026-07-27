@@ -19,7 +19,7 @@ Free-form description. Can be multi-line.
 More details.
 ```
 
-`queue` (sourced from `bin/queue.sh`, backed by `scripts/queue.py`) is the CLI:
+`queue` (sourced from `bin/queue.sh`, backed by `scripts/queue_cli.py`) is the CLI:
 
 - `queue list` — preview the next items (title + first line)
 - `queue next` — show the full first item
@@ -42,7 +42,7 @@ titles. `--item-title` matches regardless of whether it includes the `[in-progre
 call. Call the script directly instead of assuming the function exists:
 
 ```bash
-uv run python scripts/queue.py --queue-path .queue --complete-path .queue-complete <action> ...
+uv run python scripts/queue_cli.py --queue-path .queue --complete-path .queue-complete <action> ...
 ```
 
 ## Manual invocation flow
@@ -77,7 +77,7 @@ uv run python scripts/queue.py --queue-path .queue --complete-path .queue-comple
    the session directly, so the assistant MUST end its own reply with a loud, unmissable
    reminder written in markdown (big heading, bold, emoji — vary the wording each time) telling
    the user to run `/clear`. Do this every single time, immediately after confirming
-   completion — never silently move on. This only matters for this LLM-driven flow; `queue.py`
+   completion — never silently move on. This only matters for this LLM-driven flow; `queue_cli.py`
    itself has no banner-printing code since raw terminal output doesn't render in the chat
    transcript anyway.
 
@@ -86,7 +86,7 @@ uv run python scripts/queue.py --queue-path .queue --complete-path .queue-comple
 - `.queue` and `.queue-complete` are both gitignored — this is a local working queue, not tracked history.
 - Both files sync between machines through the password store (`make secrets-save` / `secrets-load`,
   and the git hooks that call them). Both directions **merge** rather than overwrite: `secrets.sh`
-  routes these two paths through `queue.py merge-queue` / `merge-completed` instead of copying, so
+  routes these two paths through `queue_cli.py merge-queue` / `merge-completed` instead of copying, so
   items added on either machine survive a sync. `.queue` is the union of both sides by title, minus
   every title recorded in the merged `.queue-complete` — completions are the tombstones, which is why
   an already-completed item no longer resurrects.
@@ -102,6 +102,6 @@ uv run python scripts/queue.py --queue-path .queue --complete-path .queue-comple
   mechanism. A stale snapshot can make an item look claimed when the claiming session already
   finished (or vice versa) — if `queue claim` errors as already-in-progress but no other agent
   is actually running, ask the user before assuming the claim is real.
-- The 50-line trim on completion (`trim_content` in `scripts/queue.py`) only affects
+- The 50-line trim on completion (`trim_content` in `scripts/queue_cli.py`) only affects
   `.queue-complete`. Nothing trims `.queue` while an item is still active, so step 1's full
   read of the file can still be large if someone pastes a huge log in — that's expected.

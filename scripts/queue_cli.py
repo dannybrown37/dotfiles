@@ -176,7 +176,7 @@ def merge_queue_text(
 
 
 def completed_record_key(item: QueueItem) -> tuple[str, str]:
-    """Identify a completion by title plus the stamp queue.py wrote."""
+    """Identify a completion by title plus the stamp queue_cli.py wrote."""
     match = re.search(r'^- Completed: (.+)$', item.content, re.MULTILINE)
     stamp = match.group(1).strip() if match else ''
     return (strip_in_progress_marker(item.title), stamp)
