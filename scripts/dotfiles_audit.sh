@@ -202,6 +202,18 @@ if [[ -n "$NODE_VER" && "$NODE_VER" != "22" ]]; then
     warn "node version" "expected v22, got v${NODE_VER} — run: sudo n 22"
 fi
 
+# This repo standardized on n (matches the CodeBuild image). A leftover nvm
+# defines a `node` shell function that shadows n's binary in every interactive
+# shell, silently sending global npm installs to the wrong Node.
+NODE_PATH_RESOLVED=$(command -v node 2>/dev/null)
+if [[ "$NODE_PATH_RESOLVED" == *"/.nvm/"* ]]; then
+    fail "node source" "resolves to nvm ($NODE_PATH_RESOLVED) — remove ~/.nvm, then: make node"
+elif [[ -d "$HOME/.nvm" ]]; then
+    warn "nvm leftover" "$HOME/.nvm still exists — this repo uses n; run: rm -rf ~/.nvm"
+else
+    ok "node source" "${NODE_PATH_RESOLVED:-<none>} (n, no nvm)"
+fi
+
 npm_globals=(git-open)
 for pkg in "${npm_globals[@]}"; do
     if npm list --global --depth=0 "$pkg" &>/dev/null; then

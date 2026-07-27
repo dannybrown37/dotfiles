@@ -415,19 +415,6 @@ PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
 export PATH
 
 
-export NVM_DIR="$HOME/.nvm"
-_load_nvm() {
-    unset -f nvm node npm npx
-    # shellcheck disable=SC1091
-    [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
-    # shellcheck disable=SC1091
-    [[ -s "$NVM_DIR/bash_completion" ]] && \. "$NVM_DIR/bash_completion"
-}
-nvm()  { _load_nvm; nvm  "$@"; }
-node() { _load_nvm; node "$@"; }
-npm()  { _load_nvm; npm  "$@"; }
-npx()  { _load_nvm; npx  "$@"; }
-
 # Profiling
 # set +x
 # exec 2>&3 3>&-
@@ -450,4 +437,3 @@ _bt_show() {
 
 [[ "${PROMPT_COMMAND[*]}" != *_bt_pc_mark* ]] && PROMPT_COMMAND=("_bt_pc_mark" "${PROMPT_COMMAND[@]}")
 [[ "${PROMPT_COMMAND[*]}" != *_bt_show* ]] && PROMPT_COMMAND+=($'\n''_bt_show')
-export PATH="$HOME/.npm-global/bin:$PATH"
