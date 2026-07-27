@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Walks the HTTPS credential chain for a repo's GitHub remote and reports the
-# first broken link. Read-only — does not install or modify anything.
+# Diagnoses why a GitHub push is refused. Handles both transports: an SSH remote
+# gets an SSH diagnosis (and a nudge back to HTTPS, which is what the rest of
+# this setup is built around), an HTTPS remote gets its credential chain walked.
+# Read-only — does not install or modify anything.
 # Usage: ./scripts/git_auth_doctor.sh [repo-dir]   (default: cwd, else ~/projects/dotfiles)
 #
 # No `set -e`: a doctor has to keep going past a failing check to reach the
@@ -15,6 +17,11 @@ FAILURES=0
 
 readonly MIN_GIT_VERSION="2.36" # first release with includeIf hasconfig:remote.*.url
 readonly API_TIMEOUT=10
+readonly SSH_TIMEOUT=5
+
+# Which account the personal credential helper is expected to serve. Every
+# other owner is a work/org remote, where gh answering is the correct outcome.
+readonly PERSONAL_GITHUB_USER="${MY_GITHUB_USER:-dannybrown37}"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +64,16 @@ version_at_least() {
     [[ "$(printf '%s\n%s\n' "$want" "$have" | sort -V | head -n1)" == "$want" ]]
 }
 
+# Header files are CRLF-terminated, so every extracted value gets the \r stripped
+# — a status of $'200\r' compares equal to nothing and silently fails every check.
+header_status() {
+    awk 'toupper($1) ~ /^HTTP/ {code=$2} END {sub(/\r$/, "", code); print code}' "$1"
+}
+
+header_value() {
+    awk -v want="$1" -F': ' 'tolower($1) == want {sub(/\r$/, "", $2); print $2}' "$2"
+}
+
 # ── Target repo ───────────────────────────────────────────────────────────────
 
 repo_dir="${1:-}"
@@ -70,7 +87,7 @@ fi
 
 echo ""
 echo "  ╔══════════════════════════════════════════════════════════════════╗"
-echo "  ║                    Git HTTPS Auth Doctor                         ║"
+echo "  ║                        Git Auth Doctor                           ║"
 echo "  ╚══════════════════════════════════════════════════════════════════╝"
 
 if ! git -C "$repo_dir" rev-parse --git-dir &>/dev/null; then
@@ -111,13 +128,83 @@ else
     remote_owner=""
 fi
 
+remote_repo=$(basename "$remote_url" .git)
+https_url="https://github.com/${remote_owner}/${remote_repo}.git"
+
+expects_personal_helper=false
+if [[ -n "$remote_owner" && "$remote_owner" == "$PERSONAL_GITHUB_USER" ]]; then
+    expects_personal_helper=true
+fi
+
+is_ssh=false
 if [[ "$remote_url" != https://* ]]; then
-    warn "protocol" "remote is not HTTPS — credential helpers do not apply to SSH"
+    is_ssh=true
+    warn "protocol" "SSH remote — identity and tokens here are routed by HTTPS URL, so SSH bypasses all of it"
+fi
+
+# ── SSH remote ────────────────────────────────────────────────────────────────
+
+# Printed twice on purpose: once beside the SSH failures that motivate it, and
+# again in the summary, which is the part anyone actually reads.
+recommend_https_switch() {
+    echo ""
+    printf "  ⇢   Switch this remote to HTTPS — one command:\n\n"
+    printf "          git remote set-url origin %s\n" "$https_url"
+}
+
+check_ssh_agent() {
+    if ! command -v ssh-add &>/dev/null; then
+        warn "ssh-agent" "ssh-add not installed — cannot inspect loaded keys"
+        return
+    fi
+
+    local keys status
+    keys=$(ssh-add -l 2>&1)
+    status=$?
+
+    case "$status" in
+    0) ok "ssh-agent" "$(printf '%s\n' "$keys" | grep -c .) key(s) loaded" ;;
+    1) fail "ssh-agent" "agent running but no identities — run: ssh-add ~/.ssh/id_ed25519" ;;
+    *) fail "ssh-agent" "no agent reachable — WSL does not persist one across shells. Run: eval \"\$(ssh-agent -s)\" && ssh-add ~/.ssh/id_ed25519" ;;
+    esac
+}
+
+check_ssh_auth() {
+    if ! command -v ssh &>/dev/null; then
+        warn "ssh auth" "ssh not installed"
+        return
+    fi
+
+    # BatchMode keeps a missing key or unknown host from blocking on a prompt;
+    # host key checking is left at its default so this stays read-only.
+    local output login
+    output=$(ssh -T -o BatchMode=yes -o ConnectTimeout="$SSH_TIMEOUT" git@github.com 2>&1)
+
+    if [[ "$output" == *"successfully authenticated"* ]]; then
+        login="${output#*Hi }"
+        login="${login%%!*}"
+        ok "ssh auth" "github.com accepted the key as '$login'"
+    else
+        fail "ssh auth" "$(printf '%s' "$output" | tr '\n' ' ' | cut -c1-88)"
+    fi
+}
+
+ssh_failures=0
+if [[ "$is_ssh" == true ]]; then
+    section "SSH remote"
+    check_ssh_agent
+    check_ssh_auth
+    ssh_failures=$FAILURES
+    recommend_https_switch
 fi
 
 # ── Config resolution ─────────────────────────────────────────────────────────
 
-section "Config resolution"
+if [[ "$is_ssh" == true ]]; then
+    section "Config resolution (preview — how HTTPS would resolve)"
+else
+    section "Config resolution"
+fi
 
 mapfile -t helper_lines < <(
     git -C "$repo_dir" config --show-origin --get-all credential.https://github.com.helper 2>/dev/null
@@ -164,27 +251,37 @@ done
 
 section "Credential helper script"
 
-if [[ "$effective_helper" =~ ^!(.+git-credential-personal\.sh)$ ]]; then
-    helper_path="${BASH_REMATCH[1]}"
-    # The helper is stored with a literal ~, expanded by the shell git invokes.
-    helper_path="${helper_path/#\~/$HOME}"
-    if [[ ! -f "$helper_path" ]]; then
-        fail "helper script" "$helper_path does not exist — dotfiles cloned to a different path?"
-    elif [[ ! -x "$helper_path" ]]; then
-        fail "helper script" "$helper_path is not executable — run: chmod +x $helper_path"
+# Which helper *should* win depends on who owns the remote. Demanding the
+# personal helper everywhere reported a broken chain on every work repo.
+if [[ "$expects_personal_helper" == true ]]; then
+    if [[ "$effective_helper" =~ ^!(.+git-credential-personal\.sh)$ ]]; then
+        helper_path="${BASH_REMATCH[1]}"
+        # The helper is stored with a literal ~, expanded by the shell git invokes.
+        helper_path="${helper_path/#\~/$HOME}"
+        if [[ ! -f "$helper_path" ]]; then
+            fail "helper script" "$helper_path does not exist — dotfiles cloned to a different path?"
+        elif [[ ! -x "$helper_path" ]]; then
+            fail "helper script" "$helper_path is not executable — run: chmod +x $helper_path"
+        else
+            ok "helper script" "$helper_path"
+        fi
     else
-        ok "helper script" "$helper_path"
+        fail "helper script" "personal remote, but the personal helper is not effective (got: ${effective_helper:-none})"
     fi
+elif [[ "$effective_helper" =~ git-credential-personal\.sh ]]; then
+    fail "helper script" "personal helper is effective for '$remote_owner' — it would push as $PERSONAL_GITHUB_USER"
+elif [[ -z "$effective_helper" ]]; then
+    fail "helper script" "no helper configured for https://github.com"
 else
-    fail "helper script" "personal helper is not the effective helper for this remote (got: ${effective_helper:-none})"
+    ok "helper script" "${effective_helper} — correct for non-personal remote '$remote_owner'"
 fi
 
-# This script is a child of the user's shell, so it sees exactly the exported
-# vars git's helper subprocess would see. Checking here IS the subprocess test.
 if [[ -n "${MY_GITHUB_TOKEN:-}" ]]; then
     ok "MY_GITHUB_TOKEN" "$(token_fingerprint "$MY_GITHUB_TOKEN")"
-else
+elif [[ "$expects_personal_helper" == true ]]; then
     fail "MY_GITHUB_TOKEN" "not exported — helper falls back to gh, which returns GITHUB_TOKEN (the work token). Check: grep MY_GITHUB_TOKEN config/.secrets, then: make secrets-load"
+else
+    warn "MY_GITHUB_TOKEN" "not exported — not needed for '$remote_owner'"
 fi
 
 if [[ -n "${GITHUB_TOKEN:-}" && -n "${MY_GITHUB_TOKEN:-}" ]]; then
@@ -197,13 +294,17 @@ fi
 
 # ── End-to-end credential fill ────────────────────────────────────────────────
 
-section "End-to-end (git credential fill)"
+if [[ "$is_ssh" == true ]]; then
+    section "End-to-end (preview — git credential fill over HTTPS)"
+else
+    section "End-to-end (git credential fill)"
+fi
 
 fill_request="protocol=https
 host=github.com
 "
 if [[ -n "$remote_owner" ]]; then
-    fill_request+="path=${remote_owner}/$(basename "$remote_url" .git)
+    fill_request+="path=${remote_owner}/${remote_repo}
 "
 fi
 
@@ -223,12 +324,20 @@ if [[ -z "$filled_pass" ]]; then
 else
     ok "credential fill" "username=${filled_user:-<none>}  password=$(token_fingerprint "$filled_pass")"
 
-    if [[ -n "${MY_GITHUB_TOKEN:-}" ]]; then
-        if [[ "$(token_digest "$filled_pass")" == "$(token_digest "$MY_GITHUB_TOKEN")" ]]; then
+    filled_digest=$(token_digest "$filled_pass")
+    if [[ "$expects_personal_helper" == true && -n "${MY_GITHUB_TOKEN:-}" ]]; then
+        if [[ "$filled_digest" == "$(token_digest "$MY_GITHUB_TOKEN")" ]]; then
             ok "token source" "MY_GITHUB_TOKEN (personal helper answered)"
-        elif [[ -n "${GITHUB_TOKEN:-}" &&
-            "$(token_digest "$filled_pass")" == "$(token_digest "$GITHUB_TOKEN")" ]]; then
-            fail "token source" "GITHUB_TOKEN answered, not MY_GITHUB_TOKEN — the gh helper won. Check helper order above"
+        elif [[ -n "${GITHUB_TOKEN:-}" && "$filled_digest" == "$(token_digest "$GITHUB_TOKEN")" ]]; then
+            fail "token source" "GITHUB_TOKEN answered for a personal remote — the gh helper won. Check helper order above"
+        else
+            warn "token source" "matches neither env token — probably a cached credential from gh or osxkeychain/libsecret"
+        fi
+    elif [[ "$expects_personal_helper" == false ]]; then
+        if [[ -n "${MY_GITHUB_TOKEN:-}" && "$filled_digest" == "$(token_digest "$MY_GITHUB_TOKEN")" ]]; then
+            fail "token source" "MY_GITHUB_TOKEN answered for '$remote_owner' — the personal helper leaked onto a non-personal remote"
+        elif [[ -n "${GITHUB_TOKEN:-}" && "$filled_digest" == "$(token_digest "$GITHUB_TOKEN")" ]]; then
+            ok "token source" "GITHUB_TOKEN (work account — correct for '$remote_owner')"
         else
             warn "token source" "matches neither env token — probably a cached credential from gh or osxkeychain/libsecret"
         fi
@@ -239,35 +348,32 @@ fi
 
 section "Account identity"
 
+github_api() {
+    curl -sS --max-time "$API_TIMEOUT" -D "$2" \
+        -H "Authorization: Bearer ${filled_pass}" \
+        -H "Accept: application/vnd.github+json" \
+        "$1" 2>/dev/null
+}
+
 if [[ -z "$filled_pass" ]]; then
     warn "account" "skipped — no credential to resolve"
 elif ! command -v curl &>/dev/null; then
     warn "account" "skipped — curl not installed"
 else
-    api_headers=$(mktemp)
-    trap 'rm -f "$api_headers"' EXIT
+    user_headers=$(mktemp)
+    repo_headers=$(mktemp)
+    trap 'rm -f "$user_headers" "$repo_headers"' EXIT
 
-    api_body=$(
-        curl -sS --max-time "$API_TIMEOUT" -D "$api_headers" \
-            -H "Authorization: Bearer ${filled_pass}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/user 2>/dev/null
-    )
-    api_status=$(awk 'toupper($1) ~ /^HTTP/ {code=$2} END {print code}' "$api_headers")
-    api_login=$(printf '%s' "$api_body" | sed -n 's/.*"login"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)
-    api_scopes=$(awk -F': ' 'tolower($1) == "x-oauth-scopes" {sub(/\r$/, "", $2); print $2}' "$api_headers")
+    user_body=$(github_api "https://api.github.com/user" "$user_headers")
+    user_status=$(header_status "$user_headers")
+    api_login=$(printf '%s' "$user_body" | sed -n 's/.*"login"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)
+    api_scopes=$(header_value "x-oauth-scopes" "$user_headers")
 
-    if [[ "$api_status" != "200" ]]; then
-        fail "account" "GitHub API returned ${api_status:-no response} — token invalid, expired, or network blocked"
-    elif [[ -z "$remote_owner" ]]; then
-        ok "account" "$api_login (remote owner unknown, not compared)"
-    elif [[ "$api_login" == "$remote_owner" ]]; then
-        ok "account" "$api_login — matches remote owner"
+    if [[ "$user_status" != "200" ]]; then
+        fail "account" "GitHub API returned ${user_status:-no response} — token invalid, expired, or network blocked"
     else
-        fail "account" "token belongs to '$api_login' but remote is owned by '$remote_owner' — pushes will 403"
-    fi
+        ok "account" "$api_login"
 
-    if [[ "$api_status" == "200" ]]; then
         if [[ -z "$api_scopes" ]]; then
             warn "token scopes" "none reported — fine-grained token; verify it grants Contents:write on this repo"
         elif [[ "$api_scopes" == *repo* ]]; then
@@ -276,13 +382,56 @@ else
             fail "token scopes" "$api_scopes — missing 'repo', pushes over HTTPS will be denied"
         fi
     fi
+
+    # Asking GitHub whether this token can push beats comparing the token's
+    # login to the remote owner: an org repo's owner is never a user login, so
+    # that comparison failed on every work repo it was ever run against.
+    if [[ "$user_status" == "200" && -n "$remote_owner" ]]; then
+        repo_body=$(github_api "https://api.github.com/repos/${remote_owner}/${remote_repo}" "$repo_headers")
+        repo_status=$(header_status "$repo_headers")
+        repo_sso=$(header_value "x-github-sso" "$repo_headers")
+
+        case "$repo_status" in
+        200)
+            can_push=$(
+                printf '%s' "$repo_body" | tr ',' '\n' |
+                    sed -n 's/.*"push"[[:space:]]*:[[:space:]]*\(true\|false\).*/\1/p' | head -n1
+            )
+            if [[ "$can_push" == "true" ]]; then
+                ok "repo access" "$api_login can push to ${remote_owner}/${remote_repo}"
+            else
+                fail "repo access" "$api_login has read-only access to ${remote_owner}/${remote_repo} — pushes will 403"
+            fi
+            ;;
+        401 | 403 | 404)
+            if [[ -n "$repo_sso" ]]; then
+                fail "repo access" "$repo_status — token needs SSO authorization for '$remote_owner': $repo_sso"
+            else
+                fail "repo access" "$repo_status — ${remote_owner}/${remote_repo} is not reachable as '$api_login'. Wrong account, no access, or the token needs SSO authorization"
+            fi
+            ;;
+        *)
+            fail "repo access" "GitHub API returned ${repo_status:-no response} for ${remote_owner}/${remote_repo}"
+            ;;
+        esac
+    fi
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
-echo ""
+https_failures=$((FAILURES - ssh_failures))
+
+section "Summary"
+
 if [[ "$FAILURES" -eq 0 ]]; then
     echo "  ${PASS} Credential chain is healthy — plain 'git push' should work."
+elif [[ "$is_ssh" == true && "$ssh_failures" -gt 0 && "$https_failures" -eq 0 ]]; then
+    echo "  ${FAIL} SSH auth is broken, but the HTTPS chain above checks out."
+    recommend_https_switch
+elif [[ "$is_ssh" == true && "$ssh_failures" -gt 0 ]]; then
+    echo "  ${FAIL} ${FAILURES} broken link(s) — SSH is broken and HTTPS has ${https_failures} of its own."
+    echo "     Fix the HTTPS ❌ above, then switch transport:"
+    recommend_https_switch
 else
     echo "  ${FAIL} ${FAILURES} broken link(s) — fix the first ❌ above, then re-run."
 fi
