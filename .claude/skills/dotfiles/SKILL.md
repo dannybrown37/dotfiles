@@ -64,6 +64,10 @@ mytool() { command mytool "$@"; }  # @doc Brief description | mytool <usage>
 - If it's a standalone utility that runs in a subshell → add to `scripts/` (non-sourced, executable, with shebang).
 - Scripts in `bin/` are automatically available after sourcing `.bashrc`.
 
+## Claude Skills
+
+- `.claude/skills/<name>/` are mirrored into `.github/skills/<name>` via symlink (so Copilot sees the same skills). When adding or removing a skill directory, add or remove the matching symlink in `.github/skills/` too.
+
 ## Pre-commit
 
 Managed via `.pre-commit-config.yaml`. Active hooks:

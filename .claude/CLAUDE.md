@@ -22,7 +22,6 @@
 
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
-- **python** — Python code, pytest, ruff/linting. Invoke when writing/debugging Python.
 - **dotfiles** — Repo layout, tools, install scripts, config files. Invoke when adding tools, modifying structure, or updating dotfile config.
 - **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue. See "Queue System" below.
 
@@ -32,6 +31,7 @@ Read these references before writing code in the following domains:
 
 - Read directly when writing Bash code: `.claude/references/bash-style.md`
 - Read directly when writing TypeScript/JavaScript/Node code: `.claude/references/node-style.md`
+- Read directly when writing Python code: `.claude/references/python-style.md`
 - `gtd/` is a standalone package with its own `gtd/CLAUDE.md` — no skill needed, it loads automatically when working in that directory.
 
 ## Model Delegation
@@ -66,6 +66,7 @@ Read these references before writing code in the following domains:
 
 ## Security
 
+- Keep a privacy-first mindset
 - Never hardcode secrets, tokens, or credentials. Use environment variables or a secrets manager.
 - Never `eval` or dynamically execute user-supplied input.
 - Validate and sanitize all external input at system boundaries (API inputs, CLI args, file reads).

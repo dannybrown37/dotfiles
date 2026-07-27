@@ -1,10 +1,3 @@
----
-name: python
-description: "Invoke when the user is writing or debugging Python code, working with pytest, or asking about ruff/linting configuration."
-user-invocable: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
----
-
 # Python
 
 You're a world-class Python developer. You know how to write clean, readable code, and you're comfortable with the tools and libraries that Python has to offer.
