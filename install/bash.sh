@@ -258,17 +258,14 @@ else
 fi
 
 ##
-## Symlink skills from skill-tree into ~/.claude so they work from any repo
+## Install skill-tree's queue skill and its CLI
 ##
 
 skill_tree_dir="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}"
+skill_tree_install="${skill_tree_dir}/skills/queue/scripts/install.sh"
 
-if [ ! -d "${skill_tree_dir}" ]; then
-    echo "skill-tree not cloned at ${skill_tree_dir} -- skipping skill symlinks"
-elif [ ! -L "${HOME}/.claude/skills/queue" ]; then
-    mkdir -p ~/.claude/skills
-    ln -s "${skill_tree_dir}/.claude/skills/queue" ~/.claude/skills/queue &&
-        echo "Symlinked queue skill to ~/.claude/skills/queue"
+if [ ! -x "${skill_tree_install}" ]; then
+    echo "skill-tree not cloned at ${skill_tree_dir} -- skipping skill install"
 else
-    echo "queue skill has already been symlinked"
+    "${skill_tree_install}"
 fi

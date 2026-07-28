@@ -213,8 +213,8 @@ def harness(tmp_path: Path) -> SyncHarness:
     fake_pass.chmod(0o755)
 
     setup.projects.mkdir()
-    (setup.skill_tree / 'scripts').mkdir(parents=True)
-    stub = setup.skill_tree / 'scripts' / 'queue_cli.py'
+    (setup.skill_tree / 'skills' / 'queue' / 'scripts').mkdir(parents=True)
+    stub = setup.skill_tree / 'skills' / 'queue' / 'scripts' / 'queue_cli.py'
     stub.write_text(STUB_QUEUE_CLI)
     stub.chmod(0o755)
     setup.write_store_entry('manifest', MANIFEST)
