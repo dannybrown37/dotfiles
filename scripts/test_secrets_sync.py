@@ -32,11 +32,26 @@ insert)
     mkdir -p "$(dirname "${entry}")"
     cat >"${entry}"
     ;;
+git)
+    shift
+    exec git -C "${PASSWORD_STORE_DIR}" "$@"
+    ;;
 *)
     exit 0
     ;;
 esac
 """
+
+# Real `pass` commits every insert, so the store is a working tree too.
+GIT_ENV = {
+    'GIT_AUTHOR_NAME': 'Test',
+    'GIT_AUTHOR_EMAIL': 'test@example.com',
+    'GIT_COMMITTER_NAME': 'Test',
+    'GIT_COMMITTER_EMAIL': 'test@example.com',
+    # The user's own config sets pull/signing defaults for ~/.password-store.
+    'GIT_CONFIG_GLOBAL': os.devnull,
+    'GIT_CONFIG_SYSTEM': os.devnull,
+}
 
 # .queue deliberately precedes .queue-complete: the tombstones have to be
 # reconciled first regardless of what order the manifest lists them in.
@@ -47,9 +62,11 @@ class SyncHarness:
     """A throwaway repo plus fake store to run secrets.sh against."""
 
     def __init__(self, root: Path) -> None:
+        self.root = root
         self.repo = root / 'repo'
         self.store = root / 'store'
-        self.entries = root / 'entries'
+        # Entries live in the store so a git-backed store can version them.
+        self.entries = self.store
         self.bin = root / 'bin'
         self.projects = root / 'projects'
         self.queue = self.repo / '.queue'
@@ -64,6 +81,7 @@ class SyncHarness:
     ) -> subprocess.CompletedProcess[str]:
         env = {
             **os.environ,
+            **GIT_ENV,
             'PATH': f'{self.bin}{os.pathsep}{os.environ["PATH"]}',
             'STUB_STORE': str(self.entries),
             'PASSWORD_STORE_DIR': str(self.store),
@@ -115,7 +133,6 @@ def harness(tmp_path: Path) -> SyncHarness:
     fake_pass.write_text(STUB_SCRIPT)
     fake_pass.chmod(0o755)
 
-    setup.entries.mkdir()
     setup.projects.mkdir()
     setup.write_store_entry('manifest', MANIFEST)
     return setup
@@ -132,6 +149,121 @@ def _titles(queue_text: str) -> list[str]:
         for line in queue_text.splitlines()
         if line.startswith('## ')
     ]
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(  # noqa: S603
+        [GIT, *args],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+        env={**os.environ, **GIT_ENV},
+    )
+
+
+def _commit_store(harness: SyncHarness, message: str) -> None:
+    _git(harness.store, 'add', '-A')
+    _git(harness.store, 'commit', '-m', message)
+
+
+def _git_backed_store(harness: SyncHarness) -> Path:
+    """Turn the store into a clone of a bare remote, as a real one is."""
+    remote = harness.root / 'remote.git'
+    _git(harness.root, 'init', '--bare', '-b', 'main', str(remote))
+    _git(harness.store, 'init', '-b', 'main')
+    _commit_store(harness, 'initial')
+    _git(harness.store, 'remote', 'add', 'origin', str(remote))
+    _git(harness.store, 'push', '-u', 'origin', 'main')
+    return remote
+
+
+def _other_machine_pushes(
+    harness: SyncHarness,
+    remote: Path,
+    name: str,
+    text: str,
+) -> None:
+    other = harness.root / 'other'
+    if not other.exists():
+        _git(harness.root, 'clone', '--quiet', str(remote), str(other))
+    entry = other / name
+    entry.parent.mkdir(parents=True, exist_ok=True)
+    entry.write_text(text)
+    _git(other, 'add', '-A')
+    _git(other, 'commit', '-m', f'update {name}')
+    _git(other, 'push', '--quiet', 'origin', 'main')
+
+
+def _rebase_in_progress(store: Path) -> bool:
+    git_dir = store / '.git'
+    return any(
+        (git_dir / state).exists()
+        for state in ('rebase-merge', 'rebase-apply')
+    )
+
+
+def test_load_pulls_when_both_machines_have_committed(
+    harness: SyncHarness,
+) -> None:
+    """The reported bug: --ff-only refused every diverged store."""
+    remote = _git_backed_store(harness)
+    _other_machine_pushes(harness, remote, 'some/token', 'from-there\n')
+    harness.write_store_entry('some/other', 'from-here\n')
+    _commit_store(harness, 'local work')
+
+    harness.run('load')
+
+    assert harness.store_entry('some/token') == 'from-there\n'
+    assert harness.store_entry('some/other') == 'from-here\n'
+    assert not _rebase_in_progress(harness.store)
+
+
+def test_load_surfaces_the_entry_the_other_machine_pushed(
+    harness: SyncHarness,
+) -> None:
+    """A pull that never lands is the symptom the user actually sees."""
+    remote = _git_backed_store(harness)
+    _other_machine_pushes(
+        harness,
+        remote,
+        'manifest',
+        MANIFEST + 'some/token:.token\n',
+    )
+    _other_machine_pushes(harness, remote, 'some/token', 'newest-value\n')
+    harness.write_store_entry('some/other', 'from-here\n')
+    _commit_store(harness, 'local work')
+
+    harness.run('load')
+
+    assert (harness.repo / '.token').read_text() == 'newest-value\n'
+
+
+def test_save_pulls_before_pushing(harness: SyncHarness) -> None:
+    """Otherwise the push is rejected the moment the stores diverge."""
+    remote = _git_backed_store(harness)
+    _other_machine_pushes(harness, remote, 'some/token', 'from-there\n')
+    harness.queue.write_text(_queue('Added Here'))
+
+    harness.run('save')
+
+    assert harness.store_entry('some/token') == 'from-there\n'
+
+
+def test_conflicting_pull_fails_loudly_and_leaves_store_usable(
+    harness: SyncHarness,
+) -> None:
+    """A half-finished rebase would strand later inserts on a detached HEAD."""
+    remote = _git_backed_store(harness)
+    _other_machine_pushes(harness, remote, 'some/token', 'from-there\n')
+    harness.write_store_entry('some/token', 'from-here\n')
+    _commit_store(harness, 'local edit of the same entry')
+
+    result = harness.run('load', check=False)
+
+    assert result.returncode != 0
+    assert 'conflict' in result.stderr.lower()
+    assert not _rebase_in_progress(harness.store)
 
 
 def test_load_keeps_local_items_the_store_has_not_seen(
