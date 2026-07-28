@@ -36,7 +36,6 @@ Read these references before writing code in the following domains:
 - Read directly when writing Python code: `.claude/references/python-style.md`
 - Read directly for this repo's (`dotfiles`) layout, conventions, pre-commit hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
 - Read directly when a `.queue` / `.queue-complete` sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `.claude/references/queue-sync-model.md`
-- `gtd/` is a standalone package with its own `gtd/CLAUDE.md` — no skill needed, it loads automatically when working in that directory.
 
 ## Model Delegation
 
@@ -57,7 +56,7 @@ Read these references before writing code in the following domains:
 - Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
 - A `pre-push` git hook prints a reminder of this — it does not block the push or call any AI review itself.
 - Full checklist: `.claude/references/code-review-checklist.md`.
-- For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, spawn the `adversarial-review` subagent manually — `.claude/agents/adversarial-review.md`. Never spawn it automatically/proactively; it's expensive and user-triggered only, like `/code-review ultra`. Do proactively suggest it to the user when changes seem to make it worthwhile. Especially useful for `password-store` operations and other auth/secrets, `queue_cli.py`, and `gtd/`
+- For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, spawn the `adversarial-review` subagent manually — `.claude/agents/adversarial-review.md`. Never spawn it automatically/proactively; it's expensive and user-triggered only, like `/code-review ultra`. Do proactively suggest it to the user when changes seem to make it worthwhile. Especially useful for `password-store` operations and other auth/secrets, and `queue_cli.py`
 
 ## Code Style (General)
 
@@ -67,7 +66,7 @@ Read these references before writing code in the following domains:
 
 ## Documentation
 
-- When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, e.g. `gtd/CLAUDE.md`) to match.
+- When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, if it has one) to match.
   This keeps skill/package context in sync so future sessions have accurate info. Look for outdated framework names, dependency lists, API signatures, and file structure.
 - `.claude/skills/<name>/` are mirrored into `.github/skills/<name>` via symlink (so Copilot sees the same skills). When adding or removing a skill directory, add or remove the matching symlink in `.github/skills/` too. The symlink is directory-level, so bundled subdirectories come along for free.
 

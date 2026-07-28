@@ -31,15 +31,6 @@ repos:
         entry: ruff check --fix --config config/.ruff.toml
         language: system
         types: [python]
-        exclude: ^gtd/
-        pass_filenames: true
-
-      - id: ruff-check-gtd
-        name: Ruff check (gtd/)
-        entry: ruff check --fix
-        language: system
-        types: [python]
-        files: ^gtd/
         pass_filenames: true
 
       - id: ruff-format
@@ -47,16 +38,6 @@ repos:
         entry: bash -c 'ruff format --config config/.ruff.toml "$@" && git add "$@"' --
         language: system
         types: [python]
-        exclude: ^gtd/
-        pass_filenames: true
-        require_serial: true
-
-      - id: ruff-format-gtd
-        name: Ruff format (gtd/)
-        entry: bash -c 'ruff format "$@" && git add "$@"' --
-        language: system
-        types: [python]
-        files: ^gtd/
         pass_filenames: true
         require_serial: true
 
@@ -108,20 +89,6 @@ repos:
         entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bash scripts/sync-readme-make.sh && git add README.md'
         language: system
         files: (Makefile|README\.md)$
-        pass_filenames: false
-
-      - id: sync-gtd-readme
-        name: Sync GTD README menu
-        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/gtd" && uv run python scripts/update_readme.py && git add README.md'
-        language: system
-        files: ^gtd/(src/gtd/cli\.py|README\.md)$
-        pass_filenames: false
-
-      - id: gtd-tests
-        name: GTD tests
-        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/gtd" && uv run pytest tests/ -q'
-        language: system
-        files: ^gtd/(?!\.venv/).*
         pass_filenames: false
 
       - id: scripts-tests
