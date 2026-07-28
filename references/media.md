@@ -15,3 +15,7 @@ Brian Okken (author of *Python Testing with pytest*) on Talk Python To Me. Cover
 ## Taming Flaky Tests
 Gregory Kapphammer and Owen Perry on the research and practical strategies behind flaky tests — tests that pass and fail intermittently without code changes. Covers root causes (timing, ordering, external deps), detection strategies, and how to systematically eliminate them.
 [Taming Flaky Tests — Talk Python To Me #429](https://talkpython.fm/episodes/show/429/taming-flaky-tests)
+
+## How to Write an Effective Software Design Doc
+Great, tangible advice and examples for writing effective design docs.
+[Refactoring English](https://refactoringenglish.com/excerpts/write-an-effective-design-doc/)
