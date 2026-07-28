@@ -230,7 +230,33 @@ for_each_entry() {
     done < <(order_entries entries)
 }
 
+# Every `pass insert` commits, so two machines that each saved have diverged
+# by construction -- the common case, not an error. --ff-only refused all of
+# them; rebase replays the local commits and only stops when the same entry
+# changed on both sides. --autostash covers a half-finished earlier run.
+sync_pull() {
+    store_is_git || return 0
+
+    echo "Pulling password-store:"
+    if pass git pull --rebase --autostash; then
+        return 0
+    fi
+
+    # Left mid-rebase, every later `pass insert` would commit onto a detached
+    # HEAD and vanish at the next checkout.
+    pass git rebase --abort 2>/dev/null || true
+    die "password-store pull conflicted -- same entry changed on both machines.
+  Resolve by hand, keeping one side (encrypted blobs cannot merge):
+    pass git pull --rebase
+    pass git checkout --ours <entry>.gpg    # or --theirs
+    pass git add <entry>.gpg && pass git rebase --continue"
+}
+
 save_all() {
+    # Saving merges .queue against the store, so pull first or the merge runs
+    # against a stale copy and the push is rejected anyway.
+    sync_pull
+
     echo "Saving local files into password-store:"
     for_each_entry save_entry
 
@@ -241,10 +267,7 @@ save_all() {
 }
 
 load_all() {
-    if store_is_git; then
-        echo "Pulling password-store:"
-        pass git pull --ff-only
-    fi
+    sync_pull
 
     echo "Loading password-store into local files:"
     for_each_entry load_entry

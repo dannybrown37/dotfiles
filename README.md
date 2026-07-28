@@ -165,7 +165,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 Assuming you are properly authorized to do so on the machine in question:
 
 ```bash
-make secrets-save    # local → password-store → git push
+make secrets-save    # git pull → local → password-store → git push
 make secrets-load    # git pull → password-store → local (backs up changed files first)
 ```
 
@@ -206,10 +206,15 @@ tries `gh auth login` + `gh repo clone` first (no token to copy by hand), fallin
 `PASSWORD_STORE_REMOTE` prompt (may embed a token — treat as a raw secret) if `gh` can't. Requires
 your GPG private key already imported — that transfer stays manual/out-of-band.
 
+Both targets pull the store first, with `--rebase`: `pass` commits on every insert, so two
+machines that each saved have diverged as a matter of course. The old `--ff-only` refused that
+outright, and under the pull hook the failure was only a warning — so the store silently stayed
+behind.
+
 **Caveat:** entries are encrypted blobs, so git can't merge them. If both machines change the
-same entry before syncing, the store push is rejected and you resolve by picking a side
-(`git -C ~/.password-store checkout --ours/--theirs <entry>.gpg`), not by merging. Pushing
-before switching machines avoids this.
+same entry before syncing, the rebase conflicts; the sync aborts it (leaving the store usable)
+and tells you to resolve by picking a side (`pass git checkout --ours/--theirs <entry>.gpg`),
+not by merging. Saving before switching machines avoids this.
 
 ### Multiple GitHub Accounts
 
