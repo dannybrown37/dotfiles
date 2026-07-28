@@ -147,7 +147,6 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `bin/` | Sourced shell scripts loaded into the current session |
 | `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
 | `githooks/` | Tracked git hooks (core.hooksPath) that sync the private password-store on dotfiles push/pull |
-| `gtd/` | Python CLI for GTD, backed by Notion |
 | `install/` | Bootstrap install scripts invoked via Make targets |
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |

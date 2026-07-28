@@ -24,7 +24,7 @@ jobs:
       - name: Run pre-commit hooks
         run: pre-commit run --all-files --show-diff-on-failure
         env:
-          SKIP: gtd-tests,scripts-tests
+          SKIP: scripts-tests
 
   test:
     runs-on: ubuntu-latest
@@ -33,10 +33,6 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
-
-      - name: Run gtd tests
-        working-directory: gtd
-        run: uv run --extra api pytest --cov=src --cov-report=term-missing tests/
 
       - name: Run scripts tests
         run: uv run --with pytest --with pytest-cov pytest --cov=scripts --cov-report=term-missing scripts/
