@@ -122,6 +122,7 @@ check "croc"       "croc --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "make wsl-fonts"
 check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "make lazygit"
 check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "make nvim"
+check "cartoon"    "cartoon --version | awk '{print \$2}'"                  "make cartoon"
 
 # ── GitHub & Auth ─────────────────────────────────────────────────────────────
 

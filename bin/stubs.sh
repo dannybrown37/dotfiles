@@ -4,6 +4,7 @@
 
 asciinema() { command asciinema "$@"; }  # @doc Record and replay terminal sessions | asciinema rec session.cast
 atuin() { command atuin "$@"; }          # @doc Shell history search/sync (replaces Ctrl+R) | atuin search
+cartoon() { command cartoon "$@"; }      # @doc Compress noisy CLI output for AI agents | cartoon pytest
 croc() { command croc "$@"; }            # @doc Send files between machines securely | croc send <file>
 delta() { command delta "$@"; }          # @doc Syntax-highlighting pager for git diffs (replaces less)
 eza() { command eza "$@"; }              # @doc Modern ls replacement with git status and icons

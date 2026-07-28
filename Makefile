@@ -1,4 +1,4 @@
-.PHONY: help python deno node golang rust vscode gnome select-nerdfont komo wsl-fonts secrets-save secrets-load lazygit bash nvim
+.PHONY: help python deno node golang rust vscode gnome select-nerdfont komo wsl-fonts secrets-save secrets-load lazygit bash nvim cartoon
 
 help:
 	@echo "Usage: make [option]"
@@ -17,6 +17,7 @@ help:
 	@echo "Developer Tools:"
 	@echo "  nvim            Install Neovim"
 	@echo "  lazygit         Install lazygit TUI git client"
+	@echo "  cartoon         Install cartoon CLI (pinned version, no hook)"
 	@echo "  vscode          Install VS Code extensions and settings"
 	@echo ""
 	@echo "Environment-Specific:"
@@ -59,6 +60,9 @@ nvim:
 
 lazygit:
 	bash -c ". $(root_dir)/install/lazygit.sh"
+
+cartoon:
+	bash -c ". $(root_dir)/install/cartoon.sh"
 
 vscode:
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
