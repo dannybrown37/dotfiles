@@ -25,6 +25,7 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 - **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
 - **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue.
 - **audit-skills** — Reviewing `.claude/skills`/`.claude/references` for structural drift, staleness, or skill-vs-reference misclassification. Invoke when asked to review, audit, or trim skills, or after adding/renaming one.
+- **verify** — Answering a claim the user would otherwise have to spot-check themselves ("does it work now?", "is X gone?", "can you confirm?"). Invoke before asserting, so the answer arrives with the evidence that would have falsified it.
 
 ## References
 
@@ -52,6 +53,7 @@ Read these references before writing code in the following domains:
 
 ## Code Review
 
+- A `Stop` hook (`scripts/verify_changes.py`, wired in `.claude/settings.json`) runs `pre-commit` against every changed file before a turn can end, and blocks the turn with the output if it fails. Fix what it reports — never hand a lint error or failing test to the user. Hooks that `git add` are skipped, so formatting is still settled at commit time. `VERIFY_CHANGES_SKIP=1` disables it.
 - Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
 - A `pre-push` git hook prints a reminder of this — it does not block the push or call any AI review itself.
 - Full checklist: `.claude/references/code-review-checklist.md`.
