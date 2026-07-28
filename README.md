@@ -31,6 +31,7 @@ Languages & Runtimes:
 Developer Tools:
   nvim            Install Neovim
   lazygit         Install lazygit TUI git client
+  cartoon         Install cartoon CLI (pinned version, no hook)
   vscode          Install VS Code extensions and settings
 
 Environment-Specific:
@@ -57,6 +58,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `atuin` | Shell history search/sync (replaces Ctrl+R) | atuin search | `bin/stubs.sh` |
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
 | `beep` | Play a beep sound (Windows only) | `config/.bash_aliases` |
+| `cartoon` | Compress noisy CLI output for AI agents | cartoon pytest | `bin/stubs.sh` |
 | `cb` | Copy stdin to clipboard. <command> | cb | `config/.bash_aliases` |
 | `ccstats` | Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain | `config/.bash_aliases` |
 | `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
