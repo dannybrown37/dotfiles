@@ -133,15 +133,21 @@ _gwt_rm() {
     local base_dir
     base_dir="$(_gwt_base_dir)" || return 1
 
-    find "$base_dir" -mindepth 1 -maxdepth 1 -type d |
-    fzf --prompt="Remove worktree> "
-
-    local dir_name="${branch//\//-}"
-    local worktree_path="${base_dir}/${dir_name}"
-
-    if [[ ! -d "${worktree_path}" ]]; then
-        echo "No worktree found at: ${worktree_path}" >&2
-        return 1
+    local worktree_path
+    if [[ -n "${branch}" ]]; then
+        local dir_name="${branch//\//-}"
+        worktree_path="${base_dir}/${dir_name}"
+        if [[ ! -d "${worktree_path}" ]]; then
+            echo "No worktree found at: ${worktree_path}" >&2
+            return 1
+        fi
+    else
+        worktree_path="$(find "${base_dir}" -mindepth 1 -maxdepth 1 -type d | fzf --prompt="Remove worktree> ")"
+        if [[ -z "${worktree_path}" ]]; then
+            echo "No worktree selected." >&2
+            return 1
+        fi
+        branch="$(git -C "${worktree_path}" symbolic-ref --quiet --short HEAD 2>/dev/null)"
     fi
 
     local current_dir
@@ -154,10 +160,13 @@ _gwt_rm() {
         echo "Moved to: ${git_root}"
     fi
 
-    git worktree remove "${worktree_path}" --force
+    if ! git worktree remove "${worktree_path}" --force; then
+        echo "Failed to remove worktree: ${worktree_path}" >&2
+        return 1
+    fi
     echo "Removed worktree: ${worktree_path}"
 
-    if git show-ref --verify --quiet "refs/heads/${branch}"; then
+    if [[ -n "${branch}" ]] && git show-ref --verify --quiet "refs/heads/${branch}"; then
         read -rp "Delete branch '${branch}'? [y/N] " confirm
         if [[ "${confirm}" =~ ^[Yy]$ ]]; then
             git branch -D "${branch}"
