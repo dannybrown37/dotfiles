@@ -35,9 +35,9 @@ Developer Tools:
 
 Environment-Specific:
   gnome           Install Gnome extensions
-  windows         Install Windows extensions (NerdFonts and Komorebi)
+  select-nerdfont Interactively pick and install a Nerd Font (Windows)
   wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
-  komo            Reset komorebi (useful for after configuration changes)
+  komo            Install komorebi/whkd if needed, then (re)start it
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo

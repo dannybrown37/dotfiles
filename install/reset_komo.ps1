@@ -1,10 +1,22 @@
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
+if (-not (Get-Command komorebic -ErrorAction SilentlyContinue)) {
+    Write-Host "komorebic not found, installing komorebi + whkd..."
+    winget install LGUG2Z.komorebi
+    winget install LGUG2Z.whkd
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+}
+
 $wslDir = Split-Path -Parent $PSScriptRoot
 $wslDir = Join-Path $wslDir "wsl"
 
 Copy-Item -Path (Join-Path $wslDir "komorebi.json") -Destination "$env:USERPROFILE\komorebi.json" -Force
 Copy-Item -Path (Join-Path $wslDir "komorebi.bar.json") -Destination "$env:USERPROFILE\komorebi.bar.json" -Force
+
+if (-not (Test-Path "$env:USERPROFILE\applications.json")) {
+    Write-Host "applications.json not found, fetching application-specific configuration..."
+    komorebic fetch-asc
+}
 
 komorebic stop
 taskkill /f /im komorebi.exe

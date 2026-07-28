@@ -1,4 +1,4 @@
-.PHONY: help python deno node golang rust vscode gnome windows komo wsl-fonts secrets-save secrets-load lazygit bash nvim
+.PHONY: help python deno node golang rust vscode gnome select-nerdfont komo wsl-fonts secrets-save secrets-load lazygit bash nvim
 
 help:
 	@echo "Usage: make [option]"
@@ -21,9 +21,9 @@ help:
 	@echo ""
 	@echo "Environment-Specific:"
 	@echo "  gnome           Install Gnome extensions"
-	@echo "  windows         Install Windows extensions (NerdFonts and Komorebi)"
+	@echo "  select-nerdfont Interactively pick and install a Nerd Font (Windows)"
 	@echo "  wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)"
-	@echo "  komo            Reset komorebi (useful for after configuration changes)"
+	@echo "  komo            Install komorebi/whkd if needed, then (re)start it"
 	@echo ""
 	@echo "Secrets (requires GPG keys):"
 	@echo "  secrets-save    Save local secrets to password-store, push to private repo"
@@ -67,8 +67,8 @@ vscode:
 gnome:
 	bash -c ". $(root_dir)/install/gnome.sh"
 
-windows:
-	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/windows.ps1"
+select-nerdfont:
+	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/select_nerdfont.ps1"
 
 wsl-fonts:
 	bash -c ". $(root_dir)/install/wsl_fonts.sh"
