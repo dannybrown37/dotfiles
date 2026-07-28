@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/scripts/verify_changes.py",
+            "timeout": 330,
+            "statusMessage": "Verifying changed files with pre-commit..."
+          }
+        ]
+      }
+    ]
+  }
+}
