@@ -4,6 +4,7 @@ Builds a throwaway git repo with its own config/.secrets so nothing here
 touches the real password-store-backed secrets file.
 """
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -19,6 +20,8 @@ class PrivacyHookHarness:
 
     def __init__(self, root: Path) -> None:
         self.repo = root
+        self.tty = root / 'fake-tty'
+        self.tty.touch()
 
     def _git(self, *args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(  # noqa: S603
@@ -52,7 +55,11 @@ class PrivacyHookHarness:
             check=False,
             capture_output=True,
             text=True,
+            env={**os.environ, 'PRIVACY_TERMS_WARN_TTY': str(self.tty)},
         )
+
+    def tty_output(self) -> str:
+        return self.tty.read_text()
 
 
 @pytest.fixture
@@ -110,10 +117,24 @@ def test_allows_commit_with_no_matching_terms(
     assert result.returncode == 0
 
 
-def test_warns_when_privacy_terms_is_empty(
+def test_is_completely_silent_on_pass(harness: PrivacyHookHarness) -> None:
+    harness.write_secrets(['AcmeCorp'])
+    harness.stage_file('notes.txt', 'unrelated content\n')
+
+    result = harness.run_hook()
+
+    assert result.stdout == ''
+    assert result.stderr == ''
+    assert harness.tty_output() == ''
+
+
+@pytest.mark.parametrize('terms', [[], None], ids=['empty', 'no-secrets-file'])
+def test_warns_when_privacy_terms_is_unavailable(
     harness: PrivacyHookHarness,
+    terms: list[str] | None,
 ) -> None:
-    harness.write_secrets([])
+    if terms is not None:
+        harness.write_secrets(terms)
     harness.stage_file('notes.txt', 'AcmeCorp mentioned here\n')
 
     result = harness.run_hook()
@@ -122,15 +143,19 @@ def test_warns_when_privacy_terms_is_empty(
     assert 'PRIVACY_TERMS' in result.stderr
 
 
-def test_warns_when_secrets_file_is_missing(
+@pytest.mark.parametrize('terms', [[], None], ids=['empty', 'no-secrets-file'])
+def test_warning_reaches_the_terminal_past_a_capturing_parent(
     harness: PrivacyHookHarness,
+    terms: list[str] | None,
 ) -> None:
+    """pre-commit swallows a passing hook's stdout/stderr."""
+    if terms is not None:
+        harness.write_secrets(terms)
     harness.stage_file('notes.txt', 'AcmeCorp mentioned here\n')
 
-    result = harness.run_hook()
+    harness.run_hook()
 
-    assert result.returncode == 0
-    assert 'PRIVACY_TERMS' in result.stderr
+    assert 'PRIVACY_TERMS' in harness.tty_output()
 
 
 def test_survives_a_secrets_file_ending_in_a_false_guarded_source(

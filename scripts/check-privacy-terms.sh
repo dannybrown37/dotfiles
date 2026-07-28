@@ -6,6 +6,16 @@ set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
 SECRETS_FILE="${ROOT}/config/.secrets"
+WARN_TTY="${PRIVACY_TERMS_WARN_TTY:-/dev/tty}"
+
+warn() {
+    printf 'WARN: %s\n' "$*" >&2
+    # pre-commit discards a passing hook's output, so a warning that only
+    # went to stderr would never reach the human running the commit.
+    if [[ ! -t 2 && -w "${WARN_TTY}" ]]; then
+        printf 'WARN: %s\n' "$*" >"${WARN_TTY}" || true
+    fi
+}
 
 PRIVACY_TERMS=()
 if [[ -f "${SECRETS_FILE}" ]]; then
@@ -18,7 +28,7 @@ if [[ -f "${SECRETS_FILE}" ]]; then
 fi
 
 if [[ ${#PRIVACY_TERMS[@]} -eq 0 ]]; then
-    echo "WARN: PRIVACY_TERMS is empty (config/.secrets) — commits are not being checked for privacy terms." >&2
+    warn "PRIVACY_TERMS is empty (config/.secrets) — commits are not being checked for privacy terms."
     exit 0
 fi
 
