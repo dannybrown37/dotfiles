@@ -7,12 +7,15 @@ ROOT="$(git rev-parse --show-toplevel)"
 # The list of what to sync lives inside the store, not in this repo.
 readonly MANIFEST="manifest"
 
-readonly QUEUE_SCRIPT="scripts/queue_cli.py"
+# queue_cli.py lives in the skill-tree repo, not here -- same @anchor-style
+# resolution bin/queue.sh uses, just not manifest-driven since this is an
+# internal implementation detail rather than a synced file.
+readonly QUEUE_SCRIPT="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}/scripts/queue_cli.py"
 
 # Files a straight copy would corrupt: each machine edits its own copy, so both
 # sides have to survive a sync. Order matters -- the queue merge asks
-# .queue-complete which titles are already done, so that has to reconcile first.
-readonly MERGE_PATHS=(".queue-complete" ".queue")
+# queue-complete which titles are already done, so that has to reconcile first.
+readonly MERGE_PATHS=("queue-complete" "queue")
 
 WORK_DIR="$(mktemp -d)"
 readonly WORK_DIR
@@ -46,11 +49,19 @@ is_merge_path() {
 }
 
 # Manifest paths are relative to this repo unless they start with an @anchor,
-# which names another repo that may or may not be cloned on this machine.
+# which names another repo that may or may not be cloned on this machine, or
+# with ~/, which resolves under $HOME regardless of this repo -- for entries
+# that don't belong to any one repo (e.g. the shared queue).
 anchor_of() {
     local path="$1"
     [[ "${path}" == @* ]] || return 1
     printf '%s\n' "${path%%/*}" | cut -c2-
+}
+
+is_home_path() {
+    # Matching the manifest's literal "~/" text, not expanding a real path.
+    # shellcheck disable=SC2088
+    [[ "$1" == '~/'* ]]
 }
 
 resolve_anchor() {
@@ -69,12 +80,21 @@ validate_entry_path() {
     if [[ "${path}" == @* && "${path}" != */* ]]; then
         die "malformed anchor '${path}': expected @<repo>/<relative-path>"
     fi
+    # shellcheck disable=SC2088
+    if [[ "${path}" == '~'* && ("${path}" != '~/'* || "${path}" == '~/') ]]; then
+        die "malformed home path '${path}': expected ~/<relative-path>"
+    fi
 }
 
 # Prints the absolute file path, or nothing when the anchored repo is not
 # cloned on this machine.
 resolve_entry_file() {
     local path="$1" anchor base
+
+    if is_home_path "${path}"; then
+        printf '%s\n' "${HOME}/${path#\~/}"
+        return 0
+    fi
 
     if ! anchor="$(anchor_of "${path}")"; then
         printf '%s\n' "${ROOT}/${path}"
@@ -97,17 +117,19 @@ merge_local_file() {
 
     command -v python3 >/dev/null ||
         die "python3 is required to merge ${kind}"
+    [[ -f "${QUEUE_SCRIPT}" ]] ||
+        die "queue_cli.py not found at ${QUEUE_SCRIPT} -- is skill-tree cloned? (see \$SKILL_TREE_DIR)"
 
     case "${kind}" in
-    .queue-complete)
-        python3 "${ROOT}/${QUEUE_SCRIPT}" merge-completed \
+    queue-complete)
+        python3 "${QUEUE_SCRIPT}" merge-completed \
             --complete-path "${file}" \
             --incoming "${incoming}"
         ;;
-    .queue)
-        python3 "${ROOT}/${QUEUE_SCRIPT}" merge-queue \
+    queue)
+        python3 "${QUEUE_SCRIPT}" merge-queue \
             --queue-path "${file}" \
-            --complete-path "${dir}/.queue-complete" \
+            --complete-path "${dir}/queue-complete" \
             --incoming "${incoming}" \
             --prefer "${prefer}"
         ;;
