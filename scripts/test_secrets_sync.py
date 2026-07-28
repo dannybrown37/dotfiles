@@ -51,24 +51,39 @@ class SyncHarness:
         self.store = root / 'store'
         self.entries = root / 'entries'
         self.bin = root / 'bin'
+        self.projects = root / 'projects'
         self.queue = self.repo / '.queue'
         self.complete = self.repo / '.queue-complete'
 
-    def run(self, action: str) -> subprocess.CompletedProcess[str]:
+    def run(
+        self,
+        action: str,
+        extra_env: dict[str, str] | None = None,
+        *,
+        check: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
         env = {
             **os.environ,
             'PATH': f'{self.bin}{os.pathsep}{os.environ["PATH"]}',
             'STUB_STORE': str(self.entries),
             'PASSWORD_STORE_DIR': str(self.store),
+            'PROJECTS_DIR': str(self.projects),
         }
+        env.update(extra_env or {})
         return subprocess.run(  # noqa: S603
             [str(self.repo / 'scripts' / 'secrets.sh'), action],
             cwd=self.repo,
             env=env,
             capture_output=True,
             text=True,
-            check=True,
+            check=check,
         )
+
+    def install_sibling(self, name: str) -> Path:
+        """Create a sibling repo under PROJECTS_DIR, as a clone would look."""
+        sibling = self.projects / name
+        sibling.mkdir(parents=True)
+        return sibling
 
     def store_entry(self, name: str) -> str:
         return (self.entries / name).read_text()
@@ -101,6 +116,7 @@ def harness(tmp_path: Path) -> SyncHarness:
     fake_pass.chmod(0o755)
 
     setup.entries.mkdir()
+    setup.projects.mkdir()
     setup.write_store_entry('manifest', MANIFEST)
     return setup
 
@@ -192,3 +208,114 @@ def test_non_merge_entries_are_still_copied_verbatim(
     harness.run('load')
 
     assert (harness.repo / '.token').read_text() == 'secret-value\n'
+
+
+ANCHORED_MANIFEST = MANIFEST + 'app/env:@sibling/.env\n'
+
+
+def test_anchored_path_loads_into_the_sibling_repo(
+    harness: SyncHarness,
+) -> None:
+    """The reported bug: a repo moved out, so a relative path missed it."""
+    sibling = harness.install_sibling('sibling')
+    harness.write_store_entry('manifest', ANCHORED_MANIFEST)
+    harness.write_store_entry('app/env', 'TOKEN=from-store\n')
+
+    harness.run('load')
+
+    assert (sibling / '.env').read_text() == 'TOKEN=from-store\n'
+    assert not (harness.repo / 'sibling').exists()
+
+
+def test_anchored_path_saves_from_the_sibling_repo(
+    harness: SyncHarness,
+) -> None:
+    sibling = harness.install_sibling('sibling')
+    (sibling / '.env').write_text('TOKEN=from-disk\n')
+    harness.write_store_entry('manifest', ANCHORED_MANIFEST)
+
+    harness.run('save')
+
+    assert harness.store_entry('app/env') == 'TOKEN=from-disk\n'
+
+
+def test_home_var_beats_projects_dir(
+    harness: SyncHarness,
+    tmp_path: Path,
+) -> None:
+    harness.install_sibling('sibling')
+    elsewhere = tmp_path / 'checkouts' / 'sibling'
+    elsewhere.mkdir(parents=True)
+    harness.write_store_entry('manifest', ANCHORED_MANIFEST)
+    harness.write_store_entry('app/env', 'TOKEN=from-store\n')
+
+    harness.run('load', extra_env={'SIBLING_HOME': str(elsewhere)})
+
+    assert (elsewhere / '.env').read_text() == 'TOKEN=from-store\n'
+    assert not (harness.projects / 'sibling' / '.env').exists()
+
+
+@pytest.mark.parametrize(
+    ('action', 'extra_env'),
+    [
+        ('load', {}),
+        ('save', {}),
+        ('load', {'SIBLING_HOME': '/nonexistent/sibling'}),
+    ],
+)
+def test_uninstalled_anchor_is_skipped_not_written(
+    harness: SyncHarness,
+    action: str,
+    extra_env: dict[str, str],
+) -> None:
+    """A machine missing that repo must sync everything else and say so."""
+    harness.queue.write_text(_queue('Untouched'))
+    harness.write_store_entry('manifest', ANCHORED_MANIFEST)
+    harness.write_store_entry('app/env', 'TOKEN=from-store\n')
+
+    result = harness.run(action, extra_env=extra_env)
+
+    assert 'not installed' in result.stdout
+    assert not (harness.repo / 'sibling').exists()
+    assert not (harness.repo / '@sibling').exists()
+    assert _titles(harness.queue.read_text()) == ['Untouched']
+
+
+def test_installed_anchor_with_no_file_reports_missing(
+    harness: SyncHarness,
+) -> None:
+    """An empty checkout is a different problem from an absent one."""
+    harness.install_sibling('sibling')
+    harness.write_store_entry('manifest', ANCHORED_MANIFEST)
+
+    result = harness.run('save')
+
+    assert 'missing' in result.stdout
+    assert 'not installed' not in result.stdout
+
+
+def test_malformed_anchor_fails_loudly(harness: SyncHarness) -> None:
+    harness.install_sibling('sibling')
+    harness.write_store_entry('manifest', MANIFEST + 'app/env:@sibling\n')
+
+    result = harness.run('load', check=False)
+
+    assert result.returncode != 0
+    assert 'anchor' in result.stderr.lower()
+
+
+def test_anchored_merge_path_merges_in_place(harness: SyncHarness) -> None:
+    """Merge handlers must use the resolved path, not the dotfiles root."""
+    sibling = harness.install_sibling('sibling')
+    (sibling / '.queue').write_text(_queue('Added Here'))
+    (sibling / '.queue-complete').write_text('# Completed\n\n')
+    harness.write_store_entry('manifest', 'app/queue:@sibling/.queue\n')
+    harness.write_store_entry('app/queue', _queue('Added There'))
+
+    harness.run('load')
+
+    assert _titles((sibling / '.queue').read_text()) == [
+        'Added Here',
+        'Added There',
+    ]
+    assert not (harness.repo / '.queue').exists()
