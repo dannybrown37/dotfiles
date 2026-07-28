@@ -137,6 +137,12 @@ gh extension install dlvhdr/gh-dash
 bash "$(dirname "${BASH_SOURCE[0]}")/lazygit.sh"
 
 ##
+## Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
+##
+
+bash "$(dirname "${BASH_SOURCE[0]}")/wsl_fonts.sh"
+
+##
 ## Install croc file sharing tool
 ##
 
