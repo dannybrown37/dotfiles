@@ -6,6 +6,10 @@ demand -- every run re-reads the logs, so the numbers only cover transcripts
 still present on this machine. Each run also upserts today's rollup into the
 sqlite history db (see --db-path), so daily totals survive log rotation;
 --record backfills a --since/--until range instead of printing a report.
+
+Work is attributed to a repo by the launch directory recorded in each
+transcript, so sessions spread across worktrees and subdirectories roll up
+into the repo they belong to. See resolve_repo_roots for the ladder.
 """
 
 import argparse
@@ -19,7 +23,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 
 DEFAULT_LOG_ROOT = Path.home() / '.claude' / 'projects'
 DEFAULT_DB_PATH = Path.home() / '.claude' / 'ccstats.db'
@@ -38,6 +42,17 @@ RESET = '\x1b[0m'
 BOLD = '\x1b[1m'
 DIM = '\x1b[2m'
 CYAN = '\x1b[36m'
+
+SPARK_CHARS = '▁▂▃▄▅▆▇█'
+BAR_FILLED = '█'
+BAR_EMPTY = '░'
+MAX_SPARK_POINTS = 60
+BAR_WIDTH = 12
+REPO_BAR_WIDTH = 14
+MIN_BOX_WIDTH = 46
+MAX_BOX_WIDTH = 74
+TOP_TOOLS_SHOWN = 10
+MIN_SPARK_DAYS = 2
 
 
 @dataclass
@@ -79,6 +94,15 @@ class CostBreakdown:
     expired_models: set[str]
     pricing_as_of: date
     pricing_stale: bool
+
+
+@dataclass(frozen=True)
+class RepoReport:
+    """One repo's slice of a run, already priced."""
+
+    label: str
+    stats: 'UsageStats'
+    cost: CostBreakdown | None
 
 
 @dataclass
@@ -389,15 +413,15 @@ def tally_record(
         stats.lines_removed += removed
 
 
-def collect_stats(
-    roots: list[Path],
+def collect_stats_from_logs(
+    logs: Iterable[Path],
     since: date | None = None,
     until: date | None = None,
 ) -> UsageStats:
-    """Walk every transcript under roots and total up the interesting bits."""
+    """Total up the interesting bits of the given transcripts."""
     stats = UsageStats()
 
-    for path in find_logs(roots):
+    for path in logs:
         is_subagent = path.parent.name == SUBAGENT_DIR
         counted_subagent = False
         turn = TurnTracker()
@@ -421,6 +445,229 @@ def collect_stats(
             tally_record(stats, record, stamp, turn)
 
     return stats
+
+
+def collect_stats(
+    roots: list[Path],
+    since: date | None = None,
+    until: date | None = None,
+) -> UsageStats:
+    """Walk every transcript under roots and total up the interesting bits."""
+    return collect_stats_from_logs(find_logs(roots), since, until)
+
+
+UNKNOWN_REPO = '(unknown)'
+WORKTREES_SUFFIX = '-worktrees'
+GITDIR_PREFIX = 'gitdir:'
+
+
+def peek_cwd(path: Path) -> str | None:
+    """The directory Claude launched in, per the first record naming one."""
+    for record in iter_records(path):
+        cwd = record.get('cwd')
+        if isinstance(cwd, str) and cwd:
+            return cwd
+    return None
+
+
+def worktree_main_root(git_file: Path) -> Path | None:
+    """Follow a linked worktree's `.git` pointer file to its main repo."""
+    try:
+        text = git_file.read_text(encoding='utf-8', errors='replace')
+    except OSError:
+        return None
+
+    for line in text.splitlines():
+        if not line.startswith(GITDIR_PREFIX):
+            continue
+        gitdir = Path(line[len(GITDIR_PREFIX) :].strip())
+        if not gitdir.is_absolute():
+            gitdir = git_file.parent / gitdir
+        for parent in gitdir.parents:
+            if parent.name == '.git':
+                return parent.parent
+    return None
+
+
+def git_root_on_disk(start: Path) -> Path | None:
+    """Nearest repo ancestor of `start`, with worktrees mapped to their repo.
+
+    Returns None for a path that no longer exists: its surviving ancestors
+    say nothing about which repo the session was actually working in.
+    """
+    if not start.is_dir():
+        return None
+
+    for candidate in (start, *start.parents):
+        git_path = candidate / '.git'
+        if git_path.is_dir():
+            return candidate
+        if git_path.is_file():
+            return worktree_main_root(git_path) or candidate
+    return None
+
+
+def worktree_sibling_root(cwd: Path) -> Path | None:
+    """Repo root implied by `gwt`'s `<repo>-worktrees/<branch>` layout.
+
+    Path-only, so it still attributes worktrees that have since been removed
+    -- which most of them have.
+    """
+    for candidate in (cwd, *cwd.parents):
+        name = candidate.name
+        if name.endswith(WORKTREES_SUFFIX) and name != WORKTREES_SUFFIX:
+            return candidate.parent / name[: -len(WORKTREES_SUFFIX)]
+    return None
+
+
+def enclosing_root(cwd: Path, roots: set[Path]) -> Path | None:
+    """The deepest already-known repo root that contains `cwd`."""
+    matches = [root for root in roots if root == cwd or root in cwd.parents]
+    if not matches:
+        return None
+    return max(matches, key=lambda root: len(root.parts))
+
+
+def resolve_repo_roots(cwds: Iterable[str]) -> dict[str, Path]:
+    """Map each launch directory to the repo root it belongs to.
+
+    Layered because most historical cwds have been deleted: an on-disk `.git`
+    wins, then the `-worktrees/` naming convention, then containment inside a
+    root some other cwd already resolved to.
+    """
+    distinct = sorted({cwd for cwd in cwds if cwd})
+    resolved: dict[str, Path] = {}
+    unresolved: list[str] = []
+
+    for cwd in distinct:
+        path = Path(cwd)
+        root = git_root_on_disk(path) or worktree_sibling_root(path)
+        if root is None:
+            unresolved.append(cwd)
+        else:
+            resolved[cwd] = root
+
+    known = set(resolved.values())
+    for cwd in unresolved:
+        path = Path(cwd)
+        resolved[cwd] = enclosing_root(path, known) or path
+
+    return resolved
+
+
+def label_repo_roots(roots: Iterable[Path]) -> dict[Path, str]:
+    """Basenames, widened to full paths only where two repos share a name."""
+    distinct = set(roots)
+    name_counts = Counter(root.name for root in distinct)
+    return {
+        root: (root.name if name_counts[root.name] == 1 else str(root))
+        for root in distinct
+    }
+
+
+def group_logs_by_repo(logs: Iterable[Path]) -> dict[str, list[Path]]:
+    """Bucket transcripts by the repo their launch directory resolves to."""
+    cwd_by_log = {path: peek_cwd(path) for path in logs}
+    root_by_cwd = resolve_repo_roots(cwd_by_log.values())
+    labels = label_repo_roots(root_by_cwd.values())
+
+    grouped: dict[str, list[Path]] = {}
+    for path, cwd in cwd_by_log.items():
+        root = root_by_cwd.get(cwd) if cwd else None
+        label = UNKNOWN_REPO if root is None else labels[root]
+        grouped.setdefault(label, []).append(path)
+    return grouped
+
+
+def merge_model_usage(merged: UsageStats, part: UsageStats) -> None:
+    for model, usage in part.model_usage.items():
+        target = merged.model_usage.setdefault(model, ModelUsage())
+        target.output_tokens += usage.output_tokens
+        target.input_tokens += usage.input_tokens
+        target.cache_read_tokens += usage.cache_read_tokens
+        target.cache_write_tokens += usage.cache_write_tokens
+
+
+def merge_durations(merged: UsageStats, part: UsageStats) -> None:
+    merged.wall_durations_ms.extend(part.wall_durations_ms)
+    merged.model_durations_ms.extend(part.model_durations_ms)
+    for model, durations in part.model_durations_ms_by_model.items():
+        merged.model_durations_ms_by_model.setdefault(model, []).extend(
+            durations,
+        )
+
+
+def merge_span(merged: UsageStats, part: UsageStats) -> None:
+    for stamp in (part.first_seen, part.last_seen):
+        if stamp is not None:
+            track_span(merged, stamp)
+
+
+def merge_counts(merged: UsageStats, part: UsageStats) -> None:
+    merged.session_ids |= part.session_ids
+    merged.prompts += part.prompts
+    merged.replies += part.replies
+    merged.output_tokens += part.output_tokens
+    merged.input_tokens += part.input_tokens
+    merged.cache_read_tokens += part.cache_read_tokens
+    merged.cache_write_tokens += part.cache_write_tokens
+    merged.lines_added += part.lines_added
+    merged.lines_removed += part.lines_removed
+    merged.thinking_blocks += part.thinking_blocks
+    merged.subagent_runs += part.subagent_runs
+    merged.longest_prompt_chars = max(
+        merged.longest_prompt_chars,
+        part.longest_prompt_chars,
+    )
+    merged.models.update(part.models)
+    merged.tools.update(part.tools)
+    for day, tokens in part.output_tokens_by_day.items():
+        merged.output_tokens_by_day[day] = (
+            merged.output_tokens_by_day.get(day, 0) + tokens
+        )
+
+
+def merge_stats(parts: Iterable[UsageStats]) -> UsageStats:
+    """Combine per-repo snapshots into the headline totals."""
+    merged = UsageStats()
+    for part in parts:
+        merge_counts(merged, part)
+        merge_model_usage(merged, part)
+        merge_durations(merged, part)
+        merge_span(merged, part)
+    return merged
+
+
+def collect_grouped_stats(
+    grouped: dict[str, list[Path]],
+    since: date | None = None,
+    until: date | None = None,
+) -> dict[str, UsageStats]:
+    """Per-repo snapshots for pre-grouped logs, ordered by output tokens."""
+    by_repo = {
+        label: collect_stats_from_logs(paths, since, until)
+        for label, paths in grouped.items()
+    }
+    return dict(
+        sorted(
+            by_repo.items(),
+            key=lambda item: item[1].output_tokens,
+            reverse=True,
+        ),
+    )
+
+
+def collect_stats_by_repo(
+    roots: list[Path],
+    since: date | None = None,
+    until: date | None = None,
+) -> dict[str, UsageStats]:
+    """Per-repo snapshots, keyed by repo label and ordered by output tokens."""
+    return collect_grouped_stats(
+        group_logs_by_repo(find_logs(roots)),
+        since,
+        until,
+    )
 
 
 def load_pricing(path: Path) -> PricingTable:
@@ -556,6 +803,22 @@ CREATE TABLE IF NOT EXISTS daily_model_usage (
     cost REAL,
     PRIMARY KEY (day, model)
 );
+
+CREATE TABLE IF NOT EXISTS daily_repo_usage (
+    day TEXT NOT NULL,
+    repo TEXT NOT NULL,
+    sessions INTEGER NOT NULL,
+    prompts INTEGER NOT NULL,
+    replies INTEGER NOT NULL,
+    lines_added INTEGER NOT NULL,
+    lines_removed INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    input_tokens INTEGER NOT NULL,
+    cache_read_tokens INTEGER NOT NULL,
+    cache_write_tokens INTEGER NOT NULL,
+    cost REAL,
+    PRIMARY KEY (day, repo)
+);
 """
 
 
@@ -629,6 +892,49 @@ def record_day(
     return True
 
 
+def record_repo_day(
+    conn: sqlite3.Connection,
+    day: date,
+    by_repo: dict[str, UsageStats],
+    pricing: PricingTable | None,
+) -> None:
+    """Replace one day's per-repo rows, skipping repos idle that day.
+
+    Rows are deleted and reinserted rather than upserted, so a repo that
+    stops appearing on a day doesn't leave a stale row behind.
+    """
+    day_key = day.isoformat()
+    conn.execute('DELETE FROM daily_repo_usage WHERE day = ?', (day_key,))
+
+    for repo, stats in by_repo.items():
+        if not stats.session_ids:
+            continue
+        cost = compute_cost(stats, pricing) if pricing else None
+        conn.execute(
+            """
+            INSERT INTO daily_repo_usage (
+                day, repo, sessions, prompts, replies, lines_added,
+                lines_removed, output_tokens, input_tokens,
+                cache_read_tokens, cache_write_tokens, cost
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                day_key,
+                repo,
+                stats.sessions,
+                stats.prompts,
+                stats.replies,
+                stats.lines_added,
+                stats.lines_removed,
+                stats.output_tokens,
+                stats.input_tokens,
+                stats.cache_read_tokens,
+                stats.cache_write_tokens,
+                cost.total if cost else None,
+            ),
+        )
+
+
 def iter_days(since: date, until: date) -> Iterator[date]:
     day = since
     while day <= until:
@@ -643,12 +949,19 @@ def record_range(
     until: date,
     pricing: PricingTable | None,
 ) -> int:
-    """Record each day in [since, until] and return how many had activity."""
+    """Record each day in [since, until] and return how many had activity.
+
+    Logs are grouped by repo once up front rather than per day, so a long
+    backfill doesn't re-sniff every transcript's launch directory.
+    """
+    grouped = group_logs_by_repo(find_logs(roots))
     written = 0
     for day in iter_days(since, until):
-        stats = collect_stats(roots, since=day, until=day)
+        by_repo = collect_grouped_stats(grouped, since=day, until=day)
+        stats = merge_stats(by_repo.values())
         cost = compute_cost(stats, pricing) if pricing else None
         if record_day(conn, day, stats, cost):
+            record_repo_day(conn, day, by_repo, pricing)
             written += 1
     return written
 
@@ -670,6 +983,56 @@ def colorize(text: str, *codes: str, color: bool) -> str:
     if not color:
         return text
     return f'{"".join(codes)}{text}{RESET}'
+
+
+def truncate(text: str, width: int) -> str:
+    if len(text) <= width:
+        return text
+    return text[: width - 1] + '…'
+
+
+def daily_series(by_day: dict[date, int]) -> list[int]:
+    """Output tokens per calendar day, zero-filled so gaps read as gaps."""
+    if not by_day:
+        return []
+    span = iter_days(min(by_day), max(by_day))
+    return [by_day.get(day, 0) for day in span]
+
+
+def bucket_series(values: list[int], max_points: int) -> list[int]:
+    """Downsample by summing adjacent days so a long span still fits."""
+    if max_points <= 0 or len(values) <= max_points:
+        return values
+    size = math.ceil(len(values) / max_points)
+    return [sum(values[at : at + size]) for at in range(0, len(values), size)]
+
+
+def sparkline(values: list[int]) -> str:
+    peak = max(values, default=0)
+    if not values:
+        return ''
+    if peak <= 0:
+        return SPARK_CHARS[0] * len(values)
+    top = len(SPARK_CHARS) - 1
+    return ''.join(SPARK_CHARS[round(value / peak * top)] for value in values)
+
+
+def bar(share: float, width: int = BAR_WIDTH) -> str:
+    filled = min(round(max(share, 0.0) * width), width)
+    return BAR_FILLED * filled + BAR_EMPTY * (width - filled)
+
+
+def box_lines(title: str, body: str, width: int) -> list[str]:
+    """A titled box around one line of body text, indented like a section."""
+    heading = f'─ {title} '
+    inner = max(len(heading) + 1, len(body) + 2, MIN_BOX_WIDTH)
+    inner = min(max(inner, width - 6), MAX_BOX_WIDTH)
+    inner = max(inner, len(heading) + 1, len(body) + 2)
+    return [
+        f'  ╭{heading}{"─" * (inner - len(heading))}╮',
+        f'  │ {body.ljust(inner - 2)} │',
+        f'  ╰{"─" * inner}╯',
+    ]
 
 
 def merge_side_by_side(
@@ -705,9 +1068,36 @@ def report_span(stats: UsageStats) -> str:
     if not (stats.first_seen and stats.last_seen):
         return 'no transcripts found'
     return (
-        f'{stats.first_seen:%Y-%m-%d} - {stats.last_seen:%Y-%m-%d}'
-        f'  ({len(stats.output_tokens_by_day)} active days)'
+        f'{stats.first_seen:%Y-%m-%d} → {stats.last_seen:%Y-%m-%d}'
+        f'   ·   {len(stats.output_tokens_by_day)} active days'
     )
+
+
+SPARK_LABEL = 'daily output tokens'
+
+
+def sparkline_lines(stats: UsageStats, *, color: bool) -> list[str]:
+    """A one-line shape of output tokens per day, with a dated axis."""
+    series = daily_series(stats.output_tokens_by_day)
+    if len(series) < MIN_SPARK_DAYS:
+        return []
+
+    spark = sparkline(bucket_series(series, MAX_SPARK_POINTS))
+    first, last = (
+        min(stats.output_tokens_by_day),
+        max(
+            stats.output_tokens_by_day,
+        ),
+    )
+    peak = humanize(max(series))
+    axis_width = max(len(spark) - len(str(last)), len(str(first)) + 1)
+    axis = f'{first!s:<{axis_width}}{last}'
+
+    return [
+        f'  {SPARK_LABEL}   peak {peak}/day',
+        f'    {colorize(spark, CYAN, color=color)}',
+        f'    {colorize(axis, DIM, color=color)}',
+    ]
 
 
 def totals_and_tokens_lines(
@@ -737,11 +1127,70 @@ def totals_and_tokens_lines(
     return totals_lines, tokens_lines
 
 
+REPO_LABEL_WIDTH = 16
+
+
+def build_repo_reports(
+    by_repo: dict[str, UsageStats],
+    pricing: PricingTable | None,
+) -> list[RepoReport]:
+    """Priced per-repo slices, busiest first, with idle repos dropped."""
+    return [
+        RepoReport(
+            label=label,
+            stats=stats,
+            cost=compute_cost(stats, pricing) if pricing else None,
+        )
+        for label, stats in by_repo.items()
+        if stats.session_ids
+    ]
+
+
+def repo_row(repo: RepoReport, share: float, *, color: bool) -> str:
+    stats = repo.stats
+    spend = f'$ {repo.cost.total:>8.2f}' if repo.cost else ' ' * 10
+    churn = f'+{stats.lines_added:,}/-{stats.lines_removed:,}'
+    return (
+        f'    {truncate(repo.label, REPO_LABEL_WIDTH):<{REPO_LABEL_WIDTH}}'
+        f' {colorize(bar(share, REPO_BAR_WIDTH), CYAN, color=color)}'
+        f'  {spend}'
+        f' {humanize(stats.output_tokens):>8}'
+        f' {churn:>16}'
+        f' {stats.sessions:>5,}'
+    )
+
+
+def repo_lines(repos: list[RepoReport], *, color: bool) -> list[str]:
+    if not repos:
+        return []
+
+    weights = [
+        repo.cost.total if repo.cost else float(repo.stats.output_tokens)
+        for repo in repos
+    ]
+    total = sum(weights) or 1.0
+
+    header = (
+        f'    {"":<{REPO_LABEL_WIDTH}} {"":<{REPO_BAR_WIDTH}}'
+        f'  {"spend":>10} {"tokens":>8} {"lines":>16} {"sess":>5}'
+    )
+    lines = ['  by repo', header]
+    lines.extend(
+        repo_row(repo, weight / total, color=color)
+        for repo, weight in zip(repos, weights, strict=True)
+    )
+    return lines
+
+
 CACHE_ROW_WIDTH = 20
 CACHE_VALUE_WIDTH = 10
 
 
-def cache_efficiency_lines(stats: UsageStats) -> list[str]:
+def cache_efficiency_lines(
+    stats: UsageStats,
+    *,
+    explain: bool,
+) -> list[str]:
     rows = []
     if stats.cache_hit_ratio is not None:
         rows.append(('cache hit ratio', f'{stats.cache_hit_ratio:.1%}'))
@@ -755,10 +1204,11 @@ def cache_efficiency_lines(stats: UsageStats) -> list[str]:
         f'    {label:<{CACHE_ROW_WIDTH}} {value:>{CACHE_VALUE_WIDTH}}'
         for label, value in rows
     )
-    lines.append(
-        '    hit ratio = cache_read / (cache_read + input);'
-        ' efficiency = cache_read / cache_write (>=2x healthy @ 5m TTL)',
-    )
+    if explain:
+        lines.append(
+            '    hit ratio = cache_read / (cache_read + input);'
+            ' efficiency = cache_read / cache_write (>=2x healthy @ 5m TTL)',
+        )
     return lines
 
 
@@ -777,7 +1227,7 @@ def turn_duration_row(label: str, durations: list[float]) -> str:
     )
 
 
-def turn_duration_lines(stats: UsageStats) -> list[str]:
+def turn_duration_lines(stats: UsageStats, *, explain: bool) -> list[str]:
     if not (stats.model_durations_ms or stats.wall_durations_ms):
         return []
 
@@ -799,10 +1249,11 @@ def turn_duration_lines(stats: UsageStats) -> list[str]:
     lines.extend(
         turn_duration_row(model, durations) for model, durations in by_model
     )
-    lines.append(
-        '    model time = gaps ending at a reply, so tool runs and approval '
-        'waits are excluded; per-model rows are model time',
-    )
+    if explain:
+        lines.append(
+            '    model time = gaps ending at a reply, so tool runs and '
+            'approval waits are excluded; per-model rows are model time',
+        )
     return lines
 
 
@@ -817,20 +1268,23 @@ COST_PERCENT_WIDTH = 6
 COST_AMOUNT_WIDTH = 9
 
 
-def cost_row(label: str, percent: str, amount: float) -> str:
+def cost_row(label: str, share: float | None, amount: float) -> str:
+    meter = ' ' * BAR_WIDTH if share is None else bar(share)
+    percent = '' if share is None else f'{share:.1%}'
     return (
-        f'    {label:<{COST_ROW_WIDTH}} {percent:>{COST_PERCENT_WIDTH}}'
+        f'    {label:<{COST_ROW_WIDTH}} {meter}'
+        f' {percent:>{COST_PERCENT_WIDTH}}'
         f'  $ {amount:>{COST_AMOUNT_WIDTH}.2f}'
     )
 
 
 def cost_lines(cost: CostBreakdown) -> list[str]:
-    lines = ['  estimated spend', cost_row('total', '', cost.total)]
+    lines = ['  estimated spend', cost_row('total', None, cost.total)]
 
     for key, label in COST_CATEGORY_LABELS:
         amount = cost.by_category[key]
-        share = 100 * amount / cost.total if cost.total else 0.0
-        lines.append(cost_row(label, f'{share:.1f}%', amount))
+        share = amount / cost.total if cost.total else 0.0
+        lines.append(cost_row(label, share, amount))
 
     if cost.unpriced_models:
         names = ', '.join(sorted(cost.unpriced_models))
@@ -849,24 +1303,57 @@ def cost_lines(cost: CostBreakdown) -> list[str]:
     return lines
 
 
+MIX_LABEL_WIDTH = 24
+
+
+def mix_row(label: str, count: int, total: int, peak: int) -> str:
+    """A ranked row: label, bar, share of total, count.
+
+    The bar is scaled to the top item rather than the total, or every row
+    below the leader collapses to an empty bar. The percentage still reads
+    as a share of the total.
+
+    Never colorized -- these blocks get laid out side by side, and ANSI
+    codes would inflate the width calculation that alignment depends on.
+    """
+    return (
+        f'    {truncate(label, MIX_LABEL_WIDTH):<{MIX_LABEL_WIDTH}}'
+        f' {bar(count / peak if peak else 0.0)}'
+        f' {count / total if total else 0.0:>5.1%} {count:>7,}'
+    )
+
+
+def ranked_lines(heading: str, counts: Counter, limit: int) -> list[str]:
+    if not counts:
+        return []
+    ranked = counts.most_common(limit)
+    total = sum(counts.values())
+    peak = ranked[0][1]
+    return [
+        heading,
+        *(mix_row(label, count, total, peak) for label, count in ranked),
+    ]
+
+
 def model_and_tool_lines(stats: UsageStats) -> tuple[list[str], list[str]]:
-    model_lines = []
-    if stats.models:
-        model_lines.append('  model mix')
-        total = sum(stats.models.values())
-        for model, count in stats.models.most_common():
-            share = 100 * count / total
-            model_lines.append(
-                f'    {model:<34} {share:>5.1f}%  {count:>6,}',
-            )
+    return (
+        ranked_lines('  model mix', stats.models, len(stats.models)),
+        ranked_lines('  top tools', stats.tools, TOP_TOOLS_SHOWN),
+    )
 
-    tool_lines = []
-    if stats.tools:
-        tool_lines.append('  top tools')
-        for tool, count in stats.tools.most_common(10):
-            tool_lines.append(f'    {tool:<34} {count:>13,}')
 
-    return model_lines, tool_lines
+def append_section(
+    lines: list[str],
+    section: list[str],
+    *,
+    color: bool,
+) -> None:
+    """Add a blank line then the section, with its heading emphasized."""
+    if not section:
+        return
+    section[0] = colorize(section[0], BOLD, color=color)
+    lines.append('')
+    lines.extend(section)
 
 
 def format_report(
@@ -875,6 +1362,8 @@ def format_report(
     width: int | None = None,
     color: bool | None = None,
     cost: CostBreakdown | None = None,
+    repos: list[RepoReport] | None = None,
+    explain: bool = False,
 ) -> str:
     if width is None:
         width = shutil.get_terminal_size(FALLBACK_TERMINAL_SIZE).columns
@@ -882,39 +1371,34 @@ def format_report(
         color = supports_color()
 
     lines: list[str] = ['']
-    header = f'  Claude Code usage    {report_span(stats)}'
-    lines.append(colorize(header, BOLD, CYAN, color=color))
-    separator = f'  {"-" * 55}'
-    lines.append(colorize(separator, DIM, color=color))
+    lines.extend(
+        colorize(line, BOLD, CYAN, color=color)
+        for line in box_lines('Claude Code usage', report_span(stats), width)
+    )
 
     totals_lines, tokens_lines = totals_and_tokens_lines(stats)
     lines.append('')
     lines.extend(merge_side_by_side(totals_lines, tokens_lines, width))
 
-    efficiency_lines = cache_efficiency_lines(stats)
-    if efficiency_lines:
-        efficiency_lines[0] = colorize(efficiency_lines[0], BOLD, color=color)
-        lines.append('')
-        lines.extend(efficiency_lines)
-
-    turn_lines = turn_duration_lines(stats)
-    if turn_lines:
-        turn_lines[0] = colorize(turn_lines[0], BOLD, color=color)
-        lines.append('')
-        lines.extend(turn_lines)
-
+    append_section(lines, sparkline_lines(stats, color=color), color=color)
+    append_section(lines, repo_lines(repos or [], color=color), color=color)
+    append_section(
+        lines,
+        cache_efficiency_lines(stats, explain=explain),
+        color=color,
+    )
+    append_section(
+        lines,
+        turn_duration_lines(stats, explain=explain),
+        color=color,
+    )
     if cost is not None:
-        spend_lines = cost_lines(cost)
-        spend_lines[0] = colorize(spend_lines[0], BOLD, color=color)
-        lines.append('')
-        lines.extend(spend_lines)
+        append_section(lines, cost_lines(cost), color=color)
 
     model_lines, tool_lines = model_and_tool_lines(stats)
     if model_lines or tool_lines:
         merged = merge_side_by_side(model_lines, tool_lines, width)
-        merged[0] = colorize(merged[0], BOLD, color=color)
-        lines.append('')
-        lines.extend(merged)
+        append_section(lines, merged, color=color)
 
     if stats.longest_prompt_chars:
         lines.append('')
@@ -922,8 +1406,14 @@ def format_report(
             f'  longest prompt: {stats.longest_prompt_chars:,} chars',
         )
 
+    if not explain:
+        lines.append('')
+        lines.append(
+            colorize('  (--explain for metric definitions)', DIM, color=color),
+        )
+
     lines.append('')
-    return '\n'.join(lines)
+    return '\n'.join(line.rstrip() for line in lines)
 
 
 def cost_as_dict(cost: CostBreakdown | None) -> dict | None:
@@ -961,9 +1451,31 @@ def turn_duration_as_dict(stats: UsageStats) -> dict:
     }
 
 
+def repo_as_dict(repo: RepoReport) -> dict:
+    stats = repo.stats
+    return {
+        'repo': repo.label,
+        'sessions': stats.sessions,
+        'prompts': stats.prompts,
+        'replies': stats.replies,
+        'lines_added': stats.lines_added,
+        'lines_removed': stats.lines_removed,
+        'tokens': {
+            'output': stats.output_tokens,
+            'input': stats.input_tokens,
+            'cache_read': stats.cache_read_tokens,
+            'cache_write': stats.cache_write_tokens,
+        },
+        'cost': cost_as_dict(repo.cost),
+        'models': dict(stats.models.most_common()),
+        'tools': dict(stats.tools.most_common()),
+    }
+
+
 def stats_as_dict(
     stats: UsageStats,
     cost: CostBreakdown | None = None,
+    repos: list[RepoReport] | None = None,
 ) -> dict:
     first, last = stats.first_seen, stats.last_seen
     return {
@@ -988,6 +1500,7 @@ def stats_as_dict(
         'cache_efficiency': stats.cache_efficiency,
         'turn_duration_ms': turn_duration_as_dict(stats),
         'cost': cost_as_dict(cost),
+        'repos': [repo_as_dict(repo) for repo in repos or []],
         'models': dict(stats.models.most_common()),
         'tools': dict(stats.tools.most_common()),
         'longest_prompt_chars': stats.longest_prompt_chars,
@@ -1006,7 +1519,7 @@ def parse_day(raw: str) -> date:
         raise argparse.ArgumentTypeError(msg) from exc
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Summarize local Claude Code session logs.',
     )
@@ -1030,6 +1543,11 @@ def main() -> None:
         help='disable ANSI colors in the report',
     )
     parser.add_argument(
+        '--explain',
+        action='store_true',
+        help='include the footnotes defining each metric',
+    )
+    parser.add_argument(
         '--pricing-path',
         type=Path,
         default=DEFAULT_PRICING_PATH,
@@ -1050,7 +1568,11 @@ def main() -> None:
         help=f'sqlite history db (default: {DEFAULT_DB_PATH})',
     )
 
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
     roots = args.log_root or [DEFAULT_LOG_ROOT]
 
     missing = [root for root in roots if not root.exists()]
@@ -1083,7 +1605,9 @@ def main() -> None:
         print(f'recorded {written} day(s) to {args.db_path}')
         return
 
-    stats = collect_stats(roots, since=args.since, until=args.until)
+    by_repo = collect_stats_by_repo(roots, since=args.since, until=args.until)
+    stats = merge_stats(by_repo.values())
+    repos = build_repo_reports(by_repo, pricing)
     cost = compute_cost(stats, pricing) if pricing else None
 
     today = date.today()
@@ -1096,10 +1620,18 @@ def main() -> None:
         conn.close()
 
     if args.json:
-        print(json.dumps(stats_as_dict(stats, cost), indent=2))
+        print(json.dumps(stats_as_dict(stats, cost, repos), indent=2))
     else:
         color = False if args.no_color else None
-        print(format_report(stats, color=color, cost=cost))
+        print(
+            format_report(
+                stats,
+                color=color,
+                cost=cost,
+                repos=repos,
+                explain=args.explain,
+            ),
+        )
 
 
 if __name__ == '__main__':
