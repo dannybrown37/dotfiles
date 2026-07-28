@@ -1,6 +1,6 @@
 # Overview
 
-Debian dotfiles for a mostly WSL2-based setup with a growing list of compatible distros/environments.
+Debian dotfiles for a WSL2-based setup.
 
 ## Clone and Run
 
