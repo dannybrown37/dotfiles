@@ -24,7 +24,7 @@
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
 - **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
-- **queue** — Workflow rather than a language: a shared, cross-repo work-item queue. Invoke when pulling work from the queue. The skill and its CLI live in the `skill-tree` repo (`~/projects/skill-tree`), symlinked into `~/.claude/skills/queue` by `install/bash.sh`; `bin/queue.sh` here is just the interactive shell/fzf glue around it.
+- **queue** — Workflow rather than a language: a shared, cross-repo work-item queue. Invoke when pulling work from the queue. The skill, its CLI, and the interactive `queue` shell wrapper all live in the `skill-tree` repo (`~/projects/skill-tree`) now; `install/bash.sh` just runs `skill-tree`'s own `skills/queue/scripts/install.sh`, which symlinks the skill into `~/.claude/skills/queue` and puts `queue` on `PATH`.
 - **audit-skills** — Reviewing `.claude/skills`/`.claude/references` for structural drift, staleness, or skill-vs-reference misclassification. Invoke when asked to review, audit, or trim skills, or after adding/renaming one.
 - **verify** — Answering a claim the user would otherwise have to spot-check themselves ("does it work now?", "is X gone?", 2"can you confirm?"). Invoke before asserting, so the answer arrives with the evidence that would have falsified it.
 
@@ -36,7 +36,7 @@ Read these references before writing code in the following domains:
 - Read directly when writing TypeScript/JavaScript/Node code: `.claude/references/node-style.md`
 - Read directly when writing Python code: `.claude/references/python-style.md`
 - Read directly for this repo's (`dotfiles`) layout, conventions, pre-commit hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
-- Read directly when a queue sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `skill-tree`'s `.claude/references/queue-sync-model.md` — it documents this repo's `secrets.sh` merge mechanism, just lives alongside the queue skill it's about.
+- Read directly when a queue sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `skill-tree`'s `skills/queue/references/queue-sync-model.md` — it documents this repo's `secrets.sh` merge mechanism, just lives alongside the queue skill it's about.
 
 ## Model Delegation
 

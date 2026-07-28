@@ -8,9 +8,9 @@ ROOT="$(git rev-parse --show-toplevel)"
 readonly MANIFEST="manifest"
 
 # queue_cli.py lives in the skill-tree repo, not here -- same @anchor-style
-# resolution bin/queue.sh uses, just not manifest-driven since this is an
-# internal implementation detail rather than a synced file.
-readonly QUEUE_SCRIPT="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}/scripts/queue_cli.py"
+# resolution the queue CLI itself uses, just not manifest-driven since this is
+# an internal implementation detail rather than a synced file.
+readonly QUEUE_SCRIPT="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}/skills/queue/scripts/queue_cli.py"
 
 # Files a straight copy would corrupt: each machine edits its own copy, so both
 # sides have to survive a sync. Order matters -- the queue merge asks

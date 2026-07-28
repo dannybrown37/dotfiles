@@ -115,7 +115,6 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
-| `queue` | AI work queue -- add items, discuss, track completion | queue list | `bin/queue.sh` |
 | `quick_google` | Ctrl+Shift+G - Search Google for selected text | `ahk/quick_google.ahk` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `skills` | Export a dotfiles skill into another repo (.claude + .github bridge) | skill-export <name> [target-dir] | `bin/skills.sh` |

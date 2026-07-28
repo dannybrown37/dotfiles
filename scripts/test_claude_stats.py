@@ -1,7 +1,9 @@
 """Tests for scripts/claude_stats.py."""
 
 import json
+import shutil
 import sqlite3
+import subprocess
 from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -22,6 +24,7 @@ from claude_stats import (
     box_lines,
     bucket_series,
     build_repo_reports,
+    cartoon_lines,
     collect_stats,
     collect_stats_by_repo,
     compute_cost,
@@ -34,12 +37,14 @@ from claude_stats import (
     label_repo_roots,
     load_pricing,
     merge_stats,
+    parse_cartoon_stats,
     peek_cwd,
     percentile,
     record_day,
     record_range,
     record_repo_day,
     resolve_repo_roots,
+    run_cartoon_stats,
     sparkline,
     stats_as_dict,
     supports_color,
@@ -1739,3 +1744,162 @@ def test_stats_as_dict_has_an_empty_repo_list_without_repos() -> None:
     data = stats_as_dict(_stats_with_full_report_data())
 
     assert data['repos'] == []
+
+
+# ── cartoon integration ──────────────────────────────────────────────────
+
+
+CARTOON_STATS_OUTPUT = (
+    'calls: 2\n'
+    'tokens_saved: 166\n'
+    'by_adapter:\n'
+    '  pytest:\n'
+    '    calls: 1\n'
+    '    saved: 166\n'
+    '  passthrough:\n'
+    '    calls: 1\n'
+    '    saved: 0\n'
+)
+CARTOON_STATS_PARSED = {
+    'calls': 2,
+    'tokens_saved': 166,
+    'by_adapter': {
+        'pytest': {'calls': 1, 'saved': 166},
+        'passthrough': {'calls': 1, 'saved': 0},
+    },
+}
+CARTOON_SINCE = '7d'
+
+
+def test_parse_cartoon_stats_reads_totals_and_per_adapter_breakdown() -> None:
+    assert parse_cartoon_stats(CARTOON_STATS_OUTPUT) == CARTOON_STATS_PARSED
+
+
+def test_parse_cartoon_stats_handles_empty_by_adapter() -> None:
+    output = 'calls: 0\ntokens_saved: 0\nby_adapter: {}\n'
+
+    assert parse_cartoon_stats(output) == {
+        'calls': 0,
+        'tokens_saved': 0,
+        'by_adapter': {},
+    }
+
+
+def test_run_cartoon_stats_returns_none_when_binary_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(shutil, 'which', lambda _name: None)
+
+    assert run_cartoon_stats(CARTOON_SINCE) is None
+
+
+def test_run_cartoon_stats_returns_none_on_nonzero_exit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(shutil, 'which', lambda _name: '/usr/bin/cartoon')
+    monkeypatch.setattr(
+        subprocess,
+        'run',
+        lambda *args, **_kwargs: subprocess.CompletedProcess(
+            args,
+            1,
+            stdout='',
+            stderr='boom',
+        ),
+    )
+
+    assert run_cartoon_stats(CARTOON_SINCE) is None
+
+
+@pytest.mark.parametrize('error', [OSError, subprocess.TimeoutExpired])
+def test_run_cartoon_stats_returns_none_when_subprocess_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    error: type[Exception],
+) -> None:
+    monkeypatch.setattr(shutil, 'which', lambda _name: '/usr/bin/cartoon')
+
+    def raise_error(*_args: object, **_kwargs: object) -> None:
+        if error is subprocess.TimeoutExpired:
+            raise error(cmd='cartoon', timeout=5)
+        message = 'boom'
+        raise error(message)
+
+    monkeypatch.setattr(subprocess, 'run', raise_error)
+
+    assert run_cartoon_stats(CARTOON_SINCE) is None
+
+
+def test_run_cartoon_stats_returns_stdout_on_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(shutil, 'which', lambda _name: '/usr/bin/cartoon')
+    monkeypatch.setattr(
+        subprocess,
+        'run',
+        lambda *args, **_kwargs: subprocess.CompletedProcess(
+            args,
+            0,
+            stdout=CARTOON_STATS_OUTPUT,
+            stderr='',
+        ),
+    )
+
+    assert run_cartoon_stats(CARTOON_SINCE) == CARTOON_STATS_OUTPUT
+
+
+def test_cartoon_lines_is_empty_without_any_calls() -> None:
+    empty = {'calls': 0, 'tokens_saved': 0, 'by_adapter': {}}
+
+    assert cartoon_lines(empty, CARTOON_SINCE) == []
+
+
+def test_cartoon_lines_is_empty_when_stats_unavailable() -> None:
+    assert cartoon_lines(None, CARTOON_SINCE) == []
+
+
+def test_cartoon_lines_lists_calls_and_savings_per_adapter() -> None:
+    lines = cartoon_lines(CARTOON_STATS_PARSED, CARTOON_SINCE)
+    text = '\n'.join(lines)
+
+    assert CARTOON_SINCE in lines[0]
+    assert 'pytest' in text
+    assert 'passthrough' in text
+    assert '166' in text
+
+
+def test_format_report_includes_cartoon_section_when_given() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+        cartoon=CARTOON_STATS_PARSED,
+        cartoon_since=CARTOON_SINCE,
+    )
+
+    assert 'cartoon' in report
+    assert 'pytest' in report
+
+
+def test_format_report_omits_cartoon_section_without_stats() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert 'pytest' not in report
+
+
+def test_stats_as_dict_includes_cartoon_stats_when_given() -> None:
+    data = stats_as_dict(
+        _stats_with_full_report_data(),
+        cartoon=CARTOON_STATS_PARSED,
+    )
+
+    assert data['cartoon'] == CARTOON_STATS_PARSED
+
+
+def test_stats_as_dict_has_no_cartoon_stats_without_them() -> None:
+    data = stats_as_dict(_stats_with_full_report_data())
+
+    assert data['cartoon'] is None

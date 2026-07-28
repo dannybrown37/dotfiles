@@ -18,6 +18,7 @@ import math
 import os
 import shutil
 import sqlite3
+import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
@@ -37,6 +38,9 @@ COLUMN_GAP = 4
 DEFAULT_PRICING_PATH = Path(__file__).resolve().parent / 'model_pricing.json'
 PRICING_STALE_AFTER_DAYS = 60
 TOKENS_PER_MILLION = 1_000_000
+CARTOON_BINARY = 'cartoon'
+CARTOON_STATS_TIMEOUT_S = 5
+DEFAULT_CARTOON_SINCE = '7d'
 
 RESET = '\x1b[0m'
 BOLD = '\x1b[1m'
@@ -1303,6 +1307,92 @@ def cost_lines(cost: CostBreakdown) -> list[str]:
     return lines
 
 
+def cartoon_available() -> bool:
+    return shutil.which(CARTOON_BINARY) is not None
+
+
+def run_cartoon_stats(since: str) -> str | None:
+    """Raw `cartoon stats --since <since>` output, or None if unusable.
+
+    Cartoon tracks its own token savings in its own state, so this shells
+    out to it rather than re-deriving anything from the transcripts.
+    """
+    if not cartoon_available():
+        return None
+    try:
+        result = subprocess.run(  # noqa: S603
+            [CARTOON_BINARY, 'stats', '--since', since],
+            capture_output=True,
+            text=True,
+            timeout=CARTOON_STATS_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def parse_cartoon_stats(output: str) -> dict:
+    """Parse `cartoon stats`'s calls/tokens_saved/by_adapter text output."""
+    calls = 0
+    tokens_saved = 0
+    by_adapter: dict[str, dict[str, int]] = {}
+    current_adapter: str | None = None
+
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        if line.startswith('calls:'):
+            calls = int(line.split(':', 1)[1].strip())
+        elif line.startswith('tokens_saved:'):
+            tokens_saved = int(line.split(':', 1)[1].strip())
+        elif line.startswith('by_adapter:'):
+            current_adapter = None
+        elif line.startswith('    ') and current_adapter is not None:
+            key, _, value = line.strip().partition(':')
+            by_adapter[current_adapter][key.strip()] = int(value.strip())
+        elif line.startswith('  '):
+            current_adapter = line.strip().rstrip(':')
+            by_adapter[current_adapter] = {}
+
+    return {
+        'calls': calls,
+        'tokens_saved': tokens_saved,
+        'by_adapter': by_adapter,
+    }
+
+
+CARTOON_ROW_WIDTH = 20
+
+
+def cartoon_lines(stats: dict | None, since: str) -> list[str]:
+    if not stats or not stats['calls']:
+        return []
+
+    tokens_saved = humanize(stats['tokens_saved'])
+    lines = [
+        f'  cartoon (--since {since})',
+        f'    {"calls":<{CARTOON_ROW_WIDTH}} {stats["calls"]:>10,}',
+        f'    {"tokens saved":<{CARTOON_ROW_WIDTH}} {tokens_saved:>10}',
+    ]
+
+    by_savings = sorted(
+        stats['by_adapter'].items(),
+        key=lambda item: item[1].get('saved', 0),
+        reverse=True,
+    )
+    for adapter, counts in by_savings:
+        lines.append(
+            f'    {adapter:<{CARTOON_ROW_WIDTH}}'
+            f' {counts.get("calls", 0):>4,} calls'
+            f'  {humanize(counts.get("saved", 0)):>8} saved',
+        )
+
+    return lines
+
+
 MIX_LABEL_WIDTH = 24
 
 
@@ -1364,6 +1454,8 @@ def format_report(
     cost: CostBreakdown | None = None,
     repos: list[RepoReport] | None = None,
     explain: bool = False,
+    cartoon: dict | None = None,
+    cartoon_since: str = DEFAULT_CARTOON_SINCE,
 ) -> str:
     if width is None:
         width = shutil.get_terminal_size(FALLBACK_TERMINAL_SIZE).columns
@@ -1394,6 +1486,12 @@ def format_report(
     )
     if cost is not None:
         append_section(lines, cost_lines(cost), color=color)
+
+    append_section(
+        lines,
+        cartoon_lines(cartoon, cartoon_since),
+        color=color,
+    )
 
     model_lines, tool_lines = model_and_tool_lines(stats)
     if model_lines or tool_lines:
@@ -1476,6 +1574,7 @@ def stats_as_dict(
     stats: UsageStats,
     cost: CostBreakdown | None = None,
     repos: list[RepoReport] | None = None,
+    cartoon: dict | None = None,
 ) -> dict:
     first, last = stats.first_seen, stats.last_seen
     return {
@@ -1500,6 +1599,7 @@ def stats_as_dict(
         'cache_efficiency': stats.cache_efficiency,
         'turn_duration_ms': turn_duration_as_dict(stats),
         'cost': cost_as_dict(cost),
+        'cartoon': cartoon,
         'repos': [repo_as_dict(repo) for repo in repos or []],
         'models': dict(stats.models.most_common()),
         'tools': dict(stats.tools.most_common()),
@@ -1567,6 +1667,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_DB_PATH,
         help=f'sqlite history db (default: {DEFAULT_DB_PATH})',
     )
+    parser.add_argument(
+        '--cartoon-since',
+        default=DEFAULT_CARTOON_SINCE,
+        help=(
+            'window for `cartoon stats`, e.g. 7d|24h|30m '
+            f'(default: {DEFAULT_CARTOON_SINCE}); skipped if cartoon is '
+            'not installed'
+        ),
+    )
 
     return parser
 
@@ -1610,6 +1719,11 @@ def main() -> None:
     repos = build_repo_reports(by_repo, pricing)
     cost = compute_cost(stats, pricing) if pricing else None
 
+    cartoon_raw = run_cartoon_stats(args.cartoon_since)
+    cartoon = (
+        parse_cartoon_stats(cartoon_raw) if cartoon_raw is not None else None
+    )
+
     today = date.today()
     conn = sqlite3.connect(args.db_path)
     try:
@@ -1620,7 +1734,12 @@ def main() -> None:
         conn.close()
 
     if args.json:
-        print(json.dumps(stats_as_dict(stats, cost, repos), indent=2))
+        print(
+            json.dumps(
+                stats_as_dict(stats, cost, repos, cartoon),
+                indent=2,
+            ),
+        )
     else:
         color = False if args.no_color else None
         print(
@@ -1630,6 +1749,8 @@ def main() -> None:
                 cost=cost,
                 repos=repos,
                 explain=args.explain,
+                cartoon=cartoon,
+                cartoon_since=args.cartoon_since,
             ),
         )
 
