@@ -2,8 +2,10 @@
 """Aggregate Claude Code session logs into usage statistics.
 
 Reads the JSONL transcripts under ~/.claude/projects and reports totals on
-demand. Nothing is written or cached -- every run re-reads the logs, so the
-numbers only cover transcripts still present on this machine.
+demand -- every run re-reads the logs, so the numbers only cover transcripts
+still present on this machine. Each run also upserts today's rollup into the
+sqlite history db (see --db-path), so daily totals survive log rotation;
+--record backfills a --since/--until range instead of printing a report.
 """
 
 import argparse

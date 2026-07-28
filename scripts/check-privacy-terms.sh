@@ -18,6 +18,7 @@ if [[ -f "${SECRETS_FILE}" ]]; then
 fi
 
 if [[ ${#PRIVACY_TERMS[@]} -eq 0 ]]; then
+    echo "WARN: PRIVACY_TERMS is empty (config/.secrets) — commits are not being checked for privacy terms." >&2
     exit 0
 fi
 

@@ -110,7 +110,7 @@ def test_allows_commit_with_no_matching_terms(
     assert result.returncode == 0
 
 
-def test_no_op_when_privacy_terms_is_empty(
+def test_warns_when_privacy_terms_is_empty(
     harness: PrivacyHookHarness,
 ) -> None:
     harness.write_secrets([])
@@ -119,9 +119,10 @@ def test_no_op_when_privacy_terms_is_empty(
     result = harness.run_hook()
 
     assert result.returncode == 0
+    assert 'PRIVACY_TERMS' in result.stderr
 
 
-def test_no_op_when_secrets_file_is_missing(
+def test_warns_when_secrets_file_is_missing(
     harness: PrivacyHookHarness,
 ) -> None:
     harness.stage_file('notes.txt', 'AcmeCorp mentioned here\n')
@@ -129,6 +130,7 @@ def test_no_op_when_secrets_file_is_missing(
     result = harness.run_hook()
 
     assert result.returncode == 0
+    assert 'PRIVACY_TERMS' in result.stderr
 
 
 def test_survives_a_secrets_file_ending_in_a_false_guarded_source(
