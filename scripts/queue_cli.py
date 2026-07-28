@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Queue management for AI-assisted work items."""
 
+import os
 import re
+import subprocess
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -336,6 +339,55 @@ def action_titles(queue_path: Path) -> None:
         print(title)
 
 
+def prompt_for_title() -> str:
+    """Prompt the user to enter a title."""
+    return input('Item title: ').strip()
+
+
+def open_editor_for_content() -> str:
+    """Open $EDITOR for the user to write content, return the written text."""
+    editor = os.environ.get('EDITOR', 'vim')
+
+    with tempfile.NamedTemporaryFile(
+        mode='w+',
+        suffix='.md',
+        delete=False,
+    ) as f:
+        temp_path = f.name
+
+    try:
+        subprocess.run([editor, temp_path], check=True)  # noqa: S603
+        return Path(temp_path).read_text().strip()
+    finally:
+        Path(temp_path).unlink(missing_ok=True)
+
+
+def action_insert(
+    queue_path: Path,
+    title: str | None = None,
+    content: str | None = None,
+) -> None:
+    """Insert a new item at the top of the queue.
+
+    If title is not provided, prompt for it.
+    If content is not provided, open $EDITOR.
+    """
+    if not title:
+        title = prompt_for_title()
+        if not title:
+            print('Error: Title cannot be empty', file=sys.stderr)
+            sys.exit(1)
+
+    if content is None:
+        content = open_editor_for_content()
+
+    items = parse_queue_file(queue_path)
+    new_item = QueueItem(title, content)
+    items.insert(0, new_item)
+    queue_path.write_text(render_queue(items))
+    print(f'✓ Inserted: {title}')
+
+
 def action_claim(queue_path: Path, item_title: str) -> None:
     """Mark an item in-progress so other agents know it's taken."""
     items = parse_queue_file(queue_path)
@@ -439,6 +491,7 @@ def main() -> None:
             'next',
             'list',
             'titles',
+            'insert',
             'claim',
             'complete',
             'merge-queue',
@@ -479,6 +532,18 @@ def main() -> None:
         default='local',
         help='Which side wins order and body for items present on both',
     )
+    parser.add_argument(
+        '--title',
+        type=str,
+        default=None,
+        help='Title of item to insert (if omitted, will prompt)',
+    )
+    parser.add_argument(
+        '--content',
+        type=str,
+        default=None,
+        help='Content for the inserted item (if omitted, will open $EDITOR)',
+    )
 
     args = parser.parse_args()
 
@@ -491,6 +556,8 @@ def main() -> None:
         action_list(queue_path)
     elif args.action == 'titles':
         action_titles(queue_path)
+    elif args.action == 'insert':
+        action_insert(queue_path, args.title, args.content)
     elif args.action in ('merge-queue', 'merge-completed'):
         dispatch_merge(args, queue_path, complete_path)
     elif args.action in ('claim', 'complete'):

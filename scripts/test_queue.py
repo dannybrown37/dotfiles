@@ -11,6 +11,7 @@ from queue_cli import (
     MAX_COMPLETED_CONTENT_LINES,
     action_claim,
     action_complete,
+    action_insert,
     action_merge_completed,
     action_merge_queue,
     completed_titles,
@@ -620,3 +621,41 @@ def test_action_merge_queue_drops_items_completed_on_the_other_machine(
     action_merge_queue(queue_path, complete_path, incoming_path, 'incoming')
 
     assert list_titles(queue_path) == ['Open']
+
+
+def test_action_insert_adds_item_to_empty_queue(tmp_path: Path) -> None:
+    queue_path = _write_queue(tmp_path, '# Queue\n')
+
+    action_insert(queue_path, 'New Item', '')
+
+    assert list_titles(queue_path) == ['New Item']
+
+
+def test_action_insert_places_new_item_at_top(tmp_path: Path) -> None:
+    queue_path = _write_queue(tmp_path, _queue('First', 'Second'))
+
+    action_insert(queue_path, 'New Top Item', '')
+
+    assert list_titles(queue_path) == ['New Top Item', 'First', 'Second']
+
+
+def test_action_insert_includes_content(tmp_path: Path) -> None:
+    queue_path = _write_queue(tmp_path, _queue('Existing'))
+
+    action_insert(queue_path, 'New Item', 'Item description here.')
+
+    items = parse_queue_file(queue_path)
+    new_item = next(item for item in items if item.title == 'New Item')
+    assert new_item.content == 'Item description here.'
+
+
+def test_action_insert_with_empty_content_creates_item_with_no_body(
+    tmp_path: Path,
+) -> None:
+    queue_path = _write_queue(tmp_path, _queue('Existing'))
+
+    action_insert(queue_path, 'New Item', '')
+
+    items = parse_queue_file(queue_path)
+    new_item = next(item for item in items if item.title == 'New Item')
+    assert new_item.content == ''
