@@ -9,23 +9,42 @@ from pathlib import Path
 import pytest
 
 from claude_stats import (
+    BAR_WIDTH,
+    MAX_SPARK_POINTS,
+    UNKNOWN_REPO,
     CostBreakdown,
+    RepoReport,
     ModelPrice,
     ModelUsage,
     PricingTable,
     UsageStats,
+    bar,
+    box_lines,
+    bucket_series,
+    build_repo_reports,
     collect_stats,
+    collect_stats_by_repo,
     compute_cost,
+    daily_series,
     ensure_schema,
     find_model_price,
     format_report,
+    git_root_on_disk,
     iter_days,
+    label_repo_roots,
     load_pricing,
+    merge_stats,
+    peek_cwd,
     percentile,
     record_day,
     record_range,
+    record_repo_day,
+    resolve_repo_roots,
+    sparkline,
     stats_as_dict,
     supports_color,
+    truncate,
+    worktree_sibling_root,
 )
 
 STAMP = '2026-07-26T09:00:00.000Z'
@@ -999,7 +1018,11 @@ def test_ensure_schema_creates_tables() -> None:
             "SELECT name FROM sqlite_master WHERE type = 'table'",
         )
     }
-    assert {'daily_totals', 'daily_model_usage'} <= tables
+    assert {
+        'daily_totals',
+        'daily_model_usage',
+        'daily_repo_usage',
+    } <= tables
 
 
 def test_record_day_writes_totals_row() -> None:
@@ -1151,3 +1174,568 @@ def test_record_range_records_each_active_day_and_skips_empty(
     }
     assert written == EXPECTED_ACTIVE_DAYS
     assert recorded_days == {'2026-07-25', '2026-07-27'}
+
+
+def _make_repo(root: Path) -> Path:
+    (root / '.git').mkdir(parents=True)
+    return root
+
+
+def _make_linked_worktree(repo: Path, worktree: Path, name: str) -> Path:
+    (repo / '.git' / 'worktrees' / name).mkdir(parents=True)
+    worktree.mkdir(parents=True)
+    (worktree / '.git').write_text(
+        f'gitdir: {repo / ".git" / "worktrees" / name}\n',
+    )
+    return worktree
+
+
+def test_peek_cwd_returns_the_first_recorded_launch_directory(
+    tmp_path: Path,
+) -> None:
+    path = _write_log(
+        tmp_path,
+        [
+            {'type': 'system', 'subtype': 'other'},
+            _prompt(cwd='/home/danny/projects/dotfiles'),
+            _assistant(cwd='/home/danny/projects/dotfiles/scripts'),
+        ],
+    )
+
+    assert peek_cwd(path) == '/home/danny/projects/dotfiles'
+
+
+def test_peek_cwd_is_none_when_no_record_names_one(tmp_path: Path) -> None:
+    path = _write_log(tmp_path, [_prompt(), _assistant()])
+
+    assert peek_cwd(path) is None
+
+
+def test_git_root_on_disk_finds_the_nearest_repo_ancestor(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(tmp_path / 'repo')
+    nested = repo / 'src' / 'deep'
+    nested.mkdir(parents=True)
+
+    assert git_root_on_disk(nested) == repo
+
+
+def test_git_root_on_disk_maps_a_linked_worktree_to_its_main_repo(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(tmp_path / 'repo')
+    worktree = _make_linked_worktree(repo, tmp_path / 'wt', 'feature')
+
+    assert git_root_on_disk(worktree) == repo
+
+
+def test_git_root_on_disk_ignores_ancestors_of_a_vanished_path(
+    tmp_path: Path,
+) -> None:
+    """A deleted cwd's surviving ancestors say nothing about the session."""
+    repo = _make_repo(tmp_path / 'repo')
+
+    assert git_root_on_disk(repo / 'gone' / 'deeper') is None
+
+
+@pytest.mark.parametrize(
+    ('cwd', 'expected'),
+    [
+        ('/p/dotfiles-worktrees/gtd-wt', '/p/dotfiles'),
+        ('/p/dotfiles-worktrees/gtd-wt/gtd', '/p/dotfiles'),
+        ('/p/dotfiles', None),
+        ('/p/-worktrees/wt', None),
+    ],
+)
+def test_worktree_sibling_root_follows_the_gwt_layout(
+    cwd: str,
+    expected: str | None,
+) -> None:
+    """`gwt` puts worktrees in a `<repo>-worktrees/` sibling directory."""
+    result = worktree_sibling_root(Path(cwd))
+
+    assert result == (Path(expected) if expected else None)
+
+
+def test_resolve_repo_roots_prefers_an_on_disk_git_root(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(tmp_path / 'repo')
+    nested = repo / 'scripts'
+    nested.mkdir()
+
+    resolved = resolve_repo_roots([str(nested)])
+
+    assert resolved == {str(nested): repo}
+
+
+def test_resolve_repo_roots_rolls_a_vanished_worktree_into_its_repo() -> None:
+    cwd = '/p/dotfiles-worktrees/gtd-wt'
+
+    resolved = resolve_repo_roots([cwd])
+
+    assert resolved == {cwd: Path('/p/dotfiles')}
+
+
+def test_resolve_repo_roots_rolls_a_vanished_subdir_under_a_known_root(
+    tmp_path: Path,
+) -> None:
+    """Half of the historical cwds are gone, so containment is the fallback."""
+    repo = _make_repo(tmp_path / 'repo')
+    vanished = repo / 'project_manager'
+
+    resolved = resolve_repo_roots([str(repo), str(vanished)])
+
+    assert resolved[str(vanished)] == repo
+
+
+def test_resolve_repo_roots_keeps_an_unattributable_path_as_its_own_root(
+    tmp_path: Path,
+) -> None:
+    stray = tmp_path / 'nowhere' / 'deep'
+
+    resolved = resolve_repo_roots([str(stray)])
+
+    assert resolved == {str(stray): stray}
+
+
+def test_label_repo_roots_uses_basenames_when_unambiguous() -> None:
+    labels = label_repo_roots([Path('/p/dotfiles'), Path('/p/gtd')])
+
+    assert labels == {
+        Path('/p/dotfiles'): 'dotfiles',
+        Path('/p/gtd'): 'gtd',
+    }
+
+
+def test_label_repo_roots_falls_back_to_full_paths_on_a_name_clash() -> None:
+    labels = label_repo_roots([Path('/a/gtd'), Path('/b/gtd')])
+
+    assert labels == {Path('/a/gtd'): '/a/gtd', Path('/b/gtd'): '/b/gtd'}
+
+
+def test_merge_stats_matches_collecting_the_same_logs_at_once(
+    tmp_path: Path,
+) -> None:
+    """Per-repo totals are merged into the headline, so they must agree."""
+    _write_log(
+        tmp_path,
+        [_prompt(), _assistant(), _turn_duration(1000)],
+        name='one',
+    )
+    _write_log(
+        tmp_path,
+        [
+            _prompt(sessionId='s2'),
+            _assistant(sessionId='s2', message={'model': 'claude-haiku-4-5'}),
+        ],
+        name='two',
+    )
+    logs = sorted(tmp_path.glob('*.jsonl'))
+
+    merged = merge_stats(
+        [collect_stats([log]) for log in logs],
+    )
+    at_once = collect_stats([tmp_path])
+
+    assert stats_as_dict(merged) == stats_as_dict(at_once)
+
+
+def test_merge_stats_of_nothing_is_an_empty_snapshot() -> None:
+    merged = merge_stats([])
+
+    assert merged.sessions == 0
+    assert merged.first_seen is None
+
+
+def test_collect_stats_by_repo_splits_logs_by_their_launch_directory(
+    tmp_path: Path,
+) -> None:
+    logs = tmp_path / 'logs'
+    logs.mkdir()
+    dotfiles = _make_repo(tmp_path / 'dotfiles')
+    gtd = _make_repo(tmp_path / 'gtd')
+    _write_log(logs, [_prompt(cwd=str(dotfiles)), _assistant()], name='one')
+    _write_log(logs, [_prompt(cwd=str(gtd))], name='two')
+
+    by_repo = collect_stats_by_repo([logs])
+
+    assert set(by_repo) == {'dotfiles', 'gtd'}
+    assert by_repo['dotfiles'].replies == 1
+    assert by_repo['gtd'].prompts == 1
+
+
+def test_collect_stats_by_repo_buckets_logs_without_a_cwd(
+    tmp_path: Path,
+) -> None:
+    _write_log(tmp_path, [_prompt(), _assistant()])
+
+    by_repo = collect_stats_by_repo([tmp_path])
+
+    assert set(by_repo) == {UNKNOWN_REPO}
+
+
+GTD_DAY_OUTPUT_TOKENS = 40
+EXPECTED_REPO_ROWS = 2
+
+
+def test_record_repo_day_writes_one_row_per_active_repo() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    record_repo_day(
+        conn,
+        DAY,
+        {
+            'dotfiles': _day_stats(),
+            'gtd': _day_stats(output_tokens=GTD_DAY_OUTPUT_TOKENS),
+        },
+        pricing=None,
+    )
+
+    rows = dict(
+        conn.execute('SELECT repo, output_tokens FROM daily_repo_usage'),
+    )
+    assert rows == {
+        'dotfiles': DAY_OUTPUT_TOKENS,
+        'gtd': GTD_DAY_OUTPUT_TOKENS,
+    }
+
+
+def test_record_repo_day_skips_repos_idle_that_day() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    record_repo_day(
+        conn,
+        DAY,
+        {'dotfiles': _day_stats(), 'gtd': UsageStats()},
+        pricing=None,
+    )
+
+    repos = {
+        row[0] for row in conn.execute('SELECT repo FROM daily_repo_usage')
+    }
+    assert repos == {'dotfiles'}
+
+
+def test_record_repo_day_removes_stale_repo_rows_on_replace() -> None:
+    """A repo dropping out of a day must not leave yesterday's row behind."""
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+    record_repo_day(conn, DAY, {'gone': _day_stats()}, pricing=None)
+
+    record_repo_day(conn, DAY, {'dotfiles': _day_stats()}, pricing=None)
+
+    repos = {
+        row[0] for row in conn.execute('SELECT repo FROM daily_repo_usage')
+    }
+    assert repos == {'dotfiles'}
+
+
+def test_record_repo_day_prices_each_repo_separately(tmp_path: Path) -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+    pricing = load_pricing(_write_pricing(tmp_path))
+
+    record_repo_day(
+        conn,
+        DAY,
+        {
+            'dotfiles': _day_stats(),
+            'gtd': _day_stats(model_usage={}),
+        },
+        pricing=pricing,
+    )
+
+    costs = dict(conn.execute('SELECT repo, cost FROM daily_repo_usage'))
+    assert costs['dotfiles'] > 0
+    assert costs['gtd'] == 0
+
+
+def test_record_repo_day_leaves_cost_null_without_pricing() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    record_repo_day(conn, DAY, {'dotfiles': _day_stats()}, pricing=None)
+
+    costs = [
+        row[0] for row in conn.execute('SELECT cost FROM daily_repo_usage')
+    ]
+    assert costs == [None]
+
+
+def test_record_range_attributes_each_day_to_its_repo(tmp_path: Path) -> None:
+    logs = tmp_path / 'logs'
+    logs.mkdir()
+    dotfiles = _make_repo(tmp_path / 'dotfiles')
+    gtd = _make_repo(tmp_path / 'gtd')
+    _write_log(logs, [_prompt(cwd=str(dotfiles)), _assistant()], name='one')
+    _write_log(logs, [_prompt(cwd=str(gtd)), _assistant()], name='two')
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    record_range(conn, [logs], DAY, DAY, pricing=None)
+
+    rows = dict(
+        conn.execute('SELECT repo, output_tokens FROM daily_repo_usage'),
+    )
+    assert rows == {
+        'dotfiles': REPLY_OUTPUT_TOKENS,
+        'gtd': REPLY_OUTPUT_TOKENS,
+    }
+
+
+def test_record_range_repo_rows_sum_to_the_daily_total(tmp_path: Path) -> None:
+    logs = tmp_path / 'logs'
+    logs.mkdir()
+    dotfiles = _make_repo(tmp_path / 'dotfiles')
+    gtd = _make_repo(tmp_path / 'gtd')
+    _write_log(logs, [_prompt(cwd=str(dotfiles)), _assistant()], name='one')
+    _write_log(logs, [_prompt(cwd=str(gtd)), _assistant()], name='two')
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    record_range(conn, [logs], DAY, DAY, pricing=None)
+
+    repo_total = conn.execute(
+        'SELECT SUM(output_tokens) FROM daily_repo_usage WHERE day = ?',
+        (DAY.isoformat(),),
+    ).fetchone()[0]
+    day_total = conn.execute(
+        'SELECT output_tokens FROM daily_totals WHERE day = ?',
+        (DAY.isoformat(),),
+    ).fetchone()[0]
+    assert repo_total == day_total
+
+
+BAR_TEST_WIDTH = 10
+HALF_BAR = 5
+SPARK_LOWEST = '▁'
+SPARK_HIGHEST = '█'
+BOX_TEST_WIDTH = 60
+EXPECTED_BOX_LINES = 3
+GAP_DAY_SERIES = [10, 0, 5]
+BUCKET_MAX_POINTS = 2
+
+
+@pytest.mark.parametrize(
+    ('share', 'expected'),
+    [
+        (0.0, '░' * BAR_TEST_WIDTH),
+        (1.0, '█' * BAR_TEST_WIDTH),
+        (0.5, '█' * HALF_BAR + '░' * HALF_BAR),
+        (-1.0, '░' * BAR_TEST_WIDTH),
+        (2.0, '█' * BAR_TEST_WIDTH),
+    ],
+)
+def test_bar_renders_a_clamped_proportional_meter(
+    share: float,
+    expected: str,
+) -> None:
+    assert bar(share, BAR_TEST_WIDTH) == expected
+
+
+def test_sparkline_is_empty_without_values() -> None:
+    assert sparkline([]) == ''
+
+
+def test_sparkline_flattens_an_all_zero_series() -> None:
+    """A peak of zero must not divide by zero."""
+    assert sparkline([0, 0, 0]) == SPARK_LOWEST * 3
+
+
+def test_sparkline_scales_the_peak_to_the_tallest_glyph() -> None:
+    spark = sparkline([1, 50, 100])
+
+    assert len(spark) == len(GAP_DAY_SERIES)
+    assert spark[-1] == SPARK_HIGHEST
+    assert spark[0] == SPARK_LOWEST
+
+
+def test_daily_series_zero_fills_days_with_no_activity() -> None:
+    by_day = {date(2026, 7, 1): 10, date(2026, 7, 3): 5}
+
+    assert daily_series(by_day) == GAP_DAY_SERIES
+
+
+def test_daily_series_is_empty_without_any_days() -> None:
+    assert daily_series({}) == []
+
+
+def test_bucket_series_keeps_a_short_series_intact() -> None:
+    assert bucket_series(GAP_DAY_SERIES, MAX_SPARK_POINTS) == GAP_DAY_SERIES
+
+
+def test_bucket_series_sums_adjacent_days_to_fit_the_budget() -> None:
+    buckets = bucket_series([1, 2, 3, 4], BUCKET_MAX_POINTS)
+
+    assert buckets == [3, 7]
+    assert sum(buckets) == sum([1, 2, 3, 4])
+
+
+def test_box_lines_are_the_same_width() -> None:
+    lines = box_lines('Title', 'body text', BOX_TEST_WIDTH)
+
+    assert len(lines) == EXPECTED_BOX_LINES
+    assert len({len(line) for line in lines}) == 1
+
+
+def test_box_lines_never_clip_a_body_wider_than_the_terminal() -> None:
+    body = 'x' * 90
+
+    lines = box_lines('T', body, NARROW_WIDTH)
+
+    assert body in lines[1]
+
+
+@pytest.mark.parametrize(
+    ('text', 'expected'),
+    [('short', 'short'), ('exactly-ten', 'exactly-…')],
+)
+def test_truncate_ellipsizes_only_when_over_width(
+    text: str,
+    expected: str,
+) -> None:
+    assert truncate(text, len('exactly-ten') - 2) == expected
+
+
+def test_build_repo_reports_drops_repos_with_no_sessions() -> None:
+    reports = build_repo_reports(
+        {'dotfiles': _day_stats(), 'idle': UsageStats()},
+        pricing=None,
+    )
+
+    assert [report.label for report in reports] == ['dotfiles']
+
+
+def test_build_repo_reports_prices_each_repo(tmp_path: Path) -> None:
+    pricing = load_pricing(_write_pricing(tmp_path))
+
+    reports = build_repo_reports({'dotfiles': _day_stats()}, pricing)
+
+    assert reports[0].cost is not None
+    assert reports[0].cost.total > 0
+
+
+def _repo_reports() -> list[RepoReport]:
+    return [
+        RepoReport(label='dotfiles', stats=_day_stats(), cost=None),
+        RepoReport(
+            label='gtd',
+            stats=_day_stats(output_tokens=GTD_DAY_OUTPUT_TOKENS),
+            cost=None,
+        ),
+    ]
+
+
+def test_format_report_lists_each_repo_when_given() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+        repos=_repo_reports(),
+    )
+
+    assert 'by repo' in report
+    assert 'dotfiles' in report
+    assert 'gtd' in report
+
+
+def test_format_report_omits_the_repo_section_without_repos() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert 'by repo' not in report
+
+
+def test_format_report_hides_metric_footnotes_by_default() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+    )
+
+    assert 'hit ratio = cache_read' not in report
+    assert '--explain' in report
+
+
+def test_format_report_shows_metric_footnotes_when_explaining() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+        explain=True,
+    )
+
+    assert 'hit ratio = cache_read' in report
+
+
+def test_format_report_draws_a_sparkline_over_multiple_days() -> None:
+    stats = _stats_with_full_report_data()
+    stats.output_tokens_by_day = {
+        date(2026, 7, 1): 10,
+        date(2026, 7, 3): 5,
+    }
+
+    report = format_report(stats, width=WIDE_WIDTH, color=False)
+
+    assert 'daily output tokens' in report
+    assert SPARK_HIGHEST in report
+
+
+def test_format_report_omits_the_sparkline_for_a_single_day() -> None:
+    stats = _stats_with_full_report_data()
+    stats.output_tokens_by_day = {date(2026, 7, 1): 10}
+
+    report = format_report(stats, width=WIDE_WIDTH, color=False)
+
+    assert 'daily output tokens' not in report
+
+
+def test_format_report_leaves_no_trailing_whitespace() -> None:
+    report = format_report(
+        _stats_with_full_report_data(),
+        width=WIDE_WIDTH,
+        color=False,
+        repos=_repo_reports(),
+    )
+
+    assert not [line for line in report.split('\n') if line != line.rstrip()]
+
+
+def test_format_report_scales_ranked_bars_to_the_leader() -> None:
+    """Share-of-total bars would flatten every row under the top one."""
+    stats = UsageStats(
+        session_ids={'s1'},
+        tools=Counter({'Bash': 100, 'Read': 50}),
+        first_seen=datetime.fromisoformat(STAMP.replace('Z', '+00:00')),
+        last_seen=datetime.fromisoformat(STAMP.replace('Z', '+00:00')),
+    )
+
+    report = format_report(stats, width=WIDE_WIDTH, color=False)
+    read_row = next(line for line in report.split('\n') if 'Read' in line)
+
+    assert '█' * BAR_WIDTH in report
+    assert read_row.count('█') == BAR_WIDTH // 2
+
+
+def test_stats_as_dict_includes_per_repo_slices() -> None:
+    data = stats_as_dict(
+        _stats_with_full_report_data(),
+        None,
+        _repo_reports(),
+    )
+
+    assert [entry['repo'] for entry in data['repos']] == ['dotfiles', 'gtd']
+    assert data['repos'][0]['tokens']['output'] == DAY_OUTPUT_TOKENS
+
+
+def test_stats_as_dict_has_an_empty_repo_list_without_repos() -> None:
+    data = stats_as_dict(_stats_with_full_report_data())
+
+    assert data['repos'] == []
