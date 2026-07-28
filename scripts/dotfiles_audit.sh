@@ -67,6 +67,36 @@ check_symlink() {
     fi
 }
 
+check_font() {
+    local label="$1" configured="$2" gdi_name
+    if [[ -z "$configured" ]]; then
+        warn "$label" "no font configured"
+        return
+    fi
+
+    # Windows enumerates the short GDI family name ("JetBrainsMono NFM") while terminals
+    # are configured with the typographic name ("JetBrainsMono Nerd Font Mono") — same
+    # font, different name table entry.
+    gdi_name=$(sed -e 's/ Nerd Font Mono$/ NFM/' -e 's/ Nerd Font Propo$/ NFP/' \
+        -e 's/ Nerd Font$/ NF/' <<< "$configured")
+
+    if ! grep -qxF "$gdi_name" <<< "$INSTALLED_FONTS"; then
+        fail "$label" "'$configured' not loaded by Windows — run: make wsl-fonts"
+        return
+    fi
+
+    # Nerd Fonts ship three builds; only the Mono one has uniform advance widths. The
+    # other two load fine and then render ragged columns, so loading is not enough.
+    case "$gdi_name" in
+        *" NF" | *" NFP")
+            warn "$label" "$configured — proportional build, use the Mono variant"
+            ;;
+        *)
+            ok "$label" "$configured"
+            ;;
+    esac
+}
+
 section() {
     echo ""
     echo "  $1"
@@ -316,6 +346,35 @@ if grep -q "systemd=true" /etc/wsl.conf 2>/dev/null; then
     ok "wsl.conf systemd" "enabled"
 elif [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
     warn "wsl.conf systemd" "not enabled — add to /etc/wsl.conf: [boot] systemd=true"
+fi
+
+# ── Terminal Fonts ────────────────────────────────────────────────────────────
+
+# WSL terminals are rendered by Windows, so a Nerd Font is only usable if Windows can
+# enumerate it. Registering one is not enough: a font installed mid-session stays
+# invisible to every app until AddFontResourceW runs or the machine reboots — the exact
+# silent failure this check exists to catch.
+if [[ -n "${WSL_DISTRO_NAME:-}" ]] && command -v powershell.exe &>/dev/null; then
+    section "Terminal Fonts"
+
+    INSTALLED_FONTS=$(powershell.exe -NoProfile -Command "
+        Add-Type -AssemblyName System.Drawing
+        (New-Object System.Drawing.Text.InstalledFontCollection).Families |
+            ForEach-Object { \$_.Name }" 2>/dev/null | tr -d '\r')
+
+    VSCODE_SETTINGS="${DOTFILES_DIR}/.vscode/.symlinked-user-settings.json"
+    check_font "VS Code terminal font" "$(sed -n \
+        's/.*"terminal\.integrated\.fontFamily"[[:space:]]*:[[:space:]]*"\([^",]*\).*/\1/p' \
+        "$VSCODE_SETTINGS" 2>/dev/null | head -1)"
+
+    # shellcheck disable=SC2016
+    # Single quotes intentional: $env:UserName is PowerShell syntax, not bash
+    WINDOWS_USER="${WINDOWS_USERNAME:-$(powershell.exe '$env:UserName' 2>/dev/null | tr -d '\r\n')}"
+    for wt_settings in "/mnt/c/Users/${WINDOWS_USER}"/AppData/Local/Packages/Microsoft.WindowsTerminal_*/LocalState/settings.json; do
+        [[ -f "$wt_settings" ]] || continue
+        check_font "Windows Terminal font" "$(sed -n \
+            's/.*"face"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$wt_settings" | head -1)"
+    done
 fi
 
 # ── VS Code Extensions ────────────────────────────────────────────────────────
