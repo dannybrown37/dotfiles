@@ -58,7 +58,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
 | `beep` | Play a beep sound (Windows only) | `config/.bash_aliases` |
 | `cb` | Copy stdin to clipboard. <command> | cb | `config/.bash_aliases` |
-| `ccstats` | Claude Code usage stats from local session logs | ccstats --json | `config/.bash_aliases` |
+| `ccstats` | Claude Code usage stats from local session logs | ccstats --json, ccstats --record | `config/.bash_aliases` |
 | `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
 | `chrome_focus` | Ctrl+Shift+C - Cycle through open Chrome windows | `ahk/chrome_focus.ahk` |

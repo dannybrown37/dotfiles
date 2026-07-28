@@ -11,14 +11,16 @@ import json
 import math
 import os
 import shutil
+import sqlite3
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from collections.abc import Iterator
 
 DEFAULT_LOG_ROOT = Path.home() / '.claude' / 'projects'
+DEFAULT_DB_PATH = Path.home() / '.claude' / 'ccstats.db'
 SUBAGENT_DIR = 'subagents'
 TURN_DURATION_SUBTYPE = 'turn_duration'
 P50 = 0.5
@@ -524,6 +526,131 @@ def compute_cost(
     )
 
 
+DAILY_STATS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS daily_totals (
+    day TEXT PRIMARY KEY,
+    sessions INTEGER NOT NULL,
+    prompts INTEGER NOT NULL,
+    replies INTEGER NOT NULL,
+    thinking_blocks INTEGER NOT NULL,
+    subagent_runs INTEGER NOT NULL,
+    lines_added INTEGER NOT NULL,
+    lines_removed INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    input_tokens INTEGER NOT NULL,
+    cache_read_tokens INTEGER NOT NULL,
+    cache_write_tokens INTEGER NOT NULL,
+    cost_total REAL,
+    recorded_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS daily_model_usage (
+    day TEXT NOT NULL,
+    model TEXT NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    input_tokens INTEGER NOT NULL,
+    cache_read_tokens INTEGER NOT NULL,
+    cache_write_tokens INTEGER NOT NULL,
+    cost REAL,
+    PRIMARY KEY (day, model)
+);
+"""
+
+
+def ensure_schema(conn: sqlite3.Connection) -> None:
+    conn.executescript(DAILY_STATS_SCHEMA)
+
+
+def record_day(
+    conn: sqlite3.Connection,
+    day: date,
+    stats: UsageStats,
+    cost: CostBreakdown | None,
+) -> bool:
+    """Upsert one day's totals and per-model rows; False if the day is idle.
+
+    Per-model rows are deleted and reinserted rather than replaced in place,
+    so a model dropped from the day's usage doesn't leave a stale row behind.
+    """
+    if not stats.session_ids:
+        return False
+
+    day_key = day.isoformat()
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO daily_totals (
+            day, sessions, prompts, replies, thinking_blocks,
+            subagent_runs, lines_added, lines_removed, output_tokens,
+            input_tokens, cache_read_tokens, cache_write_tokens,
+            cost_total, recorded_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            day_key,
+            stats.sessions,
+            stats.prompts,
+            stats.replies,
+            stats.thinking_blocks,
+            stats.subagent_runs,
+            stats.lines_added,
+            stats.lines_removed,
+            stats.output_tokens,
+            stats.input_tokens,
+            stats.cache_read_tokens,
+            stats.cache_write_tokens,
+            cost.total if cost else None,
+            datetime.now().isoformat(),
+        ),
+    )
+
+    conn.execute('DELETE FROM daily_model_usage WHERE day = ?', (day_key,))
+    for model, usage in stats.model_usage.items():
+        model_cost = cost.by_model.get(model) if cost else None
+        conn.execute(
+            """
+            INSERT INTO daily_model_usage (
+                day, model, output_tokens, input_tokens,
+                cache_read_tokens, cache_write_tokens, cost
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                day_key,
+                model,
+                usage.output_tokens,
+                usage.input_tokens,
+                usage.cache_read_tokens,
+                usage.cache_write_tokens,
+                model_cost,
+            ),
+        )
+
+    return True
+
+
+def iter_days(since: date, until: date) -> Iterator[date]:
+    day = since
+    while day <= until:
+        yield day
+        day += timedelta(days=1)
+
+
+def record_range(
+    conn: sqlite3.Connection,
+    roots: list[Path],
+    since: date,
+    until: date,
+    pricing: PricingTable | None,
+) -> int:
+    """Record each day in [since, until] and return how many had activity."""
+    written = 0
+    for day in iter_days(since, until):
+        stats = collect_stats(roots, since=day, until=day)
+        cost = compute_cost(stats, pricing) if pricing else None
+        if record_day(conn, day, stats, cost):
+            written += 1
+    return written
+
+
 def humanize(value: int) -> str:
     scales = ((1_000_000_000, 'B'), (1_000_000, 'M'), (1_000, 'K'))
     for limit, suffix in scales:
@@ -906,6 +1033,20 @@ def main() -> None:
         default=DEFAULT_PRICING_PATH,
         help=f'model pricing file (default: {DEFAULT_PRICING_PATH})',
     )
+    parser.add_argument(
+        '--record',
+        action='store_true',
+        help=(
+            'backfill --since/--until into --db-path instead of printing '
+            "a report; every normal run already records today's snapshot"
+        ),
+    )
+    parser.add_argument(
+        '--db-path',
+        type=Path,
+        default=DEFAULT_DB_PATH,
+        help=f'sqlite history db (default: {DEFAULT_DB_PATH})',
+    )
 
     args = parser.parse_args()
     roots = args.log_root or [DEFAULT_LOG_ROOT]
@@ -916,17 +1057,41 @@ def main() -> None:
         print(f'No such log root: {paths}', file=sys.stderr)
         sys.exit(1)
 
-    stats = collect_stats(roots, since=args.since, until=args.until)
-
-    cost = None
+    pricing = None
     if args.pricing_path.exists():
-        cost = compute_cost(stats, load_pricing(args.pricing_path))
+        pricing = load_pricing(args.pricing_path)
     else:
         print(
             f'No pricing file at {args.pricing_path} -- '
             'spend estimates disabled',
             file=sys.stderr,
         )
+
+    if args.record:
+        today = date.today()
+        since = args.since or today
+        until = args.until or today
+        conn = sqlite3.connect(args.db_path)
+        try:
+            ensure_schema(conn)
+            written = record_range(conn, roots, since, until, pricing)
+            conn.commit()
+        finally:
+            conn.close()
+        print(f'recorded {written} day(s) to {args.db_path}')
+        return
+
+    stats = collect_stats(roots, since=args.since, until=args.until)
+    cost = compute_cost(stats, pricing) if pricing else None
+
+    today = date.today()
+    conn = sqlite3.connect(args.db_path)
+    try:
+        ensure_schema(conn)
+        record_range(conn, roots, today, today, pricing)
+        conn.commit()
+    finally:
+        conn.close()
 
     if args.json:
         print(json.dumps(stats_as_dict(stats, cost), indent=2))
