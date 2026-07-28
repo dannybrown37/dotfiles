@@ -38,11 +38,52 @@ read_manifest() {
 is_merge_path() {
     local path="$1" candidate
     for candidate in "${MERGE_PATHS[@]}"; do
-        if [[ "${candidate}" == "${path}" ]]; then
+        if [[ "${candidate}" == "${path##*/}" ]]; then
             return 0
         fi
     done
     return 1
+}
+
+# Manifest paths are relative to this repo unless they start with an @anchor,
+# which names another repo that may or may not be cloned on this machine.
+anchor_of() {
+    local path="$1"
+    [[ "${path}" == @* ]] || return 1
+    printf '%s\n' "${path%%/*}" | cut -c2-
+}
+
+resolve_anchor() {
+    local anchor="$1" home_var base
+    home_var="$(printf '%s' "${anchor}" | tr '[:lower:]-' '[:upper:]_')_HOME"
+    base="${!home_var:-${PROJECTS_DIR:-${HOME}/projects}/${anchor}}"
+
+    [[ -d "${base}" ]] || return 1
+    printf '%s\n' "${base}"
+}
+
+# Checked while reading the manifest: `die` inside the command substitution
+# that resolve_entry_file runs in would only kill the subshell.
+validate_entry_path() {
+    local path="$1"
+    if [[ "${path}" == @* && "${path}" != */* ]]; then
+        die "malformed anchor '${path}': expected @<repo>/<relative-path>"
+    fi
+}
+
+# Prints the absolute file path, or nothing when the anchored repo is not
+# cloned on this machine.
+resolve_entry_file() {
+    local path="$1" anchor base
+
+    if ! anchor="$(anchor_of "${path}")"; then
+        printf '%s\n' "${ROOT}/${path}"
+        return 0
+    fi
+
+    if base="$(resolve_anchor "${anchor}")"; then
+        printf '%s\n' "${base}/${path#*/}"
+    fi
 }
 
 # Reconcile the local file with the store's copy in place, so both directions
@@ -51,32 +92,40 @@ is_merge_path() {
 # tied to the direction is what stops the two machines rewriting each other's
 # ordering forever.
 merge_local_file() {
-    local path="$1" incoming="$2" prefer="$3"
+    local file="$1" incoming="$2" prefer="$3"
+    local kind="${file##*/}" dir="${file%/*}"
 
     command -v python3 >/dev/null ||
-        die "python3 is required to merge ${path}"
+        die "python3 is required to merge ${kind}"
 
-    case "${path}" in
+    case "${kind}" in
     .queue-complete)
         python3 "${ROOT}/${QUEUE_SCRIPT}" merge-completed \
-            --complete-path "${ROOT}/${path}" \
+            --complete-path "${file}" \
             --incoming "${incoming}"
         ;;
     .queue)
         python3 "${ROOT}/${QUEUE_SCRIPT}" merge-queue \
-            --queue-path "${ROOT}/${path}" \
-            --complete-path "${ROOT}/.queue-complete" \
+            --queue-path "${file}" \
+            --complete-path "${dir}/.queue-complete" \
             --incoming "${incoming}" \
             --prefer "${prefer}"
         ;;
     *)
-        die "no merge handler for ${path}"
+        die "no merge handler for ${kind}"
         ;;
     esac
 }
 
 save_entry() {
-    local name="$1" path="$2" file="${ROOT}/$2"
+    local name="$1" path="$2" file
+    file="$(resolve_entry_file "${path}")"
+
+    if [[ -z "${file}" ]]; then
+        echo "  skip   $2 ($(anchor_of "${path}") not installed)"
+        return
+    fi
+
     if [[ ! -f "${file}" ]]; then
         echo "  skip   $2 (missing)"
         return
@@ -88,7 +137,7 @@ save_entry() {
         if ! pass show "${name}" >"${WORK_DIR}/incoming" 2>/dev/null; then
             : >"${WORK_DIR}/incoming"
         fi
-        merge_local_file "${path}" "${WORK_DIR}/incoming" local
+        merge_local_file "${file}" "${WORK_DIR}/incoming" local
     fi
 
     # Encryption is non-deterministic, so re-inserting unchanged content would
@@ -102,7 +151,14 @@ save_entry() {
 }
 
 load_entry() {
-    local name="$1" path="$2" file="${ROOT}/$2" tmp
+    local name="$1" path="$2" file tmp
+    file="$(resolve_entry_file "${path}")"
+
+    if [[ -z "${file}" ]]; then
+        echo "  skip   $2 ($(anchor_of "${path}") not installed)"
+        return
+    fi
+
     if ! pass show "${name}" >/dev/null 2>&1; then
         echo "  skip   $2 (not in store)"
         return
@@ -117,7 +173,7 @@ load_entry() {
     mkdir -p "$(dirname "${file}")"
 
     if is_merge_path "${path}"; then
-        merge_local_file "${path}" "${tmp}" incoming
+        merge_local_file "${file}" "${tmp}" incoming
     else
         cp "${tmp}" "${file}"
         echo "  loaded $2"
@@ -126,12 +182,13 @@ load_entry() {
 
 order_entries() {
     local -n source_lines="$1"
-    local wanted line
+    local wanted line path
     local -a merge_lines=() plain_lines=()
 
     for wanted in "${MERGE_PATHS[@]}"; do
         for line in ${source_lines[@]+"${source_lines[@]}"}; do
-            if [[ "${line#*:}" == "${wanted}" ]]; then
+            path="${line#*:}"
+            if [[ "${path##*/}" == "${wanted}" ]]; then
                 merge_lines+=("${line}")
             fi
         done
@@ -159,6 +216,7 @@ for_each_entry() {
         if [[ -z "${line}" || "${line}" == \#* ]]; then
             continue
         fi
+        validate_entry_path "${line#*:}"
         entries+=("${line}")
     done <<<"${manifest_text}"
 

@@ -174,6 +174,26 @@ Manages local gitignored files via the encrypted `password-store`.
 The store lives at `~/.password-store` and is its own private git repo, so nothing about it
 lands in this repo. `pass` commits on every insert; the make targets push and pull.
 
+**What gets synced** is the `manifest` entry inside the store — one `pass-entry:path` pair per
+line. It lives in the store rather than in this repo so the list of synced files stays private
+too. Paths resolve two ways:
+
+| Path form | Resolves to |
+| --- | --- |
+| `some/path` | relative to this repo's root |
+| `@repo/some/path` | inside another repo, wherever that repo is cloned |
+
+The `@repo` anchor exists because not every synced file belongs to this repo, and a sibling
+repo isn't at a fixed path on every machine. It resolves in order: `$REPO_HOME` (the anchor
+name uppercased, with `-` → `_`, plus `_HOME`), then `${PROJECTS_DIR:-~/projects}/repo`. If
+neither is a directory, the entry is reported `not installed` and skipped, and the rest of the
+manifest syncs normally — so a machine that never cloned that repo doesn't get a stray
+decrypted file dropped into this one.
+
+`not installed` and `missing` are deliberately different: the first means the repo isn't on
+this machine, the second means it is but the file isn't there. An `@` path with no `/` is a
+malformed anchor and fails the whole run rather than being silently skipped.
+
 **Automatic sync:** `make bash` sets `core.hooksPath` to the tracked `githooks/` dir. From then
 on a plain `git push` here runs `secrets-save` first (encrypt changed files, push the store) and
 a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so
