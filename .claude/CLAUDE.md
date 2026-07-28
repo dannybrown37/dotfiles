@@ -10,11 +10,12 @@
 
 ## Communication Style
 
-- Very few to no comments in generated code unless explicitly requested. Comments should be "why", not "what". i.e., if a comment is needed to explain what the code does, the code should be rewritten to be more readable.
+- Very few to no comments in generated code unless explicitly requested. Comments should be "why", not "what". i.e., if a comment is needed to explain what the code does, the code should be rewritten to be more readable instead.
 - When reporting information to me, be as concise as possible. Sacrifice grammar for the sake of concision.
 - Don't restate questions. Don't apologize. Match my mood.
 - Admit when you don't know. Cite sources if uncertain.
-- If multiple approaches exist, briefly state which and why to choose, then list alternatives. Cite sources.
+- If multiple approaches exist, briefly state which and why to choose, then list alternatives.
+- Cite sources.
 - Don't ask bait questions. Only ask if you genuinely need more information.
 - Always show the diff as you make changes to my code.
 
@@ -23,9 +24,9 @@
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
 - **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
-- **queue** — Workflow rather than a language: the `.queue` work-item file and its CLI. Invoke when pulling work from the queue.
+- **queue** — Workflow rather than a language: a shared, cross-repo work-item queue. Invoke when pulling work from the queue. The skill and its CLI live in the `skill-tree` repo (`~/projects/skill-tree`), symlinked into `~/.claude/skills/queue` by `install/bash.sh`; `bin/queue.sh` here is just the interactive shell/fzf glue around it.
 - **audit-skills** — Reviewing `.claude/skills`/`.claude/references` for structural drift, staleness, or skill-vs-reference misclassification. Invoke when asked to review, audit, or trim skills, or after adding/renaming one.
-- **verify** — Answering a claim the user would otherwise have to spot-check themselves ("does it work now?", "is X gone?", "can you confirm?"). Invoke before asserting, so the answer arrives with the evidence that would have falsified it.
+- **verify** — Answering a claim the user would otherwise have to spot-check themselves ("does it work now?", "is X gone?", 2"can you confirm?"). Invoke before asserting, so the answer arrives with the evidence that would have falsified it.
 
 ## References
 
@@ -35,7 +36,7 @@ Read these references before writing code in the following domains:
 - Read directly when writing TypeScript/JavaScript/Node code: `.claude/references/node-style.md`
 - Read directly when writing Python code: `.claude/references/python-style.md`
 - Read directly for this repo's (`dotfiles`) layout, conventions, pre-commit hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
-- Read directly when a `.queue` / `.queue-complete` sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `.claude/references/queue-sync-model.md`
+- Read directly when a queue sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `skill-tree`'s `.claude/references/queue-sync-model.md` — it documents this repo's `secrets.sh` merge mechanism, just lives alongside the queue skill it's about.
 
 ## Model Delegation
 
@@ -56,7 +57,7 @@ Read these references before writing code in the following domains:
 - Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
 - A `pre-push` git hook prints a reminder of this — it does not block the push or call any AI review itself.
 - Full checklist: `.claude/references/code-review-checklist.md`.
-- For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, spawn the `adversarial-review` subagent manually — `.claude/agents/adversarial-review.md`. Never spawn it automatically/proactively; it's expensive and user-triggered only, like `/code-review ultra`. Do proactively suggest it to the user when changes seem to make it worthwhile. Especially useful for `password-store` operations and other auth/secrets, and `queue_cli.py`
+- For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, spawn the `adversarial-review` subagent manually — `.claude/agents/adversarial-review.md`. Never spawn it automatically/proactively; it's expensive and user-triggered only, like `/code-review ultra`. Do proactively suggest it to the user when changes seem to make it worthwhile. Especially useful for `password-store` operations and other auth/secrets. (`queue_cli.py` moved to `skill-tree`, which carries the same recommendation in its own `CLAUDE.md`.)
 
 ## Code Style (General)
 

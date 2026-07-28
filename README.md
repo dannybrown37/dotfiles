@@ -176,12 +176,13 @@ lands in this repo. `pass` commits on every insert; the make targets push and pu
 
 **What gets synced** is the `manifest` entry inside the store — one `pass-entry:path` pair per
 line. It lives in the store rather than in this repo so the list of synced files stays private
-too. Paths resolve two ways:
+too. Paths resolve three ways:
 
 | Path form | Resolves to |
 | --- | --- |
 | `some/path` | relative to this repo's root |
 | `@repo/some/path` | inside another repo, wherever that repo is cloned |
+| `~/some/path` | relative to `$HOME`, regardless of this repo — e.g. the shared `/queue` |
 
 The `@repo` anchor exists because not every synced file belongs to this repo, and a sibling
 repo isn't at a fixed path on every machine. It resolves in order: `$REPO_HOME` (the anchor
@@ -190,16 +191,21 @@ neither is a directory, the entry is reported `not installed` and skipped, and t
 manifest syncs normally — so a machine that never cloned that repo doesn't get a stray
 decrypted file dropped into this one.
 
+The `~/` form exists for entries that don't belong to any one repo — a bare home path always
+resolves, so it's never reported `not installed`.
+
 `not installed` and `missing` are deliberately different: the first means the repo isn't on
-this machine, the second means it is but the file isn't there. An `@` path with no `/` is a
-malformed anchor and fails the whole run rather than being silently skipped.
+this machine, the second means it is but the file isn't there. An `@` path with no `/`, or a
+`~` not followed by `/`, is malformed and fails the whole run rather than being silently
+skipped.
 
 **Automatic sync:** `make bash` sets `core.hooksPath` to the tracked `githooks/` dir. From then
 on a plain `git push` here runs `secrets-save` first (encrypt changed files, push the store) and
-a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so
-editing `.queue` and pushing is enough to carry it to the other machine. Unchanged entries are
-skipped so the store doesn't collect a commit per push. If the store errors, the hook warns but
-never blocks the dotfiles push/pull.
+a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so an
+ordinary push or pull in this repo is enough to carry every synced file (the queue included) to
+the other machine, with no separate `secrets-save`/`secrets-load` call needed. Unchanged entries
+are skipped so the store doesn't collect a commit per push. If the store errors, the hook warns
+but never blocks the dotfiles push/pull.
 
 **New machine setup:** `make bash` clones the store if `~/.password-store` doesn't exist yet —
 tries `gh auth login` + `gh repo clone` first (no token to copy by hand), falling back to a

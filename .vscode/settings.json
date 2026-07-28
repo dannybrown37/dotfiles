@@ -6,6 +6,7 @@
         "croc",
         "dannybrown",
         "dateutil",
+        "dirdesc",
         "direnv",
         "dlvhdr",
         "hasconfig",
@@ -16,6 +17,7 @@
         "Pydantic",
         "tlsv",
         "tokei",
+        "toplevel",
         "worktree",
         "worktrees",
         "xclip"

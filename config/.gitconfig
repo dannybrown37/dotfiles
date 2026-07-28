@@ -1,10 +1,11 @@
 [user]
-    name = Danny Brown
+	name = Danny Brown
     # No email here on purpose. Identity comes from the includeIf blocks at the
     # bottom, matched on the remote. useConfigOnly makes git refuse to guess an
     # address from the hostname, so an unmatched repo fails instead of quietly
     # committing as the wrong account.
     useConfigOnly = true
+	email = dannybrown37@gmail.com
 [branch]
     sort = -committerdate
 [core]

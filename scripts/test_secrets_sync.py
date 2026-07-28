@@ -42,6 +42,72 @@ git)
 esac
 """
 
+# A minimal stand-in for skill-tree's queue_cli.py -- title-only, synthetic
+# bodies, deterministic ordering. It exists to test that secrets.sh resolves
+# the right script, passes the right paths, and reconciles queue-complete
+# before queue -- not to re-verify real merge semantics, which are skill-tree's
+# own test suite's job (queue_cli.py moved there wholesale, unchanged).
+STUB_QUEUE_CLI = """#!/usr/bin/env python3
+import sys
+from pathlib import Path
+
+
+def parse_args(argv):
+    args = {}
+    it = iter(argv)
+    for tok in it:
+        if tok.startswith('--'):
+            args[tok] = next(it, '')
+    return args
+
+
+def titles(text):
+    seen, ordered = set(), []
+    for line in text.splitlines():
+        if line.startswith('## '):
+            title = line.removeprefix('## ').strip()
+            if title not in seen:
+                seen.add(title)
+                ordered.append(title)
+    return ordered
+
+
+def read(path):
+    p = Path(path) if path else None
+    return p.read_text() if p and p.exists() else ''
+
+
+def render(header, all_titles):
+    body = ''.join(f'## {t}\\n\\nstub body.\\n\\n' for t in all_titles)
+    return f'{header}\\n\\n{body}'
+
+
+def main():
+    action = sys.argv[1]
+    args = parse_args(sys.argv[2:])
+
+    if action == 'merge-queue':
+        local = titles(read(args['--queue-path']))
+        incoming = titles(read(args['--incoming']))
+        tombstones = set(titles(read(args['--complete-path'])))
+        merged = [t for t in local if t not in tombstones]
+        merged += [
+            t for t in incoming if t not in tombstones and t not in merged
+        ]
+        Path(args['--queue-path']).write_text(render('# Queue', merged))
+        print(f'  merged queue ({len(merged)} open)')
+    elif action == 'merge-completed':
+        local = titles(read(args['--complete-path']))
+        incoming = titles(read(args['--incoming']))
+        merged = local + [t for t in incoming if t not in local]
+        Path(args['--complete-path']).write_text(render('# Completed', merged))
+        print(f'  merged queue-complete ({len(merged)} completed)')
+
+
+if __name__ == '__main__':
+    main()
+"""
+
 # Real `pass` commits every insert, so the store is a working tree too.
 GIT_ENV = {
     'GIT_AUTHOR_NAME': 'Test',
@@ -53,9 +119,14 @@ GIT_ENV = {
     'GIT_CONFIG_SYSTEM': os.devnull,
 }
 
-# .queue deliberately precedes .queue-complete: the tombstones have to be
-# reconciled first regardless of what order the manifest lists them in.
-MANIFEST = 'queue/active:.queue\nqueue/complete:.queue-complete\n'
+# The queue lives outside every repo now, so its manifest entries are
+# home-relative. queue-complete deliberately precedes queue: the tombstones
+# have to be reconciled first regardless of what order the manifest lists
+# them in.
+MANIFEST = (
+    'queue/active:~/.claude/queue/queue\n'
+    'queue/complete:~/.claude/queue/queue-complete\n'
+)
 
 
 class SyncHarness:
@@ -69,8 +140,12 @@ class SyncHarness:
         self.entries = self.store
         self.bin = root / 'bin'
         self.projects = root / 'projects'
-        self.queue = self.repo / '.queue'
-        self.complete = self.repo / '.queue-complete'
+        self.home = root / 'home'
+        self.queue = self.home / '.claude' / 'queue' / 'queue'
+        self.complete = self.home / '.claude' / 'queue' / 'queue-complete'
+        # Under $PROJECTS_DIR, so secrets.sh finds it via the same
+        # ${SKILL_TREE_DIR:-${PROJECTS_DIR}/skill-tree} fallback as production.
+        self.skill_tree = self.projects / 'skill-tree'
 
     def run(
         self,
@@ -86,6 +161,7 @@ class SyncHarness:
             'STUB_STORE': str(self.entries),
             'PASSWORD_STORE_DIR': str(self.store),
             'PROJECTS_DIR': str(self.projects),
+            'HOME': str(self.home),
         }
         env.update(extra_env or {})
         return subprocess.run(  # noqa: S603
@@ -117,8 +193,10 @@ def harness(tmp_path: Path) -> SyncHarness:
     setup = SyncHarness(tmp_path)
 
     (setup.repo / 'scripts').mkdir(parents=True)
-    for script in ('secrets.sh', 'queue_cli.py'):
-        shutil.copy(SCRIPTS_DIR / script, setup.repo / 'scripts' / script)
+    shutil.copy(
+        SCRIPTS_DIR / 'secrets.sh',
+        setup.repo / 'scripts' / 'secrets.sh',
+    )
     (setup.repo / 'scripts' / 'secrets.sh').chmod(0o755)
     subprocess.run(  # noqa: S603
         [GIT, 'init', '--quiet'],
@@ -129,11 +207,16 @@ def harness(tmp_path: Path) -> SyncHarness:
 
     setup.store.mkdir()
     setup.bin.mkdir()
+    setup.queue.parent.mkdir(parents=True)
     fake_pass = setup.bin / 'pass'
     fake_pass.write_text(STUB_SCRIPT)
     fake_pass.chmod(0o755)
 
     setup.projects.mkdir()
+    (setup.skill_tree / 'scripts').mkdir(parents=True)
+    stub = setup.skill_tree / 'scripts' / 'queue_cli.py'
+    stub.write_text(STUB_QUEUE_CLI)
+    stub.chmod(0o755)
     setup.write_store_entry('manifest', MANIFEST)
     return setup
 
@@ -331,6 +414,19 @@ def test_repeated_sync_stops_rewriting_the_store(
     assert harness.queue.read_text() == settled
 
 
+def test_missing_skill_tree_fails_loudly_not_with_a_python_traceback(
+    harness: SyncHarness,
+) -> None:
+    shutil.rmtree(harness.skill_tree)
+    harness.queue.write_text(_queue('Added Here'))
+    harness.write_store_entry('queue/active', _queue('Added There'))
+
+    result = harness.run('load', check=False)
+
+    assert result.returncode != 0
+    assert 'skill-tree' in result.stderr.lower()
+
+
 def test_non_merge_entries_are_still_copied_verbatim(
     harness: SyncHarness,
 ) -> None:
@@ -340,6 +436,52 @@ def test_non_merge_entries_are_still_copied_verbatim(
     harness.run('load')
 
     assert (harness.repo / '.token').read_text() == 'secret-value\n'
+
+
+def test_home_path_resolves_under_home_regardless_of_repo(
+    harness: SyncHarness,
+) -> None:
+    """Not just the queue -- any ~/-prefixed entry escapes the repo root."""
+    harness.write_store_entry(
+        'manifest',
+        MANIFEST + 'some/dotfile:~/.some-dotfile\n',
+    )
+    harness.write_store_entry('some/dotfile', 'from-store\n')
+
+    harness.run('load')
+
+    assert (harness.home / '.some-dotfile').read_text() == 'from-store\n'
+    assert not (harness.repo / '.some-dotfile').exists()
+
+
+def test_home_path_saves_from_home_regardless_of_repo(
+    harness: SyncHarness,
+) -> None:
+    (harness.home / '.some-dotfile').write_text('from-disk\n')
+    harness.write_store_entry(
+        'manifest',
+        MANIFEST + 'some/dotfile:~/.some-dotfile\n',
+    )
+
+    harness.run('save')
+
+    assert harness.store_entry('some/dotfile') == 'from-disk\n'
+
+
+@pytest.mark.parametrize('malformed', ['~foo', '~', '~/'])
+def test_malformed_home_path_fails_loudly(
+    harness: SyncHarness,
+    malformed: str,
+) -> None:
+    harness.write_store_entry(
+        'manifest',
+        MANIFEST + f'some/dotfile:{malformed}\n',
+    )
+
+    result = harness.run('load', check=False)
+
+    assert result.returncode != 0
+    assert 'home path' in result.stderr.lower()
 
 
 ANCHORED_MANIFEST = MANIFEST + 'app/env:@sibling/.env\n'
@@ -439,15 +581,15 @@ def test_malformed_anchor_fails_loudly(harness: SyncHarness) -> None:
 def test_anchored_merge_path_merges_in_place(harness: SyncHarness) -> None:
     """Merge handlers must use the resolved path, not the dotfiles root."""
     sibling = harness.install_sibling('sibling')
-    (sibling / '.queue').write_text(_queue('Added Here'))
-    (sibling / '.queue-complete').write_text('# Completed\n\n')
-    harness.write_store_entry('manifest', 'app/queue:@sibling/.queue\n')
+    (sibling / 'queue').write_text(_queue('Added Here'))
+    (sibling / 'queue-complete').write_text('# Completed\n\n')
+    harness.write_store_entry('manifest', 'app/queue:@sibling/queue\n')
     harness.write_store_entry('app/queue', _queue('Added There'))
 
     harness.run('load')
 
-    assert _titles((sibling / '.queue').read_text()) == [
+    assert _titles((sibling / 'queue').read_text()) == [
         'Added Here',
         'Added There',
     ]
-    assert not (harness.repo / '.queue').exists()
+    assert not (harness.repo / 'queue').exists()

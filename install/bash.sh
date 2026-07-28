@@ -256,3 +256,19 @@ if [ ! -L "${HOME}/.config/starship.toml" ]; then
 else
     echo "starship.toml has already been symlinked"
 fi
+
+##
+## Symlink skills from skill-tree into ~/.claude so they work from any repo
+##
+
+skill_tree_dir="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}"
+
+if [ ! -d "${skill_tree_dir}" ]; then
+    echo "skill-tree not cloned at ${skill_tree_dir} -- skipping skill symlinks"
+elif [ ! -L "${HOME}/.claude/skills/queue" ]; then
+    mkdir -p ~/.claude/skills
+    ln -s "${skill_tree_dir}/.claude/skills/queue" ~/.claude/skills/queue &&
+        echo "Symlinked queue skill to ~/.claude/skills/queue"
+else
+    echo "queue skill has already been symlinked"
+fi
