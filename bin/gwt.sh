@@ -111,6 +111,15 @@ _gwt_bootstrap() {
         (cd "${wt_path}" && cargo fetch --quiet) 2>&1 | sed 's/^/     /'
     fi
 
+    # Makefile: build
+    if [[ -f "${wt_path}/Makefile" ]]; then
+        # verify dotfiles repo specifically
+        if [[ "${git_root}" == "${HOME}/projects/dotfiles" ]]; then
+            echo "  -> Loading secrets for dotfiles repo"
+            (cd "${wt_path}" && make secrets-load) 2>&1 | sed 's/^/     /'
+        fi
+    fi
+
     echo "  Done."
 }
 
@@ -121,13 +130,12 @@ _gwt_list() {
 _gwt_rm() {
     local branch="${1:-}"
 
-    if [[ -z "${branch}" ]]; then
-        echo "Usage: gwt rm <branch>" >&2
-        return 1
-    fi
-
     local base_dir
     base_dir="$(_gwt_base_dir)" || return 1
+
+    find "$base_dir" -mindepth 1 -maxdepth 1 -type d |
+    fzf --prompt="Remove worktree> "
+
     local dir_name="${branch//\//-}"
     local worktree_path="${base_dir}/${dir_name}"
 
