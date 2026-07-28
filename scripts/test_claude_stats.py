@@ -1,6 +1,7 @@
 """Tests for scripts/claude_stats.py."""
 
 import json
+import sqlite3
 from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -15,10 +16,14 @@ from claude_stats import (
     UsageStats,
     collect_stats,
     compute_cost,
+    ensure_schema,
     find_model_price,
     format_report,
+    iter_days,
     load_pricing,
     percentile,
+    record_day,
+    record_range,
     stats_as_dict,
     supports_color,
 )
@@ -936,3 +941,213 @@ def test_stats_as_dict_turn_duration_is_empty_without_turns() -> None:
     assert data['turn_duration_ms']['model_time']['turns'] == 0
     assert data['turn_duration_ms']['model_time']['p50'] is None
     assert data['turn_duration_ms']['by_model'] == {}
+
+
+DAY = date(2026, 7, 26)
+DAY_REPLIES = 3
+DAY_OUTPUT_TOKENS = 100
+UPDATED_DAY_REPLIES = 9
+SAMPLE_COST_TOTAL = 1.23
+EXPECTED_ACTIVE_DAYS = 2
+
+
+def _day_stats(**overrides: object) -> UsageStats:
+    stats = UsageStats(
+        session_ids={'s1'},
+        prompts=2,
+        replies=DAY_REPLIES,
+        output_tokens=DAY_OUTPUT_TOKENS,
+        input_tokens=50,
+        cache_read_tokens=10,
+        cache_write_tokens=5,
+        thinking_blocks=1,
+        subagent_runs=0,
+        lines_added=4,
+        lines_removed=1,
+    )
+    stats.model_usage['claude-opus-5'] = ModelUsage(
+        output_tokens=DAY_OUTPUT_TOKENS,
+        input_tokens=50,
+        cache_read_tokens=10,
+        cache_write_tokens=5,
+    )
+    for key, value in overrides.items():
+        setattr(stats, key, value)
+    return stats
+
+
+def _day_cost() -> CostBreakdown:
+    return CostBreakdown(
+        total=SAMPLE_COST_TOTAL,
+        by_category={},
+        by_model={'claude-opus-5': SAMPLE_COST_TOTAL},
+        unpriced_models=set(),
+        expired_models=set(),
+        pricing_as_of=date(2026, 1, 1),
+        pricing_stale=False,
+    )
+
+
+def test_ensure_schema_creates_tables() -> None:
+    conn = sqlite3.connect(':memory:')
+
+    ensure_schema(conn)
+
+    tables = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'",
+        )
+    }
+    assert {'daily_totals', 'daily_model_usage'} <= tables
+
+
+def test_record_day_writes_totals_row() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    written = record_day(conn, DAY, _day_stats(), cost=None)
+
+    row = conn.execute(
+        'SELECT sessions, replies, output_tokens FROM daily_totals'
+        ' WHERE day = ?',
+        (DAY.isoformat(),),
+    ).fetchone()
+    assert written is True
+    assert row == (1, DAY_REPLIES, DAY_OUTPUT_TOKENS)
+
+
+def test_record_day_writes_per_model_row() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    record_day(conn, DAY, _day_stats(), cost=None)
+
+    row = conn.execute(
+        'SELECT output_tokens FROM daily_model_usage'
+        ' WHERE day = ? AND model = ?',
+        (DAY.isoformat(), 'claude-opus-5'),
+    ).fetchone()
+    assert row == (DAY_OUTPUT_TOKENS,)
+
+
+def test_record_day_skips_day_without_sessions() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    written = record_day(conn, DAY, UsageStats(), cost=None)
+
+    assert written is False
+    assert conn.execute(
+        'SELECT COUNT(*) FROM daily_totals',
+    ).fetchone() == (0,)
+
+
+def test_record_day_upserts_replacing_previous_totals() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+    record_day(conn, DAY, _day_stats(), cost=None)
+
+    record_day(conn, DAY, _day_stats(replies=UPDATED_DAY_REPLIES), cost=None)
+
+    row = conn.execute(
+        'SELECT COUNT(*), MAX(replies) FROM daily_totals WHERE day = ?',
+        (DAY.isoformat(),),
+    ).fetchone()
+    assert row == (1, UPDATED_DAY_REPLIES)
+
+
+def test_record_day_removes_stale_model_rows_on_replace() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+    first = _day_stats()
+    first.model_usage['claude-haiku-4-5-20251001'] = ModelUsage(
+        output_tokens=3,
+    )
+    record_day(conn, DAY, first, cost=None)
+
+    record_day(conn, DAY, _day_stats(), cost=None)
+
+    models = {
+        row[0]
+        for row in conn.execute(
+            'SELECT model FROM daily_model_usage WHERE day = ?',
+            (DAY.isoformat(),),
+        )
+    }
+    assert models == {'claude-opus-5'}
+
+
+def test_record_day_stores_cost_when_given() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    record_day(conn, DAY, _day_stats(), _day_cost())
+
+    total_row = conn.execute(
+        'SELECT cost_total FROM daily_totals WHERE day = ?',
+        (DAY.isoformat(),),
+    ).fetchone()
+    model_row = conn.execute(
+        'SELECT cost FROM daily_model_usage WHERE day = ? AND model = ?',
+        (DAY.isoformat(), 'claude-opus-5'),
+    ).fetchone()
+    assert total_row[0] == pytest.approx(SAMPLE_COST_TOTAL)
+    assert model_row[0] == pytest.approx(SAMPLE_COST_TOTAL)
+
+
+def test_record_day_leaves_cost_null_without_pricing() -> None:
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    record_day(conn, DAY, _day_stats(), cost=None)
+
+    row = conn.execute(
+        'SELECT cost_total FROM daily_totals WHERE day = ?',
+        (DAY.isoformat(),),
+    ).fetchone()
+    assert row == (None,)
+
+
+def test_iter_days_yields_inclusive_range() -> None:
+    days = list(iter_days(date(2026, 7, 24), date(2026, 7, 26)))
+
+    assert days == [
+        date(2026, 7, 24),
+        date(2026, 7, 25),
+        date(2026, 7, 26),
+    ]
+
+
+def test_iter_days_yields_single_day_when_since_equals_until() -> None:
+    days = list(iter_days(DAY, DAY))
+
+    assert days == [DAY]
+
+
+def test_record_range_records_each_active_day_and_skips_empty(
+    tmp_path: Path,
+) -> None:
+    _write_log(
+        tmp_path,
+        [
+            _assistant(timestamp='2026-07-25T12:00:00.000Z'),
+            _assistant(timestamp='2026-07-27T12:00:00.000Z'),
+        ],
+    )
+    conn = sqlite3.connect(':memory:')
+    ensure_schema(conn)
+
+    written = record_range(
+        conn,
+        [tmp_path],
+        date(2026, 7, 25),
+        date(2026, 7, 27),
+        pricing=None,
+    )
+
+    recorded_days = {
+        row[0] for row in conn.execute('SELECT day FROM daily_totals')
+    }
+    assert written == EXPECTED_ACTIVE_DAYS
+    assert recorded_days == {'2026-07-25', '2026-07-27'}
