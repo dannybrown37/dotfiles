@@ -23,7 +23,7 @@ vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
 alias lg='lazygit'  # @doc Open lazygit TUI
 alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 alias gitdoctor='~/projects/dotfiles/scripts/git_auth_doctor.sh'  # @doc Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir]
-alias ccstats='uv run python ~/projects/dotfiles/scripts/claude_stats.py'  # @doc Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain
+alias ccstats='uv run --project ~/projects/ccgarden ccstats'  # @doc Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain
 
 # Tools I'm trying out
 

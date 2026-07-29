@@ -183,7 +183,7 @@ too. Paths resolve three ways:
 | --- | --- |
 | `some/path` | relative to this repo's root |
 | `@repo/some/path` | inside another repo, wherever that repo is cloned |
-| `~/some/path` | relative to `$HOME`, regardless of this repo — e.g. the shared `/queue` |
+| `~/some/path` | relative to `$HOME`, regardless of this repo — e.g. the shared `/backlog` |
 
 The `@repo` anchor exists because not every synced file belongs to this repo, and a sibling
 repo isn't at a fixed path on every machine. It resolves in order: `$REPO_HOME` (the anchor
@@ -203,7 +203,7 @@ skipped.
 **Automatic sync:** `make bash` sets `core.hooksPath` to the tracked `githooks/` dir. From then
 on a plain `git push` here runs `secrets-save` first (encrypt changed files, push the store) and
 a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so an
-ordinary push or pull in this repo is enough to carry every synced file (the queue included) to
+ordinary push or pull in this repo is enough to carry every synced file (the backlog included) to
 the other machine, with no separate `secrets-save`/`secrets-load` call needed. Unchanged entries
 are skipped so the store doesn't collect a commit per push. If the store errors, the hook warns
 but never blocks the dotfiles push/pull.

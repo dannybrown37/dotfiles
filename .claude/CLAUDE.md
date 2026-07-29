@@ -24,7 +24,7 @@
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
 - **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
-- **queue** — Workflow rather than a language: a shared, cross-repo work-item queue. Invoke when pulling work from the queue. The skill, its CLI, and the interactive `queue` shell wrapper all live in the `skill-tree` repo (`~/projects/skill-tree`) now; `install/bash.sh` just runs `skill-tree`'s own `skills/queue/scripts/install.sh`, which symlinks the skill into `~/.claude/skills/queue` and puts `queue` on `PATH`.
+- **backlog** — Workflow rather than a language: a shared, cross-repo work-item backlog. Invoke when pulling work from the backlog. The skill, its CLI, and the interactive `backlog` shell wrapper all live in the `skill-tree` repo (`~/projects/skill-tree`) now; skill-tree's own plugin `SessionStart` hook runs `skills/backlog/scripts/install.sh`, which symlinks the skill into `~/.claude/skills/backlog` and puts `backlog` on `PATH` -- `install/bash.sh` no longer does this itself.
 - **audit-skills** — Reviewing `.claude/skills`/`.claude/references` for structural drift, staleness, or skill-vs-reference misclassification. Invoke when asked to review, audit, or trim skills, or after adding/renaming one.
 - **debug-ci** — A GitHub Actions run has failed. Invoke to fetch the real failure logs via `gh`, diagnose root cause, and fix it locally. Never commits or pushes — that stays manual.
 - **verify** — Answering a claim the user would otherwise have to spot-check themselves ("does it work now?", "is X gone?", 2"can you confirm?"). Invoke before asserting, so the answer arrives with the evidence that would have falsified it.
@@ -37,7 +37,7 @@ Read these references before writing code in the following domains:
 - Read directly when writing TypeScript/JavaScript/Node code: `.claude/references/node-style.md`
 - Read directly when writing Python code: `.claude/references/python-style.md`
 - Read directly for this repo's (`dotfiles`) layout, conventions, pre-commit hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
-- Read directly when a queue sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `skill-tree`'s `skills/queue/references/queue-sync-model.md` — it documents this repo's `secrets.sh` merge mechanism, just lives alongside the queue skill it's about.
+- Read directly when a backlog sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `skill-tree`'s `skills/backlog/references/backlog-sync-model.md` — it documents this repo's `secrets.sh` merge mechanism, just lives alongside the backlog skill it's about.
 
 ## Model Delegation
 
@@ -58,7 +58,7 @@ Read these references before writing code in the following domains:
 - Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
 - A `pre-push` git hook prints a reminder of this — it does not block the push or call any AI review itself.
 - Full checklist: `.claude/references/code-review-checklist.md`.
-- For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, spawn the `adversarial-review` subagent manually — `.claude/agents/adversarial-review.md`. Never spawn it automatically/proactively; it's expensive and user-triggered only, like `/code-review ultra`. Do proactively suggest it to the user when changes seem to make it worthwhile. Especially useful for `password-store` operations and other auth/secrets. (`queue_cli.py` moved to `skill-tree`, which carries the same recommendation in its own `CLAUDE.md`.)
+- For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, spawn the `adversarial-review` subagent manually — `.claude/agents/adversarial-review.md`. Never spawn it automatically/proactively; it's expensive and user-triggered only, like `/code-review ultra`. Do proactively suggest it to the user when changes seem to make it worthwhile. Especially useful for `password-store` operations and other auth/secrets. (`backlog_cli.py` moved to `skill-tree`, which carries the same recommendation in its own `CLAUDE.md`.)
 
 ## Code Style (General)
 
