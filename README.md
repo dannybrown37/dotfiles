@@ -18,7 +18,6 @@ The output of `make` in the root directory:
 Usage: make [option]
 
 Start Here:
-
   bash            Install Bash profile (tmux, apt packages, etc.)
 
 Languages & Runtimes:
@@ -43,6 +42,12 @@ Environment-Specific:
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
   secrets-load    Pull private repo, load secrets from password-store to local files
+
+My Projects:
+  projects        Clone and install skill-tree, gtd, and ccgarden
+  skill-tree      Clone skill-tree and run its setup script
+  gtd             Clone gtd and install it with uv
+  ccgarden        Clone ccgarden and install it with uv
 ```
 
 ## Commands Available
