@@ -21,19 +21,17 @@ Structure** section — read that first, don't re-derive it here.
 2. **Inventory sync**: list `.claude/skills/*` and `.claude/references/*` on disk, compare
    against the "Skills" and "References" lists in `.claude/CLAUDE.md`. Flag anything on
    disk but unlisted, or listed but missing.
-3. **Mirror check**: every `.claude/skills/<name>` needs a matching symlink at
-   `.github/skills/<name>`. Flag missing or broken ones.
-4. **Skill vs. reference shape**: read each SKILL.md body. Playbook (imperative steps,
+3. **Skill vs. reference shape**: read each SKILL.md body. Playbook (imperative steps,
    "do X then Y") belongs as a skill. Background/theory/exhaustive listing belongs in
    `.claude/references/` with the skill (if any) shrunk to a thin trigger + pointer. Flag
    misclassified ones.
-5. **Bundled-file anti-patterns**: for anything under a skill dir besides SKILL.md, check
+4. **Bundled-file anti-patterns**: for anything under a skill dir besides SKILL.md, check
    the two named anti-patterns in CLAUDE.md — (a) a file a human would plausibly read/run
    directly outside the skill context (→ belongs in `scripts/` or `.claude/references/`),
    (b) a synthetic template duplicating a real file (→ point at the real file instead).
-6. **Staleness**: grep each skill/reference for file paths, function/flag names,
-   dependency or framework names it references. Verify each still matches current repo
+5. **Staleness**: grep each skill/reference for file paths, function/flag names,
+   dependency or framework names it references. Verify each skill matches current repo
    state. Flag anything renamed, removed, or never true.
-7. **Report**: group findings by skill/reference, each tagged with one recommendation —
+6. **Report**: group findings by skill/reference, each tagged with one recommendation —
    keep / demote-to-reference / promote-to-skill / trim-fluff / fix-staleness /
-   relocate-bundled-file / fix-mirror-symlink. No fixes applied automatically.
+   relocate-bundled-file. No fixes applied automatically.

@@ -122,8 +122,6 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
 | `quick_google` | Ctrl+Shift+G - Search Google for selected text | `ahk/quick_google.ahk` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
-| `skill-audit` | Audit dotfiles skills against their ~/.claude/skills copies, and sync them | skill-audit [sync] [name] [--yes] | `bin/skill-audit.sh` |
-| `skill-export` | Export a dotfiles skill to the global Claude skills dir, or another repo's .claude + .github bridge | skill-export <name> [target-dir] | `bin/skill-export.sh` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
 | `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
 | `teams_toggle` | Ctrl+Shift+D - Toggle Microsoft Teams focus | `ahk/teams_toggle.ahk` |

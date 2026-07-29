@@ -67,7 +67,6 @@ Read these references before writing code in the following domains:
 
 - When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, if it has one) to match.
   This keeps skill/package context in sync so future sessions have accurate info. Look for outdated framework names, dependency lists, API signatures, and file structure.
-- `.claude/skills/<name>/` are mirrored into `.github/skills/<name>` via symlink (so Copilot sees the same skills). When adding or removing a skill directory, add or remove the matching symlink in `.github/skills/` too. The symlink is directory-level, so bundled subdirectories come along for free.
 
 ### Skill Structure
 
@@ -83,7 +82,7 @@ Bundle a file inside `.claude/skills/<name>/` only when it is useless outside th
 
 Two anti-patterns worth naming, both found and reverted in this repo:
 
-- A verification script buried in a skill folder while its siblings (`check-dirdesc.sh`, `check-claude-symlinks.sh`) sit in `scripts/`.
+- A verification script buried in a skill folder while its siblings (`check-dirdesc.sh`, `check_skill_structure.py`) sit in `scripts/`.
 - A synthetic template duplicating a real file. Prefer pointing at the real one: it gets executed, so it cannot drift silently. Don't write a template at all when the cases genuinely differ — `install/` spans 3 to 252 lines with no common skeleton.
 
 `scripts/check_skill_structure.py` (pre-commit) enforces layer 1, and still checks the executable bit on anything bundled under a skill's `scripts/` for the rare case that clears the bar.
