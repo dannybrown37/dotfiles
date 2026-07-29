@@ -7,15 +7,16 @@ ROOT="$(git rev-parse --show-toplevel)"
 # The list of what to sync lives inside the store, not in this repo.
 readonly MANIFEST="manifest"
 
-# queue_cli.py lives in the skill-tree repo, not here -- same @anchor-style
-# resolution the queue CLI itself uses, just not manifest-driven since this is
-# an internal implementation detail rather than a synced file.
-readonly QUEUE_SCRIPT="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}/skills/queue/scripts/queue_cli.py"
+# backlog_cli.py lives in the skill-tree repo, not here -- same @anchor-style
+# resolution the backlog CLI itself uses, just not manifest-driven since this
+# is an internal implementation detail rather than a synced file.
+readonly BACKLOG_SCRIPT="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}/skills/backlog/scripts/backlog_cli.py"
 
 # Files a straight copy would corrupt: each machine edits its own copy, so both
-# sides have to survive a sync. Order matters -- the queue merge asks
-# queue-complete which titles are already done, so that has to reconcile first.
-readonly MERGE_PATHS=("queue-complete" "queue")
+# sides have to survive a sync. Order matters -- the backlog merge asks
+# backlog-complete which titles are already done, so that has to reconcile
+# first.
+readonly MERGE_PATHS=("backlog-complete" "backlog")
 
 WORK_DIR="$(mktemp -d)"
 readonly WORK_DIR
@@ -51,7 +52,7 @@ is_merge_path() {
 # Manifest paths are relative to this repo unless they start with an @anchor,
 # which names another repo that may or may not be cloned on this machine, or
 # with ~/, which resolves under $HOME regardless of this repo -- for entries
-# that don't belong to any one repo (e.g. the shared queue).
+# that don't belong to any one repo (e.g. the shared backlog).
 anchor_of() {
     local path="$1"
     [[ "${path}" == @* ]] || return 1
@@ -117,19 +118,19 @@ merge_local_file() {
 
     command -v python3 >/dev/null ||
         die "python3 is required to merge ${kind}"
-    [[ -f "${QUEUE_SCRIPT}" ]] ||
-        die "queue_cli.py not found at ${QUEUE_SCRIPT} -- is skill-tree cloned? (see \$SKILL_TREE_DIR)"
+    [[ -f "${BACKLOG_SCRIPT}" ]] ||
+        die "backlog_cli.py not found at ${BACKLOG_SCRIPT} -- is skill-tree cloned? (see \$SKILL_TREE_DIR)"
 
     case "${kind}" in
-    queue-complete)
-        python3 "${QUEUE_SCRIPT}" merge-completed \
+    backlog-complete)
+        python3 "${BACKLOG_SCRIPT}" merge-completed \
             --complete-path "${file}" \
             --incoming "${incoming}"
         ;;
-    queue)
-        python3 "${QUEUE_SCRIPT}" merge-queue \
-            --queue-path "${file}" \
-            --complete-path "${dir}/queue-complete" \
+    backlog)
+        python3 "${BACKLOG_SCRIPT}" merge-backlog \
+            --backlog-path "${file}" \
+            --complete-path "${dir}/backlog-complete" \
             --incoming "${incoming}" \
             --prefer "${prefer}"
         ;;
@@ -275,8 +276,8 @@ sync_pull() {
 }
 
 save_all() {
-    # Saving merges .queue against the store, so pull first or the merge runs
-    # against a stale copy and the push is rejected anyway.
+    # Saving merges .backlog against the store, so pull first or the merge
+    # runs against a stale copy and the push is rejected anyway.
     sync_pull
 
     echo "Saving local files into password-store:"

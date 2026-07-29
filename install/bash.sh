@@ -256,16 +256,3 @@ if [ ! -L "${HOME}/.config/starship.toml" ]; then
 else
     echo "starship.toml has already been symlinked"
 fi
-
-##
-## Install skill-tree's queue skill and its CLI
-##
-
-skill_tree_dir="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}"
-skill_tree_install="${skill_tree_dir}/skills/queue/scripts/install.sh"
-
-if [ ! -x "${skill_tree_install}" ]; then
-    echo "skill-tree not cloned at ${skill_tree_dir} -- skipping skill install"
-else
-    "${skill_tree_install}"
-fi
