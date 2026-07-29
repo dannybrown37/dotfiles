@@ -1,10 +1,9 @@
-.PHONY: help python deno node golang rust vscode gnome select-nerdfont komo wsl-fonts secrets-save secrets-load lazygit bash nvim cartoon
+.PHONY: help python deno node golang rust vscode gnome select-nerdfont komo wsl-fonts secrets-save secrets-load lazygit bash nvim cartoon skill-tree gtd ccgarden projects
 
 help:
 	@echo "Usage: make [option]"
 	@echo ""
 	@echo "Start Here:"
-	@echo ""
 	@echo "  bash            Install Bash profile (tmux, apt packages, etc.)"
 	@echo ""
 	@echo "Languages & Runtimes:"
@@ -29,6 +28,12 @@ help:
 	@echo "Secrets (requires GPG keys):"
 	@echo "  secrets-save    Save local secrets to password-store, push to private repo"
 	@echo "  secrets-load    Pull private repo, load secrets from password-store to local files"
+	@echo ""
+	@echo "My Projects:"
+	@echo "  projects        Clone and install skill-tree, gtd, and ccgarden"
+	@echo "  skill-tree      Clone skill-tree and run its setup script"
+	@echo "  gtd             Clone gtd and install it with uv"
+	@echo "  ccgarden        Clone ccgarden and install it with uv"
 
 
 root_dir := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -79,6 +84,19 @@ wsl-fonts:
 
 komo:
 	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/reset_komo.ps1"
+
+# my projects
+
+projects: skill-tree gtd ccgarden
+
+skill-tree:
+	bash -c ". $(root_dir)/install/skill-tree.sh"
+
+gtd:
+	bash -c ". $(root_dir)/install/gtd.sh"
+
+ccgarden:
+	bash -c ". $(root_dir)/install/ccgarden.sh"
 
 # pass secret store
 
