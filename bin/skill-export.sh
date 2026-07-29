@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# @doc Export a dotfiles skill into another repo (.claude + .github bridge) | skill-export <name> [target-dir]
+# @doc Export a dotfiles skill to the global Claude skills dir, or another repo's .claude + .github bridge | skill-export <name> [target-dir]
 
 skill-export() {
     local dotfiles_dir="${DOTFILES_DIR:-$HOME/projects/dotfiles}"
@@ -23,7 +23,22 @@ skill-export() {
         return 1
     fi
 
-    local target_dir="${2:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+    if [[ -z "${2:-}" ]]; then
+        local global_skills_dir="${CLAUDE_GLOBAL_SKILLS_DIR:-$HOME/.claude/skills}"
+        local global_dest="${global_skills_dir}/${skill_name}"
+
+        if [[ -e "${global_dest}" ]]; then
+            echo "skill-export: ${global_dest} already exists, skipping copy" >&2
+            return 1
+        fi
+
+        mkdir -p "${global_skills_dir}"
+        cp -r "${source_dir}" "${global_dest}"
+        echo "Copied ${skill_name} -> ${global_dest}"
+        return 0
+    fi
+
+    local target_dir="${2}"
     local claude_dest="${target_dir}/.claude/skills/${skill_name}"
     local github_dest="${target_dir}/.github/skills/${skill_name}"
 
