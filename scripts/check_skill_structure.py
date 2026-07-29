@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """Validate the structure of every skill under .claude/skills/.
 
-Complements check-claude-symlinks.sh: that one checks the .github mirror
-exists, this one checks the skill content the mirror points at is sound.
-
 Skills are read by Claude Code in three layers -- frontmatter metadata,
 the SKILL.md body, and bundled resource files. Only the first layer has a
 contract strict enough to enforce mechanically, so that is what this
