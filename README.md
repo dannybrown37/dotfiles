@@ -87,6 +87,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
+| `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
