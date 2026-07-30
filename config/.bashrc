@@ -67,6 +67,7 @@ LS_IGNORE_PATTERNS=(
     "build"
     "dist"
     "venv"
+    ".next"
 )
 export LS_IGNORE_GLOBS=$(IFS='|'; echo "${LS_IGNORE_PATTERNS[*]}")
 # shellcheck disable=SC2016
