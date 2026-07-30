@@ -24,7 +24,6 @@
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
 - **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
-- **audit-skills** — Reviewing `.claude/skills`/`.claude/references` for structural drift, staleness, or skill-vs-reference misclassification. Invoke when asked to review, audit, or trim skills, or after adding/renaming one. Moved to `skill-tree` — invoke via `/plugin marketplace add` or symlinking from there.
 
 ## References
 
@@ -82,10 +81,8 @@ Bundle a file inside `.claude/skills/<name>/` only when it is useless outside th
 
 Two anti-patterns worth naming, both found and reverted in this repo:
 
-- A verification script buried in a skill folder while its siblings (`check-dirdesc.sh`, `check_skill_structure.py`) sit in `scripts/`.
+- A verification script buried in a skill folder while its siblings (`check-dirdesc.sh`) sit in `scripts/`.
 - A synthetic template duplicating a real file. Prefer pointing at the real one: it gets executed, so it cannot drift silently. Don't write a template at all when the cases genuinely differ — `install/` spans 3 to 252 lines with no common skeleton.
-
-`skill-tree`'s `skills/audit-skills/scripts/check_skill_structure.py` (run here via pre-commit) enforces layer 1, and still checks the executable bit on anything bundled under a skill's `scripts/` for the rare case that clears the bar.
 
 ## Security
 
