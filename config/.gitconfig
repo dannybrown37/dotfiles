@@ -46,9 +46,11 @@
     side-by-side = true
     line-numbers = true
 [credential "https://github.com"]
-    helper = !/usr/bin/gh auth git-credential
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
 [credential "https://gist.github.com"]
-    helper = !/usr/bin/gh auth git-credential
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
 
 # Identity and credentials follow the remote, not the directory -- a repo
 # cloned somewhere unexpected still gets the right account. Anything matching

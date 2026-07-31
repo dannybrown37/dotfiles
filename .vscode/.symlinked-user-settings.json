@@ -115,9 +115,11 @@
     "tfpro",
     "tfsj",
     "tfvars",
+    "toplevel",
     "Tsvg",
     "venv",
     "virtualenv",
+    "vitest",
     "wslpath",
     "xfixes"
   ],
