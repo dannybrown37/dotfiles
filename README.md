@@ -59,6 +59,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | Command | Description | Source |
 | --- | --- | --- |
 | `ahk` | Run all AutoHotKey scripts (Windows only) | `config/.bash_aliases` |
+| `app_toggle` | Ctrl+Shift+X/C/D - Toggle focus for VS Code / Chrome / Teams | `ahk/app_toggle.ahk` |
 | `asciinema` | Record and replay terminal sessions | asciinema rec session.cast | `bin/stubs.sh` |
 | `atuin` | Shell history search/sync (replaces Ctrl+R) | atuin search | `bin/stubs.sh` |
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
@@ -68,7 +69,6 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `ccstats` | Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain | `config/.bash_aliases` |
 | `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
-| `chrome_focus` | Ctrl+Shift+C - Cycle through open Chrome windows | `ahk/chrome_focus.ahk` |
 | `cht` | Query cht.sh for info on many technologies | `config/.bashrc` |
 | `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
 | `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
@@ -85,7 +85,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
-| `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
+| `gh` | GitHub CLI -- PRs, issues, workflows, and more | uses personal token in personal repos | `bin/stubs.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
@@ -121,11 +121,9 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
-| `quick_google` | Ctrl+Shift+G - Search Google for selected text | `ahk/quick_google.ahk` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
 | `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
-| `teams_toggle` | Ctrl+Shift+D - Toggle Microsoft Teams focus | `ahk/teams_toggle.ahk` |
 | `tldr` | Simplified man pages with practical examples | tldr <cmd> | `bin/stubs.sh` |
 | `tmconf` | Reload tmux config | `config/.bash_aliases` |
 | `tms` | Start or attach to tmux Session | `config/.bash_aliases` |
@@ -137,9 +135,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `utc_timestamp` | Print the current UTC timestamp in ISO format with microseconds, copy to clipboard | `config/.bashrc` |
 | `uuid` | Generate a random UUID and put it in the clipboard | `config/.bash_aliases` |
 | `vc` | Vim cheatsheet fuzzy finder | `config/.bash_aliases` |
-| `vscode_toggle` | Ctrl+Shift+X - Toggle VS Code focus | `ahk/vscode_toggle.ahk` |
 | `vsi` | Fuzzy find files and open in Neovim (git-aware) | `config/.bash_aliases` |
-| `windows_terminal_toggle` | Ctrl+Shift+Z - Toggle Windows Terminal focus | `ahk/windows_terminal_toggle.ahk` |
 | `zoxide` | Smarter cd that learns your most-used directories (alias: cd) | `bin/stubs.sh` |
 <!-- @doc:commands:end -->
 
