@@ -77,6 +77,9 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
 | `croc` | Send files between machines securely | croc send <file> | `bin/stubs.sh` |
 | `delta` | Syntax-highlighting pager for git diffs (replaces less) | `bin/stubs.sh` |
+| `docker` | Containers -- via Docker Desktop on the Windows host | docker-up to start it | `bin/stubs.sh` |
+| `docker-doctor` | Diagnose why the docker CLI can't reach a daemon under WSL | docker-doctor | `bin/docker.sh` |
+| `docker-up` | Start Docker Desktop from WSL and block until the daemon answers | docker-up [timeout_seconds] | `bin/docker.sh` |
 | `dotaudit` | Audit system for dotfile setup compliance | `config/.bash_aliases` |
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
 | `epoch` | Alias for epoch_timestamp | `config/.bash_aliases` |
