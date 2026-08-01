@@ -10,12 +10,12 @@
 
 ## Communication Style
 
-- Very few to no comments in generated code unless explicitly requested. Comments should be "why", not "what". i.e., if a comment is needed to explain what the code does, the code should be rewritten to be more readable instead.
 - When reporting information to me, be as concise as possible. Sacrifice grammar for the sake of concision.
+- Very few to no comments in generated code unless explicitly requested. Comments should be "why", not "what". i.e., if a comment is needed to explain what the code does, the code should be rewritten to be more readable instead.
 - Don't restate questions. Don't apologize. Match my mood.
 - Admit when you don't know. Cite sources if uncertain.
 - If multiple approaches exist, briefly state which and why to choose, then list alternatives.
-- Cite sources.
+- Cite sources. Provide links to visualizations that can't be displayed in a TUI.
 - Don't ask bait questions. Only ask if you genuinely need more information.
 - Always show the diff as you make changes to my code.
 
@@ -65,24 +65,8 @@ Read these references before writing code in the following domains:
 ## Documentation
 
 - When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, if it has one) to match.
-  This keeps skill/package context in sync so future sessions have accurate info. Look for outdated framework names, dependency lists, API signatures, and file structure.
-
-### Skill Structure
-
-Skills are built in three layers, loaded progressively — keep each one in its lane:
-
-1. **Metadata** — the SKILL.md frontmatter (`name`, `description`, `user-invocable`, `allowed-tools`). Always in context, so it must be short and its `description` must say exactly when to invoke.
-2. **Playbook** — the SKILL.md body. Loaded when the skill triggers. Steps to follow, not background theory.
-3. **Resources** — the tools and docs the skill points at, loaded only on demand.
-
-**Layer 3 lives in the repo's normal locations, not inside the skill directory.** Executables go in `scripts/` next to their siblings, background docs go in `.claude/references/`, and worked examples are whichever real file already demonstrates the pattern. The skill body just names the path.
-
-Bundle a file inside `.claude/skills/<name>/` only when it is useless outside that skill *and* no human would ever invoke it directly. That bar is high and rarely met here — a resource humans never touch is one nobody notices has rotted, and a repo script hidden in a skill folder is invisible to `cmds`, the README, pre-commit, and the audit.
-
-Two anti-patterns worth naming, both found and reverted in this repo:
-
-- A verification script buried in a skill folder while its siblings (`check-dirdesc.sh`) sit in `scripts/`.
-- A synthetic template duplicating a real file. Prefer pointing at the real one: it gets executed, so it cannot drift silently. Don't write a template at all when the cases genuinely differ — `install/` spans 3 to 252 lines with no common skeleton.
+  This keeps skill/package context in sync so future sessions have accurate info. Look for outdated framework names, dependency lists, API signatures, and file structurej
+- Update tHE `README.md` to match, help the humain maintainers.
 
 ## Security
 
