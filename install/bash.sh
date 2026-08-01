@@ -242,6 +242,14 @@ fi
 git -C ~/projects/dotfiles config core.hooksPath githooks &&
     echo "Configured git hooks -- dotfiles push/pull now syncs password-store"
 
+if [ ! -L "${HOME}/.claude/CLAUDE.md" ]; then
+    mkdir -p ~/.claude
+    ln -s ~/projects/dotfiles/config/CLAUDE.md ~/.claude/CLAUDE.md &&
+        echo "Symlinked global CLAUDE.md to ~/.claude/CLAUDE.md"
+else
+    echo "global CLAUDE.md has already been symlinked"
+fi
+
 if [ ! -L "${HOME}/.config/nvim" ]; then
     mkdir ~/.config
     ln -s ~/projects/dotfiles/nvim ~/.config/nvim &&
