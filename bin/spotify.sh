@@ -58,6 +58,15 @@ spotify_player_jump() {
     fi
 
     tmux select-window -t "${session}:${window}"
+
+    # select-window only updates the session's active window; if the
+    # terminal's tmux client is attached to a different session (or a
+    # different window's copy-mode view), it won't redraw on its own -- so
+    # explicitly switch every attached client into this window too.
+    local client
+    while IFS= read -r client; do
+        [[ -n "${client}" ]] && tmux switch-client -c "${client}" -t "${session}:${window}"
+    done < <(tmux list-clients -F '#{client_name}')
 }
 
 spotify_now_playing_markdown() {
