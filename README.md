@@ -31,7 +31,7 @@ Developer Tools:
   nvim            Install Neovim
   lazygit         Install lazygit TUI git client
   cartoon         Install cartoon CLI (pinned version, no hook)
-  spotify-player  Install spotify_player TUI (remote control, no audio)
+  spotify         Install spotify_player TUI (remote control, no audio)
   vscode          Install VS Code extensions and settings
 
 Environment-Specific:
@@ -124,7 +124,10 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
-| `song` | Copy the currently playing Spotify track link (-m for a service-agnostic musiclink): spotifylink [-m|--musiclink] | `config/.bash_aliases` |
+| `song` | Copy a service-agnostic musiclink for the currently playing Spotify track: song | `config/.bash_aliases` |
+| `song` | ,,song -- insert a service-agnostic musiclink for the currently playing track | `ahk/hotstrings.ahk` |
+| `sorn` | Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn | `config/.bash_aliases` |
+| `sorn` | ,,sorn -- insert "Song On Right Now" markdown for the currently playing track | `ahk/hotstrings.ahk` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
 | `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
 | `tldr` | Simplified man pages with practical examples | tldr <cmd> | `bin/stubs.sh` |

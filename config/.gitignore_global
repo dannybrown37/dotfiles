@@ -300,3 +300,5 @@ dist
 .pnp.*
 
 **/.claude/settings.local.json
+
+*PLAN.md
