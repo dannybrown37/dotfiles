@@ -113,6 +113,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
 | `mk` | Create a directory and cd into it | `config/.bashrc` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
+| `musiclink` | Convert a Spotify/YouTube/etc link to a service-agnostic song.link URL: musiclink <url> | `config/.bash_aliases` |
 | `note` | Create a note file from the command line | `config/.bashrc` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `notes` | Open a note file from the command line from $NOTES_DIR using fzf | `config/.bashrc` |
