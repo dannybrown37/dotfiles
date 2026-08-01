@@ -24,6 +24,7 @@ alias lg='lazygit'  # @doc Open lazygit TUI
 alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 alias gitdoctor='~/projects/dotfiles/scripts/git_auth_doctor.sh'  # @doc Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir]
 alias musiclink='~/projects/dotfiles/scripts/musiclink.sh'  # @doc Convert a Spotify/YouTube/etc link to a service-agnostic song.link URL: musiclink <url>
+alias song='spotify_copy_playing_link -m'  # @doc Copy the currently playing Spotify track link (-m for a service-agnostic musiclink): spotifylink [-m|--musiclink]
 alias ccstats='uv run --project ~/projects/ccgarden ccstats'  # @doc Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain
 
 # Tools I'm trying out

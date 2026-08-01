@@ -124,6 +124,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
+| `song` | Copy the currently playing Spotify track link (-m for a service-agnostic musiclink): spotifylink [-m|--musiclink] | `config/.bash_aliases` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
 | `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
 | `tldr` | Simplified man pages with practical examples | tldr <cmd> | `bin/stubs.sh` |
