@@ -1,23 +1,7 @@
 # LLM Instructions
 
-## General Approach
-
-- Prefer a TDD approach, with tests written before code.
-- We'll be doing Human-in-the-Loop AI-assisted coding.
-  - Unless specifically requested to build end to end, you should implement code in discrete, testable steps, then wait for human feedback before continuing.
-  - You should always write tests for your code, and provide commands to run them to the user.
-  - You should not be adding, committing, or pushing code, the user will do that manually.
-
-## Communication Style
-
-- When reporting information to me, be as concise as possible. Sacrifice grammar for the sake of concision.
-- Very few to no comments in generated code unless explicitly requested. Comments should be "why", not "what". i.e., if a comment is needed to explain what the code does, the code should be rewritten to be more readable instead.
-- Don't restate questions. Don't apologize. Match my mood.
-- Admit when you don't know. Cite sources if uncertain.
-- If multiple approaches exist, briefly state which and why to choose, then list alternatives.
-- Cite sources. Provide links to visualizations that can't be displayed in a TUI.
-- Don't ask bait questions. Only ask if you genuinely need more information.
-- Always show the diff as you make changes to my code.
+General defaults live in `~/.claude/CLAUDE.md` (symlinked from `config/CLAUDE.md` in this
+repo). Only `dotfiles`-specific instructions belong here.
 
 ## Skills
 
@@ -37,43 +21,20 @@ Read these references before writing code in the following domains:
 
 ## Model Delegation
 
-- For a sub-task that's mechanical and fully specified (rename across files, run-and-report, known-pattern lookup, template-driven boilerplate), delegate it to the `quick-task` subagent (`.claude/agents/quick-task.md`, pinned to Haiku) instead of doing it inline.
-- Keep judgment calls, multi-file architectural reasoning, and anything the user is actively iterating on in the main session.
-- Full decision framework: `.claude/references/model-strategy.md`. This is a difficulty-based delegation heuristic.
+- The cheap/fast subagent for mechanical, fully-specified sub-tasks is `quick-task` (`.claude/agents/quick-task.md`, pinned to Haiku).
+- Full decision framework: `.claude/references/model-strategy.md`.
 
 ## Multi-Agent & Agentic Patterns
 
-- Default to inline execution. Delegate to a fresh `Agent` only for genuinely independent work (research, a second opinion, a specialized agent like `quick-task`/`Explore`); use `fork` when the sub-task shares current context but its raw tool output (large greps, file dumps) isn't worth keeping around.
-- Batch independent tool calls (e.g. `git status`/`diff`/`log` at review start) in one message; keep dependent calls sequential.
-- For long-running or async work, prefer `run_in_background` + `Monitor` over sleep-polling, and don't fabricate a fork/background result before its notification actually arrives.
 - Full patterns and examples: `.claude/references/agentic-patterns.md`.
 
 ## Code Review
 
-- A `Stop` hook (`scripts/verify_changes.py`, wired in `.claude/settings.json`) runs `pre-commit` against every changed file before a turn can end, and blocks the turn with the output if it fails. Fix what it reports — never hand a lint error or failing test to the user. Hooks that `git add` are skipped, so formatting is still settled at commit time. `VERIFY_CHANGES_SKIP=1` disables it.
-- Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
-- A `pre-push` git hook prints a reminder of this — it does not block the push or call any AI review itself.
+- A `Stop` hook (`scripts/verify_changes.py`, wired in `.claude/settings.json`) runs `pre-commit` against every changed file before a turn can end, and blocks the turn with the output if it fails. Fix what it reports. Hooks that `git add` are skipped, so formatting is still settled at commit time. `VERIFY_CHANGES_SKIP=1` disables it.
+- A `pre-push` git hook prints a reminder to run `/code-review` — it does not block the push or call any AI review itself.
 - Full checklist: `.claude/references/code-review-checklist.md`.
-- For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, spawn the `adversarial-review` subagent manually — `.claude/agents/adversarial-review.md`. Never spawn it automatically/proactively; it's expensive and user-triggered only, like `/code-review ultra`. Do proactively suggest it to the user when changes seem to make it worthwhile. Especially useful for `password-store` operations and other auth/secrets. (`backlog_cli.py` moved to `skill-tree`, which carries the same recommendation in its own `CLAUDE.md`.)
-
-## Code Style (General)
-
-- Always use type hints for function parameters (all languages where available).
-- Write tests using `test.each` (JS/TS) or `pytest.mark.parametrize` (Python) for DRY reusable test code.
-- You have read-only access to git. Don't write with git unless permission is explicitly given.
+- The adversarial red-team pass is the `adversarial-review` subagent — `.claude/agents/adversarial-review.md`. User-triggered only, like `/code-review ultra`. Especially useful for `password-store` operations and other auth/secrets. (`backlog_cli.py` moved to `skill-tree`, which carries the same recommendation in its own `CLAUDE.md`.)
 
 ## Documentation
 
-- When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, if it has one) to match.
-  This keeps skill/package context in sync so future sessions have accurate info. Look for outdated framework names, dependency lists, API signatures, and file structurej
-- Update tHE `README.md` to match, help the humain maintainers.
-
-## Security
-
-- Keep a privacy-first mindset
-- Never hardcode secrets, tokens, or credentials. Use environment variables or a secrets manager.
-- Never `eval` or dynamically execute user-supplied input.
-- Validate and sanitize all external input at system boundaries (API inputs, CLI args, file reads).
-- Use parameterized queries; never string-interpolate SQL.
-- Pin dependency versions. Audit before adding new dependencies.
-- Prefer the principle of least privilege; request minimal permissions, expose minimal surface area.
+- Architectural changes should be reflected in `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, if it has one) and in `README.md`.

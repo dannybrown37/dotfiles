@@ -60,7 +60,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | Command | Description | Source |
 | --- | --- | --- |
 | `ahk` | Run all AutoHotKey scripts (Windows only) | `config/.bash_aliases` |
-| `app_toggle` | Ctrl+Shift+X/C/D - Toggle focus for VS Code / Chrome / Teams; Alt+S - jump to spotify_player tmux window and focus it | `ahk/app_toggle.ahk` |
+| `app_toggle` | Ctrl+Shift+X/C/D - Toggle focus for VS Code / Chrome / Teams; Alt+A - jump to tmux in VSCode's terminal; Alt+S - same, but to the spotify_player tmux window | `ahk/app_toggle.ahk` |
 | `asciinema` | Record and replay terminal sessions | asciinema rec session.cast | `bin/stubs.sh` |
 | `atuin` | Shell history search/sync (replaces Ctrl+R) | atuin search | `bin/stubs.sh` |
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
