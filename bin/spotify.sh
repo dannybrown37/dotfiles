@@ -84,8 +84,6 @@ spotify_player_jump() {
     done < <(tmux list-clients -F '#{client_name}')
 }
 
-alias spj='spotify_player_jump'
-
 spotify_now_playing_markdown() {
     local playback
     playback=$(_spotify_playback_json) || return 1
