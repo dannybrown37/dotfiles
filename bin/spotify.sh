@@ -46,6 +46,20 @@ spotify_copy_playing_link() {
     echo "${link}"
 }
 
+spotify_player_jump() {
+    local session="${SPOTIFY_TMUX_SESSION:-Session}"
+    local window="${SPOTIFY_TMUX_WINDOW:-spotify}"
+
+    tmux has-session -t "${session}" 2>/dev/null || tmux new-session -d -s "${session}"
+
+    if ! tmux list-windows -t "${session}" -F '#{window_name}' | grep -qx "${window}"; then
+        tmux new-window -d -t "${session}" -n "${window}" 'spotify_player'
+        tmux set-window-option -t "${session}:${window}" automatic-rename off
+    fi
+
+    tmux select-window -t "${session}:${window}"
+}
+
 spotify_now_playing_markdown() {
     local playback
     playback=$(_spotify_playback_json) || return 1
