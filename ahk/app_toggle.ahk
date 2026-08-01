@@ -1,4 +1,4 @@
-; @doc app_toggle: Ctrl+Shift+X/C/D - Toggle focus for VS Code / Chrome / Teams
+; @doc app_toggle: Ctrl+Shift+X/C/D - Toggle focus for VS Code / Chrome / Teams; Alt+S - jump to spotify_player tmux window and focus it
 #SingleInstance Force
 #NoEnv
 #Warn
@@ -25,3 +25,18 @@ ToggleApp(criteria, runTarget := "") {
 ^+x::ToggleApp("ahk_exe Code.exe", "Code.exe")
 ^+c::ToggleApp("ahk_exe chrome.exe", "chrome.exe")
 ^+d::ToggleApp("ahk_class TeamsWebView")
+
+; Jumps to the pinned spotify_player tmux window (VSCode's integrated
+; terminal) and gives it real keyboard focus. whkd/PowerShell SendKeys
+; couldn't do the last part -- Windows blocks synthetic input to a window
+; that isn't already foreground, so a background PowerShell process
+; sending Ctrl+` was a no-op. WinActivate here (same mechanism as the
+; ToggleApp hotkeys above) reliably brings VSCode to the foreground first.
+!s::
+    RunWait, komorebic.exe focus-workspace 0,, Hide
+    RunWait, wsl.exe bash -l -i -c "source ~/.bashrc; spotify_player_jump",, Hide
+    WinActivate, ahk_exe Code.exe
+    WinWaitActive, ahk_exe Code.exe,, 2
+    Sleep, 100
+    Send, ^{U+0060}
+return
