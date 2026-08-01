@@ -47,5 +47,8 @@ alt + m         : komorebic minimize
 alt + oem_4     : komorebic cycle-stack previous
 alt + oem_6     : komorebic cycle-stack next
 
+# jump straight to the pinned spotify_player tmux window, from anywhere
+alt + s         : komorebic focus-workspace 0 ; wsl.exe bash -l -i -c "source ~/.bashrc; spotify_player_jump"
+
 # reload komorebi.json after editing
 alt + shift + r : komorebic reload-configuration
