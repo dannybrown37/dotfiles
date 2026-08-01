@@ -31,6 +31,7 @@ Developer Tools:
   nvim            Install Neovim
   lazygit         Install lazygit TUI git client
   cartoon         Install cartoon CLI (pinned version, no hook)
+  spotify-player  Install spotify_player TUI (remote control, no audio)
   vscode          Install VS Code extensions and settings
 
 Environment-Specific:
