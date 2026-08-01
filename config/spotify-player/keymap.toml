@@ -1,0 +1,107 @@
+# spotify_player key mappings — additions and overrides only; anything not
+# listed here keeps its default binding (press `?` in the TUI for the full list).
+# Docs: https://github.com/aome510/spotify-player/blob/master/docs/config.md#keymaps
+
+##
+## Transport — `g`-prefixed, so they do not shadow single-key defaults
+##
+
+[[keymaps]]
+command = "NextTrack"
+key_sequence = "g n"
+
+[[keymaps]]
+command = "PreviousTrack"
+key_sequence = "g p"
+
+[[keymaps]]
+command = "ResumePause"
+key_sequence = "g space"
+
+[[keymaps]]
+command = "SeekStart"
+key_sequence = "g 0"
+
+[[keymaps]]
+command = { SeekForward = { duration = 30 } }
+key_sequence = "L"
+
+[[keymaps]]
+command = { SeekBackward = { duration = 30 } }
+key_sequence = "H"
+
+##
+## Volume — mirrors the vim-ish +/- feel
+##
+
+[[keymaps]]
+command = { VolumeChange = { offset = 5 } }
+key_sequence = "+"
+
+[[keymaps]]
+command = { VolumeChange = { offset = -5 } }
+key_sequence = "-"
+
+##
+## Navigation
+##
+
+[[keymaps]]
+command = "Search"
+key_sequence = "/"
+
+[[keymaps]]
+command = "LibraryPage"
+key_sequence = "g l"
+
+[[keymaps]]
+command = "SearchPage"
+key_sequence = "g s"
+
+[[keymaps]]
+command = "BrowsePage"
+key_sequence = "g b"
+
+[[keymaps]]
+command = "LyricsPage"
+key_sequence = "g y"
+
+[[keymaps]]
+command = "Queue"
+key_sequence = "g q"
+
+[[keymaps]]
+command = "JumpToCurrentTrackInContext"
+key_sequence = "g c"
+
+[[keymaps]]
+command = "SwitchDevice"
+key_sequence = "g d"
+
+##
+## Sharing — CopyLink puts a Spotify URL on the clipboard, which is the input
+## the `musiclink` alias turns into a service-agnostic song.link URL.
+##
+
+[[keymaps]]
+command = "CopyLink"
+key_sequence = "C-y"
+
+##
+## Actions on the currently playing track, rather than the selected item
+##
+
+[[actions]]
+action = "GoToArtist"
+key_sequence = "g A"
+target = "PlayingTrack"
+
+[[actions]]
+action = "GoToAlbum"
+key_sequence = "g B"
+target = "PlayingTrack"
+
+[[actions]]
+action = "ToggleLiked"
+key_sequence = "C-l"
+target = "PlayingTrack"

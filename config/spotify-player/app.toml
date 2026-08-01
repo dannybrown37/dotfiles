@@ -1,0 +1,32 @@
+# spotify_player application settings.
+# Docs: https://github.com/aome510/spotify-player/blob/master/docs/config.md
+#
+# This machine runs a controller-only build (no `streaming` / `notify`
+# features), so anything depending on librespot audio or libdbus is off.
+
+# Never register a local librespot device — playback lives on another Spotify
+# Connect device (the Windows desktop app). Press `D` to pick one.
+enable_streaming = "Never"
+
+# Requires the `media-control` feature (not compiled in) and a D-Bus session.
+enable_media_control = false
+
+# Requires the `notify` feature (not compiled in; it links against libdbus).
+enable_notify = false
+
+# NOTE: deliberately no `client_id`. The bundled default is ncspot's, which is
+# registered in extended quota mode and predates Spotify's Nov 2024 Web API
+# changes. An app registered today starts in restricted quota and hits
+# 429/403 errors with missing browse data.
+
+theme = "default"
+border_type = "Rounded"
+progress_bar_type = "Line"
+
+# Refresh playback on events/commands only; polling burns API quota.
+playback_refresh_duration_in_ms = 0
+
+seek_duration_secs = 5
+page_size_in_rows = 20
+enable_relative_line_number = true
+sort_artist_albums_by_type = true
