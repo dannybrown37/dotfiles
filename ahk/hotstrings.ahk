@@ -32,9 +32,14 @@ LoadAliases()
             aliases[m1] := m2  ; Handles unquoted values
         }
     }
-    ; Load each alias in as a ,,-prefixed hotstring
+    ; Load each alias in as a ,,-prefixed hotstring, except ones that already
+    ; have their own dynamic ::,,name:: hotstring defined below -- those fetch
+    ; live data instead of typing the alias's literal command string.
+    dynamicHotstringNames := {song: true, sorn: true}
     for aliassName, aliassValue in aliases
     {
+        if (dynamicHotstringNames.HasKey(aliassName))
+            continue
         ; Create hotstring like ::,,aliasname::aliasvalue
         Hotstring("::,," . aliassName, aliassValue)
     }
@@ -134,4 +139,30 @@ LoadAliases()
 
 ::,,switchangel::
 SendRaw, await (async () => { (0, eval)(await (await fetch('https://raw.githubusercontent.com/switchangel/strudel-scripts/refs/heads/main/prebake.strudel')).text()); })();
+return
+
+; Spotify -- dynamic hotstrings, fetch live data from WSL and insert it
+; directly instead of typing a fixed string (see the exclusion list in
+; LoadAliases above). Both bash functions print only their result to stdout,
+; so the captured file content is exactly what gets inserted.
+InsertSpotifyOutput(bashFunction) {
+    outFile := "/tmp/spotify_hotstring_output.txt"
+    RunWait, % "wsl.exe bash -l -i -c ""source ~/.bashrc; " . bashFunction . " >" . outFile . """", , Hide
+    if (ErrorLevel) {
+        MsgBox, % bashFunction . " failed (exit " . ErrorLevel . ") -- is a track playing?"
+        return
+    }
+    ; Update this path if your WSL distro isn't Debian.
+    FileRead, OutputVar, \\wsl$\Debian\tmp\spotify_hotstring_output.txt
+    SendRaw, % Trim(OutputVar, "`r`n")
+}
+
+; @doc song: ,,song -- insert a service-agnostic musiclink for the currently playing track
+::,,song::
+InsertSpotifyOutput("spotify_copy_playing_link -m")
+return
+
+; @doc sorn: ,,sorn -- insert "Song On Right Now" markdown for the currently playing track
+::,,sorn::
+InsertSpotifyOutput("spotify_now_playing_markdown")
 return
