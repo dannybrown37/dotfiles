@@ -37,6 +37,19 @@ ToggleApp(criteria, runTarget := "") {
     RunWait, wsl.exe bash -l -i -c "source ~/.bashrc; spotify_player_jump",, Hide
     WinActivate, ahk_exe Code.exe
     WinWaitActive, ahk_exe Code.exe,, 2
-    Sleep, 100
-    Send, ^{U+0060}
+
+    ; Alt is still physically held here, so a bare Send would deliver
+    ; Ctrl+Alt+` and VSCode's terminal-focus binding would never fire.
+    KeyWait, s
+    KeyWait, Alt
+    Sleep, 150
+    ; Ctrl+Shift+Alt+F9 is bound to workbench.action.terminal.focus in
+    ; .vscode/keybindings.json. Ctrl+` is a *toggle*, and the tmux jump has
+    ; already made the panel visible, so it would hide it instead.
+    ; SendEvent, not SendInput: Electron drops SendInput's zero-delay
+    ; keystrokes. terminal.focus is idempotent, so the retry is harmless.
+    SetKeyDelay, 30, 30
+    SendEvent, ^+!{F9}
+    Sleep, 120
+    SendEvent, ^+!{F9}
 return

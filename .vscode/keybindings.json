@@ -15,5 +15,9 @@
     {
         "key": "alt+`",
         "command": "workbench.action.toggleMaximizedPanel"
+    },
+    {
+        "key": "ctrl+shift+alt+f9",
+        "command": "workbench.action.terminal.focus"
     }
 ]
