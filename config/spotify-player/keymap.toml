@@ -81,11 +81,18 @@ key_sequence = "g d"
 ##
 ## Sharing — CopyLink puts a Spotify URL on the clipboard, which is the input
 ## the `musiclink` alias turns into a service-agnostic song.link URL.
+## C-y targets the selected item; g Y targets whatever is currently playing.
 ##
 
-[[keymaps]]
-command = "CopyLink"
+[[actions]]
+action = "CopyLink"
 key_sequence = "C-y"
+target = "SelectedItem"
+
+[[actions]]
+action = "CopyLink"
+key_sequence = "g Y"
+target = "PlayingTrack"
 
 ##
 ## Actions on the currently playing track, rather than the selected item
