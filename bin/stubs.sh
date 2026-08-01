@@ -7,6 +7,7 @@ atuin() { command atuin "$@"; }         # @doc Shell history search/sync (replac
 cartoon() { command cartoon "$@"; }     # @doc Compress noisy CLI output for AI agents | cartoon pytest
 croc() { command croc "$@"; }           # @doc Send files between machines securely | croc send <file>
 delta() { command delta "$@"; }         # @doc Syntax-highlighting pager for git diffs (replaces less)
+docker() { command docker "$@"; }       # @doc Containers -- via Docker Desktop on the Windows host | docker-up to start it
 eza() { command eza "$@"; }             # @doc Modern ls replacement with git status and icons
 fd() { command fdfind "$@"; }           # @doc Fast find that respects .gitignore | fd <pattern>
 fzf() { command fzf "$@"; }             # @doc Interactive fuzzy finder for any list

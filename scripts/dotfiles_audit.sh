@@ -319,6 +319,18 @@ elif [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
     warn "wsl.conf systemd" "not enabled — add to /etc/wsl.conf: [boot] systemd=true"
 fi
 
+# Docker comes from Docker Desktop on the Windows host, not from an install/ script,
+# so the only thing worth auditing is whether the daemon actually answers.
+if command -v docker &>/dev/null; then
+    if DOCKER_VER=$(docker info --format '{{.ServerVersion}}' 2>/dev/null); then
+        ok "docker" "daemon reachable (server ${DOCKER_VER})"
+    else
+        warn "docker" "CLI present but daemon unreachable — run: docker-up  (diagnose: docker-doctor)"
+    fi
+elif [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
+    warn "docker" "no docker CLI — install Docker Desktop on Windows and enable WSL integration"
+fi
+
 # ── VS Code Extensions ────────────────────────────────────────────────────────
 
 section "VS Code Extensions"
