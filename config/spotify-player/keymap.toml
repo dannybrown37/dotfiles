@@ -112,3 +112,32 @@ target = "PlayingTrack"
 action = "ToggleLiked"
 key_sequence = "C-l"
 target = "PlayingTrack"
+
+##
+## Library / follow management on the selected item
+##
+
+[[actions]]
+action = "ToggleLiked"
+key_sequence = "g L"
+target = "SelectedItem"
+
+[[actions]]
+action = "AddToLibrary"
+key_sequence = "g a"
+target = "SelectedItem"
+
+[[actions]]
+action = "DeleteFromLibrary"
+key_sequence = "g x"
+target = "SelectedItem"
+
+[[actions]]
+action = "Follow"
+key_sequence = "g f"
+target = "SelectedItem"
+
+[[actions]]
+action = "Unfollow"
+key_sequence = "g u"
+target = "SelectedItem"
