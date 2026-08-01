@@ -13,6 +13,10 @@ $wslDir = Join-Path $wslDir "wsl"
 Copy-Item -Path (Join-Path $wslDir "komorebi.json") -Destination "$env:USERPROFILE\komorebi.json" -Force
 Copy-Item -Path (Join-Path $wslDir "komorebi.bar.json") -Destination "$env:USERPROFILE\komorebi.bar.json" -Force
 
+$whkdConfigDir = Join-Path $env:USERPROFILE ".config"
+New-Item -ItemType Directory -Path $whkdConfigDir -Force | Out-Null
+Copy-Item -Path (Join-Path $wslDir "whkdrc") -Destination (Join-Path $whkdConfigDir "whkdrc") -Force
+
 if (-not (Test-Path "$env:USERPROFILE\applications.json")) {
     Write-Host "applications.json not found, fetching application-specific configuration..."
     komorebic fetch-asc
