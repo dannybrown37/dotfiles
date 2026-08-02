@@ -22,9 +22,7 @@ repos:
   - repo: local
     hooks:
       - id: ruff-check
-        entry: ruff check --fix
       - id: ruff-format
-        entry: bash -c 'ruff format "$@" && git add "$@"' --
       - id: check-dirdesc
         entry: bash -c 'bash scripts/check-dirdesc.sh'
       - id: sync-readme-make
@@ -51,7 +49,10 @@ def repo(tmp_path: Path) -> Path:
 @pytest.mark.parametrize(
     ('config_text', 'expected'),
     [
-        (CONFIG_WITH_STAGING_HOOKS, ['ruff-format', 'sync-readme-make']),
+        (
+            CONFIG_WITH_STAGING_HOOKS,
+            ['ruff-check', 'ruff-format', 'sync-readme-make'],
+        ),
         ('repos:\n  - repo: local\n    hooks:\n      - id: solo\n', []),
         ('', []),
     ],
@@ -68,9 +69,11 @@ def test_staging_hook_ids_matches_the_real_repo_config() -> None:
 
     ids = staging_hook_ids(config.read_text())
 
+    # ruff-check and ruff-format now come from git-a-grip, which stages inside
+    # the hook rather than via a `git add` in this config's entry.
     assert 'ruff-format' in ids
+    assert 'ruff-check' in ids
     assert 'sync-readme-commands' in ids
-    assert 'ruff-check' not in ids
     assert 'gtd-tests' not in ids
 
 
@@ -242,7 +245,11 @@ def test_main_forwards_changed_paths_and_skips_to_pre_commit(
         'extra.py',
         'tracked.py',
     ]
-    assert seen['skip_ids'] == ['ruff-format', 'sync-readme-make']
+    assert seen['skip_ids'] == [
+        'ruff-check',
+        'ruff-format',
+        'sync-readme-make',
+    ]
 
 
 def test_main_does_not_block_when_pre_commit_is_missing(

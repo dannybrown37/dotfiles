@@ -124,6 +124,7 @@
     "toplevel",
     "Tsvg",
     "venv",
+    "Vercel",
     "virtualenv",
     "vitest",
     "wslpath",
