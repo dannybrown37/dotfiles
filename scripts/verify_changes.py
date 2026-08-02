@@ -24,6 +24,11 @@ STAGING_MARKER = 'git add'
 STATUS_PREFIX_WIDTH = 3
 RENAME_STATUSES = ('R', 'C')
 
+# Hooks that stage inside their own source rather than in a `git add` visible
+# in this config's `entry:`. Scraping the config text cannot see those, so the
+# ids have to be named here -- these come from the git-a-grip repo.
+EXTERNAL_STAGING_HOOK_IDS = frozenset({'ruff-check', 'ruff-format'})
+
 HOOK_ID_PATTERN = re.compile(r'^\s*-\s*id:\s*(\S+)')
 
 FAILURE_HEADER = (
@@ -50,6 +55,8 @@ def staging_hook_ids(config_text: str) -> list[str]:
         match = HOOK_ID_PATTERN.match(line)
         if match:
             current = match.group(1)
+            if current in EXTERNAL_STAGING_HOOK_IDS and current not in ids:
+                ids.append(current)
         elif STAGING_MARKER in line and current and current not in ids:
             ids.append(current)
     return ids
