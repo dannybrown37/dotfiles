@@ -1,6 +1,7 @@
 ## Misc. Aliases
 
 alias awsconfig='nvim ~/.aws/config'  # @doc Edit AWS config file in Neovim
+alias bl='backlog'  # @doc Alias for backlog command from skill-tree
 alias cb='tee >(~/projects/dotfiles/scripts/tmux-copy-to-clipboard.sh)' # @doc Copy stdin to clipboard. <command> | cb
 alias du='du -h | sort -h'  # @doc Disk usage sorted and human-readable
 alias epoch='epoch_timestamp'  # @doc Alias for epoch_timestamp
