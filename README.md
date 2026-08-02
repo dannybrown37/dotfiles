@@ -65,6 +65,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `atuin` | Shell history search/sync (replaces Ctrl+R) | atuin search | `bin/stubs.sh` |
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
 | `beep` | Play a beep sound (Windows only) | `config/.bash_aliases` |
+| `bl` | Alias for backlog command from skill-tree | `config/.bash_aliases` |
 | `cartoon` | Compress noisy CLI output for AI agents | cartoon pytest | `bin/stubs.sh` |
 | `cb` | Copy stdin to clipboard. <command> | cb | `config/.bash_aliases` |
 | `ccstats` | Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain | `config/.bash_aliases` |
