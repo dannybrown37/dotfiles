@@ -116,6 +116,7 @@
     "sshsystemstatus",
     "sshwslenable",
     "stdlib",
+    "SUBPATHS",
     "tempvenv",
     "tfav",
     "tfavf",

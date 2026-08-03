@@ -9,6 +9,7 @@ apt_packages=(
     asciinema
     bash-completion
     bat
+    chafa
     cowsay
     curl
     direnv

@@ -8,6 +8,7 @@ alias epoch='epoch_timestamp'  # @doc Alias for epoch_timestamp
 alias llmrules='pcat ~/projects/dotfiles/references/llm-rules.md | cb >/dev/null && echo "Copied to clipboard"' # @doc Copy LLM rules to clipboard for chatbot copy-paste
 alias llmedit='nvim ~/projects/dotfiles/references/llm-rules.md' # @doc Edit LLM rules in Neovim
 alias pcb='powershell.exe -NoProfile -Command "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard" 2>/dev/null | tr -d "\r"' # @doc Print clipboard contents
+alias shot='screenshot'  # @doc Alias for screenshot
 alias url='open_url_in_browser' # @doc Open a URL in the system browser
 alias utc='utc_timestamp'  # @doc Alias for utc_timestamp
 alias uuid='generate_random_uuid_and_put_in_clipboard'  # @doc Generate a random UUID and put it in the clipboard
@@ -25,6 +26,7 @@ alias lg='lazygit'  # @doc Open lazygit TUI
 alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 alias gitdoctor='~/projects/dotfiles/scripts/git_auth_doctor.sh'  # @doc Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir]
 alias musiclink='~/projects/dotfiles/scripts/musiclink.sh'  # @doc Convert a Spotify/YouTube/etc link to a service-agnostic song.link URL: musiclink <url>
+alias screenshot='~/projects/dotfiles/scripts/screenshot.sh'  # @doc Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest]
 alias song='spotify_copy_playing_link -m'  # @doc Copy a service-agnostic musiclink for the currently playing Spotify track: song
 alias sorn='spotify_now_playing_markdown'  # @doc Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn
 alias ccstats='uv run --project ~/projects/ccgarden ccstats'  # @doc Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain

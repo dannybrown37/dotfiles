@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Windows screenshots, from WSL. A bare invocation *takes* one; `latest`
+# prints the newest existing one's path, which is what an agent asked to
+# "look at the screenshot" needs. `pick` is the interactive escape hatch:
+# fzf over the recent ones with an inline image preview, optionally moving
+# what you select.
+set -euo pipefail
+
+_script_dir="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+
+# python3, not `uv run`: the CLI is stdlib-only, and this sits behind an
+# interactive picker where uv's resolve step is a visible pause.
+_screenshot_py() {
+    python3 "${_script_dir}/screenshot_cli.py" "$@"
+}
+
+# How many screenshots the picker offers. Enough to reach back a few days
+# without making the list unscannable.
+PICK_LIMIT="${SCREENSHOT_PICK_LIMIT:-40}"
+
+# chafa renders into plain ANSI, which survives tmux -- unlike sixel or the
+# kitty/iTerm graphics protocols, which tmux mangles or drops. Without it
+# the preview degrades to metadata rather than breaking the picker.
+_preview_command() {
+    if command -v chafa >/dev/null 2>&1; then
+        # shellcheck disable=SC2016  # fzf expands these in the preview shell
+        printf '%s' 'chafa --format=symbols --size="${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}" -- {}'
+    else
+        printf '%s' 'echo "install chafa for image previews"; ls -lh -- {}'
+    fi
+}
+
+# The key that turns a selection into a move. Enter still just prints the
+# paths -- viewing is the common case, moving the occasional one.
+readonly MOVE_KEY='ctrl-x'
+
+# Fills `pressed_key` and `selected_paths`. Both are empty when the picker
+# was cancelled, which every caller treats as "do nothing".
+pressed_key=''
+selected_paths=()
+
+_pick() {
+    local paths output
+    paths="$(_screenshot_py list -n "${PICK_LIMIT}")"
+
+    # --with-nth/-d show just the filename while the full path stays the
+    # selected value, so preview and stdout both get something usable.
+    # --expect makes fzf print the pressed key as the first line.
+    output="$(
+        fzf --prompt="${1} " \
+            --delimiter=/ \
+            --with-nth=-1 \
+            --multi \
+            --expect="${MOVE_KEY}" \
+            --header="enter: print path  ${MOVE_KEY}: move  tab: multi-select" \
+            --height=90% \
+            --reverse \
+            --preview="$(_preview_command)" \
+            --preview-window=right,60% \
+            <<<"${paths}"
+    )" || true
+
+    pressed_key=''
+    selected_paths=()
+    [[ -n "${output}" ]] || return 0
+
+    mapfile -t selected_paths <<<"${output}"
+    pressed_key="${selected_paths[0]}"
+    selected_paths=("${selected_paths[@]:1}")
+}
+
+# The destination, from the argument, then the environment, then a prompt.
+# `read -e` gives readline, so tab-completing a path works.
+_destination() {
+    local destination="${1:-${SCREENSHOT_MOVE_DEST:-}}"
+    if [[ -z "${destination}" ]]; then
+        read -r -e -p 'Move to (blank to cancel): ' destination
+    fi
+    printf '%s' "${destination}"
+}
+
+_move_selected() {
+    local destination
+    if [[ "${#selected_paths[@]}" -eq 0 ]]; then
+        echo 'Nothing selected; nothing moved.' >&2
+        return 0
+    fi
+
+    destination="$(_destination "${1:-}")"
+    if [[ -z "${destination}" ]]; then
+        echo 'No destination; nothing moved.' >&2
+        return 0
+    fi
+
+    _screenshot_py move --dest "${destination}" -- "${selected_paths[@]}"
+}
+
+# Same contract as the Python side's emit_path: print the bare path, so the
+# terminal keeps recognising it as one and ctrl-click still opens the image.
+# The pasteable quoted form goes to the clipboard instead, where quotes cost
+# nothing.
+_emit_paths() {
+    if [[ -t 1 ]] && [[ "$#" -eq 1 ]] && command -v clip.exe >/dev/null 2>&1; then
+        printf '%q' "$1" | clip.exe
+    fi
+    printf '%s\n' "$@"
+}
+
+case "${1:-}" in
+pick)
+    _pick 'screenshot'
+    if [[ "${pressed_key}" == "${MOVE_KEY}" ]]; then
+        _move_selected
+    elif [[ "${#selected_paths[@]}" -gt 0 ]]; then
+        _emit_paths "${selected_paths[@]}"
+    fi
+    ;;
+move)
+    _pick 'move'
+    _move_selected "${2:-}"
+    ;;
+*)
+    _screenshot_py "$@"
+    ;;
+esac
