@@ -7,6 +7,17 @@
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ##
+## Install the pinned Python and make it this machine's python3
+##
+
+# Pinned in .python-version, which `uv run` reads in CI and locally alike.
+# --default installs the bare `python3` shim as well, so scripts with a
+# `#!/usr/bin/env python3` shebang get the pinned interpreter rather than
+# whatever the distro happens to ship.
+python_version="$(cat "$(dirname "${BASH_SOURCE[0]}")/../.python-version")"
+uv python install --default "${python_version}"
+
+##
 ## Install global Python packages with uv tool
 ##
 

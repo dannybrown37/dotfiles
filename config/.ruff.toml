@@ -2,7 +2,11 @@
 
 line-length = 79
 show-fixes = true
-target-version = "py311"
+# Deliberately below .python-version's 3.14. These scripts run under
+# `#!/usr/bin/env python3` on machines that have not been bootstrapped yet,
+# so linting at py314 is wrong: it rewrites code into 3.14-only syntax
+# (PEP 758 bare `except A, B:`) that an older python3 cannot even parse.
+target-version = "py312"
 
 [lint]
 select = [
