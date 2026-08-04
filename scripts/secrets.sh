@@ -7,17 +7,6 @@ ROOT="$(git rev-parse --show-toplevel)"
 # The list of what to sync lives inside the store, not in this repo.
 readonly MANIFEST="manifest"
 
-# backlog_cli.py lives in the skill-tree repo, not here -- same @anchor-style
-# resolution the backlog CLI itself uses, just not manifest-driven since this
-# is an internal implementation detail rather than a synced file.
-readonly BACKLOG_SCRIPT="${SKILL_TREE_DIR:-${PROJECTS_DIR:-${HOME}/projects}/skill-tree}/skills/backlog/scripts/backlog_cli.py"
-
-# Files a straight copy would corrupt: each machine edits its own copy, so both
-# sides have to survive a sync. Order matters -- the backlog merge asks
-# backlog-complete which titles are already done, so that has to reconcile
-# first.
-readonly MERGE_PATHS=("backlog-complete" "backlog")
-
 WORK_DIR="$(mktemp -d)"
 readonly WORK_DIR
 trap 'rm -rf "${WORK_DIR}"' EXIT
@@ -39,20 +28,10 @@ read_manifest() {
     fi
 }
 
-is_merge_path() {
-    local path="$1" candidate
-    for candidate in "${MERGE_PATHS[@]}"; do
-        if [[ "${candidate}" == "${path##*/}" ]]; then
-            return 0
-        fi
-    done
-    return 1
-}
-
 # Manifest paths are relative to this repo unless they start with an @anchor,
 # which names another repo that may or may not be cloned on this machine, or
 # with ~/, which resolves under $HOME regardless of this repo -- for entries
-# that don't belong to any one repo (e.g. the shared backlog).
+# that don't belong to any one repo (e.g. a bare dotfile under $HOME).
 anchor_of() {
     local path="$1"
     [[ "${path}" == @* ]] || return 1
@@ -107,39 +86,6 @@ resolve_entry_file() {
     fi
 }
 
-# Reconcile the local file with the store's copy in place, so both directions
-# of the sync end up with the union instead of the last writer's snapshot.
-# "prefer" decides only who wins on items both sides already have; keeping it
-# tied to the direction is what stops the two machines rewriting each other's
-# ordering forever.
-merge_local_file() {
-    local file="$1" incoming="$2" prefer="$3"
-    local kind="${file##*/}" dir="${file%/*}"
-
-    command -v python3 >/dev/null ||
-        die "python3 is required to merge ${kind}"
-    [[ -f "${BACKLOG_SCRIPT}" ]] ||
-        die "backlog_cli.py not found at ${BACKLOG_SCRIPT} -- is skill-tree cloned? (see \$SKILL_TREE_DIR)"
-
-    case "${kind}" in
-    backlog-complete)
-        python3 "${BACKLOG_SCRIPT}" merge-completed \
-            --complete-path "${file}" \
-            --incoming "${incoming}"
-        ;;
-    backlog)
-        python3 "${BACKLOG_SCRIPT}" merge-backlog \
-            --backlog-path "${file}" \
-            --complete-path "${dir}/backlog-complete" \
-            --incoming "${incoming}" \
-            --prefer "${prefer}"
-        ;;
-    *)
-        die "no merge handler for ${kind}"
-        ;;
-    esac
-}
-
 save_entry() {
     local name="$1" path="$2" file
     file="$(resolve_entry_file "${path}")"
@@ -152,15 +98,6 @@ save_entry() {
     if [[ ! -f "${file}" ]]; then
         echo "  skip   $2 (missing)"
         return
-    fi
-
-    if is_merge_path "${path}"; then
-        # Overwriting here would drop whatever the other machine pushed since
-        # this one last loaded.
-        if ! pass show "${name}" >"${WORK_DIR}/incoming" 2>/dev/null; then
-            : >"${WORK_DIR}/incoming"
-        fi
-        merge_local_file "${file}" "${WORK_DIR}/incoming" local
     fi
 
     # Encryption is non-deterministic, so re-inserting unchanged content would
@@ -195,36 +132,8 @@ load_entry() {
     fi
     mkdir -p "$(dirname "${file}")"
 
-    if is_merge_path "${path}"; then
-        merge_local_file "${file}" "${tmp}" incoming
-    else
-        cp "${tmp}" "${file}"
-        echo "  loaded $2"
-    fi
-}
-
-order_entries() {
-    local -n source_lines="$1"
-    local wanted line path
-    local -a merge_lines=() plain_lines=()
-
-    for wanted in "${MERGE_PATHS[@]}"; do
-        for line in ${source_lines[@]+"${source_lines[@]}"}; do
-            path="${line#*:}"
-            if [[ "${path##*/}" == "${wanted}" ]]; then
-                merge_lines+=("${line}")
-            fi
-        done
-    done
-
-    for line in ${source_lines[@]+"${source_lines[@]}"}; do
-        if ! is_merge_path "${line#*:}"; then
-            plain_lines+=("${line}")
-        fi
-    done
-
-    printf '%s\n' ${merge_lines[@]+"${merge_lines[@]}"} \
-        ${plain_lines[@]+"${plain_lines[@]}"}
+    cp "${tmp}" "${file}"
+    echo "  loaded $2"
 }
 
 for_each_entry() {
@@ -235,6 +144,8 @@ for_each_entry() {
     # kill the subshell and leave the caller reporting a successful no-op.
     manifest_text="$(read_manifest)"
 
+    # Validated in full before anything is written, so a malformed line fails
+    # the run instead of leaving half the entries synced.
     while IFS= read -r line; do
         if [[ -z "${line}" || "${line}" == \#* ]]; then
             continue
@@ -243,14 +154,11 @@ for_each_entry() {
         entries+=("${line}")
     done <<<"${manifest_text}"
 
-    while IFS= read -r line; do
-        if [[ -z "${line}" ]]; then
-            continue
-        fi
+    for line in ${entries[@]+"${entries[@]}"}; do
         name="${line%%:*}"
         path="${line#*:}"
         "${action}" "${name}" "${path}"
-    done < <(order_entries entries)
+    done
 }
 
 # Every `pass insert` commits, so two machines that each saved have diverged
@@ -276,8 +184,8 @@ sync_pull() {
 }
 
 save_all() {
-    # Saving merges .backlog against the store, so pull first or the merge
-    # runs against a stale copy and the push is rejected anyway.
+    # Pull first, or the push at the end is rejected the moment the other
+    # machine has saved anything since this one last synced.
     sync_pull
 
     echo "Saving local files into password-store:"
