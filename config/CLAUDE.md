@@ -39,6 +39,10 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 - Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
 - For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, suggest the user run an adversarial review — never spawn one automatically, it's expensive and user-triggered only.
 
+## CI (GitHub Actions)
+
+- Never write an action version from memory — it's usually a major behind and lands a Node deprecation warning. Check the current major first (`gh api repos/<owner>/<repo>/releases/latest -q .tag_name`) and pin to it.
+
 ## Code Style (General)
 
 - Always use type hints for function parameters (all languages where available).
