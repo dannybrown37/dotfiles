@@ -157,7 +157,7 @@ check_make_wiring() {
         fail ".PHONY entry" "'${tool}' missing from .PHONY line"
     fi
 
-    # help output is what sync-readme-make.sh copies into the README, so a
+    # help output is what the embed-command hook copies into the README, so a
     # target without a help line is invisible to both `make help` and docs.
     if grep -E '^\s*@echo' "${makefile}" | grep -qE "\"[[:space:]]+${tool}[[:space:]]"; then
         pass "make help entry" "documented"

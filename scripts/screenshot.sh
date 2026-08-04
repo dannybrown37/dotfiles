@@ -95,15 +95,19 @@ _move_selected() {
     _screenshot_py move --dest "${destination}" -- "${selected_paths[@]}"
 }
 
-# Same contract as the Python side's emit_path: print the bare path, so the
-# terminal keeps recognising it as one and ctrl-click still opens the image.
-# The pasteable quoted form goes to the clipboard instead, where quotes cost
-# nothing.
+# Same contract as the Python side's emit_path: a human gets a clickable
+# Windows file:// URL (spaces and all), a pipe gets the bare WSL path that
+# every other command here takes as input. The pasteable shell-quoted form
+# goes to the clipboard, where quotes cost nothing.
 _emit_paths() {
-    if [[ -t 1 ]] && [[ "$#" -eq 1 ]] && command -v clip.exe >/dev/null 2>&1; then
+    if [[ ! -t 1 ]]; then
+        printf '%s\n' "$@"
+        return
+    fi
+    if [[ "$#" -eq 1 ]] && command -v clip.exe >/dev/null 2>&1; then
         printf '%q' "$1" | clip.exe
     fi
-    printf '%s\n' "$@"
+    _screenshot_py uri -- "$@"
 }
 
 case "${1:-}" in
