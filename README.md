@@ -132,6 +132,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
+| `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `shot` | Alias for screenshot | `config/.bash_aliases` |
