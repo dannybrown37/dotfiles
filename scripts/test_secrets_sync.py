@@ -1,4 +1,4 @@
-"""Integration tests for the merge wiring in scripts/secrets.sh.
+"""Integration tests for the sync wiring in scripts/secrets.sh.
 
 `pass` is stubbed with a script backed by a plain directory, so nothing here
 touches the real password-store.
@@ -42,73 +42,6 @@ git)
 esac
 """
 
-# A minimal stand-in for skill-tree's backlog_cli.py -- title-only, synthetic
-# bodies, deterministic ordering. It exists to test that secrets.sh resolves
-# the right script, passes the right paths, and reconciles backlog-complete
-# before backlog -- not to re-verify real merge semantics, which are
-# skill-tree's own test suite's job (backlog_cli.py moved there wholesale,
-# unchanged).
-STUB_BACKLOG_CLI = """#!/usr/bin/env python3
-import sys
-from pathlib import Path
-
-
-def parse_args(argv):
-    args = {}
-    it = iter(argv)
-    for tok in it:
-        if tok.startswith('--'):
-            args[tok] = next(it, '')
-    return args
-
-
-def titles(text):
-    seen, ordered = set(), []
-    for line in text.splitlines():
-        if line.startswith('## '):
-            title = line.removeprefix('## ').strip()
-            if title not in seen:
-                seen.add(title)
-                ordered.append(title)
-    return ordered
-
-
-def read(path):
-    p = Path(path) if path else None
-    return p.read_text() if p and p.exists() else ''
-
-
-def render(header, all_titles):
-    body = ''.join(f'## {t}\\n\\nstub body.\\n\\n' for t in all_titles)
-    return f'{header}\\n\\n{body}'
-
-
-def main():
-    action = sys.argv[1]
-    args = parse_args(sys.argv[2:])
-
-    if action == 'merge-backlog':
-        local = titles(read(args['--backlog-path']))
-        incoming = titles(read(args['--incoming']))
-        tombstones = set(titles(read(args['--complete-path'])))
-        merged = [t for t in local if t not in tombstones]
-        merged += [
-            t for t in incoming if t not in tombstones and t not in merged
-        ]
-        Path(args['--backlog-path']).write_text(render('# Backlog', merged))
-        print(f'  merged backlog ({len(merged)} open)')
-    elif action == 'merge-completed':
-        local = titles(read(args['--complete-path']))
-        incoming = titles(read(args['--incoming']))
-        merged = local + [t for t in incoming if t not in local]
-        Path(args['--complete-path']).write_text(render('# Completed', merged))
-        print(f'  merged backlog-complete ({len(merged)} completed)')
-
-
-if __name__ == '__main__':
-    main()
-"""
-
 # Real `pass` commits every insert, so the store is a working tree too.
 GIT_ENV = {
     'GIT_AUTHOR_NAME': 'Test',
@@ -120,14 +53,9 @@ GIT_ENV = {
     'GIT_CONFIG_SYSTEM': os.devnull,
 }
 
-# The backlog lives outside every repo now, so its manifest entries are
-# home-relative. backlog-complete deliberately precedes backlog: the
-# tombstones have to be reconciled first regardless of what order the
-# manifest lists them in.
-MANIFEST = (
-    'backlog/active:~/.claude/backlog/backlog\n'
-    'backlog/complete:~/.claude/backlog/backlog-complete\n'
-)
+# A plain repo-relative entry, so tests that only care about some *other*
+# manifest form still have something ordinary syncing alongside it.
+BASELINE_ENTRY = 'some/token:.token\n'
 
 
 class SyncHarness:
@@ -142,11 +70,6 @@ class SyncHarness:
         self.bin = root / 'bin'
         self.projects = root / 'projects'
         self.home = root / 'home'
-        self.backlog = self.home / '.claude' / 'backlog' / 'backlog'
-        self.complete = self.home / '.claude' / 'backlog' / 'backlog-complete'
-        # Under $PROJECTS_DIR, so secrets.sh finds it via the same
-        # ${SKILL_TREE_DIR:-${PROJECTS_DIR}/skill-tree} fallback as production.
-        self.skill_tree = self.projects / 'skill-tree'
 
     def run(
         self,
@@ -208,32 +131,14 @@ def harness(tmp_path: Path) -> SyncHarness:
 
     setup.store.mkdir()
     setup.bin.mkdir()
-    setup.backlog.parent.mkdir(parents=True)
+    setup.home.mkdir()
     fake_pass = setup.bin / 'pass'
     fake_pass.write_text(STUB_SCRIPT)
     fake_pass.chmod(0o755)
 
     setup.projects.mkdir()
-    backlog_scripts = setup.skill_tree / 'skills' / 'backlog' / 'scripts'
-    backlog_scripts.mkdir(parents=True)
-    stub = backlog_scripts / 'backlog_cli.py'
-    stub.write_text(STUB_BACKLOG_CLI)
-    stub.chmod(0o755)
-    setup.write_store_entry('manifest', MANIFEST)
+    setup.write_store_entry('manifest', BASELINE_ENTRY)
     return setup
-
-
-def _backlog(*titles: str) -> str:
-    sections = ''.join(f'## {t}\n\n{t} body.\n\n' for t in titles)
-    return f'# Backlog\n\n{sections}'
-
-
-def _titles(backlog_text: str) -> list[str]:
-    return [
-        line.removeprefix('## ').strip()
-        for line in backlog_text.splitlines()
-        if line.startswith('## ')
-    ]
 
 
 def _git(cwd: Path, *args: str) -> None:
@@ -309,30 +214,33 @@ def test_load_surfaces_the_entry_the_other_machine_pushed(
 ) -> None:
     """A pull that never lands is the symptom the user actually sees."""
     remote = _git_backed_store(harness)
+    # The manifest entry itself is new here, so the load can only find it if
+    # the pull actually landed before the manifest was read.
     _other_machine_pushes(
         harness,
         remote,
         'manifest',
-        MANIFEST + 'some/token:.token\n',
+        BASELINE_ENTRY + 'some/newer:.newer\n',
     )
-    _other_machine_pushes(harness, remote, 'some/token', 'newest-value\n')
+    _other_machine_pushes(harness, remote, 'some/newer', 'newest-value\n')
     harness.write_store_entry('some/other', 'from-here\n')
     _commit_store(harness, 'local work')
 
     harness.run('load')
 
-    assert (harness.repo / '.token').read_text() == 'newest-value\n'
+    assert (harness.repo / '.newer').read_text() == 'newest-value\n'
 
 
 def test_save_pulls_before_pushing(harness: SyncHarness) -> None:
     """Otherwise the push is rejected the moment the stores diverge."""
     remote = _git_backed_store(harness)
-    _other_machine_pushes(harness, remote, 'some/token', 'from-there\n')
-    harness.backlog.write_text(_backlog('Added Here'))
+    _other_machine_pushes(harness, remote, 'some/other', 'from-there\n')
+    (harness.repo / '.token').write_text('from-here\n')
 
     harness.run('save')
 
-    assert harness.store_entry('some/token') == 'from-there\n'
+    assert harness.store_entry('some/other') == 'from-there\n'
+    assert harness.store_entry('some/token') == 'from-here\n'
 
 
 def test_conflicting_pull_fails_loudly_and_leaves_store_usable(
@@ -351,88 +259,7 @@ def test_conflicting_pull_fails_loudly_and_leaves_store_usable(
     assert not _rebase_in_progress(harness.store)
 
 
-def test_load_keeps_local_items_the_store_has_not_seen(
-    harness: SyncHarness,
-) -> None:
-    """The reported bug: a load used to replace .backlog outright."""
-    harness.backlog.write_text(_backlog('Added Here'))
-    harness.write_store_entry('backlog/active', _backlog('Added There'))
-
-    harness.run('load')
-
-    assert _titles(harness.backlog.read_text()) == [
-        'Added Here',
-        'Added There',
-    ]
-
-
-def test_save_keeps_items_the_other_machine_pushed(
-    harness: SyncHarness,
-) -> None:
-    harness.backlog.write_text(_backlog('Added Here'))
-    harness.write_store_entry('backlog/active', _backlog('Added There'))
-
-    harness.run('save')
-
-    assert _titles(harness.store_entry('backlog/active')) == [
-        'Added Here',
-        'Added There',
-    ]
-
-
-def test_load_drops_items_completed_on_the_other_machine(
-    harness: SyncHarness,
-) -> None:
-    """backlog-complete reconciles before backlog, not manifest order."""
-    harness.backlog.write_text(_backlog('Keep', 'Done There'))
-    harness.complete.write_text('# Completed\n\n')
-    harness.write_store_entry('backlog/active', _backlog('Keep'))
-    harness.write_store_entry(
-        'backlog/complete',
-        '# Completed\n\n## Done There\n- Completed: 2026-01-01 01:00:00\n\n'
-        'body\n\n---\n',
-    )
-
-    harness.run('load')
-
-    assert _titles(harness.backlog.read_text()) == ['Keep']
-    assert 'Done There' in harness.complete.read_text()
-
-
-def test_repeated_sync_stops_rewriting_the_store(
-    harness: SyncHarness,
-) -> None:
-    """Order churn would mean a new encrypted blob on every single push."""
-    harness.backlog.write_text(_backlog('Added Here'))
-    harness.write_store_entry('backlog/active', _backlog('Added There'))
-
-    harness.run('save')
-    settled = harness.store_entry('backlog/active')
-
-    harness.run('load')
-    harness.run('save')
-
-    assert harness.store_entry('backlog/active') == settled
-    assert harness.backlog.read_text() == settled
-
-
-def test_missing_skill_tree_fails_loudly_not_with_a_python_traceback(
-    harness: SyncHarness,
-) -> None:
-    shutil.rmtree(harness.skill_tree)
-    harness.backlog.write_text(_backlog('Added Here'))
-    harness.write_store_entry('backlog/active', _backlog('Added There'))
-
-    result = harness.run('load', check=False)
-
-    assert result.returncode != 0
-    assert 'skill-tree' in result.stderr.lower()
-
-
-def test_non_merge_entries_are_still_copied_verbatim(
-    harness: SyncHarness,
-) -> None:
-    harness.write_store_entry('manifest', MANIFEST + 'some/token:.token\n')
+def test_entries_are_copied_verbatim(harness: SyncHarness) -> None:
     harness.write_store_entry('some/token', 'secret-value\n')
 
     harness.run('load')
@@ -440,13 +267,38 @@ def test_non_merge_entries_are_still_copied_verbatim(
     assert (harness.repo / '.token').read_text() == 'secret-value\n'
 
 
+def test_load_overwrites_local_but_leaves_a_backup(
+    harness: SyncHarness,
+) -> None:
+    """The store wins on load, so the displaced copy has to be recoverable."""
+    (harness.repo / '.token').write_text('from-here\n')
+    harness.write_store_entry('some/token', 'from-there\n')
+
+    harness.run('load')
+
+    assert (harness.repo / '.token').read_text() == 'from-there\n'
+    assert (harness.repo / '.token.bak').read_text() == 'from-here\n'
+
+
+def test_repeated_sync_stops_rewriting_the_store(
+    harness: SyncHarness,
+) -> None:
+    """Re-encrypting unchanged content means a commit on every single push."""
+    (harness.repo / '.token').write_text('unchanged\n')
+
+    harness.run('save')
+    result = harness.run('save')
+
+    assert '  same   .token' in result.stdout
+
+
 def test_home_path_resolves_under_home_regardless_of_repo(
     harness: SyncHarness,
 ) -> None:
-    """Not just the backlog -- any ~/-prefixed entry escapes the repo root."""
+    """A ~/-prefixed entry escapes the repo root entirely."""
     harness.write_store_entry(
         'manifest',
-        MANIFEST + 'some/dotfile:~/.some-dotfile\n',
+        BASELINE_ENTRY + 'some/dotfile:~/.some-dotfile\n',
     )
     harness.write_store_entry('some/dotfile', 'from-store\n')
 
@@ -462,7 +314,7 @@ def test_home_path_saves_from_home_regardless_of_repo(
     (harness.home / '.some-dotfile').write_text('from-disk\n')
     harness.write_store_entry(
         'manifest',
-        MANIFEST + 'some/dotfile:~/.some-dotfile\n',
+        BASELINE_ENTRY + 'some/dotfile:~/.some-dotfile\n',
     )
 
     harness.run('save')
@@ -477,7 +329,7 @@ def test_malformed_home_path_fails_loudly(
 ) -> None:
     harness.write_store_entry(
         'manifest',
-        MANIFEST + f'some/dotfile:{malformed}\n',
+        BASELINE_ENTRY + f'some/dotfile:{malformed}\n',
     )
 
     result = harness.run('load', check=False)
@@ -486,7 +338,7 @@ def test_malformed_home_path_fails_loudly(
     assert 'home path' in result.stderr.lower()
 
 
-ANCHORED_MANIFEST = MANIFEST + 'app/env:@sibling/.env\n'
+ANCHORED_MANIFEST = BASELINE_ENTRY + 'app/env:@sibling/.env\n'
 
 
 def test_anchored_path_loads_into_the_sibling_repo(
@@ -545,16 +397,17 @@ def test_uninstalled_anchor_is_skipped_not_written(
     extra_env: dict[str, str],
 ) -> None:
     """A machine missing that repo must sync everything else and say so."""
-    harness.backlog.write_text(_backlog('Untouched'))
+    (harness.repo / '.token').write_text('untouched\n')
     harness.write_store_entry('manifest', ANCHORED_MANIFEST)
     harness.write_store_entry('app/env', 'TOKEN=from-store\n')
+    harness.write_store_entry('some/token', 'untouched\n')
 
     result = harness.run(action, extra_env=extra_env)
 
     assert 'not installed' in result.stdout
     assert not (harness.repo / 'sibling').exists()
     assert not (harness.repo / '@sibling').exists()
-    assert _titles(harness.backlog.read_text()) == ['Untouched']
+    assert (harness.repo / '.token').read_text() == 'untouched\n'
 
 
 def test_installed_anchor_with_no_file_reports_missing(
@@ -572,26 +425,12 @@ def test_installed_anchor_with_no_file_reports_missing(
 
 def test_malformed_anchor_fails_loudly(harness: SyncHarness) -> None:
     harness.install_sibling('sibling')
-    harness.write_store_entry('manifest', MANIFEST + 'app/env:@sibling\n')
+    harness.write_store_entry(
+        'manifest',
+        BASELINE_ENTRY + 'app/env:@sibling\n',
+    )
 
     result = harness.run('load', check=False)
 
     assert result.returncode != 0
     assert 'anchor' in result.stderr.lower()
-
-
-def test_anchored_merge_path_merges_in_place(harness: SyncHarness) -> None:
-    """Merge handlers must use the resolved path, not the dotfiles root."""
-    sibling = harness.install_sibling('sibling')
-    (sibling / 'backlog').write_text(_backlog('Added Here'))
-    (sibling / 'backlog-complete').write_text('# Completed\n\n')
-    harness.write_store_entry('manifest', 'app/backlog:@sibling/backlog\n')
-    harness.write_store_entry('app/backlog', _backlog('Added There'))
-
-    harness.run('load')
-
-    assert _titles((sibling / 'backlog').read_text()) == [
-        'Added Here',
-        'Added There',
-    ]
-    assert not (harness.repo / 'backlog').exists()

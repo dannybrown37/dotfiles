@@ -201,7 +201,7 @@ too. Paths resolve three ways:
 | --- | --- |
 | `some/path` | relative to this repo's root |
 | `@repo/some/path` | inside another repo, wherever that repo is cloned |
-| `~/some/path` | relative to `$HOME`, regardless of this repo — e.g. the shared `/backlog` |
+| `~/some/path` | relative to `$HOME`, regardless of this repo — e.g. a bare dotfile |
 
 The `@repo` anchor exists because not every synced file belongs to this repo, and a sibling
 repo isn't at a fixed path on every machine. It resolves in order: `$REPO_HOME` (the anchor
@@ -218,12 +218,17 @@ this machine, the second means it is but the file isn't there. An `@` path with 
 `~` not followed by `/`, is malformed and fails the whole run rather than being silently
 skipped.
 
+Every entry is copied whole, in both directions — nothing is merged line by line. A `load`
+therefore overwrites the local file with the store's copy, saving the displaced version
+alongside it as `<file>.bak` first. Keep a file out of the manifest if both machines edit it
+independently and you'd want both sets of edits back.
+
 **Automatic sync:** `make bash` sets `core.hooksPath` to the tracked `githooks/` dir. From then
 on a plain `git push` here runs `secrets-save` first (encrypt changed files, push the store) and
 a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so an
-ordinary push or pull in this repo is enough to carry every synced file (the backlog included) to
-the other machine, with no separate `secrets-save`/`secrets-load` call needed. Unchanged entries
-are skipped so the store doesn't collect a commit per push. If the store errors, the hook warns
+ordinary push or pull in this repo is enough to carry every synced file to the other machine,
+with no separate `secrets-save`/`secrets-load` call needed. Unchanged entries are skipped so
+the store doesn't collect a commit per push. If the store errors, the hook warns
 but never blocks the dotfiles push/pull.
 
 **New machine setup:** `make bash` clones the store if `~/.password-store` doesn't exist yet —

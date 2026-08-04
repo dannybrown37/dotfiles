@@ -17,7 +17,6 @@ Read these references before writing code in the following domains:
 - Read directly when writing TypeScript/JavaScript/Node code: `.claude/references/node-style.md`
 - Read directly when writing Python code: `.claude/references/python-style.md`
 - Read directly for this repo's (`dotfiles`) layout, conventions, pre-commit hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
-- Read directly when a backlog sync looks wrong (items reappearing, completions not sticking, stale `[in-progress]` markers): `skill-tree`'s `skills/backlog/references/backlog-sync-model.md` — it documents this repo's `secrets.sh` merge mechanism, just lives alongside the backlog skill it's about.
 
 ## Model Delegation
 
