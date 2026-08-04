@@ -3,6 +3,13 @@
   "bar_configurations": ["$Env:USERPROFILE/komorebi.bar.json"],
   "app_specific_configuration_path": "$Env:USERPROFILE/applications.json",
   "window_hiding_behaviour": "Cloak",
+  "ignore_rules": [
+    {
+      "kind": "Title",
+      "id": "WSL Quick Run",
+      "matching_strategy": "Equals"
+    }
+  ],
   "cross_monitor_move_behaviour": "Insert",
   "default_workspace_padding": 0,
   "default_container_padding": 1,
