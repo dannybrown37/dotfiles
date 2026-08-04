@@ -2,6 +2,7 @@
 
 import os
 import pty
+import shlex
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -405,6 +406,79 @@ class TestOpenInWindows:
             screenshot_cli.open_in_windows(shot, runner=runner)
 
 
+class TestDisplayPath:
+    """`wslpath` is stubbed; only our handling of it is under test."""
+
+    def stub_wslpath(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        translated: str,
+        *,
+        returncode: int = 0,
+    ) -> None:
+        monkeypatch.setattr(
+            screenshot_cli.shutil,
+            'which',
+            lambda name: '/usr/bin/wslpath' if name == 'wslpath' else None,
+        )
+        monkeypatch.setattr(
+            screenshot_cli,
+            'run_command',
+            lambda command: subprocess.CompletedProcess(
+                list(command),
+                returncode,
+                translated,
+                '',
+            ),
+        )
+
+    def test_drive_path_becomes_an_encoded_file_url(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Regression: an unencoded path linkifies only up to its first space.
+
+        Windows names every screenshot with two spaces in it, so the plain
+        `C:\\...` form left the clickable region a fragment of the path.
+        """
+        self.stub_wslpath(
+            monkeypatch,
+            r'C:\Users\me\Pictures\Screenshot 2026-08-02 221305.png',
+        )
+
+        assert screenshot_cli.display_path(Path('/mnt/c/whatever')) == (
+            'file:///C:/Users/me/Pictures/Screenshot%202026-08-02%20221305.png'
+        )
+
+    def test_unc_path_keeps_its_authority(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A WSL-side file translates to `\\\\wsl.localhost\\...`."""
+        self.stub_wslpath(monkeypatch, r'\\wsl.localhost\Ubuntu\home\me\a.png')
+
+        assert screenshot_cli.display_path(Path('/home/me/a.png')) == (
+            'file://wsl.localhost/Ubuntu/home/me/a.png'
+        )
+
+    def test_no_wslpath_means_no_windows_path(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Off WSL there is no Windows path, and that isn't an error."""
+        monkeypatch.setattr(screenshot_cli.shutil, 'which', lambda _: None)
+
+        assert screenshot_cli.display_path(Path('/home/me/a.png')) is None
+
+    def test_failed_translation_means_no_windows_path(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self.stub_wslpath(monkeypatch, '', returncode=1)
+
+        assert screenshot_cli.display_path(Path('/home/me/a.png')) is None
+
+
 class TestFreeDestination:
     def test_unused_name_is_returned_unchanged(self, tmp_path: Path) -> None:
         target = tmp_path / 'shot.png'
@@ -520,29 +594,65 @@ class TestCli:
             tmp_path / 'Screenshot 2026-08-02 221305.png',
         )
 
-    def test_terminal_output_is_also_unquoted(self, tmp_path: Path) -> None:
-        """Regression: quoting a path stops a terminal linkifying it.
-
-        Wrapping the path in quotes for the human made it unclickable,
-        which defeats the point -- the clipboard carries the quoted form.
-        """
-        name = 'Screenshot 2026-08-02 221305.png'
-        make_image(tmp_path, name, 1_000)
+    def print_to_a_terminal(self, *args: str, env: dict[str, str]) -> str:
         primary, secondary = pty.openpty()
-
         try:
             subprocess.run(  # noqa: S603
-                [sys.executable, str(CLI), 'latest'],
+                [sys.executable, str(CLI), *args],
                 stdout=secondary,
                 stderr=subprocess.DEVNULL,
-                # No clip.exe on this PATH, so the clipboard is left alone.
-                env={'SCREENSHOT_DIR': str(tmp_path), 'PATH': '/usr/bin:/bin'},
+                env=env,
                 check=True,
             )
             os.close(secondary)
-            printed = os.read(primary, 4096).decode()
+            return os.read(primary, 4096).decode()
         finally:
             os.close(primary)
+
+    def fake_wslpath(self, tmp_path: Path, translated: str) -> Path:
+        """A `wslpath` stub, plus the bin directory to put on PATH."""
+        bin_dir = tmp_path / 'bin'
+        bin_dir.mkdir()
+        stub = bin_dir / 'wslpath'
+        stub.write_text(
+            f'#!/bin/sh\nprintf "%s\\n" {shlex.quote(translated)}\n',
+        )
+        stub.chmod(0o755)
+        return bin_dir
+
+    def test_terminal_output_is_a_clickable_windows_url(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Regression: a bare `/mnt/c` path isn't clickable *in Windows*."""
+        shots = tmp_path / 'shots'
+        name = 'Screenshot 2026-08-02 221305.png'
+        make_image(shots, name, 1_000)
+        bin_dir = self.fake_wslpath(tmp_path, r'C:\Pictures\Screen shot.png')
+
+        printed = self.print_to_a_terminal(
+            'latest',
+            # No clip.exe on this PATH, so the clipboard is left alone.
+            env={
+                'SCREENSHOT_DIR': str(shots),
+                'PATH': f'{bin_dir}:/usr/bin:/bin',
+            },
+        )
+
+        assert printed.strip() == 'file:///C:/Pictures/Screen%20shot.png'
+
+    def test_terminal_output_falls_back_to_the_wsl_path(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Without wslpath there's nothing to translate to -- still print."""
+        name = 'Screenshot 2026-08-02 221305.png'
+        make_image(tmp_path, name, 1_000)
+
+        printed = self.print_to_a_terminal(
+            'latest',
+            env={'SCREENSHOT_DIR': str(tmp_path), 'PATH': str(tmp_path)},
+        )
 
         assert printed.strip() == str(tmp_path / name)
 

@@ -2,7 +2,7 @@ repos:
   # ruff and pytest live in git-a-grip so every repo shares one copy, rather
   # than each keeping its own `bash -c '... && git add "$@"'` wrapper.
   - repo: https://github.com/dannybrown37/git-a-grip
-    rev: v0.2.0
+    rev: v0.6.0
     hooks:
       - id: ruff-check
         args: [--config, config/.ruff.toml]
@@ -11,6 +11,13 @@ repos:
       - id: pytest
         args: ['--runner=uv run --with pytest pytest', scripts/, -q]
         files: ^scripts/.*\.py$
+      # Replaces scripts/sync-readme-make.sh. The hook ships always_run,
+      # which would shell out to make on every commit; the help text is
+      # written entirely in the Makefile, so scope it to that and the README.
+      - id: embed-command
+        args: ['--marker=make', '--command=make --no-print-directory help']
+        always_run: false
+        files: ^(Makefile|README\.md)$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -65,11 +72,4 @@ repos:
         entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bash scripts/check-privacy-terms.sh'
         language: system
         always_run: true
-        pass_filenames: false
-
-      - id: sync-readme-make
-        name: Sync README make output
-        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bash scripts/sync-readme-make.sh && git add README.md'
-        language: system
-        files: (Makefile|README\.md)$
         pass_filenames: false

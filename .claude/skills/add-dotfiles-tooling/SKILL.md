@@ -16,7 +16,7 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
    cleanup, install, confirm, optional config symlink.
 2. Add a Make target in `Makefile` wired to that script.
 3. Add a `@echo` line for it under the right heading in the `help` target — this is what
-   `sync-readme-make.sh` copies into the README, so a target without one is invisible.
+   the `embed-command` hook copies into the README, so a target without one is invisible.
 4. If the tool needs shell aliases/functions, add them to `config/.bash_aliases` or a new file in `bin/`.
 5. Update the `.PHONY` list in `Makefile`.
 6. Add a passthrough stub to `bin/stubs.sh` so the tool appears in `cmds` with documentation (see below).

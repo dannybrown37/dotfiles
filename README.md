@@ -14,7 +14,9 @@ curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/thi
 
 The output of `make` in the root directory:
 
-```txt
+<!-- make:start -->
+
+```
 Usage: make [option]
 
 Start Here:
@@ -50,6 +52,8 @@ My Projects:
   gtd             Clone gtd and install it with uv
   ccgarden        Clone ccgarden and install it with uv
 ```
+
+<!-- make:end -->
 
 ## Commands Available
 

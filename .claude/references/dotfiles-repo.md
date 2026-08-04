@@ -34,7 +34,7 @@ Managed via `.pre-commit-config.yaml`. Active hooks:
 
 - **shfmt** — shell formatting (4-space indent)
 - **ruff check + format** — Python linting and formatting
-- **sync-readme-make** — keeps README install options in sync with `make help` output
+- **embed-command** (git-a-grip) — keeps README install options in sync with `make help` output
 - Standard pre-commit-hooks (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
 
 ## Shell Startup Performance

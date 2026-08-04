@@ -27,7 +27,11 @@ RENAME_STATUSES = ('R', 'C')
 # Hooks that stage inside their own source rather than in a `git add` visible
 # in this config's `entry:`. Scraping the config text cannot see those, so the
 # ids have to be named here -- these come from the git-a-grip repo.
-EXTERNAL_STAGING_HOOK_IDS = frozenset({'ruff-check', 'ruff-format'})
+EXTERNAL_STAGING_HOOK_IDS = frozenset(
+    # git-a-grip hooks re-stage from Python rather than a `git add` in the
+    # entry, so the marker scan below cannot see them.
+    {'ruff-check', 'ruff-format', 'embed-command'},
+)
 
 HOOK_ID_PATTERN = re.compile(r'^\s*-\s*id:\s*(\S+)')
 
