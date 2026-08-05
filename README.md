@@ -34,6 +34,7 @@ Developer Tools:
   lazygit         Install lazygit TUI git client
   cartoon         Install cartoon CLI (pinned version, no hook)
   spotify         Install spotify_player TUI (remote control, no audio)
+  terraform       Install Terraform (latest release)
   vscode          Install VS Code extensions and settings
 
 Environment-Specific:
@@ -143,6 +144,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `sorn` | ,,sorn -- insert "Song On Right Now" markdown for the currently playing track | `ahk/hotstrings.ahk` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
 | `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
+| `terraform` | Provision infrastructure as code | terraform plan | `bin/stubs.sh` |
 | `tldr` | Simplified man pages with practical examples | tldr <cmd> | `bin/stubs.sh` |
 | `tmconf` | Reload tmux config | `config/.bash_aliases` |
 | `tms` | Start or attach to tmux Session | `config/.bash_aliases` |

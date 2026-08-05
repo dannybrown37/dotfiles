@@ -30,6 +30,7 @@ lazygit() { command lazygit "$@"; }     # @doc TUI git client | lg (alias)
 pass() { command pass "$@"; }           # @doc Password store -- manage secrets via GPG | pass show <name>
 rg() { command rg "$@"; }               # @doc Fast regex search across files (ripgrep) | rg <pattern>
 starship() { command starship "$@"; }   # @doc Cross-shell prompt with git/lang context
+terraform() { command terraform "$@"; } # @doc Provision infrastructure as code | terraform plan
 tldr() { command tldr "$@"; }           # @doc Simplified man pages with practical examples | tldr <cmd>
 tmux() { command tmux "$@"; }           # @doc Terminal multiplexer -- sessions, windows, panes
 tokei() { command tokei "$@"; }         # @doc Count lines of code by language in current repo

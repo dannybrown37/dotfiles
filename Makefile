@@ -1,4 +1,4 @@
-.PHONY: help python deno node golang rust vscode gnome select-nerdfont komo wsl-fonts secrets-save secrets-load lazygit bash nvim cartoon spotify skill-tree gtd ccgarden projects
+.PHONY: help python deno node golang rust vscode gnome select-nerdfont komo wsl-fonts secrets-save secrets-load lazygit bash nvim cartoon spotify terraform skill-tree gtd ccgarden projects
 
 help:
 	@echo "Usage: make [option]"
@@ -18,6 +18,7 @@ help:
 	@echo "  lazygit         Install lazygit TUI git client"
 	@echo "  cartoon         Install cartoon CLI (pinned version, no hook)"
 	@echo "  spotify         Install spotify_player TUI (remote control, no audio)"
+	@echo "  terraform       Install Terraform (latest release)"
 	@echo "  vscode          Install VS Code extensions and settings"
 	@echo ""
 	@echo "Environment-Specific:"
@@ -72,6 +73,9 @@ cartoon:
 
 spotify:
 	bash -c ". $(root_dir)/install/spotify-player.sh"
+
+terraform:
+	bash -c ". $(root_dir)/install/terraform.sh"
 
 vscode:
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
