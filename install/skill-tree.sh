@@ -14,4 +14,4 @@ else
     echo "skill-tree already cloned at ${repo_dir}"
 fi
 
-"${repo_dir}/skills/backlog/scripts/install.sh"
+"${repo_dir}/scripts/install.sh"
