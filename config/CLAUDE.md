@@ -12,26 +12,11 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 
 ## Communication Style
 
-- When reporting information to me, be as concise as possible. Sacrifice grammar for the sake of concision.
+- Important: When reporting information to me, be as concise as possible. Sacrifice grammar for the sake of concision. Prefer bullet points over long paragraphs. Do not sacrifice accuracy.
 - Very few to no comments in generated code unless explicitly requested. Comments should be "why", not "what". i.e., if a comment is needed to explain what the code does, the code should be rewritten to be more readable instead.
-- Don't restate questions. Don't apologize. Match my mood.
-- Admit when you don't know. Cite sources if uncertain.
 - If multiple approaches exist, briefly state which and why to choose, then list alternatives.
 - Cite sources. Provide links to visualizations that can't be displayed in a TUI.
-- Don't ask bait questions. Only ask if you genuinely need more information.
 - Always show the diff as you make changes to my code.
-
-## Model Delegation
-
-- For a sub-task that's mechanical and fully specified (rename across files, run-and-report, known-pattern lookup, template-driven boilerplate), delegate it to a cheap/fast subagent instead of doing it inline.
-- Keep judgment calls, multi-file architectural reasoning, and anything the user is actively iterating on in the main session.
-- This is a difficulty-based heuristic, not a task-type one.
-
-## Multi-Agent & Agentic Patterns
-
-- Default to inline execution. Delegate to a fresh `Agent` only for genuinely independent work (research, a second opinion, a specialized agent); use `fork` when the sub-task shares current context but its raw tool output (large greps, file dumps) isn't worth keeping around.
-- Batch independent tool calls (e.g. `git status`/`diff`/`log` at review start) in one message; keep dependent calls sequential.
-- For long-running or async work, prefer `run_in_background` + `Monitor` over sleep-polling, and don't fabricate a fork/background result before its notification actually arrives.
 
 ## Code Review
 
@@ -43,6 +28,11 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 
 - Never write an action version from memory — it's usually a major behind and lands a Node deprecation warning. Check the current major first (`gh api repos/<owner>/<repo>/releases/latest -q .tag_name`) and pin to it.
 
+## CLIs
+
+- Every versioned CLI must expose `--version` — prints the version, exits 0, works with no config and no credentials.
+- Before writing or extending any command-line entrypoint a human runs, invoke the `skill-tree:cli-ergonomics` skill.
+
 ## Code Style (General)
 
 - Always use type hints for function parameters (all languages where available).
@@ -52,10 +42,11 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 ## Documentation
 
 - When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update the relevant `SKILL.md` / `CLAUDE.md` / `README.md` to match. Look for outdated framework names, dependency lists, API signatures, and file structure.
+- When planning, make many diagrams to help reading humans understand program flow. These can be either mermaid or a full-on HTML-based plan document.
 
 ## Security
 
-- Keep a privacy-first mindset.
+- Keep a privacy-first mindset, don't include PII.
 - Never hardcode secrets, tokens, or credentials. Use environment variables or a secrets manager.
 - Never `eval` or dynamically execute user-supplied input.
 - Validate and sanitize all external input at system boundaries (API inputs, CLI args, file reads).

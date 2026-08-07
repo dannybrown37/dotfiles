@@ -54,6 +54,7 @@
     "hyperupcall",
     "ignoreboth",
     "inputrc",
+    "isatty",
     "jless",
     "jsonout",
     "jstest",
@@ -214,5 +215,11 @@
     "**/.forgejo/workflows/*.yml",
     "**/.forgejo/workflows/*.yaml"
   ],
-  "workbench.iconTheme": "eq-material-theme-icons-deepforest"
+  "workbench.iconTheme": "eq-material-theme-icons-deepforest",
+  "github.copilot.enable": {
+    "*": false,
+    "plaintext": false,
+    "markdown": false,
+    "scminput": false
+  }
 }
