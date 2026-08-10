@@ -21,5 +21,8 @@
         "worktree",
         "worktrees",
         "xclip"
-    ]
+    ],
+    "files.associations": {
+        "pyproject.toml": "toml"
+    }
 }
