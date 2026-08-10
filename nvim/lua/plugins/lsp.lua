@@ -74,7 +74,7 @@ return -- LSP Configuration & Plugins
 			end)(),
 		})
 		require("lspconfig").taplo.setup({ capabilities = capabilities })
-		require("lspconfig").ruff_lsp.setup({ capabilities = capabilities })
+		require("lspconfig").ruff.setup({ capabilities = capabilities })
 
 		local servers = {
 			pyright = {},
