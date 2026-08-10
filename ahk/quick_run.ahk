@@ -22,7 +22,8 @@ global QuickRunTitle := "WSL Quick Run ahk_exe WindowsTerminal.exe"
 
     if (!windowHandleId) {
         DetectHiddenWindows, Off
-        Run, wt.exe -w quickrun --title "WSL Quick Run" wsl.exe -- bash -lic "tmux new-session -A -s quickrun"
+        shell := ComObjCreate("WScript.Shell")
+        shell.Run("wt.exe -w quickrun --title ""WSL Quick Run"" wsl.exe -- bash -c ""tmux new-session -A -s quickrun""", 0, false)
         return
     }
 
