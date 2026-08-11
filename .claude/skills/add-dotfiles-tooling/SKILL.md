@@ -28,8 +28,13 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
    That one line is the entire registration. The Makefile derives the target and the
    `.PHONY` list from it, `make help` renders it under `<Section>` sorted by `<order>`,
    and the `embed-command` hook copies that help into the README. A script without the
-   header is not a target at all — which is how helpers like `apt_packages.sh` and
-   `this_repo.sh` stay out of the target list.
+   header is not a target at all — which is how helpers like `apt_packages.sh`,
+   `versions.sh`, and `this_repo.sh` stay out of the target list.
+
+   If the new tool needs a pinned version, put the pin in `install/versions.sh` rather
+   than inline — that file is the single source of truth, read by the install script,
+   `dotfiles_audit.sh`, and `ci.yml` alike. Pin anything whose version changes what a
+   command reports; leave the rest to float.
 
    Pick `<order>` to slot the entry where you want it; existing sections use 10 (Start
    Here), 20s (Languages & Runtimes), 30s (Developer Tools), 40s (Environment-Specific),

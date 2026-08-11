@@ -15,22 +15,26 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
 
+      # install/versions.sh holds NAME=value lines, which is exactly the format
+      # $GITHUB_ENV takes -- so the pins transfer with a grep, no parsing and no
+      # second copy of the versions in this file.
+      - name: Load pinned tool versions
+        run: grep -E '^[A-Z_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
+
       - name: Install ruff and pre-commit
         run: |
-          # Both pinned to match install/python.sh -- keeps CI and local dev in
-          # lockstep. Bump in both places together.
-          uv tool install "ruff==0.16.0"
-          uv tool install "pre-commit==4.6.2"
+          uv tool install "ruff==${RUFF_VERSION}"
+          uv tool install "pre-commit==${PRE_COMMIT_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache pre-commit hook environments
         uses: actions/cache@v6
         with:
           path: ~/.cache/pre-commit
-          # ci.yml is in the key because it carries the pre-commit pin -- a major
-          # bump rebuilds every hook env, so a cache keyed only on the hook config
-          # would restore envs built by the previous runner.
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml', '.github/workflows/ci.yml') }}
+          # versions.sh is in the key because it carries the pre-commit pin -- a
+          # major bump rebuilds every hook env, so a cache keyed only on the hook
+          # config would restore envs built by the previous runner.
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml', 'install/versions.sh') }}
 
       # The pytest hook duplicates the `test` job below; skip it by hook id.
       - name: Run pre-commit hooks

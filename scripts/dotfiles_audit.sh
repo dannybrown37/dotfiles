@@ -276,7 +276,9 @@ done
 # ── Dev Tooling ───────────────────────────────────────────────────────────────
 
 section "Dev Tooling"
-check "pre-commit" "pre-commit --version | awk '{print \$2}'" "uv tool install 'pre-commit==4.6.2'"
+# shellcheck source=install/versions.sh
+source "${DOTFILES_DIR}/install/versions.sh"
+check "pre-commit" "pre-commit --version | awk '{print \$2}'" "uv tool install 'pre-commit==${PRE_COMMIT_VERSION}'"
 
 if [[ -x "${DOTFILES_DIR}/githooks/pre-commit" ]]; then
     ok "pre-commit hooks" "wired via githooks/pre-commit"

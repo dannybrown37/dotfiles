@@ -31,16 +31,14 @@ for package in "${uv_tool_packages[@]}"; do
     uv tool install "${package}"
 done
 
-# Pinned (not left to float) so CI and local dev always run the same
-# ruff version -- see .github/workflows/ci.yml, which pins the same version.
-uv tool install "ruff==0.16.0"
+# Pinned (not left to float) so CI and local dev always run the same versions.
+# Both the pin and the reasoning live in install/versions.sh; ci.yml reads the
+# same file.
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
 
-# pre-commit is pinned for the same reason. It is only the hook *runner* --
-# what a hook actually reports is set by the revs in .pre-commit-config.yaml --
-# but an unpinned runner drifted local (3.8.0) and CI (4.x) onto different
-# majors, which surfaces as a confusing hook error rather than a version error.
-# The autoupdate workflow bumps hook revs, not this; bump it by hand.
-uv tool install "pre-commit==4.6.2"
+uv tool install "ruff==${RUFF_VERSION}"
+uv tool install "pre-commit==${PRE_COMMIT_VERSION}"
 
 
 ##
