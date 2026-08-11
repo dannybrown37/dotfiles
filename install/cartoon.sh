@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 32 Developer Tools | Install cartoon CLI (pinned version, no hook)
 
 ##
 ## Install a pinned version of cartoon (skips if already current)

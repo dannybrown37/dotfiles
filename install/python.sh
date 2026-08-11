@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 20 Languages & Runtimes | Install Python environment (uv, select uv tools)
 
 ##
 ## Install uv

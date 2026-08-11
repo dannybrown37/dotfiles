@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 21 Languages & Runtimes | Install Node.js environment (n, Node 22, select global packages)
 
 ##
 ## Install n (Node version manager) and set up Node 22

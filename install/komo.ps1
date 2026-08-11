@@ -1,3 +1,4 @@
+## @make 43 Environment-Specific | Install komorebi/whkd if needed, then (re)start it
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
 if (-not (Get-Command komorebic -ErrorAction SilentlyContinue)) {

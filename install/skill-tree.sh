@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 61 My Projects | Clone skill-tree and run its setup script
 
 ##
 ## Clone skill-tree and run its own setup
