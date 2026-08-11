@@ -7,6 +7,10 @@
 ##
 # shellcheck source=install/apt_packages.sh
 source "$(dirname "${BASH_SOURCE[0]}")/apt_packages.sh"
+# shellcheck source=install/symlinks.sh
+source "$(dirname "${BASH_SOURCE[0]}")/symlinks.sh"
+
+readonly dotfiles="${HOME}/projects/dotfiles"
 
 sudo apt -y update
 sudo apt -y upgrade
@@ -164,40 +168,24 @@ atuin init bash
 ### Create symlinks for various config/dotfiles
 ###
 
-ln -s ~/projects/dotfiles/config/.gitconfig ~/.gitconfig &&
-    echo "Symlinked .gitconfig"
+for name in .gitconfig .gitignore_global .ruff.toml .eslintrc .inputrc \
+    .gitconfig-personal .tmux.conf; do
+    link_config "${dotfiles}/config/${name}" "${HOME}/${name}"
+done
 
-ln -s ~/projects/dotfiles/config/.gitignore_global ~/.gitignore_global &&
-    echo "Symlinked .gitignore_global"
-
-if [[ ! -f "${HOME}/.bashrc.og.bak" ]]; then
+# The distro .bashrc is a real file on a fresh machine; move it aside so
+# link_config isn't refusing to clobber it on every run.
+if [[ ! -f "${HOME}/.bashrc.og.bak" && ! -L "${HOME}/.bashrc" ]]; then
     mv ~/.bashrc ~/.bashrc.og.bak
     echo "Backed up original .bashrc to ~/.bashrc.og.bak"
 fi
-ln -s ~/projects/dotfiles/config/.bashrc ~/.bashrc &&
-    echo "Symlinked .bashrc"
-
-ln -s ~/projects/dotfiles/config/.ruff.toml ~/.ruff.toml &&
-    echo "Symlinked .ruff.toml"
-
-ln -s ~/projects/dotfiles/config/.eslintrc ~/.eslintrc &&
-    echo "Symlinked .eslintrc"
-
-ln -s ~/projects/dotfiles/config/.inputrc ~/.inputrc &&
-    echo "Symlinked .inputrc"
-
-ln -s ~/projects/dotfiles/config/.gitconfig-personal ~/.gitconfig-personal &&
-    echo "Symlinked .gitconfig-personal"
+link_config "${dotfiles}/config/.bashrc" "${HOME}/.bashrc"
 
 # Untracked: holds any non-personal git identity. Delivered by secrets-load, so
 # only symlink it once the file actually exists.
-if [ -f ~/projects/dotfiles/config/.gitconfig-private ]; then
-    ln -sf ~/projects/dotfiles/config/.gitconfig-private ~/.gitconfig-private &&
-        echo "Symlinked .gitconfig-private"
+if [[ -f "${dotfiles}/config/.gitconfig-private" ]]; then
+    link_config "${dotfiles}/config/.gitconfig-private" "${HOME}/.gitconfig-private"
 fi
-
-ln -s ~/projects/dotfiles/config/.tmux.conf ~/.tmux.conf &&
-    echo "Symlinked .tmux.conf"
 
 if [ ! -d "${HOME}/.password-store" ]; then
     cloned=""
@@ -243,25 +231,6 @@ fi
 git -C ~/projects/dotfiles config core.hooksPath githooks &&
     echo "Configured git hooks -- dotfiles push/pull now syncs password-store"
 
-if [ ! -L "${HOME}/.claude/CLAUDE.md" ]; then
-    mkdir -p ~/.claude
-    ln -s ~/projects/dotfiles/config/CLAUDE.md ~/.claude/CLAUDE.md &&
-        echo "Symlinked global CLAUDE.md to ~/.claude/CLAUDE.md"
-else
-    echo "global CLAUDE.md has already been symlinked"
-fi
-
-if [ ! -L "${HOME}/.config/nvim" ]; then
-    mkdir ~/.config
-    ln -s ~/projects/dotfiles/nvim ~/.config/nvim &&
-        echo "Symlinked nvim config to ~/.config/nvim"
-else
-    echo "nvim config has already been symlinked"
-fi
-
-if [ ! -L "${HOME}/.config/starship.toml" ]; then
-    ln -s ~/projects/dotfiles/config/starship.toml ~/.config/starship.toml &&
-        echo "Symlinked starship.toml to ~/.config/starship.toml"
-else
-    echo "starship.toml has already been symlinked"
-fi
+link_config "${dotfiles}/config/CLAUDE.md" "${HOME}/.claude/CLAUDE.md"
+link_config "${dotfiles}/nvim" "${HOME}/.config/nvim"
+link_config "${dotfiles}/config/starship.toml" "${HOME}/.config/starship.toml"

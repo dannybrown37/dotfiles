@@ -51,19 +51,14 @@ fi
 ## Symlink spotify_player config
 ##
 
-config_dir="${HOME}/.config/spotify-player"
+# shellcheck source=install/symlinks.sh
+source "$(dirname "${BASH_SOURCE[0]}")/symlinks.sh"
+
 config_src="${HOME}/projects/dotfiles/config/spotify-player"
 
-mkdir -p "${config_dir}"
-
 for config_file in app.toml keymap.toml; do
-    dest="${config_dir}/${config_file}"
-    if [[ ! -L "${dest}" ]]; then
-        ln -s "${config_src}/${config_file}" "${dest}"
-        echo "Symlinked ${config_file} to ${dest}"
-    else
-        echo "${config_file} already symlinked"
-    fi
+    link_config "${config_src}/${config_file}" \
+        "${HOME}/.config/spotify-player/${config_file}"
 done
 
 ##
