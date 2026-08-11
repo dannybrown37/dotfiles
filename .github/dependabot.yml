@@ -1,0 +1,11 @@
+version: 2
+
+# Actions only. Dependabot has no pre-commit ecosystem, so hook revs are bumped
+# by .github/workflows/pre-commit-autoupdate.yml instead.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"

@@ -52,6 +52,12 @@ My Projects:
   skill-tree      Clone skill-tree and run its setup script
   gtd             Clone gtd and install it with uv
   ccgarden        Clone ccgarden and install it with uv
+
+Verification:
+  check           Run every pre-commit hook over the whole repo
+  test            Run the scripts/ test suite with coverage
+  audit           Audit this machine against every dotfiles dependency (read-only)
+  doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
 ```
 
 <!-- make:end -->

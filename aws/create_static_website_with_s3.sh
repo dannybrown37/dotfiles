@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2086  # dead script, kept for reference only
 
 # This script creates a static website using S3 as a storage backend.
 # It uses the AWS CLI to create the S3 bucket and upload template files

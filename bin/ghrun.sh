@@ -1,8 +1,6 @@
 ## GitHub Actions Workflow Trigger & Watch
 
 ghrun() {  # @doc github-action-run: ghrun [repo] [workflow]
-    local usage="Usage: ghrun [repo] [workflow]"
-
     local repo_name="${1:-}"
     local workflow_name="${2:-}"
 
@@ -52,11 +50,6 @@ ghrun() {  # @doc github-action-run: ghrun [repo] [workflow]
         return 1
     fi
 
-    # Extract owner/repo from URL (handle both https and ssh)
-    gh_repo="${gh_repo##*/}"
-    gh_repo="${gh_repo%.git}"
-    gh_repo="$(cd "${repo_path}" && git rev-parse --abbrev-ref HEAD@{upstream} 2>/dev/null | cut -d/ -f1 || echo 'origin')/$(cd "${repo_path}" && git rev-parse --abbrev-ref HEAD 2>/dev/null)..${gh_repo}"
-    # Simplify: use gh to get repo
     gh_repo="$(cd "${repo_path}" && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "")"
 
     if [[ -z "${gh_repo}" ]]; then

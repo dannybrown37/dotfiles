@@ -15,7 +15,8 @@ install_targets := $(patsubst $(root_dir)/install/%.sh,%,$(install_scripts))
 windows_scripts := $(shell grep -ls '^## @make ' $(root_dir)/install/*.ps1)
 windows_targets := $(patsubst $(root_dir)/install/%.ps1,%,$(windows_scripts))
 
-.PHONY: help $(install_targets) $(windows_targets) vscode secrets-save secrets-load projects
+.PHONY: help $(install_targets) $(windows_targets) vscode secrets-save secrets-load projects \
+	check test audit doctor
 
 help:
 	@bash $(root_dir)/scripts/make-help.sh
@@ -41,3 +42,19 @@ secrets-load:
 
 ## @make 60 My Projects | Clone and install skill-tree, gtd, and ccgarden
 projects: skill-tree gtd ccgarden
+
+## @make 70 Verification | Run every pre-commit hook over the whole repo
+check:
+	pre-commit run --all-files --show-diff-on-failure
+
+## @make 71 Verification | Run the scripts/ test suite with coverage
+test:
+	uv run --with pytest --with pytest-cov pytest --cov=scripts --cov-report=term-missing $(root_dir)/scripts/
+
+## @make 72 Verification | Audit this machine against every dotfiles dependency (read-only)
+audit:
+	bash $(root_dir)/scripts/dotfiles_audit.sh
+
+## @make 73 Verification | Diagnose a refused git push -- credentials, remotes, transport (read-only)
+doctor:
+	bash $(root_dir)/scripts/git_auth_doctor.sh

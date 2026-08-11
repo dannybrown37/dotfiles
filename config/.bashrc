@@ -96,7 +96,7 @@ source "${DOTFILES_DIR}/config/.secrets"
 ## GNOME Specific Setup
 ##
 
-if [[ -f /etc/os-release && $(grep -i 'debian' /etc/os-release) ]] && [[ "$XDG_CURRENT_DESKTOP" == "GNOME" ]]; then
+if grep -qi 'debian' /etc/os-release 2>/dev/null && [[ "$XDG_CURRENT_DESKTOP" == "GNOME" ]]; then
     . "$DOTFILES_DIR"/config/.gnome
 fi
 
@@ -253,7 +253,7 @@ function git_icon() {
         echo 🛠️
     elif ! git diff --cached --quiet 2>/dev/null; then
         echo ✏️
-    elif [[ $(git rev-list --count @{upstream}..HEAD 2>/dev/null) -gt 0 ]]; then
+    elif [[ $(git rev-list --count '@{upstream}..HEAD' 2>/dev/null) -gt 0 ]]; then
         echo 🚀
     else
         echo ✅
@@ -421,6 +421,7 @@ export PATH
 # exec 2>&3 3>&-
 
 # Between-enters timer
+# shellcheck disable=SC2016  # PS0 is expanded by the prompt, not here
 PS0='$(echo "$EPOCHREALTIME" > /tmp/_bt_$$)'
 
 _bt_pc_mark() { _bt_pc_start=$EPOCHREALTIME; }
