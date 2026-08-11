@@ -34,15 +34,8 @@ echo "lazygit ${latest_version} installed at $(command -v lazygit)"
 ## Symlink lazygit config
 ##
 
-config_dir="${HOME}/.config/lazygit"
-config_src="${HOME}/projects/dotfiles/config/lazygit.yml"
-config_dest="${config_dir}/config.yml"
+# shellcheck source=install/symlinks.sh
+source "$(dirname "${BASH_SOURCE[0]}")/symlinks.sh"
 
-mkdir -p "${config_dir}"
-
-if [[ ! -L "${config_dest}" ]]; then
-    ln -s "${config_src}" "${config_dest}"
-    echo "Symlinked lazygit config to ${config_dest}"
-else
-    echo "lazygit config already symlinked"
-fi
+link_config "${HOME}/projects/dotfiles/config/lazygit.yml" \
+    "${HOME}/.config/lazygit/config.yml"
