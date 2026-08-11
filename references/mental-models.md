@@ -67,3 +67,7 @@ Know what you know — and more importantly, know what you don't. Operating outs
 ## Fredkin's Paradox
 Strive for a "good enough" mindset; we spend the most time on the least important decisions.
 [Fredkin's paradox](https://en.wikipedia.org/wiki/Fredkin%27s_paradox)
+
+## Oblique Strategies
+This was a published set of physical cards from Brian Eno in 1975. Each card has a cryptic message designed to stoke creative thought. This website loads them randomly (as if drawing a card).
+[Oblique Strategies](https://www.obliquestrategies.ca/)
