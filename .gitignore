@@ -4,3 +4,4 @@ config/.gitconfig-private*
 **/.env
 **/__pycache__/
 pass/
+.claude/handoffs/
