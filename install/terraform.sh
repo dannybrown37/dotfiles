@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 34 Developer Tools | Install Terraform (latest release)
 
 ##
 ## Install latest version of terraform (skips if already current)

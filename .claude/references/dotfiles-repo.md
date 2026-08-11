@@ -22,7 +22,7 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux)
 
 ## Key Conventions
 
-- **Install scripts** live in `install/` and are wired up via `Makefile` targets. Each script is self-contained and idempotent.
+- **Install scripts** live in `install/`, are self-contained and idempotent, and register themselves as `Makefile` targets by carrying a `## @make <order> <Section> | <description>` header. The filename is the target name (`install/spotify.sh` → `make spotify`). The Makefile derives the target list, `.PHONY`, and `make help` from those headers via `scripts/make-help.sh` — nothing is listed by hand, and a script without a header is not a target. See the `add-dotfiles-tooling` skill.
 - **Shell utilities** in `bin/` are **sourced** by `.bashrc`. They can call other functions and use dynamic shell state. No shebang needed.
 - **Standalone scripts** in `scripts/` are **non-sourced** executables. Use `#!/usr/bin/env bash` and `set -euo pipefail`.
 - **Config files** in `config/` are symlinked to `~` by the bash install script. Edit them here, not in `~`.
@@ -34,7 +34,7 @@ Managed via `.pre-commit-config.yaml`. Active hooks:
 
 - **shfmt** — shell formatting (4-space indent)
 - **ruff check + format** — Python linting and formatting
-- **embed-command** (git-a-grip) — keeps README install options in sync with `make help` output
+- **embed-command** (git-a-grip) — keeps README install options in sync with `make help` output, which is itself generated from the `## @make` headers
 - Standard pre-commit-hooks (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
 
 ## Shell Startup Performance

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 10 Start Here | Install Bash profile (tmux, apt packages, etc.)
 
 ##
 ##  Sync bash profile with packages and symlinks
@@ -140,7 +141,7 @@ bash "$(dirname "${BASH_SOURCE[0]}")/lazygit.sh"
 ## Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
 ##
 
-bash "$(dirname "${BASH_SOURCE[0]}")/wsl_fonts.sh"
+bash "$(dirname "${BASH_SOURCE[0]}")/wsl-fonts.sh"
 
 ##
 ## Install croc file sharing tool

@@ -1,8 +1,12 @@
 """Tests for the add-dotfiles-tooling skill's wiring checker.
 
-Each test builds a throwaway repo skeleton with the five files the
-checker inspects, optionally omitting one piece of wiring, then asserts
-the checker notices exactly that omission.
+Each test builds a throwaway repo skeleton with the files the checker
+inspects, optionally omitting one piece of wiring, then asserts the
+checker notices exactly that omission.
+
+The Makefile derives targets, .PHONY, and help from the '## @make' header
+in each install script, so there is no Makefile fixture here -- the header
+is the only registration the checker can look for.
 """
 
 import os
@@ -17,17 +21,13 @@ CHECKER = REPO_ROOT / 'scripts' / 'check-tool-wiring.sh'
 EXIT_FAILED_CHECKS = 1
 EXIT_USAGE = 2
 
-MAKEFILE = """\
-.PHONY: help {phony}
-
-help:
-\t@echo "Developer Tools:"
-{help_line}
-
-{target_block}
+WIDGET_INSTALL = """\
+#!/usr/bin/env bash
+{header_line}
+set -euo pipefail
 """
 
-TARGET_BLOCK = 'widget:\n\tbash -c ". $(root_dir)/install/widget.sh"'
+WIDGET_HEADER = '## @make 30 Developer Tools | Install widget'
 
 # Deliberately no '@doc' markers anywhere in this file's fixtures:
 # sync-readme-commands.sh scans every file in scripts/, not just *.sh, and
@@ -72,20 +72,10 @@ def build_repo(root: Path, omit: str = '') -> None:
 
     if omit != 'install':
         (root / 'install' / 'widget.sh').write_text(
-            '#!/usr/bin/env bash\nset -euo pipefail\n',
-        )
-
-    (root / 'Makefile').write_text(
-        MAKEFILE.format(
-            phony='' if omit == 'phony' else 'widget',
-            help_line=(
-                ''
-                if omit == 'help'
-                else '\t@echo "  widget          Install widget"'
+            WIDGET_INSTALL.format(
+                header_line='' if omit == 'header' else WIDGET_HEADER,
             ),
-            target_block='' if omit == 'target' else TARGET_BLOCK,
-        ),
-    )
+        )
 
     (root / 'bin' / 'stubs.sh').write_text(
         STUBS.format(
@@ -134,9 +124,7 @@ def test_fully_wired_dedicated_tool_passes(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ('omit', 'expected_label'),
     [
-        ('target', 'make target'),
-        ('phony', '.PHONY entry'),
-        ('help', 'make help entry'),
+        ('header', '@make header'),
         ('stub', 'stubs.sh stub'),
         ('audit', 'audit entry'),
     ],

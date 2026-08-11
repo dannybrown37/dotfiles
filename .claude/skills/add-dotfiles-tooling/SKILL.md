@@ -14,18 +14,41 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
 1. Create `install/<tool>.sh` — idempotent, sources cleanly. Copy `install/lazygit.sh`
    as the reference implementation: version check, skip-if-current, `mktemp -d` + `trap`
    cleanup, install, confirm, optional config symlink.
-2. Add a Make target in `Makefile` wired to that script.
-3. Add a `@echo` line for it under the right heading in the `help` target — this is what
-   the `embed-command` hook copies into the README, so a target without one is invisible.
-4. If the tool needs shell aliases/functions, add them to `config/.bash_aliases` or a new file in `bin/`.
-5. Update the `.PHONY` list in `Makefile`.
-6. Add a passthrough stub to `bin/stubs.sh` so the tool appears in `cmds` with documentation (see below).
-7. **Add the tool to `scripts/dotfiles_audit.sh`** — every installed dependency must have a corresponding check so the audit stays the source of truth for what's installed and why.
-8. **Verify the wiring** — don't eyeball the list above, run it:
+
+   **Name the file after the Make target you want** — the filename *is* the target name
+   (`install/spotify.sh` → `make spotify`), so don't name it after the upstream project.
+
+2. Give it a `## @make` header, directly under the shebang:
+
+   ```bash
+   #!/usr/bin/env bash
+   ## @make 34 Developer Tools | Install Terraform (latest release)
+   ```
+
+   That one line is the entire registration. The Makefile derives the target and the
+   `.PHONY` list from it, `make help` renders it under `<Section>` sorted by `<order>`,
+   and the `embed-command` hook copies that help into the README. A script without the
+   header is not a target at all — which is how helpers like `apt_packages.sh` and
+   `this_repo.sh` stay out of the target list.
+
+   Pick `<order>` to slot the entry where you want it; existing sections use 10 (Start
+   Here), 20s (Languages & Runtimes), 30s (Developer Tools), 40s (Environment-Specific),
+   50s (Secrets), 60s (My Projects).
+
+3. If the tool needs shell aliases/functions, add them to `config/.bash_aliases` or a new file in `bin/`.
+4. Add a passthrough stub to `bin/stubs.sh` so the tool appears in `cmds` with documentation (see below).
+5. **Add the tool to `scripts/dotfiles_audit.sh`** — every installed dependency must have a corresponding check so the audit stays the source of truth for what's installed and why.
+6. **Verify the wiring** — don't eyeball the list above, run it:
 
    ```bash
    ./scripts/check-tool-wiring.sh <tool>
    ```
+
+A Windows-only tool works the same way with a `.ps1` extension — `install/komo.ps1` carries
+the same header and becomes `make komo`, run via `powershell.exe`.
+
+Targets with no install script of their own (`vscode`, `projects`, `secrets-*`) keep their
+header in the `Makefile`, directly above the target.
 
 ## Verifying Wiring
 
@@ -33,7 +56,7 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
 first thing you missed. It detects how the tool is installed and only demands the wiring
 that applies:
 
-| Mode | Detected by | Needs a Make target? |
+| Mode | Detected by | Needs a `## @make` header? |
 |---|---|---|
 | `dedicated` | `install/<tool>.sh` exists | yes |
 | `apt` | listed in `install/apt_packages.sh` | no |
@@ -41,6 +64,9 @@ that applies:
 
 All three still need a `bin/stubs.sh` stub and audit coverage. apt packages get audit
 coverage for free — `dotfiles_audit.sh` iterates `apt_packages.sh`.
+
+The checker no longer verifies the Make target, the `.PHONY` entry, or the help line
+separately: all three are derived from the header, so they cannot drift out of sync.
 
 Two flags for the cases that would otherwise false-alarm:
 

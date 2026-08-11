@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 33 Developer Tools | Install spotify_player TUI (remote control, no audio)
 
 ##
 ## Install spotify_player (terminal Spotify client) + symlink its config

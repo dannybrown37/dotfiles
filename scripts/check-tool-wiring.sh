@@ -10,7 +10,7 @@
 ##                deliberately have no passthrough stub
 ##
 ## Tools arrive three ways, and they need different wiring:
-##   dedicated  install/<tool>.sh + Make target + .PHONY + help entry
+##   dedicated  install/<tool>.sh carrying a '## @make' header
 ##   apt        listed in install/apt_packages.sh, no target of its own
 ##   bundled    built by a shared script (eza via install/bash.sh)
 ## All three still need a stub in bin/stubs.sh and audit coverage.
@@ -81,7 +81,6 @@ done
 root="${DOTFILES_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 readonly root
 
-readonly makefile="${root}/Makefile"
 readonly stubs="${root}/bin/stubs.sh"
 readonly audit="${root}/scripts/dotfiles_audit.sh"
 readonly apt_list="${root}/install/apt_packages.sh"
@@ -144,34 +143,17 @@ unknown)
     ;;
 esac
 
-check_make_wiring() {
-    if grep -qE "^${tool}:" "${makefile}"; then
-        pass "make target" "${tool}:"
-    else
-        fail "make target" "no '${tool}:' target in Makefile"
-    fi
-
-    if grep -E '^\.PHONY:' "${makefile}" | grep -qE "[[:space:]]${tool}([[:space:]]|$)"; then
-        pass ".PHONY entry" "listed"
-    else
-        fail ".PHONY entry" "'${tool}' missing from .PHONY line"
-    fi
-
-    # help output is what the embed-command hook copies into the README, so a
-    # target without a help line is invisible to both `make help` and docs.
-    if grep -E '^\s*@echo' "${makefile}" | grep -qE "\"[[:space:]]+${tool}[[:space:]]"; then
-        pass "make help entry" "documented"
-    else
-        fail "make help entry" "no '@echo' help line mentioning ${tool}"
-    fi
-}
-
-if [[ "${mode}" == "dedicated" ]]; then
-    check_make_wiring
+# One '## @make' header is the entire registration: the Makefile derives the
+# target and the .PHONY list from it, `make help` renders it, and the
+# embed-command hook copies that help into the README. A dedicated install
+# script without one is invisible to all four.
+if [[ "${mode}" != "dedicated" ]]; then
+    skip "@make header" "installed without a dedicated target"
+elif grep -q '^## @make ' "${install_script}"; then
+    pass "@make header" "registered"
 else
-    skip "make target" "installed without a dedicated target"
-    skip ".PHONY entry" "installed without a dedicated target"
-    skip "make help entry" "installed without a dedicated target"
+    fail "@make header" \
+        "add '## @make <order> <Section> | <desc>' to install/${tool}.sh"
 fi
 
 if [[ "${require_stub}" == false ]]; then

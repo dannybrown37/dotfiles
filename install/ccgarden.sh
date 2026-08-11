@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 63 My Projects | Clone ccgarden and install it with uv
 
 ##
 ## Clone ccgarden and install it with uv

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+## @make 42 Environment-Specific | Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
 # shellcheck disable=SC1090,SC1091
 
 set -euo pipefail

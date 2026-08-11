@@ -1,115 +1,43 @@
-.PHONY: help python deno node golang rust vscode gnome select-nerdfont komo wsl-fonts secrets-save secrets-load lazygit bash nvim cartoon spotify terraform skill-tree gtd ccgarden projects
-
-help:
-	@echo "Usage: make [option]"
-	@echo ""
-	@echo "Start Here:"
-	@echo "  bash            Install Bash profile (tmux, apt packages, etc.)"
-	@echo ""
-	@echo "Languages & Runtimes:"
-	@echo "  python          Install Python environment (uv, select uv tools)"
-	@echo "  node            Install Node.js environment (n, Node 22, select global packages)"
-	@echo "  deno            Install Deno 2"
-	@echo "  golang          Install Go environment (latest Golang version)"
-	@echo "  rust            Install Rust environment (latest Rust version, select global packages)"
-	@echo ""
-	@echo "Developer Tools:"
-	@echo "  nvim            Install Neovim"
-	@echo "  lazygit         Install lazygit TUI git client"
-	@echo "  cartoon         Install cartoon CLI (pinned version, no hook)"
-	@echo "  spotify         Install spotify_player TUI (remote control, no audio)"
-	@echo "  terraform       Install Terraform (latest release)"
-	@echo "  vscode          Install VS Code extensions and settings"
-	@echo ""
-	@echo "Environment-Specific:"
-	@echo "  gnome           Install Gnome extensions"
-	@echo "  select-nerdfont Interactively pick and install a Nerd Font (Windows)"
-	@echo "  wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)"
-	@echo "  komo            Install komorebi/whkd if needed, then (re)start it"
-	@echo ""
-	@echo "Secrets (requires GPG keys):"
-	@echo "  secrets-save    Save local secrets to password-store, push to private repo"
-	@echo "  secrets-load    Pull private repo, load secrets from password-store to local files"
-	@echo ""
-	@echo "My Projects:"
-	@echo "  projects        Clone and install skill-tree, gtd, and ccgarden"
-	@echo "  skill-tree      Clone skill-tree and run its setup script"
-	@echo "  gtd             Clone gtd and install it with uv"
-	@echo "  ccgarden        Clone ccgarden and install it with uv"
-
-
 root_dir := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-bash_bootstrap_script := $(root_dir)/install/bash.sh
+# Every target below is derived from the `## @make` header its script carries --
+# see scripts/make-help.sh. Adding that one header registers the target, adds it
+# to .PHONY, and puts it in `make help` (and so in the README, via the
+# embed-command hook). There is no list to keep in sync.
+#
+# Static pattern rules, not implicit ones: GNU Make skips implicit-rule search
+# for .PHONY targets, and `nvim` has to stay phony because nvim/ is a real
+# directory.
 
-# installs
+install_scripts := $(shell grep -ls '^## @make ' $(root_dir)/install/*.sh)
+install_targets := $(patsubst $(root_dir)/install/%.sh,%,$(install_scripts))
 
-bash:
-	@bash -c ". $(bash_bootstrap_script)"
+windows_scripts := $(shell grep -ls '^## @make ' $(root_dir)/install/*.ps1)
+windows_targets := $(patsubst $(root_dir)/install/%.ps1,%,$(windows_scripts))
 
-python:
-	bash -c ". $(root_dir)/install/python.sh"
+.PHONY: help $(install_targets) $(windows_targets) vscode secrets-save secrets-load projects
 
-deno:
-	bash -c ". $(root_dir)/install/deno.sh"
+help:
+	@bash $(root_dir)/scripts/make-help.sh
 
-node:
-	bash -c ". $(root_dir)/install/node.sh"
+$(install_targets): %: $(root_dir)/install/%.sh
+	bash -c ". $<"
 
-golang:
-	bash -c ". $(root_dir)/install/golang.sh"
+$(windows_targets): %: $(root_dir)/install/%.ps1
+	powershell.exe -ExecutionPolicy Bypass -File "$<"
 
-rust:
-	bash -c ". $(root_dir)/install/rust.sh"
-
-nvim:
-	bash -c ". $(root_dir)/install/nvim.sh"
-
-lazygit:
-	bash -c ". $(root_dir)/install/lazygit.sh"
-
-cartoon:
-	bash -c ". $(root_dir)/install/cartoon.sh"
-
-spotify:
-	bash -c ". $(root_dir)/install/spotify-player.sh"
-
-terraform:
-	bash -c ". $(root_dir)/install/terraform.sh"
-
+## @make 35 Developer Tools | Install VS Code extensions and settings
 vscode:
 	bash -c ". $(root_dir)/.vscode/vsc_extensions.sh"
 	bash -c ". $(root_dir)/.vscode/sync_vsc_settings.sh"
 
-gnome:
-	bash -c ". $(root_dir)/install/gnome.sh"
-
-select-nerdfont:
-	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/select_nerdfont.ps1"
-
-wsl-fonts:
-	bash -c ". $(root_dir)/install/wsl_fonts.sh"
-
-komo:
-	powershell.exe -ExecutionPolicy Bypass -File "$(root_dir)/install/reset_komo.ps1"
-
-# my projects
-
-projects: skill-tree gtd ccgarden
-
-skill-tree:
-	bash -c ". $(root_dir)/install/skill-tree.sh"
-
-gtd:
-	bash -c ". $(root_dir)/install/gtd.sh"
-
-ccgarden:
-	bash -c ". $(root_dir)/install/ccgarden.sh"
-
-# pass secret store
-
+## @make 50 Secrets (requires GPG keys) | Save local secrets to password-store, push to private repo
 secrets-save:
 	bash -c "$(root_dir)/scripts/secrets.sh save"
 
+## @make 51 Secrets (requires GPG keys) | Pull private repo, load secrets from password-store to local files
 secrets-load:
 	bash -c "$(root_dir)/scripts/secrets.sh load"
+
+## @make 60 My Projects | Clone and install skill-tree, gtd, and ccgarden
+projects: skill-tree gtd ccgarden
