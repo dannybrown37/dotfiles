@@ -23,7 +23,6 @@ uv python install --default "${python_version}"
 ##
 
 uv_tool_packages=(
-    pre-commit
     cookiecutter
     bashate
 )
@@ -35,6 +34,13 @@ done
 # Pinned (not left to float) so CI and local dev always run the same
 # ruff version -- see .github/workflows/ci.yml, which pins the same version.
 uv tool install "ruff==0.16.0"
+
+# pre-commit is pinned for the same reason. It is only the hook *runner* --
+# what a hook actually reports is set by the revs in .pre-commit-config.yaml --
+# but an unpinned runner drifted local (3.8.0) and CI (4.x) onto different
+# majors, which surfaces as a confusing hook error rather than a version error.
+# The autoupdate workflow bumps hook revs, not this; bump it by hand.
+uv tool install "pre-commit==4.6.2"
 
 
 ##

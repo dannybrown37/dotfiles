@@ -17,17 +17,20 @@ jobs:
 
       - name: Install ruff and pre-commit
         run: |
-          # ruff is pinned to match install/python.sh -- keeps CI and local dev
-          # in lockstep. pre-commit is unpinned in both, so it stays unpinned here.
+          # Both pinned to match install/python.sh -- keeps CI and local dev in
+          # lockstep. Bump in both places together.
           uv tool install "ruff==0.16.0"
-          uv tool install pre-commit
+          uv tool install "pre-commit==4.6.2"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache pre-commit hook environments
         uses: actions/cache@v6
         with:
           path: ~/.cache/pre-commit
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          # ci.yml is in the key because it carries the pre-commit pin -- a major
+          # bump rebuilds every hook env, so a cache keyed only on the hook config
+          # would restore envs built by the previous runner.
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml', '.github/workflows/ci.yml') }}
 
       # The pytest hook duplicates the `test` job below; skip it by hook id.
       - name: Run pre-commit hooks
