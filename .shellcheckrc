@@ -3,3 +3,4 @@ disable=1090  # non-constant sources are known
 disable=1091  # I'm not including every path I source
 disable=2155  # sometimes masking return values is a-ok
 disable=2162  # no reads want or depend on backslashes
+external-sources=true  # follow explicit "# shellcheck source=" directives

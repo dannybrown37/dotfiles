@@ -291,6 +291,7 @@ if [[ -d "$HOME/.password-store/.git" ]]; then
 elif [[ -d "$HOME/.password-store" ]]; then
     warn "password-store" "present but not a git repo — sync won't work"
 else
+    # shellcheck disable=SC2088  # display string, not a path being expanded
     warn "password-store" "~/.password-store missing — run: make bash"
 fi
 

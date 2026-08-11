@@ -2,7 +2,7 @@ repos:
   # ruff and pytest live in git-a-grip so every repo shares one copy, rather
   # than each keeping its own `bash -c '... && git add "$@"'` wrapper.
   - repo: https://github.com/dannybrown37/git-a-grip
-    rev: v0.8.1
+    rev: v0.10.0
     hooks:
       - id: ruff-check
         args: [--config, config/.ruff.toml]
@@ -20,7 +20,7 @@ repos:
         files: ^(Makefile|README\.md)$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: check-executables-have-shebangs
@@ -34,18 +34,28 @@ repos:
       - id: mixed-line-ending
 
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.8.0-1
+    rev: v3.13.1-1
     hooks:
       - id: shfmt
         args: ["-i", "4"]
 
   - repo: https://github.com/gitleaks/gitleaks
+    # autoupdate resolves this repo one tag low; v8.30.1 is the latest release.
     rev: v8.30.1
     hooks:
       - id: gitleaks
 
   - repo: local
     hooks:
+      # Upstream's hook is docker_image only, and this machine's docker daemon
+      # rejects container create. shellcheck comes from install/apt_packages.sh,
+      # and .shellcheckrc at the repo root carries the deliberate disables.
+      - id: shellcheck
+        name: ShellCheck
+        entry: shellcheck
+        language: system
+        types: [shell]
+
       - id: sync-readme-commands
         name: Sync README @doc commands
         entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bash scripts/sync-readme-commands.sh && git add README.md'

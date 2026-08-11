@@ -33,6 +33,7 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux)
 Managed via `.pre-commit-config.yaml`. Active hooks:
 
 - **shfmt** — shell formatting (4-space indent)
+- **shellcheck** — shell linting, a `language: system` local hook against the apt-installed binary (upstream's hook is docker-only). Deliberate disables live in `.shellcheckrc`; keep the repo at zero findings.
 - **ruff check + format** — Python linting and formatting
 - **embed-command** (git-a-grip) — keeps README install options in sync with `make help` output, which is itself generated from the `## @make` headers
 - Standard pre-commit-hooks (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)

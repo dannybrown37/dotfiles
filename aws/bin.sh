@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2181  # dead script, kept for reference only
 
 ##
 ## Various utility functions using the AWS CLI

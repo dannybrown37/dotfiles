@@ -169,7 +169,7 @@ EOF
         fi
     }
 
-    # shellcheck disable=SC2317  # invoked indirectly after _load_noteion runs
+    # shellcheck disable=SC2317,SC2329  # invoked indirectly after _load_noteion runs
     trash_notion_page() {
         local page_id=$1
         local url="${NOTION_API_URL}/${page_id//-/}"

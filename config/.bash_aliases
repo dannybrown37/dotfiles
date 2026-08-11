@@ -15,12 +15,12 @@ alias uuid='generate_random_uuid_and_put_in_clipboard'  # @doc Generate a random
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/references/vim-notes.md\" | sort | fzf" # @doc Vim cheatsheet fuzzy finder
 unalias vsi 2>/dev/null || true
 vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
-    local files
-    files=$(
+    local -a files
+    mapfile -t files < <(
         { git ls-files --cached --others --exclude-standard 2>/dev/null || find . -type f; } \
             | fzf -m --info=hidden --preview="batcat --color=always {}" --preview-window='right:60%:wrap'
     )
-    [[ -n "$files" ]] && nvim $(echo "$files")
+    [[ ${#files[@]} -gt 0 ]] && nvim "${files[@]}"
 }
 alias lg='lazygit'  # @doc Open lazygit TUI
 alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
