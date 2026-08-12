@@ -84,9 +84,6 @@ if [[ -n "${WSL_DISTRO_NAME}" ]]; then
     PATH="${DOTFILES_DIR}/wsl:${PATH}"
 fi
 
-touch "${DOTFILES_DIR}/config/.secrets"
-source "${DOTFILES_DIR}/config/.secrets"
-
 ##
 ## GNOME Specific Setup
 ##
@@ -96,6 +93,7 @@ if grep -qi 'debian' /etc/os-release 2>/dev/null && [[ "$XDG_CURRENT_DESKTOP" ==
 fi
 
 
+### Color-code ls / tree output based on file type / patterns / et al ###
 # https://github.com/eza-community/eza/blob/main/docs/Colour-Themes.md
 EZA_COLORS_ARRAY=(
     "package.json=30;47"
@@ -126,247 +124,27 @@ EZA_COLORS_ARRAY=(
 export EZA_COLORS="$(tr ' ' ':' <<<"${EZA_COLORS_ARRAY[*]}")"
 
 
-##
-## Prompt setup: seasonal colors, system based icon, git status icon
-##
+### Prompt setup is just starship these days ###
 
-rainbow() {
-    local colors=("$RED" "$ORANGE" "$YELLOW" "$GREEN" "$CYAN" "$MAGENTA")
-    local text="$1"
-    local result=""
-    local i=0
-    for (( c=0; c<${#text}; c++ )); do
-        result+="${colors[$((i % 6))]}${text:$c:1}"
-        ((i++))
-    done
-    echo "$result"
-}
+eval "$(starship init bash)"
 
-BLUE='\[\033[01;34m\]'
-CYAN='\[\033[0;36m\]'
-GRAY='\[\033[1;30m\]'
-GREEN='\[\033[1;32m\]'
-LIGHT_CYAN='\[\033[1;36m\]'
-MAGENTA='\[\033[0;35m\]'
-ORANGE='\[\033[0;33m\]'
-RED='\[\033[1;31m\]'
-WHITE='\[\033[0;37m\]'
-YELLOW='\[\033[1;33m\]'
 
-case $(date +%b) in
-Mar | Apr | May)
-    COLOR1=$GREEN
-    COLOR2=$CYAN
-    COLOR3=$RED
-    COLOR4=$MAGENTA
-    ;;
-Jun | Jul | Aug)
-    COLOR1=$RED
-    COLOR2=$ORANGE
-    COLOR3=$WHITE
-    COLOR4=$ORANGE
-    ;;
-Sep | Oct | Nov)
-    COLOR1=$ORANGE
-    COLOR2=$RED
-    COLOR3=$ORANGE
-    COLOR4=$YELLOW
-    ;;
-Dec | Jan | Feb)
-    COLOR1=$CYAN
-    COLOR2=$GRAY
-    COLOR3=$BLUE
-    COLOR4=$LIGHT_CYAN
-    ;;
-esac
+### Sourcing of various local and third-party tools/configuration ###
 
-if [[ "${WSL_DISTRO_NAME}" = 'kali-linux' ]]; then
-    PROMPT_SYMBOL=㉿
-elif [[ "${WSL_DISTRO_NAME}" = 'Debian' || ${HOSTNAME} == "debian" ]]; then
-    PROMPT_SYMBOL=🐧
-elif [[ "${WSL_DISTRO_NAME}" = 'Ubuntu' ]]; then
-    PROMPT_SYMBOL=⚙
-elif [[ "${HOSTNAME}" == *"raspberrypi"* ]]; then
-    PROMPT_SYMBOL=🍓
-fi
-
-if ! command -v starship >/dev/null 2>&1; then
-    PROMPT_COMMAND=git_info_env_vars
-    export VIRTUAL_ENV_DISABLE_PROMPT=1
-    # shellcheck disable=SC2250
-    export PS1=$COLOR1'┌────${VIRTUAL_ENV:+'$COLOR2'($(basename $VIRTUAL_ENV))'$COLOR1'─}'$COLOR3'< \w >'$COLOR1'─'$COLOR4'{ $DEV_STACK }'$COLOR1'─[ $GIT_BRANCH$GIT_ICON'' ]\n'$COLOR1'└─'$COLOR4$PROMPT_SYMBOL$WHITE' '
-else
-    eval "$(starship init bash)"
-fi
-
-##
-## Functions
-##
-
-# source all files in bin directory
-# these use dynamic code executed outside of their functions
 for file in "$DOTFILES_DIR"/bin/*.sh; do
     [[ -f "$file" ]] && source "$file"
 done
 
-# source aws-specific functions from aws/bin.sh
 source "$DOTFILES_DIR"/aws/bin.sh
 
-function cht() {  # @doc Query cht.sh for info on many technologies
-    local technologies=$(curl -s cht.sh/:list)
-    local selected=$(printf '%s\n' "${technologies[@]}" | fzf)
-    if [[ -z $selected ]]; then
-        return
-    fi
-    read -p "$selected keywords (optional): " query
-    if [ -n "$query" ]; then
-        curl "cht.sh/$selected/$(echo "$query" | tr ' ' '+')"
-    else
-        curl "cht.sh/$selected"
-    fi
-}
-
-function git_info_env_vars() {
-    export GIT_BRANCH=$(git branch --show-current 2>/dev/null)
-    export GIT_ICON=$(git_icon)
-}
-
-function epoch_timestamp() {  # @doc Print the current epoch timestamp in milliseconds, copy to clipboard
-    echo $(($(date +%s%N) / 1000000)) | cb
-}
-
-function generate_random_uuid_and_put_in_clipboard() {
-    uuid=$(cat /proc/sys/kernel/random/uuid)
-    echo "$uuid" | cb
-}
-
-function git_icon() {
-    git rev-parse --git-dir &>/dev/null || return
-    if [[ -n $(git ls-files --others --exclude-standard | head -1) ]]; then
-        echo ❓
-    elif ! git diff --quiet 2>/dev/null; then
-        echo 🛠️
-    elif ! git diff --cached --quiet 2>/dev/null; then
-        echo ✏️
-    elif [[ $(git rev-list --count '@{upstream}..HEAD' 2>/dev/null) -gt 0 ]]; then
-        echo 🚀
-    else
-        echo ✅
-    fi
-}
-
-function google() { # @doc Pop open a browser to google search results type in command line
-    if [[ $# -eq 0 ]]; then
-        read -p "Enter you Google query: " query
-    else
-        query=$*
-    fi
-
-    url "https://www.google.com/search?q=${query// /+}"
-}
-
-function note() {  # @doc Create a note file from the command line
-    ## Create notes files from the command line
-    ##
-    ## 0 args -- will prompt for title and content
-    ## 1 arg -- will assume no content desired
-    ## 2 args -- first title, second content
-    if [[ ! -d "$NOTES_DIR" ]]; then
-        mkdir "$NOTES_DIR"
-    fi
-    local note_title
-    local note_content=""
-    if [[ $# -eq 0 ]]; then
-        read -p "Enter a note title to store at $NOTES_DIR: " note_title
-        if [[ -z "$note_title" ]]; then
-            echo "A note title is required"
-            return 1
-        fi
-    elif [[ $# -eq 1 ]]; then
-        note_title=$1
-    fi
-    local note_path="${NOTES_DIR}/${note_title}"
-    if [[ -e "$note_path" ]]; then
-        echo "Error: This note already exists!"
-        return 1
-    fi
-    echo "Enter additional lines for file (empty input to finish):"
-    while IFS= read -r line; do
-        [[ -z "$line" ]] && break
-        note_content+="$line"$'\n'
-    done
-    {
-        printf "%s" "$note_content"
-    } >"$note_path"
-    echo "Note saved to: $note_path"
-}
-
-function notes() { # @doc Open a note file from the command line from $NOTES_DIR using fzf
-    local selected_file
-    cd "$NOTES_DIR" || return
-    selected_file=$(
-        find . -type f -exec basename {} \; |
-            fzf --preview 'cat {}' |
-            sed "s/'//g"
-    )
-    if [[ -n "$selected_file" ]]; then
-        nvim "$NOTES_DIR/$selected_file"
-    fi
-    cd - || return
-}
-
-function mk() {  # @doc Create a directory and cd into it
-    mkdir -p "$@" && cd "$@" || exit
-}
-
-function push() {  # @doc Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message>
-    http POST ntfy.sh/"${PERSONAL_ALERT_TOPIC}" alert="$*"
-}
-
-function push_to_topic() {  # @doc Push a message to ntfy.sh at a topic | push_to_topic <topic> <message>
-    local topic=$1
-    shift
-    local message=$*
-
-    http POST ntfy.sh/"${topic}" alert="${message}"
-}
-
-function open_url_in_browser() {  # @doc Open a URL in the browser, system-agnostic
-    case $(uname -s) in
-    Darwin) open='open' ;;
-    MINGW*) open='start' ;;
-    MSYS*) open='start' ;;
-    CYGWIN*) open='cygstart' ;;
-    Linux) open='xdg-open' ;;
-    *) # Try to detect WSL
-        if uname -r | grep -q -i microsoft; then
-            open='explorer.exe'
-        else
-            open='xdg-open'
-        fi ;;
-    esac
-
-    URL=$1
-
-    if [[ "${URL}" != https* ]]; then
-        URL="https://${URL}"
-    fi
-    echo "Opening ${URL} in ${open}"
-    ${BROWSER:-"${open}"} "${URL}" || xdg-open "${URL}"
-}
-
-function utc_timestamp() {  # @doc Print the current UTC timestamp in ISO format with microseconds, copy to clipboard
-    date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" | cb
-}
-
-##
-## Sourcing of various third-party tools and local configuration
-##
-
-. "$DOTFILES_DIR"/config/.bash_aliases
-bind -f "${HOME}/.inputrc"
+touch "${DOTFILES_DIR}/config/.secrets"
+. "${DOTFILES_DIR}/config/.secrets"
 
 [[ -f ~/.git-completion.bash ]] && . "$HOME/.git-completion.bash"
+
+. "$DOTFILES_DIR"/config/.bash_aliases
+
+bind -f "${HOME}/.inputrc"
 [[ -f "/home/danny/.deno/env" ]] && . "$HOME/.deno/env"
 [[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
 
@@ -385,7 +163,9 @@ fi
 PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
 export PATH
 
+
 ### Between-Enters Timer ###
+
 # This shows a cool grayed-out 1.234s timer after each entered command to show how long it took
 # Low-cost profiling built-in for every command, plus sanity checking how much time long-running commands *really* take
 # shellcheck disable=SC2016  # usage here is intentional, we want the literal string to be evaluated at runtime

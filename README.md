@@ -90,7 +90,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
 | `chafa` | Render an image as terminal ANSI art -- powers `screenshot pick` previews | chafa <image> | `bin/stubs.sh` |
-| `cht` | Query cht.sh for info on many technologies | `config/.bashrc` |
+| `cht` | Query cht.sh for info on many technologies | `bin/chtsh.sh` |
 | `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
 | `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
 | `clip` | Copy a screen recording to OneDrive with fzf selection: clip [--reset] | `bin/clip.sh` |
@@ -102,13 +102,13 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `docker-up` | Start Docker Desktop from WSL and block until the daemon answers | docker-up [timeout_seconds] | `bin/docker.sh` |
 | `dotaudit` | Audit system for dotfile setup compliance | `config/.bash_aliases` |
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
-| `epoch` | Alias for epoch_timestamp | `config/.bash_aliases` |
-| `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `config/.bashrc` |
+| `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `bin/timestamps.sh` |
 | `eza` | Modern ls replacement with git status and icons | `bin/stubs.sh` |
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
+| `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | uses personal token in personal repos | `bin/stubs.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
@@ -120,7 +120,6 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `glog` | Graph log of all branches | `config/.bash_aliases` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
 | `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
-| `google` | Pop open a browser to google search results type in command line | `config/.bashrc` |
 | `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
 | `grl` | List recent CI runs on current branch | `config/.bash_aliases` |
 | `grw` | Watch CI run for current branch live | grw | `config/.bash_aliases` |
@@ -136,17 +135,15 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `llmrules` | Copy LLM rules to clipboard for chatbot copy-paste | `config/.bash_aliases` |
 | `media` | Open educational media reference | `config/.bash_aliases` |
 | `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
-| `mk` | Create a directory and cd into it | `config/.bashrc` |
+| `mk` | Create a directory and cd into it | `bin/mk.sh` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
 | `musiclink` | Convert a Spotify/YouTube/etc link to a service-agnostic song.link URL: musiclink <url> | `config/.bash_aliases` |
-| `note` | Create a note file from the command line | `config/.bashrc` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
-| `notes` | Open a note file from the command line from $NOTES_DIR using fzf | `config/.bashrc` |
-| `open_url_in_browser` | Open a URL in the browser, system-agnostic | `config/.bashrc` |
+| `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
-| `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `config/.bashrc` |
-| `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `config/.bashrc` |
+| `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
+| `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `bin/ntfy.sh` |
 | `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
@@ -164,10 +161,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `tmux` | Terminal multiplexer -- sessions, windows, panes | `bin/stubs.sh` |
 | `tokei` | Count lines of code by language in current repo | `bin/stubs.sh` |
 | `tree` | Show a tree view of files and directories | `config/.bash_aliases` |
-| `url` | Open a URL in the system browser | `config/.bash_aliases` |
-| `utc` | Alias for utc_timestamp | `config/.bash_aliases` |
-| `utc_timestamp` | Print the current UTC timestamp in ISO format with microseconds, copy to clipboard | `config/.bashrc` |
-| `uuid` | Generate a random UUID and put it in the clipboard | `config/.bash_aliases` |
+| `utc_timestamp` | Print the current UTC timestamp in ISO format with microseconds, copy to clipboard | `bin/timestamps.sh` |
 | `vc` | Vim cheatsheet fuzzy finder | `config/.bash_aliases` |
 | `vsi` | Fuzzy find files and open in Neovim (git-aware) | `config/.bash_aliases` |
 | `zoxide` | Smarter cd that learns your most-used directories (alias: cd) | `bin/stubs.sh` |

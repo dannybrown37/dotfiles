@@ -4,14 +4,10 @@ alias awsconfig='nvim ~/.aws/config'  # @doc Edit AWS config file in Neovim
 alias bl='backlog'  # @doc Alias for backlog command from skill-tree
 alias cb='tee >(~/projects/dotfiles/scripts/tmux-copy-to-clipboard.sh)' # @doc Copy stdin to clipboard. <command> | cb
 alias du='du -h | sort -h'  # @doc Disk usage sorted and human-readable
-alias epoch='epoch_timestamp'  # @doc Alias for epoch_timestamp
 alias llmrules='pcat ~/projects/dotfiles/references/llm-rules.md | cb >/dev/null && echo "Copied to clipboard"' # @doc Copy LLM rules to clipboard for chatbot copy-paste
 alias llmedit='nvim ~/projects/dotfiles/references/llm-rules.md' # @doc Edit LLM rules in Neovim
 alias pcb='powershell.exe -NoProfile -Command "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard" 2>/dev/null | tr -d "\r"' # @doc Print clipboard contents
 alias shot='screenshot'  # @doc Alias for screenshot
-alias url='open_url_in_browser' # @doc Open a URL in the system browser
-alias utc='utc_timestamp'  # @doc Alias for utc_timestamp
-alias uuid='generate_random_uuid_and_put_in_clipboard'  # @doc Generate a random UUID and put it in the clipboard
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/references/vim-notes.md\" | sort | fzf" # @doc Vim cheatsheet fuzzy finder
 unalias vsi 2>/dev/null || true
 vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
