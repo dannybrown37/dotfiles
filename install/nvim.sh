@@ -20,7 +20,7 @@ else
     ./$file_name --appimage-extract
     ./squashfs-root/AppRun --version
     sudo mv squashfs-root /
-    sudo ln -s /squashfs-root/AppRun /usr/bin/nvim
+    sudo ln -s /squashfs-root/AppRun /usr/bin/nvim # allow-raw-symlink: root-owned PATH entry, not a config link
     nvim --version
     rm $file_name
 fi
