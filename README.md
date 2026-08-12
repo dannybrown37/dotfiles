@@ -54,11 +54,11 @@ Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
   secrets-load    Pull private repo, load secrets from password-store to local files
 
-My Projects:
-  projects        Clone and install skill-tree, gtd, and ccgarden
+My Dev Tooling:
+  projects        Clone and install skill-tree, gtd, and git-a-grip
   skill-tree      Clone skill-tree and run its setup script
   gtd             Clone gtd and install it with uv
-  ccgarden        Clone ccgarden and install it with uv
+  git-a-grip      Clone git-a-grip and install it with uv
 
 Verification:
   check           Run every pre-commit hook over the whole repo
