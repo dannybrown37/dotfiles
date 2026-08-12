@@ -20,7 +20,8 @@ The output of `make` in the root directory:
 Usage: make [option]
 
 Start Here:
-  bash            Install Bash profile (tmux, apt packages, etc.)
+  bootstrap       Bootstrap this machine (apt packages, tools, symlinks, secrets)
+  symlinks        Symlink every tracked config into $HOME (idempotent, no network)
 
 Languages & Runtimes:
   python          Install Python environment (uv, select uv tools)
@@ -233,7 +234,7 @@ therefore overwrites the local file with the store's copy, saving the displaced 
 alongside it as `<file>.bak` first. Keep a file out of the manifest if both machines edit it
 independently and you'd want both sets of edits back.
 
-**Automatic sync:** `make bash` sets `core.hooksPath` to the tracked `githooks/` dir. From then
+**Automatic sync:** `make bootstrap` sets `core.hooksPath` to the tracked `githooks/` dir. From then
 on a plain `git push` here runs `secrets-save` first (encrypt changed files, push the store) and
 a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so an
 ordinary push or pull in this repo is enough to carry every synced file to the other machine,
@@ -241,7 +242,7 @@ with no separate `secrets-save`/`secrets-load` call needed. Unchanged entries ar
 the store doesn't collect a commit per push. If the store errors, the hook warns
 but never blocks the dotfiles push/pull.
 
-**New machine setup:** `make bash` clones the store if `~/.password-store` doesn't exist yet —
+**New machine setup:** `make bootstrap` clones the store if `~/.password-store` doesn't exist yet —
 tries `gh auth login` + `gh repo clone` first (no token to copy by hand), falling back to a
 `PASSWORD_STORE_REMOTE` prompt (may embed a token — treat as a raw secret) if `gh` can't. Requires
 your GPG private key already imported — that transfer stays manual/out-of-band.

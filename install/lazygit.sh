@@ -34,8 +34,8 @@ echo "lazygit ${latest_version} installed at $(command -v lazygit)"
 ## Symlink lazygit config
 ##
 
-# shellcheck source=install/symlinks.sh
-source "$(dirname "${BASH_SOURCE[0]}")/symlinks.sh"
+# shellcheck source=install/link_config.sh
+source "$(dirname "${BASH_SOURCE[0]}")/link_config.sh"
 
 link_config "${HOME}/projects/dotfiles/config/lazygit.yml" \
     "${HOME}/.config/lazygit/config.yml"

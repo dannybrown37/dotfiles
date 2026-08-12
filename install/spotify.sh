@@ -51,8 +51,8 @@ fi
 ## Symlink spotify_player config
 ##
 
-# shellcheck source=install/symlinks.sh
-source "$(dirname "${BASH_SOURCE[0]}")/symlinks.sh"
+# shellcheck source=install/link_config.sh
+source "$(dirname "${BASH_SOURCE[0]}")/link_config.sh"
 
 config_src="${HOME}/projects/dotfiles/config/spotify-player"
 

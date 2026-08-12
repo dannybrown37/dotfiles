@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-## @make 10 Start Here | Install Bash profile (tmux, apt packages, etc.)
+## @make 10 Start Here | Bootstrap this machine (apt packages, tools, symlinks, secrets)
 
 ##
-##  Sync bash profile with packages and symlinks
-##  This script is designed to be idempotent and can be run multiple times
+##  Whole-machine setup: apt packages, the tools with no distro package, the
+##  config symlinks (delegated to symlinks.sh) and the password-store.
+##  Designed to be idempotent and can be run multiple times.
+##
+##  Was `install/bash.sh` / `make bash`, which named about two lines of what it
+##  does. Re-linking configs alone is `make symlinks`.
 ##
 # shellcheck source=install/apt_packages.sh
 source "$(dirname "${BASH_SOURCE[0]}")/apt_packages.sh"
-# shellcheck source=install/symlinks.sh
-source "$(dirname "${BASH_SOURCE[0]}")/symlinks.sh"
-
-readonly dotfiles="${HOME}/projects/dotfiles"
 
 sudo apt -y update
 sudo apt -y upgrade
@@ -165,27 +165,10 @@ curl https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec
 atuin init bash
 
 ###
-### Create symlinks for various config/dotfiles
+### Create symlinks for various config/dotfiles -- also `make symlinks` on its own
 ###
 
-for name in .gitconfig .gitignore_global .ruff.toml .eslintrc .inputrc \
-    .gitconfig-personal .tmux.conf; do
-    link_config "${dotfiles}/config/${name}" "${HOME}/${name}"
-done
-
-# The distro .bashrc is a real file on a fresh machine; move it aside so
-# link_config isn't refusing to clobber it on every run.
-if [[ ! -f "${HOME}/.bashrc.og.bak" && ! -L "${HOME}/.bashrc" ]]; then
-    mv ~/.bashrc ~/.bashrc.og.bak
-    echo "Backed up original .bashrc to ~/.bashrc.og.bak"
-fi
-link_config "${dotfiles}/config/.bashrc" "${HOME}/.bashrc"
-
-# Untracked: holds any non-personal git identity. Delivered by secrets-load, so
-# only symlink it once the file actually exists.
-if [[ -f "${dotfiles}/config/.gitconfig-private" ]]; then
-    link_config "${dotfiles}/config/.gitconfig-private" "${HOME}/.gitconfig-private"
-fi
+bash "$(dirname "${BASH_SOURCE[0]}")/symlinks.sh"
 
 if [ ! -d "${HOME}/.password-store" ]; then
     cloned=""
@@ -230,7 +213,3 @@ fi
 
 git -C ~/projects/dotfiles config core.hooksPath githooks &&
     echo "Configured git hooks -- dotfiles push/pull now syncs password-store"
-
-link_config "${dotfiles}/config/CLAUDE.md" "${HOME}/.claude/CLAUDE.md"
-link_config "${dotfiles}/nvim" "${HOME}/.config/nvim"
-link_config "${dotfiles}/config/starship.toml" "${HOME}/.config/starship.toml"

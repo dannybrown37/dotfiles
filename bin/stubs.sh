@@ -1,4 +1,4 @@
-# Passthrough stubs for third-party tools installed via install/bash.sh or install/lazygit.sh.
+# Passthrough stubs for third-party tools installed via install/bootstrap.sh or install/lazygit.sh.
 # These functions exist solely so the tools appear in `cmds` with documentation.
 # Add a stub here whenever a new third-party tool is installed that should be discoverable.
 
