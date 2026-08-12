@@ -1,23 +1,17 @@
 #!/usr/bin/env bash
-## @make 24 Languages & Runtimes | Install Rust environment (latest Rust version, select global packages)
+## @make 24 Languages & Runtimes | Install the Rust toolchain (rustup, latest stable)
 
+##
+## Toolchain only. `make bootstrap` depends on this because cli-tools.sh installs
+## eza from crates.io, so keep it cheap -- the cargo utilities that are not core
+## workflow moved to install/rust-tools.sh (`make rust-tools`).
+##
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
-. ~/.bashrc
+# Only for the rest of *this* script -- PATH does not survive into the next Make
+# target, which is why cli-tools.sh and rust-tools.sh source this too.
+# shellcheck source=install/cargo_env.sh
+source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
 
 rustup update
-
-
-##
-## Install cargo packages
-##
-
-cargo install htmlq  # like jq but for html
-
-sudo apt install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
-cargo install jless  # less like tool for json
-
-cargo install difftastic  # semantic diff tool
-
-cargo install mprocs  # allows for multiple parallel commands

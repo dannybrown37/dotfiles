@@ -15,8 +15,8 @@ install_targets := $(patsubst $(root_dir)/install/%.sh,%,$(install_scripts))
 windows_scripts := $(shell grep -ls '^## @make ' $(root_dir)/install/*.ps1)
 windows_targets := $(patsubst $(root_dir)/install/%.ps1,%,$(windows_scripts))
 
-.PHONY: help $(install_targets) $(windows_targets) vscode secrets-save secrets-load projects \
-	check test audit doctor
+.PHONY: help $(install_targets) $(windows_targets) bootstrap vscode secrets-save secrets-load \
+	projects check test audit doctor
 
 help:
 	@bash $(root_dir)/scripts/make-help.sh
@@ -26,6 +26,18 @@ $(install_targets): %: $(root_dir)/install/%.sh
 
 $(windows_targets): %: $(root_dir)/install/%.ps1
 	powershell.exe -ExecutionPolicy Bypass -File "$<"
+
+# A composite, not a script -- it was install/bash.sh, which named about two
+# lines of what it did. Each phase is now separately re-runnable.
+#
+# Order is load-bearing: apt delivers curl/wget/jq/git/gh that everything else
+# assumes, and rust delivers the cargo that cli-tools needs for eza. Make only
+# guarantees that order serially, so this is one target you should not `make -j`.
+#
+# The `## @make` header has to sit directly above the target line -- a comment
+# in between and makefile_headers() in scripts/make-help.sh drops it.
+## @make 10 Start Here | Set up a new machine end to end (every target below it)
+bootstrap: apt rust bash cli-tools chrome lazygit password-store
 
 ## @make 35 Developer Tools | Install VS Code extensions and settings
 vscode:
