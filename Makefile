@@ -52,8 +52,8 @@ secrets-save:
 secrets-load:
 	bash -c "$(root_dir)/scripts/secrets.sh load"
 
-## @make 60 My Projects | Clone and install skill-tree, gtd, and ccgarden
-projects: skill-tree gtd ccgarden
+## @make 60 My Dev Tooling | Clone and install skill-tree, gtd, and git-a-grip
+projects: skill-tree gtd git-a-grip
 
 ## @make 70 Verification | Run every pre-commit hook over the whole repo
 check:
