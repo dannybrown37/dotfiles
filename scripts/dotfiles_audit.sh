@@ -291,7 +291,7 @@ check "pass" "pass --version 2>&1 | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+'" "sudo 
 if [[ -d "$HOME/.password-store/.git" ]]; then
     ok "password-store" "present, own git repo"
 elif [[ -d "$HOME/.password-store" ]]; then
-    warn "password-store" "present but not a git repo — sync won't work"
+    warn "password-store" "present but not a git repo — secrets-save/load won't sync"
 else
     # shellcheck disable=SC2088  # display string, not a path being expanded
     warn "password-store" "~/.password-store missing — run: make password-store"
@@ -301,7 +301,7 @@ HOOKS_PATH=$(git -C "$DOTFILES_DIR" config --get core.hooksPath 2>/dev/null)
 if [[ "$HOOKS_PATH" == "githooks" ]]; then
     ok "git hooks" "core.hooksPath -> githooks"
 else
-    fail "git hooks" "run: make password-store  (sets core.hooksPath so push/pull sync password-store)"
+    fail "git hooks" "run: make password-store  (sets core.hooksPath so commits run pre-commit)"
 fi
 
 if git -C "$DOTFILES_DIR" config --get-all credential.https://github.com.helper 2>/dev/null |

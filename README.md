@@ -26,7 +26,7 @@ Start Here:
   symlinks        Symlink every tracked config into $HOME (idempotent, no network)
   cli-tools       Install the core CLI tools with no usable distro package
   chrome          Install Google Chrome
-  password-store  Clone the private password-store and wire up secret sync
+  password-store  Clone the private password-store for secret sync
 
 Languages & Runtimes:
   python          Install Python environment (uv, select uv tools)
@@ -182,7 +182,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `aws/` | AWS helper scripts and configuration |
 | `bin/` | Sourced shell scripts loaded into the current session |
 | `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
-| `githooks/` | Tracked git hooks (core.hooksPath) that sync the private password-store on dotfiles push/pull |
+| `githooks/` | Tracked git hooks (core.hooksPath) -- forwards commits to pre-commit |
 | `install/` | Bootstrap install scripts invoked via Make targets |
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
@@ -240,13 +240,11 @@ therefore overwrites the local file with the store's copy, saving the displaced 
 alongside it as `<file>.bak` first. Keep a file out of the manifest if both machines edit it
 independently and you'd want both sets of edits back.
 
-**Automatic sync:** `make password-store` (and `make bootstrap`) sets `core.hooksPath` to the tracked `githooks/` dir. From then
-on a plain `git push` here runs `secrets-save` first (encrypt changed files, push the store) and
-a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so an
-ordinary push or pull in this repo is enough to carry every synced file to the other machine,
-with no separate `secrets-save`/`secrets-load` call needed. Unchanged entries are skipped so
-the store doesn't collect a commit per push. If the store errors, the hook warns
-but never blocks the dotfiles push/pull.
+**Sync is opt-in:** run `make secrets-save` (encrypt changed files, push the store) and
+`make secrets-load` (pull the store, decrypt to local files) yourself. Earlier versions ran these
+automatically from `pre-push`/`post-merge` git hooks; those hooks are gone, so a plain
+`git push`/`git pull` here no longer touches the store. Unchanged entries are skipped, so a
+`secrets-save` with nothing to do adds no commit.
 
 **New machine setup:** `make password-store` clones the store if `~/.password-store` doesn't exist yet —
 tries `gh auth login` + `gh repo clone` first (no token to copy by hand), falling back to a

@@ -1,1 +1,1 @@
-Tracked git hooks (core.hooksPath) that sync the private password-store on dotfiles push/pull
+Tracked git hooks (core.hooksPath) -- forwards commits to pre-commit
