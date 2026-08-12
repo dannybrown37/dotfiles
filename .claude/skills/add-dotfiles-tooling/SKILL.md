@@ -65,7 +65,7 @@ that applies:
 |---|---|---|
 | `dedicated` | `install/<tool>.sh` exists | yes |
 | `apt` | listed in `install/apt_packages.sh` | no |
-| `bundled` | another install script builds it (eza via `install/bash.sh`) | no |
+| `bundled` | another install script builds it (eza via `install/bootstrap.sh`) | no |
 
 All three still need a `bin/stubs.sh` stub and audit coverage. apt packages get audit
 coverage for free — `dotfiles_audit.sh` iterates `apt_packages.sh`.
@@ -105,7 +105,7 @@ mytool() { command mytool "$@"; }  # @doc Brief description | mytool <usage>
   Run it before declaring a tool done.
 
 There is deliberately no install-script template. `install/` ranges from 3 lines
-(`deno.sh`, a `curl | sh`) to 252 (`bash.sh`), and the install method differs per tool —
+(`deno.sh`, a `curl | sh`) to 252 (`bootstrap.sh`), and the install method differs per tool —
 apt, cargo, GitHub release, language version manager. Copy whichever existing script
 matches the method you need; `lazygit.sh` is the closest thing to a canonical
 GitHub-release example.

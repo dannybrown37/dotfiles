@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-HELPER = Path(__file__).resolve().parent.parent / 'install' / 'symlinks.sh'
+HELPER = Path(__file__).resolve().parent.parent / 'install' / 'link_config.sh'
 
 
 def link_config(src: Path, dest: Path) -> subprocess.CompletedProcess[str]:

@@ -42,7 +42,7 @@ zoxide() {{ command zoxide "$@"; }}
 AUDIT = """\
 #!/usr/bin/env bash
 {audit_line}
-check "zoxide"  "zoxide --version"  "make bash"
+check "zoxide"  "zoxide --version"  "make bootstrap"
 """
 
 APT_PACKAGES = """\
@@ -56,7 +56,7 @@ apt_packages=(
 
 # 'gadget' stands in for eza: no install/gadget.sh and not an apt package,
 # but a shared install script builds it anyway.
-BASH_INSTALL = """\
+BOOTSTRAP_INSTALL = """\
 #!/usr/bin/env bash
 if ! command -v gadget &>/dev/null; then
     cargo install gadget
@@ -99,7 +99,7 @@ def build_repo(root: Path, omit: str = '') -> None:
         APT_PACKAGES.format(apt_line='    ripgrep'),
     )
 
-    (root / 'install' / 'bash.sh').write_text(BASH_INSTALL)
+    (root / 'install' / 'bootstrap.sh').write_text(BOOTSTRAP_INSTALL)
 
 
 def run_checker(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -170,7 +170,7 @@ def test_apt_tool_missing_stub_fails(tmp_path: Path) -> None:
 def test_tool_installed_by_a_shared_script_is_recognised(
     tmp_path: Path,
 ) -> None:
-    """eza-style tools: no dedicated script, built by install/bash.sh."""
+    """eza-style tools: no dedicated script, built by install/bootstrap.sh."""
     build_repo(tmp_path)
     stubs = tmp_path / 'bin' / 'stubs.sh'
     stubs.write_text(
@@ -178,7 +178,7 @@ def test_tool_installed_by_a_shared_script_is_recognised(
     )
     audit = tmp_path / 'scripts' / 'dotfiles_audit.sh'
     audit.write_text(
-        audit.read_text() + 'check "gadget"  "gadget -V"  "make bash"\n',
+        audit.read_text() + 'check "gadget"  "gadget -V"  "make bootstrap"\n',
     )
 
     result = run_checker(tmp_path, 'gadget')
@@ -186,7 +186,7 @@ def test_tool_installed_by_a_shared_script_is_recognised(
 
     assert result.returncode == 0, output
     assert 'bundled' in output
-    assert 'bash.sh' in output
+    assert 'bootstrap.sh' in output
 
 
 def test_no_stub_flag_skips_the_stub_requirement(tmp_path: Path) -> None:

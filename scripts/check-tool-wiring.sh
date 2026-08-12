@@ -12,7 +12,7 @@
 ## Tools arrive three ways, and they need different wiring:
 ##   dedicated  install/<tool>.sh carrying a '## @make' header
 ##   apt        listed in install/apt_packages.sh, no target of its own
-##   bundled    built by a shared script (eza via install/bash.sh)
+##   bundled    built by a shared script (eza via install/bootstrap.sh)
 ## All three still need a stub in bin/stubs.sh and audit coverage.
 ##
 

@@ -3,7 +3,7 @@
 
 ##
 ## Single source of truth for apt packages this repo depends on.
-## Sourced by install/bash.sh (to install) and scripts/dotfiles_audit.sh (to check).
+## Sourced by install/bootstrap.sh (to install) and scripts/dotfiles_audit.sh (to check).
 ##
 apt_packages=(
     asciinema

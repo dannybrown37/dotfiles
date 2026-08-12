@@ -9,5 +9,5 @@ mkdir projects 2>/dev/null
 cd projects
 git clone https://www.github.com/dannybrown37/dotfiles
 cd dotfiles
-make bash
+make bootstrap
 make help

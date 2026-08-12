@@ -61,9 +61,9 @@ check_symlink() {
             warn "$label" "exists but points to '$actual' (expected '$target')"
         fi
     elif [[ -f "$link" ]]; then
-        warn "$label" "$link is a real file, not a symlink — run: make bash"
+        warn "$label" "$link is a real file, not a symlink — run: make symlinks"
     else
-        fail "$label" "run: make bash"
+        fail "$label" "run: make symlinks"
     fi
 }
 
@@ -111,14 +111,14 @@ done
 # ── Core CLI Tools ────────────────────────────────────────────────────────────
 
 section "Core CLI Tools"
-check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: make bash)"
-check "tokei"      "tokei --version | awk '{print \$2}'"                    "make bash"
-check "hyperfine"  "hyperfine --version | awk '{print \$2}'"                "make bash"
-check "glow"       "glow --version | awk '{print \$3}'"                     "make bash"
-check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "make bash  (installs to ~/.local/bin)"
-check "delta"      "delta --version | awk '{print \$2}'"                    "make bash"
-check "atuin"      "atuin --version | awk '{print \$2}'"                    "make bash"
-check "croc"       "croc --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'" "make bash  (installs to ~/.local/bin)"
+check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: make bootstrap)"
+check "tokei"      "tokei --version | awk '{print \$2}'"                    "make bootstrap"
+check "hyperfine"  "hyperfine --version | awk '{print \$2}'"                "make bootstrap"
+check "glow"       "glow --version | awk '{print \$3}'"                     "make bootstrap"
+check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "make bootstrap  (installs to ~/.local/bin)"
+check "delta"      "delta --version | awk '{print \$2}'"                    "make bootstrap"
+check "atuin"      "atuin --version | awk '{print \$2}'"                    "make bootstrap"
+check "croc"       "croc --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'" "make bootstrap  (installs to ~/.local/bin)"
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "make wsl-fonts"
 check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "make lazygit"
 check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "make nvim"
@@ -189,7 +189,7 @@ fi
 if [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
     ok "tmux tpm" "installed"
 else
-    fail "tmux tpm" "run: make bash  (or: git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm)"
+    fail "tmux tpm" "run: make bootstrap  (or: git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm)"
 fi
 
 # ── Node / NPM ────────────────────────────────────────────────────────────────
@@ -294,21 +294,21 @@ elif [[ -d "$HOME/.password-store" ]]; then
     warn "password-store" "present but not a git repo — sync won't work"
 else
     # shellcheck disable=SC2088  # display string, not a path being expanded
-    warn "password-store" "~/.password-store missing — run: make bash"
+    warn "password-store" "~/.password-store missing — run: make bootstrap"
 fi
 
 HOOKS_PATH=$(git -C "$DOTFILES_DIR" config --get core.hooksPath 2>/dev/null)
 if [[ "$HOOKS_PATH" == "githooks" ]]; then
     ok "git hooks" "core.hooksPath -> githooks"
 else
-    fail "git hooks" "run: make bash  (sets core.hooksPath so push/pull sync password-store)"
+    fail "git hooks" "run: make bootstrap  (sets core.hooksPath so push/pull sync password-store)"
 fi
 
 if git -C "$DOTFILES_DIR" config --get-all credential.https://github.com.helper 2>/dev/null |
     grep -q "git-credential-personal"; then
     ok "personal git credentials" "dotfiles uses MY_GITHUB_TOKEN"
 else
-    fail "personal git credentials" "run: make bash  (includeIf -> ~/.gitconfig-personal)"
+    fail "personal git credentials" "run: make symlinks  (includeIf -> ~/.gitconfig-personal)"
 fi
 
 if [[ -n "${MY_GITHUB_TOKEN:-}" ]]; then
