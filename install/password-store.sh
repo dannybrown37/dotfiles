@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 16 Start Here | Clone the private password-store and wire up secret sync
+## @make 16 Start Here | Clone the private password-store for secret sync
 
 ##
 ## Split out of the old install/bash.sh. Worth its own target because it is the
@@ -57,4 +57,4 @@ fi
 # Was hardcoded to ~/projects/dotfiles, which silently did nothing from a clone
 # anywhere else.
 git -C "${dotfiles}" config core.hooksPath githooks &&
-    echo "Configured git hooks -- dotfiles push/pull now syncs password-store"
+    echo "Configured git hooks -- commits run pre-commit"

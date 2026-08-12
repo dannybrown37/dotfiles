@@ -30,7 +30,7 @@ Read these references before writing code in the following domains:
 ## Code Review
 
 - A `Stop` hook (`scripts/verify_changes.py`, wired in `.claude/settings.json`) runs `pre-commit` against every changed file before a turn can end, and blocks the turn with the output if it fails. Fix what it reports. Hooks that `git add` are skipped, so formatting is still settled at commit time. `VERIFY_CHANGES_SKIP=1` disables it.
-- A `pre-push` git hook prints a reminder to run `/code-review` — it does not block the push or call any AI review itself.
+- `/code-review` (and `/security-review` for auth/secrets/external input/dependency changes) is opt-in — run it yourself before pushing. Nothing prompts for it.
 - Full checklist: `.claude/references/code-review-checklist.md`.
 - The adversarial red-team pass is the `adversarial-review` subagent — `.claude/agents/adversarial-review.md`. User-triggered only, like `/code-review ultra`. Especially useful for `password-store` operations and other auth/secrets. (`backlog_cli.py` moved to `skill-tree`, which carries the same recommendation in its own `CLAUDE.md`.)
 
