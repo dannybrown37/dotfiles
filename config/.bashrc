@@ -360,19 +360,12 @@ function utc_timestamp() {  # @doc Print the current UTC timestamp in ISO format
 }
 
 ##
-## Alias Setup
+## Sourcing of various third-party tools and local configuration
 ##
 
-
-if [ -f ~/.git-completion.bash ]; then
-  . ~/.git-completion.bash
-fi
+[[ -f ~/.git-completion.bash ]] && . ~/.git-completion.bash
 
 source "$DOTFILES_DIR"/config/.bash_aliases
-
-##
-## Language-specific configuration
-##
 
 [[ -f "/home/danny/.deno/env" ]] && . "/home/danny/.deno/env"
 
@@ -396,9 +389,10 @@ fi
 PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
 export PATH
 
-# Between-enters timer
+### Between-Enters Timer ###
 # This shows a cool grayed-out 1.234s timer after each entered command to show how long it took
 # Low-cost profiling built-in for every command, plus sanity checking how much time long-running commands *really* take
+# shellcheck disable=SC2016  # usage here is intentional, we want the literal string to be evaluated at runtime
 PS0='$(echo "$EPOCHREALTIME" > /tmp/_bt_$$)'
 
 _bt_pc_mark() { _bt_pc_start=$EPOCHREALTIME; }

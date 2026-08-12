@@ -51,7 +51,7 @@ Managed via `.pre-commit-config.yaml`. Active hooks:
   }
   ```
 - **When to lazy-load:** any `eval "$(tool init bash)"`, large sourced files, language version managers (nvm, rbenv, pyenv), or anything that calls an external binary at source time.
-- **When to eager-load:** tools used in every session that are already fast (<5ms) — e.g. starship, atuin, direnv, zoxide.
+- **When to eager-load:** tools used in every session that are already fast (<5ms) — e.g. starship, atuin, zoxide.
 - **Glob over find:** for single-level directory listing, use `for dir in path/*/;` (bash builtin, no fork) instead of `find -maxdepth 1`.
 - **Guard repeated env setup:** use `[[ -z "${VAR:-}" ]]` before any subprocess that sets an env var, so sourcing the same file twice (e.g. via `.secrets` → work aliases) doesn't repeat expensive calls.
 - **Measure:** `hyperfine --warmup 3 'bash -i -c exit'` for startup; uncomment the `_bt_show` lines at the bottom of `.bashrc` for prompt lag.
