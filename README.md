@@ -20,15 +20,20 @@ The output of `make` in the root directory:
 Usage: make [option]
 
 Start Here:
-  bootstrap       Bootstrap this machine (apt packages, tools, symlinks, secrets)
+  bootstrap       Set up a new machine end to end (every target below it)
+  apt             Update apt and install every apt package this repo needs
+  bash            Install the Bash profile (symlinks, prompt, completion, history)
   symlinks        Symlink every tracked config into $HOME (idempotent, no network)
+  cli-tools       Install the core CLI tools with no usable distro package
+  chrome          Install Google Chrome
+  password-store  Clone the private password-store and wire up secret sync
 
 Languages & Runtimes:
   python          Install Python environment (uv, select uv tools)
   node            Install Node.js environment (n, Node 22, select global packages)
   deno            Install Deno 2
   golang          Install Go environment (latest Golang version)
-  rust            Install Rust environment (latest Rust version, select global packages)
+  rust            Install the Rust toolchain (rustup, latest stable)
 
 Developer Tools:
   nvim            Install Neovim
@@ -37,6 +42,7 @@ Developer Tools:
   spotify         Install spotify_player TUI (remote control, no audio)
   terraform       Install Terraform (latest release)
   vscode          Install VS Code extensions and settings
+  rust-tools      Install the optional cargo utilities (htmlq, jless, difftastic, mprocs)
 
 Environment-Specific:
   gnome           Install Gnome extensions
@@ -234,7 +240,7 @@ therefore overwrites the local file with the store's copy, saving the displaced 
 alongside it as `<file>.bak` first. Keep a file out of the manifest if both machines edit it
 independently and you'd want both sets of edits back.
 
-**Automatic sync:** `make bootstrap` sets `core.hooksPath` to the tracked `githooks/` dir. From then
+**Automatic sync:** `make password-store` (and `make bootstrap`) sets `core.hooksPath` to the tracked `githooks/` dir. From then
 on a plain `git push` here runs `secrets-save` first (encrypt changed files, push the store) and
 a plain `git pull` runs `secrets-load` after (pull the store, decrypt to local files) — so an
 ordinary push or pull in this repo is enough to carry every synced file to the other machine,
@@ -242,7 +248,7 @@ with no separate `secrets-save`/`secrets-load` call needed. Unchanged entries ar
 the store doesn't collect a commit per push. If the store errors, the hook warns
 but never blocks the dotfiles push/pull.
 
-**New machine setup:** `make bootstrap` clones the store if `~/.password-store` doesn't exist yet —
+**New machine setup:** `make password-store` clones the store if `~/.password-store` doesn't exist yet —
 tries `gh auth login` + `gh repo clone` first (no token to copy by hand), falling back to a
 `PASSWORD_STORE_REMOTE` prompt (may embed a token — treat as a raw secret) if `gh` can't. Requires
 your GPG private key already imported — that transfer stays manual/out-of-band.

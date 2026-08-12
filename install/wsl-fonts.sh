@@ -52,27 +52,20 @@ else
     echo "JetBrainsMono Nerd Font already installed, skipping..."
 fi
 
-# Configure VSCode terminal font (works whether font was just installed or already present).
-readonly vscode_settings="/mnt/c/Users/${windows_username}/AppData/Roaming/Code/User/settings.json"
+##
+## The terminal font setting is NOT patched in here. It is tracked, in
+## .vscode/.symlinked-user-settings.json, and `make vscode` symlinks Windows'
+## settings.json at that file.
+##
+## This block used to rewrite settings.json in place, and every run printed
+## ">>> VSCode settings not found at expected path. Manually add ...". Both
+## halves were wrong. The `[[ -f ]]` test always failed because `make vscode`
+## makes settings.json a Windows-side symlink to a UNC \\wsl.localhost\... path,
+## which WSL cannot dereference (`ls` reports an I/O error on it) -- so the
+## advice was to hand-add a key that was already set. And had the test ever
+## passed, it would have clobbered the tracked value
+## ("JetBrainsMono Nerd Font Mono, JetBrainsMono NFM, monospace") with a
+## strictly worse one, in a file that is a symlink into this repo.
+##
 
-if [[ -f "${vscode_settings}" ]]; then
-    python3 - "${vscode_settings}" << 'PYEOF'
-import re, json, sys
-
-path = sys.argv[1]
-text = open(path).read()
-text = re.sub(r'//[^\n]*', '', text)
-text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
-text = re.sub(r',(\s*[}\]])', r'\1', text)
-data = json.loads(text)
-data['terminal.integrated.fontFamily'] = 'JetBrainsMono Nerd Font'
-with open(path, 'w') as f:
-    json.dump(data, f, indent=4)
-    f.write('\n')
-PYEOF
-    echo "VSCode terminal font set to 'JetBrainsMono Nerd Font' in settings.json"
-else
-    echo ""
-    echo ">>> VSCode settings not found at expected path. Manually add to settings.json:"
-    echo '    "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font"'
-fi
+echo "VSCode terminal font is tracked in .vscode/.symlinked-user-settings.json (run: make vscode)"
