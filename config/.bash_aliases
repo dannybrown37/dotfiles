@@ -25,7 +25,6 @@ alias musiclink='~/projects/dotfiles/scripts/musiclink.sh'  # @doc Convert a Spo
 alias screenshot='~/projects/dotfiles/scripts/screenshot.sh'  # @doc Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest]
 alias song='spotify_copy_playing_link -m'  # @doc Copy a service-agnostic musiclink for the currently playing Spotify track: song
 alias sorn='spotify_now_playing_markdown'  # @doc Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn
-alias ccstats='uv run --project ~/projects/ccgarden ccstats'  # @doc Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain
 
 # Tools I'm trying out
 

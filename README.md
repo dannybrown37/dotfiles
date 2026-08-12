@@ -86,7 +86,6 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `bl` | Alias for backlog command from skill-tree | `config/.bash_aliases` |
 | `cartoon` | Compress noisy CLI output for AI agents | cartoon pytest | `bin/stubs.sh` |
 | `cb` | Copy stdin to clipboard. <command> | cb | `config/.bash_aliases` |
-| `ccstats` | Claude Code usage stats from local session logs, broken out per repo | ccstats --json, ccstats --record, ccstats --explain | `config/.bash_aliases` |
 | `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
 | `chafa` | Render an image as terminal ANSI art -- powers `screenshot pick` previews | chafa <image> | `bin/stubs.sh` |
