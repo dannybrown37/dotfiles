@@ -12,7 +12,6 @@ apt_packages=(
     chafa
     cowsay
     curl
-    direnv
     faker
     fd-find
     fzf

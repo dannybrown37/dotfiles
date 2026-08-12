@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-# Profiling
-# exec 3>&2 2>/tmp/bashrc_profile.$$
-# PS4='+ $(date +%s.%N) '
-# set -x
-
 # skip .bashrc if parent is copilot
 if [[ -r "/proc/${PPID}/comm" && $(<"/proc/${PPID}/comm") == "copilot"* ]]; then
     return
@@ -397,31 +392,13 @@ if [[ -f "$HOME/.atuin/bin/env" ]]; then
     eval "$(atuin init bash)"
 fi
 
-##
-## Bespoke environmental stuff
-##
-
-# AUTOENV_ACTIVATE_SCRIPT="$(npm root -g 2>/dev/null)"/@hyperupcall/autoenv/activate.sh
-# if [ -f "$AUTOENV_ACTIVATE_SCRIPT" ]; then
-#     source "$AUTOENV_ACTIVATE_SCRIPT"
-# fi
-
-# direnv — per-directory environment variables via .envrc
-if command -v direnv &>/dev/null; then
-    eval "$(direnv hook bash)"
-fi
-
 # Remove duplicates from $PATH and then export. Do not export PATH anywhere else!
 PATH=$(echo "$PATH" | tr ':' '\n' | awk '!x[$0]++' | tr '\n' ':')
 export PATH
 
-
-# Profiling
-# set +x
-# exec 2>&3 3>&-
-
 # Between-enters timer
-# shellcheck disable=SC2016  # PS0 is expanded by the prompt, not here
+# This shows a cool grayed-out 1.234s timer after each entered command to show how long it took
+# Low-cost profiling built-in for every command, plus sanity checking how much time long-running commands *really* take
 PS0='$(echo "$EPOCHREALTIME" > /tmp/_bt_$$)'
 
 _bt_pc_mark() { _bt_pc_start=$EPOCHREALTIME; }
