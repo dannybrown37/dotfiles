@@ -363,25 +363,21 @@ function utc_timestamp() {  # @doc Print the current UTC timestamp in ISO format
 ## Sourcing of various third-party tools and local configuration
 ##
 
-[[ -f ~/.git-completion.bash ]] && . ~/.git-completion.bash
+. "$DOTFILES_DIR"/config/.bash_aliases
+bind -f "${HOME}/.inputrc"
 
-source "$DOTFILES_DIR"/config/.bash_aliases
-
-[[ -f "/home/danny/.deno/env" ]] && . "/home/danny/.deno/env"
+[[ -f ~/.git-completion.bash ]] && . "$HOME/.git-completion.bash"
+[[ -f "/home/danny/.deno/env" ]] && . "$HOME/.deno/env"
+[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
 
 export GOROOT="/usr/local/go"
 export GOPATH="$HOME/go"
 PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
 
-if [[ -f "$HOME/.cargo/env" ]]; then
-    . "$HOME/.cargo/env"
-fi
-
-bind -f "${HOME}/.inputrc"
 
 if [[ -f "$HOME/.atuin/bin/env" ]]; then
     . "$HOME/.atuin/bin/env"
-    [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
+    [[ -f "$HOME/.bash-preexec.sh" ]] && source "$HOME/.bash-preexec.sh"
     eval "$(atuin init bash)"
 fi
 
