@@ -221,9 +221,9 @@
   ],
   "workbench.iconTheme": "eq-material-theme-icons-deepforest",
   "github.copilot.enable": {
-    "*": false,
+    "*": true,
     "plaintext": false,
-    "markdown": false,
+    "markdown": true,
     "scminput": false
   }
 }
