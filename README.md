@@ -108,7 +108,7 @@ Commmands are auto-documented with a # @doc comment on the same line as the comm
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
-| `gh` | GitHub CLI -- PRs, issues, workflows, and more | uses personal token in personal repos | `bin/stubs.sh` |
+| `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
 | `ghwatch` | github-action-watch: watch the current repo's in-progress CI | ghwatch [--any-branch] | `bin/ghwatch.sh` |
