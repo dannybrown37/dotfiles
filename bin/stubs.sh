@@ -12,17 +12,7 @@ docker() { command docker "$@"; }       # @doc Containers -- via Docker Desktop 
 eza() { command eza "$@"; }             # @doc Modern ls replacement with git status and icons
 fd() { command fdfind "$@"; }           # @doc Fast find that respects .gitignore | fd <pattern>
 fzf() { command fzf "$@"; }             # @doc Interactive fuzzy finder for any list
-gh() {                                  # @doc GitHub CLI -- PRs, issues, workflows, and more | uses personal token in personal repos
-    local owner
-    owner="$(git config --get remote.origin.url 2>/dev/null |
-        sed -E 's#^(https?://[^/]+/|[^@]+@[^:]+:)##; s#\.git$##; s#/.*##')"
-
-    if [[ -n "${owner}" && "${owner,,}" == "${MY_GITHUB_USER:-dannybrown37}" && -n "${MY_GITHUB_TOKEN:-}" ]]; then
-        GITHUB_TOKEN="${MY_GITHUB_TOKEN}" command gh "$@"
-    else
-        command gh "$@"
-    fi
-}
+gh() { command gh "$@"; }                  # @doc GitHub CLI -- PRs, issues, workflows, and more
 git-open() { command git-open "$@"; }   # @doc Open current repo/branch in browser | git-open [remote] [branch]
 glow() { command glow "$@"; }           # @doc Render markdown in the terminal | glow <file>
 hyperfine() { command hyperfine "$@"; } # @doc Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2'
