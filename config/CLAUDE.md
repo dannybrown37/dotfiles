@@ -23,6 +23,7 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 - Never hand a lint error or failing test to the user. If a repo has `pre-commit`, run it against changed files before ending a turn and fix what it reports.
 - Before pushing, run `/code-review` (and `/security-review` if the change touches auth, secrets, external input, or dependencies).
 - For an active red-team pass (construct a real failing case, not checklist verification) on important/large changes, suggest the user run an adversarial review — never spawn one automatically, it's expensive and user-triggered only.
+- Watch for AI-specific failure modes in diffs: hallucinated APIs (plausible but nonexistent signatures/flags), over-engineering (abstractions for cases that can't happen), silent scope creep (unrelated refactors bundled into the diff), and untested edge cases (happy-path tests only).
 
 ## CI (GitHub Actions)
 
