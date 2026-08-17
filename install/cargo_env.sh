@@ -4,7 +4,7 @@
 ## Puts ~/.cargo/bin on PATH for the current script.
 ## Sourced by install/rust.sh, install/cli-tools.sh and install/rust-tools.sh.
 ##
-## Library only -- no `## @make` header, so not a Make target.
+## Library only -- no `## @just` header, so not a Make target.
 ##
 ## Needed because every Make target is its own `bash -c`, so nothing rust.sh
 ## does to PATH survives into the next target. The only thing that normally adds

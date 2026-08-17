@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 62 My Dev Tooling | Clone gtd and install it with uv
+## @just 62 My Dev Tooling | Clone gtd and install it with uv
 
 ##
 ## Clone gtd and install it with uv

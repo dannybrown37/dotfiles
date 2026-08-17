@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 63 My Dev Tooling | Clone git-a-grip and install it with uv
+## @just 63 My Dev Tooling | Clone git-a-grip and install it with uv
 
 ##
 ## Clone git-a-grip and install it with uv

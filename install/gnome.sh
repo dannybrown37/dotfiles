@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 40 Environment-Specific | Install Gnome extensions
+## @just 40 Environment-Specific | Install Gnome extensions
 
 
 pipx install gnome-extensions-cli --system-site-packages

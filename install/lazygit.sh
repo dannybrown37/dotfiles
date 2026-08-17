@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 31 Developer Tools | Install lazygit TUI git client
+## @just 31 Developer Tools | Install lazygit TUI git client
 
 ##
 ## Install latest version of lazygit (skips if already current)

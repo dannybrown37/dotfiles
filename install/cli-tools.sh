@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 14 Start Here | Install the core CLI tools with no usable distro package
+## @just 14 Start Here | Install the core CLI tools with no usable distro package
 
 ##
 ## Split out of the old install/bash.sh, where these sat interleaved with the

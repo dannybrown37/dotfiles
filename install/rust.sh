@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 24 Languages & Runtimes | Install the Rust toolchain (rustup, latest stable)
+## @just 24 Languages & Runtimes | Install the Rust toolchain (rustup, latest stable)
 
 ##
 ## Toolchain only. `make bootstrap` depends on this because cli-tools.sh installs

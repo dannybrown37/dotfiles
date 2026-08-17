@@ -4,7 +4,7 @@
 ## Single source of truth for creating one config symlink.
 ## Sourced by install/symlinks.sh, install/lazygit.sh and install/spotify.sh.
 ##
-## Library only -- no `## @make` header, so it is not a Make target. The sweep
+## Library only -- no `## @just` header, so it is not a Make target. The sweep
 ## that links every tracked config lives in install/symlinks.sh, which is a
 ## target; keeping the two apart is what lets lazygit.sh and spotify.sh source
 ## this for the one function without triggering the whole sweep.
