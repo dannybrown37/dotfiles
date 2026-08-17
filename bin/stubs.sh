@@ -16,6 +16,7 @@ gh() { command gh "$@"; }                  # @doc GitHub CLI -- PRs, issues, wor
 git-open() { command git-open "$@"; }   # @doc Open current repo/branch in browser | git-open [remote] [branch]
 glow() { command glow "$@"; }           # @doc Render markdown in the terminal | glow <file>
 hyperfine() { command hyperfine "$@"; } # @doc Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2'
+just() { command just "$@"; }           # @doc Command runner (modern Make alternative) | just <recipe>
 lazygit() { command lazygit "$@"; }     # @doc TUI git client | lg (alias)
 pass() { command pass "$@"; }           # @doc Password store -- manage secrets via GPG | pass show <name>
 rg() { command rg "$@"; }               # @doc Fast regex search across files (ripgrep) | rg <pattern>

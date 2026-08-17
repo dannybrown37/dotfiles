@@ -112,6 +112,7 @@ done
 
 section "Core CLI Tools"
 check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: make cli-tools)"
+check "just"       "just --version | awk '{print \$2}'"                             "cargo install just  (or: make cli-tools)"
 check "tokei"      "tokei --version | awk '{print \$2}'"                    "make cli-tools"
 check "hyperfine"  "hyperfine --version | awk '{print \$2}'"                "make cli-tools"
 check "glow"       "glow --version | awk '{print \$3}'"                     "make cli-tools"

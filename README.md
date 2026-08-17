@@ -127,6 +127,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gss` | Git stash save | `config/.bash_aliases` |
 | `gwt` | git-worktree: gwt <add|list|rm|cd> [branch] [options] | `bin/gwt.sh` |
 | `hyperfine` | Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2' | `bin/stubs.sh` |
+| `just` | Command runner (modern Make alternative) | just <recipe> | `bin/stubs.sh` |
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
 | `lazygit` | TUI git client | lg (alias) | `bin/stubs.sh` |
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |

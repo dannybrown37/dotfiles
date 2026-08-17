@@ -23,15 +23,17 @@ source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
 ## install from crates.io so it tracks upstream.
 ##
 
-if ! command -v eza &>/dev/null; then
-    if command -v cargo &>/dev/null; then
-        cargo install eza
+for cargo_tool in eza just; do
+    if ! command -v "${cargo_tool}" &>/dev/null; then
+        if command -v cargo &>/dev/null; then
+            cargo install "${cargo_tool}"
+        else
+            echo "${cargo_tool} needs cargo -- run 'make rust' then 'make cli-tools'" >&2
+        fi
     else
-        echo "eza needs cargo -- run 'make rust' then 'make cli-tools'" >&2
+        echo "${cargo_tool} is already installed on this system"
     fi
-else
-    echo "eza is already installed on this system"
-fi
+done
 
 ##
 ## Install tokei (code stats) -- v12 is last release with pre-built binaries
