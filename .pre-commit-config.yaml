@@ -14,13 +14,13 @@ repos:
       - id: mypy
         args: ['--runner=uv run --with mypy mypy', scripts/, --ignore-missing-imports]
         files: ^scripts/.*\.py$
-      # Replaces scripts/sync-readme-make.sh. The hook ships always_run,
-      # which would shell out to make on every commit; the help text is
-      # written entirely in the Makefile, so scope it to that and the README.
+      # The hook ships always_run, which would shell out on every commit;
+      # the help text is derived from install/ headers and the justfile,
+      # so scope it to those and the README.
       - id: embed-command
-        args: ['--marker=make', '--command=make --no-print-directory help']
+        args: ['--marker=make', '--command=just']
         always_run: false
-        files: ^(Makefile|README\.md)$
+        files: ^(justfile|install/|README\.md)$
       - id: block-private-terms
 
   - repo: https://github.com/pre-commit/pre-commit-hooks

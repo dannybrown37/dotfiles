@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
 ##
-## Generate the `make help` listing from `## @make` headers.
+## Generate the help listing from `## @just` headers.
 ##
-## Header format:  ## @make <order> <Section> | <description>
+## Header format:  ## @just <order> <Section> | <description>
 ##
-## A file in install/ becomes a Make target if and only if it carries one of
-## these headers, so the target list, the .PHONY list, and this help text cannot
-## drift apart -- they are all derived from the same line. `order` sorts both
-## the sections and the entries within them.
+## A file in install/ becomes a recipe if and only if it carries one of
+## these headers, so the recipe list and this help text cannot drift apart --
+## they are both derived from the same line. `order` sorts both the sections
+## and the entries within them.
 ##
-## Targets with no install script of their own (vscode, projects, secrets-*)
-## carry the header in the Makefile, directly above the target.
+## Recipes with no install script of their own (vscode, projects, secrets-*)
+## carry the header in the justfile, directly above the recipe.
 ##
 
 set -euo pipefail
@@ -32,12 +32,9 @@ readonly parse_header='
     }
 '
 
-# For install scripts the filename is the target name -- that is why they are
-# named after their target rather than the upstream project (spotify.sh, not
-# spotify-player.sh).
 install_headers() {
     awk "${parse_header}"'
-        /^## @make / {
+        /^## @just / {
             name = FILENAME
             sub(/.*\//, "", name)
             sub(/\.(sh|ps1)$/, "", name)
@@ -46,10 +43,9 @@ install_headers() {
     ' "${root}"/install/*.sh "${root}"/install/*.ps1
 }
 
-# In the Makefile the name comes from the target line the header sits above.
-makefile_headers() {
+justfile_headers() {
     awk "${parse_header}"'
-        /^## @make / { meta = substr($0, 10); next }
+        /^## @just / { meta = substr($0, 10); next }
         meta != "" {
             if ($0 ~ /^[a-zA-Z0-9_-]+:/) {
                 name = $0
@@ -58,14 +54,14 @@ makefile_headers() {
             }
             meta = ""
         }
-    ' "${root}/Makefile"
+    ' "${root}/justfile"
 }
 
 echo "Usage: make [option]"
 
 {
     install_headers
-    makefile_headers
+    justfile_headers
 } | sort -t"$(printf '\t')" -k1,1n | awk -F"$(printf '\t')" '
     $2 != section { section = $2; printf "\n%s:\n", section }
     { printf "  %-16s%s\n", $3, $4 }

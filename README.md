@@ -12,7 +12,7 @@ curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/thi
 
 ## Install Options
 
-The output of `make` in the root directory:
+The output of `make` (aliased to `just`) in the root directory:
 
 <!-- make:start -->
 
@@ -203,7 +203,7 @@ make secrets-load    # git pull → password-store → local (backs up changed f
 Manages local gitignored files via the encrypted `password-store`.
 
 The store lives at `~/.password-store` and is its own private git repo, so nothing about it
-lands in this repo. `pass` commits on every insert; the make targets push and pull.
+lands in this repo. `pass` commits on every insert; the `secrets-save`/`secrets-load` recipes push and pull.
 
 **What gets synced** is the `manifest` entry inside the store — one `pass-entry:path` pair per
 line. It lives in the store rather than in this repo so the list of synced files stays private

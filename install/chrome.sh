@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 15 Start Here | Install Google Chrome
+## @just 15 Start Here | Install Google Chrome
 
 ##
 ## Split out of the old install/bash.sh, where a GUI browser sat between zoxide

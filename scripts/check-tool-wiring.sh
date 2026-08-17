@@ -10,7 +10,7 @@
 ##                deliberately have no passthrough stub
 ##
 ## Tools arrive three ways, and they need different wiring:
-##   dedicated  install/<tool>.sh carrying a '## @make' header
+##   dedicated  install/<tool>.sh carrying a '## @just' header
 ##   apt        listed in install/apt_packages.sh, no target of its own
 ##   bundled    built by a shared script (eza via install/cli-tools.sh)
 ## All three still need a stub in bin/stubs.sh and audit coverage.
@@ -143,17 +143,17 @@ unknown)
     ;;
 esac
 
-# One '## @make' header is the entire registration: the Makefile derives the
-# target and the .PHONY list from it, `make help` renders it, and the
+# One '## @just' header is the entire registration: the justfile lists
+# the recipe from it, the help script renders it, and the
 # embed-command hook copies that help into the README. A dedicated install
 # script without one is invisible to all four.
 if [[ "${mode}" != "dedicated" ]]; then
-    skip "@make header" "installed without a dedicated target"
-elif grep -q '^## @make ' "${install_script}"; then
-    pass "@make header" "registered"
+    skip "@just header" "installed without a dedicated target"
+elif grep -q '^## @just ' "${install_script}"; then
+    pass "@just header" "registered"
 else
-    fail "@make header" \
-        "add '## @make <order> <Section> | <desc>' to install/${tool}.sh"
+    fail "@just header" \
+        "add '## @just <order> <Section> | <desc>' to install/${tool}.sh"
 fi
 
 if [[ "${require_stub}" == false ]]; then

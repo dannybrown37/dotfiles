@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 13 Start Here | Symlink every tracked config into $HOME (idempotent, no network)
+## @just 13 Start Here | Symlink every tracked config into $HOME (idempotent, no network)
 
 ##
 ## The whole config-symlink sweep, in one target. Split out of the bootstrap

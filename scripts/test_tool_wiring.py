@@ -4,9 +4,9 @@ Each test builds a throwaway repo skeleton with the files the checker
 inspects, optionally omitting one piece of wiring, then asserts the
 checker notices exactly that omission.
 
-The Makefile derives targets, .PHONY, and help from the '## @make' header
-in each install script, so there is no Makefile fixture here -- the header
-is the only registration the checker can look for.
+The justfile lists recipes and the help script derives its listing from the
+'## @just' header in each install script -- the header is the only
+registration the checker can look for.
 """
 
 import os
@@ -27,7 +27,7 @@ WIDGET_INSTALL = """\
 set -euo pipefail
 """
 
-WIDGET_HEADER = '## @make 30 Developer Tools | Install widget'
+WIDGET_HEADER = '## @just 30 Developer Tools | Install widget'
 
 # Deliberately no '@doc' markers anywhere in this file's fixtures:
 # sync-readme-commands.sh scans every file in scripts/, not just *.sh, and
@@ -124,7 +124,7 @@ def test_fully_wired_dedicated_tool_passes(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ('omit', 'expected_label'),
     [
-        ('header', '@make header'),
+        ('header', '@just header'),
         ('stub', 'stubs.sh stub'),
         ('audit', 'audit entry'),
     ],

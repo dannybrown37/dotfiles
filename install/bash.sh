@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 12 Start Here | Install the Bash profile (symlinks, prompt, completion, history)
+## @just 12 Start Here | Install the Bash profile (symlinks, prompt, completion, history)
 
 ##
 ## The actual bash profile, which is what `make bash` always claimed to be and

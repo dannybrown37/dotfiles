@@ -15,21 +15,23 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
    as the reference implementation: version check, skip-if-current, `mktemp -d` + `trap`
    cleanup, install, confirm, optional config symlink.
 
-   **Name the file after the Make target you want** — the filename *is* the target name
+   **Name the file after the recipe you want** — the filename *is* the recipe name
    (`install/spotify.sh` → `make spotify`), so don't name it after the upstream project.
 
-2. Give it a `## @make` header, directly under the shebang:
+2. Give it a `## @just` header, directly under the shebang:
 
    ```bash
    #!/usr/bin/env bash
-   ## @make 34 Developer Tools | Install Terraform (latest release)
+   ## @just 34 Developer Tools | Install Terraform (latest release)
    ```
 
-   That one line is the entire registration. The Makefile derives the target and the
-   `.PHONY` list from it, `make help` renders it under `<Section>` sorted by `<order>`,
-   and the `embed-command` hook copies that help into the README. A script without the
-   header is not a target at all — which is how helpers like `apt_packages.sh`,
-   `versions.sh`, and `this_repo.sh` stay out of the target list.
+   That one line is the entire registration. The help script renders it under `<Section>`
+   sorted by `<order>`, and the `embed-command` hook copies that help into the README.
+   A script without the header is not discoverable — which is how helpers like
+   `apt_packages.sh`, `versions.sh`, and `this_repo.sh` stay out of the listing.
+
+   You must also add a corresponding recipe to the `justfile` (one line calling
+   `bash -c ". install/<tool>.sh"`).
 
    If the new tool needs a pinned version, put the pin in `install/versions.sh` rather
    than inline — that file is the single source of truth, read by the install script,
@@ -52,8 +54,8 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
 A Windows-only tool works the same way with a `.ps1` extension — `install/komo.ps1` carries
 the same header and becomes `make komo`, run via `powershell.exe`.
 
-Targets with no install script of their own (`vscode`, `projects`, `secrets-*`) keep their
-header in the `Makefile`, directly above the target.
+Recipes with no install script of their own (`vscode`, `projects`, `secrets-*`) keep their
+header in the `justfile`, directly above the recipe.
 
 ## Verifying Wiring
 
@@ -61,7 +63,7 @@ header in the `Makefile`, directly above the target.
 first thing you missed. It detects how the tool is installed and only demands the wiring
 that applies:
 
-| Mode | Detected by | Needs a `## @make` header? |
+| Mode | Detected by | Needs a `## @just` header? |
 |---|---|---|
 | `dedicated` | `install/<tool>.sh` exists | yes |
 | `apt` | listed in `install/apt_packages.sh` | no |
@@ -70,8 +72,8 @@ that applies:
 All three still need a `bin/stubs.sh` stub and audit coverage. apt packages get audit
 coverage for free — `dotfiles_audit.sh` iterates `apt_packages.sh`.
 
-The checker no longer verifies the Make target, the `.PHONY` entry, or the help line
-separately: all three are derived from the header, so they cannot drift out of sync.
+The checker no longer verifies the justfile recipe or the help line separately:
+both are derived from the header, so they cannot drift out of sync.
 
 Two flags for the cases that would otherwise false-alarm:
 

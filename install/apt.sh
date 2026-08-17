@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 11 Start Here | Update apt and install every apt package this repo needs
+## @just 11 Start Here | Update apt and install every apt package this repo needs
 
 ##
 ## Split out of the old install/bash.sh. First step of `make bootstrap`, and the

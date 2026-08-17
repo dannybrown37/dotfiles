@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @make 23 Languages & Runtimes | Install Go environment (latest Golang version)
+## @just 23 Languages & Runtimes | Install Go environment (latest Golang version)
 
 ##
 ## Install latest version of golang (skips if already current)
