@@ -93,8 +93,8 @@ def test_url_encodes_the_link_passed_to_the_api(
 ) -> None:
     install_curl_stub(stub_bin, f'{{"pageUrl":"{PAGE_URL}"}}')
     result = run(stub_bin, tmp_path, [YOUTUBE_URL])
-    assert len(result.calls) == 1
-    assert 'url=https%3A%2F%2Fwww.youtube.com' in result.calls[0]
+    assert len(result.calls) == 1  # type: ignore[attr-defined]
+    assert 'url=https%3A%2F%2Fwww.youtube.com' in result.calls[0]  # type: ignore[attr-defined]
 
 
 def test_missing_argument_is_a_usage_error(
@@ -105,7 +105,7 @@ def test_missing_argument_is_a_usage_error(
     result = run(stub_bin, tmp_path, [])
     assert result.returncode == EXIT_USAGE
     assert 'usage' in result.stderr.lower()
-    assert result.calls == []
+    assert result.calls == []  # type: ignore[attr-defined]
 
 
 def test_unresolvable_link_fails_with_a_clear_message(

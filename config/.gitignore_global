@@ -305,3 +305,9 @@ dist
 
 .claude/handoffs/*
 docs/handoffs/*
+
+##
+## Secrets / certificates
+##
+*.pem
+credentials*

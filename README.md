@@ -38,7 +38,7 @@ Languages & Runtimes:
 Developer Tools:
   nvim            Install Neovim
   lazygit         Install lazygit TUI git client
-  cartoon         Install cartoon CLI (pinned version, no hook)
+  cartoon         Install cartoon CLI and hook
   spotify         Install spotify_player TUI (remote control, no audio)
   terraform       Install Terraform (latest release)
   vscode          Install VS Code extensions and settings
@@ -71,7 +71,7 @@ Verification:
 
 ## Commands Available
 
-Commmands are auto-documented with a # @doc comment on the same line as the command definition.
+Commands are auto-documented with a # @doc comment on the same line as the command definition.
 
 <!-- @doc:commands:start -->
 
