@@ -17,7 +17,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).parent.parent
 SPOTIFY_SH = REPO_ROOT / 'bin' / 'spotify.sh'
-BASH = shutil.which('bash')
+BASH = shutil.which('bash') or '/bin/bash'
 EXIT_USAGE = 2
 
 TRACK_URL = 'https://open.spotify.com/track/7si4G8Ky9JCTgzlg8BtFTq'
