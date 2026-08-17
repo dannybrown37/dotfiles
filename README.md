@@ -132,6 +132,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
 | `llmedit` | Edit LLM rules in Neovim | `config/.bash_aliases` |
 | `llmrules` | Copy LLM rules to clipboard for chatbot copy-paste | `config/.bash_aliases` |
+| `make` | Run make, or just if a justfile exists and no Makefile | make <target> | `bin/make.sh` |
 | `media` | Open educational media reference | `config/.bash_aliases` |
 | `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
 | `mk` | Create a directory and cd into it | `bin/mk.sh` |
