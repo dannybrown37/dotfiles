@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+# bash-preexec hooks - leveraging the preexec/precmd framework from atuin
+# Sourced by .bashrc after bash-preexec.sh is loaded
+
+
+##
+## AWS Profile Context Display
+##
+
+_show_aws_context() {
+    local cmd="$1"
+
+    if [[ "$cmd" =~ ^aws\  ]] || [[ "$cmd" =~ ^terraform\  ]]; then
+        if [[ -n "${AWS_PROFILE:-}" ]]; then
+            echo -e "\033[2m[AWS Profile: $AWS_PROFILE]\033[0m" >&2
+        elif [[ -n "${AWS_DEFAULT_REGION:-}" ]]; then
+            echo -e "\033[2m[AWS Region: $AWS_DEFAULT_REGION]\033[0m" >&2
+        fi
+    fi
+}
+
+preexec_functions+=(_show_aws_context)
+
+##
+## Long-Running Command Desktop Notification
+##
+
+__preexec_cmd_start_time=0
+__preexec_last_cmd=""
+
+_mark_command_start() {
+    __preexec_cmd_start_time=$EPOCHREALTIME
+    __preexec_last_cmd="$1"
+}
+
+_notify_if_long_running() {
+    [[ "$__preexec_cmd_start_time" == "0" ]] && return
+
+    local duration
+    duration=$(awk "BEGIN{printf \"%.1f\", $EPOCHREALTIME - $__preexec_cmd_start_time}")
+
+    # Notify if command took > 5minutes
+    if (( $(awk "BEGIN{print ($duration > 300)}") )); then
+        local short_cmd
+        short_cmd=$(echo "$__preexec_last_cmd" | head -c 50)
+
+        # Send to ntfy.sh (phone notification)
+        if [[ -n "${PERSONAL_ALERT_TOPIC:-}" ]] && command -v http &>/dev/null; then
+            echo "Command finished: ${short_cmd} (${duration}s)" | http POST ntfy.sh/"${PERSONAL_ALERT_TOPIC}" > /dev/null 2>&1 &
+            disown
+        fi
+    fi
+
+    __preexec_cmd_start_time=0
+}
+
+preexec_functions+=(_mark_command_start)
+precmd_functions+=(_notify_if_long_running)
+
+##
+## Auto-Activate Development Environments on Directory Change
+##
+
+__preexec_last_pwd="$PWD"
+
+_auto_activate_env() {
+    # Only trigger on directory change
+    [[ "$__preexec_last_pwd" == "$PWD" ]] && { __preexec_last_pwd="$PWD"; return; }
+    __preexec_last_pwd="$PWD"
+
+    # Python venv activation
+    if [[ -f ".venv/bin/activate" ]] && [[ -z "${VIRTUAL_ENV:-}" ]]; then
+        echo -e "\033[2m[Activating Python venv]\033[0m" >&2
+        # shellcheck disable=SC1091
+        source .venv/bin/activate
+    fi
+
+    # Node version switching - supports both nvm and n
+    if [[ -f ".nvmrc" ]] || [[ -f ".node-version" ]]; then
+        local version_file
+        local required_version
+
+        if [[ -f ".nvmrc" ]]; then
+            version_file=".nvmrc"
+            required_version=$(<"$version_file")
+        elif [[ -f ".node-version" ]]; then
+            version_file=".node-version"
+            required_version=$(<"$version_file")
+        fi
+
+        local current_version
+        current_version=$(node --version 2>/dev/null | tr -d 'v')
+
+        if [[ "$required_version" != "$current_version" ]]; then
+            # Try nvm first (if it's a function)
+            if declare -f nvm &>/dev/null; then
+                echo -e "\033[2m[Switching to Node ${required_version}]\033[0m" >&2
+                nvm use --silent 2>/dev/null || nvm use
+            # Fall back to n
+            elif command -v n &>/dev/null; then
+                echo -e "\033[2m[Switching to Node ${required_version}]\033[0m" >&2
+                n "$required_version" &>/dev/null
+            fi
+        fi
+    fi
+}
+
+precmd_functions+=(_auto_activate_env)

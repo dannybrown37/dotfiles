@@ -157,6 +157,9 @@ if [[ -f "$HOME/.atuin/bin/env" ]]; then
     . "$HOME/.atuin/bin/env"
     [[ -f "$HOME/.bash-preexec.sh" ]] && source "$HOME/.bash-preexec.sh"
     eval "$(atuin init bash)"
+    
+    # Load custom preexec/precmd hooks after bash-preexec is available
+    [[ -f "${DOTFILES_DIR}/config/.bash_preexec_hooks" ]] && source "${DOTFILES_DIR}/config/.bash_preexec_hooks"
 fi
 
 # Remove duplicates from $PATH and then export. Do not export PATH anywhere else!
