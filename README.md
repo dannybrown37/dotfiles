@@ -190,6 +190,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 
 - Use Ctrl+J/Ctrl+K to scroll up and down through command history
 - Use escape to clear current prompt entry
+- bash-preexec hooks provide smart warnings, context awareness, and auto-activation (see [docs/bash-preexec-hooks.md](docs/bash-preexec-hooks.md))
 
 ### Handling Secrets
 
