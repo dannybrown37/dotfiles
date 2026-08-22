@@ -70,6 +70,9 @@ wsl-fonts:
 komo:
     powershell.exe -ExecutionPolicy Bypass -File "{{root_dir}}/install/komo.ps1"
 
+win32yank:
+    bash -c ". {{root_dir}}/install/win32yank.sh"
+
 skill-tree:
     bash -c ". {{root_dir}}/install/skill-tree.sh"
 

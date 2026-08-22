@@ -6,7 +6,7 @@ alias cb='tee >(~/projects/dotfiles/scripts/tmux-copy-to-clipboard.sh)' # @doc C
 alias du='du -h | sort -h'  # @doc Disk usage sorted and human-readable
 alias llmrules='pcat ~/projects/dotfiles/references/llm-rules.md | cb >/dev/null && echo "Copied to clipboard"' # @doc Copy LLM rules to clipboard for chatbot copy-paste
 alias llmedit='nvim ~/projects/dotfiles/references/llm-rules.md' # @doc Edit LLM rules in Neovim
-alias pcb='powershell.exe -NoProfile -Command "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard" 2>/dev/null | tr -d "\r"' # @doc Print clipboard contents
+alias pcb='~/projects/dotfiles/scripts/tmux-paste-from-clipboard.sh' # @doc Print clipboard contents
 alias shot='screenshot'  # @doc Alias for screenshot
 alias vc="grep -v -E '^\s*$|^#' \"\${DOTFILES_DIR}/references/vim-notes.md\" | sort | fzf" # @doc Vim cheatsheet fuzzy finder
 unalias vsi 2>/dev/null || true
