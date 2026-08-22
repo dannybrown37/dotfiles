@@ -126,6 +126,12 @@ check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "mak
 check "cartoon"    "cartoon --version | awk '{print \$2}'"                  "make cartoon"
 check "terraform"  "terraform version -json | jq -r '.terraform_version'"   "make terraform"
 
+# ── WSL Clipboard ────────────────────────────────────────────────────────────
+
+if [[ -n "${ON_WINDOWS:-}" ]]; then
+    check "win32yank.exe" "win32yank.exe --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'" "just win32yank"
+fi
+
 # ── GitHub & Auth ─────────────────────────────────────────────────────────────
 
 section "GitHub & Auth"

@@ -25,4 +25,5 @@ terraform() { command terraform "$@"; } # @doc Provision infrastructure as code 
 tldr() { command tldr "$@"; }           # @doc Simplified man pages with practical examples | tldr <cmd>
 tmux() { command tmux "$@"; }           # @doc Terminal multiplexer -- sessions, windows, panes
 tokei() { command tokei "$@"; }         # @doc Count lines of code by language in current repo
+win32yank() { command win32yank.exe "$@"; } # @doc Fast Windows clipboard bridge for WSL | echo foo | win32yank.exe -i
 zoxide() { command zoxide "$@"; }       # @doc Smarter cd that learns your most-used directories (alias: cd)

@@ -47,6 +47,7 @@ Developer Tools:
 Environment-Specific:
   gnome           Install Gnome extensions
   select-nerdfont Interactively pick and install a Nerd Font (Windows)
+  win32yank       Install win32yank clipboard bridge (WSL only)
   wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
   komo            Install komorebi/whkd if needed, then (re)start it
 
@@ -165,6 +166,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `utc_timestamp` | Print the current UTC timestamp in ISO format with microseconds, copy to clipboard | `bin/timestamps.sh` |
 | `vc` | Vim cheatsheet fuzzy finder | `config/.bash_aliases` |
 | `vsi` | Fuzzy find files and open in Neovim (git-aware) | `config/.bash_aliases` |
+| `win32yank` | Fast Windows clipboard bridge for WSL | echo foo | win32yank.exe -i | `bin/stubs.sh` |
 | `zoxide` | Smarter cd that learns your most-used directories (alias: cd) | `bin/stubs.sh` |
 <!-- @doc:commands:end -->
 
