@@ -55,4 +55,4 @@ jobs:
         uses: astral-sh/setup-uv@v9.0.0
 
       - name: Run scripts tests
-        run: uv run --with pytest --with pytest-cov pytest --cov=scripts --cov-report=term-missing scripts/
+        run: uv run --with pytest --with pytest-cov --with pytest-xdist pytest --cov=scripts --cov-report=term-missing scripts/
