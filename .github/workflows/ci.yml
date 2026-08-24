@@ -21,10 +21,10 @@ jobs:
       - name: Load pinned tool versions
         run: grep -E '^[A-Z_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
 
-      - name: Install ruff and pre-commit
+      - name: Install ruff and prek
         run: |
           uv tool install "ruff==${RUFF_VERSION}"
-          uv tool install "pre-commit==${PRE_COMMIT_VERSION}"
+          uv tool install "prek==${PREK_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # embed-command shells out to `just` (see .pre-commit-config.yaml), so
@@ -34,18 +34,15 @@ jobs:
         with:
           just-version: ${{ env.JUST_VERSION }}
 
-      - name: Cache pre-commit hook environments
+      - name: Cache prek hook environments
         uses: actions/cache@v6
         with:
-          path: ~/.cache/pre-commit
-          # versions.sh is in the key because it carries the pre-commit pin -- a
-          # major bump rebuilds every hook env, so a cache keyed only on the hook
-          # config would restore envs built by the previous runner.
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml', 'install/versions.sh') }}
+          path: ~/.cache/prek
+          key: prek-${{ hashFiles('.pre-commit-config.yaml', 'install/versions.sh') }}
 
       # The pytest hook duplicates the `test` job below; skip it by hook id.
-      - name: Run pre-commit hooks
-        run: pre-commit run --all-files --show-diff-on-failure
+      - name: Run prek hooks
+        run: prek run --all-files
         env:
           SKIP: pytest
 

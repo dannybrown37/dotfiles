@@ -142,7 +142,7 @@ def test_main_does_not_recurse_when_already_blocking(
 ) -> None:
     (repo / 'tracked.py').write_text('x = 2\n')
     monkeypatch.setattr(
-        'verify_changes.run_pre_commit',
+        'verify_changes.run_prek',
         _fail_if_called,
     )
 
@@ -157,7 +157,7 @@ def test_main_skips_verification_when_disabled(
 ) -> None:
     (repo / 'tracked.py').write_text('x = 2\n')
     monkeypatch.setenv('VERIFY_CHANGES_SKIP', '1')
-    monkeypatch.setattr('verify_changes.run_pre_commit', _fail_if_called)
+    monkeypatch.setattr('verify_changes.run_prek', _fail_if_called)
 
     assert main(json.dumps({'cwd': str(repo)})) == 0
 
@@ -166,7 +166,7 @@ def test_main_passes_when_tree_is_clean(
     repo: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr('verify_changes.run_pre_commit', _fail_if_called)
+    monkeypatch.setattr('verify_changes.run_prek', _fail_if_called)
 
     assert main(json.dumps({'cwd': str(repo)})) == 0
 
@@ -175,22 +175,22 @@ def test_main_passes_outside_a_git_repo(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr('verify_changes.run_pre_commit', _fail_if_called)
+    monkeypatch.setattr('verify_changes.run_prek', _fail_if_called)
 
     assert main(json.dumps({'cwd': str(tmp_path)})) == 0
 
 
-def test_main_passes_without_a_pre_commit_config(
+def test_main_passes_without_a_prek_config(
     repo: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     (repo / 'tracked.py').write_text('x = 2\n')
-    monkeypatch.setattr('verify_changes.run_pre_commit', _fail_if_called)
+    monkeypatch.setattr('verify_changes.run_prek', _fail_if_called)
 
     assert main(json.dumps({'cwd': str(repo)})) == 0
 
 
-def test_main_blocks_when_pre_commit_fails(
+def test_main_blocks_when_prek_fails(
     repo: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -198,7 +198,7 @@ def test_main_blocks_when_pre_commit_fails(
     (repo / '.pre-commit-config.yaml').write_text(CONFIG_WITH_STAGING_HOOKS)
     (repo / 'tracked.py').write_text('import os\n')
     monkeypatch.setattr(
-        'verify_changes.run_pre_commit',
+        'verify_changes.run_prek',
         _stub_result(1, 'Ruff check...Failed\nF401 unused import'),
     )
 
@@ -206,21 +206,21 @@ def test_main_blocks_when_pre_commit_fails(
     assert 'F401 unused import' in capsys.readouterr().err
 
 
-def test_main_allows_stop_when_pre_commit_passes(
+def test_main_allows_stop_when_prek_passes(
     repo: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     (repo / '.pre-commit-config.yaml').write_text(CONFIG_WITH_STAGING_HOOKS)
     (repo / 'tracked.py').write_text('x = 2\n')
     monkeypatch.setattr(
-        'verify_changes.run_pre_commit',
+        'verify_changes.run_prek',
         _stub_result(0, 'all good'),
     )
 
     assert main(json.dumps({'cwd': str(repo)})) == 0
 
 
-def test_main_forwards_changed_paths_and_skips_to_pre_commit(
+def test_main_forwards_changed_paths_and_skips_to_prek(
     repo: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -237,7 +237,7 @@ def test_main_forwards_changed_paths_and_skips_to_pre_commit(
         seen.update(repo_root=repo_root, paths=paths, skip_ids=skip_ids)
         return subprocess.CompletedProcess([], 0, '', '')
 
-    monkeypatch.setattr('verify_changes.run_pre_commit', capture)
+    monkeypatch.setattr('verify_changes.run_prek', capture)
     main(json.dumps({'cwd': str(repo)}))
 
     assert seen['paths'] == [
@@ -252,7 +252,7 @@ def test_main_forwards_changed_paths_and_skips_to_pre_commit(
     ]
 
 
-def test_main_does_not_block_when_pre_commit_is_missing(
+def test_main_does_not_block_when_prek_is_missing(
     repo: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -266,7 +266,7 @@ def test_main_does_not_block_when_pre_commit_is_missing(
     ) -> subprocess.CompletedProcess[str]:
         raise FileNotFoundError
 
-    monkeypatch.setattr('verify_changes.run_pre_commit', raise_missing)
+    monkeypatch.setattr('verify_changes.run_prek', raise_missing)
 
     assert main(json.dumps({'cwd': str(repo)})) == 0
 
@@ -276,7 +276,7 @@ def _fail_if_called(
     paths: list[str],  # noqa: ARG001
     skip_ids: list[str],  # noqa: ARG001
 ) -> subprocess.CompletedProcess[str]:
-    msg = 'pre-commit should not have run'
+    msg = 'prek should not have run'
     raise AssertionError(msg)
 
 

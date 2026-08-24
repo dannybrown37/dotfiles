@@ -57,4 +57,4 @@ fi
 # Was hardcoded to ~/projects/dotfiles, which silently did nothing from a clone
 # anywhere else.
 git -C "${dotfiles}" config core.hooksPath githooks &&
-    echo "Configured git hooks -- commits run pre-commit"
+    echo "Configured git hooks -- commits run prek"

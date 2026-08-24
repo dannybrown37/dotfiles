@@ -62,7 +62,7 @@ My Dev Tooling:
   git-a-grip      Clone git-a-grip and install it with uv
 
 Verification:
-  check           Run every pre-commit hook over the whole repo
+  check           Run every prek hook over the whole repo
   test            Run the scripts/ test suite with coverage
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)

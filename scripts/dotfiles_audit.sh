@@ -239,7 +239,7 @@ section "Python / uv"
 check "uv"    "uv --version | awk '{print \$2}'"    "curl -LsSf https://astral.sh/uv/install.sh | sh"
 check "python" "python3 --version | awk '{print \$2}'" "uv python install"
 
-uv_tools=(pre-commit cookiecutter ruff bashate)
+uv_tools=(prek cookiecutter ruff bashate)
 for tool in "${uv_tools[@]}"; do
     if uv tool list 2>/dev/null | grep -q "^${tool} "; then
         ver=$(uv tool list 2>/dev/null | grep "^${tool} " | awk '{print $2}' | head -1)
@@ -285,12 +285,12 @@ done
 section "Dev Tooling"
 # shellcheck source=install/versions.sh
 source "${DOTFILES_DIR}/install/versions.sh"
-check "pre-commit" "pre-commit --version | awk '{print \$2}'" "uv tool install 'pre-commit==${PRE_COMMIT_VERSION}'"
+check "prek" "prek --version | awk '{print \$2}'" "uv tool install 'prek==${PREK_VERSION}'"
 
 if [[ -x "${DOTFILES_DIR}/githooks/pre-commit" ]]; then
-    ok "pre-commit hooks" "wired via githooks/pre-commit"
+    ok "prek hooks" "wired via githooks/pre-commit"
 else
-    warn "pre-commit hooks" "githooks/pre-commit missing or not executable"
+    warn "prek hooks" "githooks/pre-commit missing or not executable"
 fi
 
 check "pass" "pass --version 2>&1 | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+'" "sudo apt install pass"
@@ -308,7 +308,7 @@ HOOKS_PATH=$(git -C "$DOTFILES_DIR" config --get core.hooksPath 2>/dev/null)
 if [[ "$HOOKS_PATH" == "githooks" ]]; then
     ok "git hooks" "core.hooksPath -> githooks"
 else
-    fail "git hooks" "run: make password-store  (sets core.hooksPath so commits run pre-commit)"
+    fail "git hooks" "run: make password-store  (sets core.hooksPath so commits run prek)"
 fi
 
 if git -C "$DOTFILES_DIR" config --get-all credential.https://github.com.helper 2>/dev/null |

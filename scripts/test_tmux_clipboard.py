@@ -69,6 +69,15 @@ def install_stub(bin_dir: Path, body: str) -> None:
     path.chmod(0o755)
 
 
+def _path_without(binary: str) -> str:
+    """Return $PATH with directories containing *binary* removed."""
+    return os.pathsep.join(
+        d
+        for d in os.environ['PATH'].split(os.pathsep)
+        if not (Path(d) / binary).is_file()
+    )
+
+
 def run_script(
     script: Path,
     bin_dir: Path,
@@ -77,7 +86,7 @@ def run_script(
 ) -> subprocess.CompletedProcess[str]:
     env = {
         **os.environ,
-        'PATH': f'{bin_dir}{os.pathsep}{os.environ["PATH"]}',
+        'PATH': f'{bin_dir}{os.pathsep}{_path_without("win32yank.exe")}',
         **env_overrides,
     }
     return subprocess.run(  # noqa: S603
