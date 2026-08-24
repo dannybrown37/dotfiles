@@ -443,7 +443,8 @@ def main() -> None:
         default=None,
         help='with move, the destination directory (created if missing)',
     )
-    args = parser.parse_args()
+    args, remaining = parser.parse_known_args()
+    args.paths = (args.paths or []) + [Path(p) for p in remaining]
 
     if args.action == 'move':
         move_from_args(parser, args)

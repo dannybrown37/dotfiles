@@ -87,6 +87,7 @@ def run_script(
     env = {
         **os.environ,
         'PATH': f'{bin_dir}{os.pathsep}{_path_without("win32yank.exe")}',
+        'CLIPBOARD_RETRY_DELAY': '0',
         **env_overrides,
     }
     return subprocess.run(  # noqa: S603

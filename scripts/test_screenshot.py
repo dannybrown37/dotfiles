@@ -687,7 +687,6 @@ class TestCli:
             'move',
             '--dest',
             str(destination_dir),
-            '--',
             str(populated / 'new.png'),
             env_dir=populated,
         )

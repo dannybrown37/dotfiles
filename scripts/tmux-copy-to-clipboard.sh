@@ -7,7 +7,7 @@ if command -v win32yank.exe &>/dev/null; then
 fi
 
 readonly MAX_ATTEMPTS=10
-readonly RETRY_DELAY_SECONDS=0.2
+readonly RETRY_DELAY_SECONDS="${CLIPBOARD_RETRY_DELAY:-0.2}"
 
 tmpfile="/tmp/.tmux_clipboard_$$"
 errfile="/tmp/.tmux_clipboard_err_$$"
