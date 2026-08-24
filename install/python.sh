@@ -38,7 +38,7 @@ done
 source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
 
 uv tool install "ruff==${RUFF_VERSION}"
-uv tool install "pre-commit==${PRE_COMMIT_VERSION}"
+uv tool install "prek==${PREK_VERSION}"
 
 
 ##
@@ -105,7 +105,7 @@ uv tool install "pre-commit==${PRE_COMMIT_VERSION}"
 #
 # pipx_packages=(
 #     poetry
-#     pre-commit
+#     prek
 #     cookiecutter
 #     ruff
 #     bashate

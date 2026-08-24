@@ -1,4 +1,4 @@
-name: pre-commit autoupdate
+name: prek autoupdate
 
 # Dependabot covers .github/workflows only -- there is no pre-commit ecosystem.
 # This is the hook-rev equivalent: bump the pinned revs monthly, open a PR.
@@ -21,30 +21,30 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
 
-      - name: Install pre-commit
+      - name: Install prek
         run: |
-          uv tool install pre-commit
+          uv tool install prek
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Bump hook revs
-        run: pre-commit autoupdate
+        run: prek update
 
       - name: Run hooks against the new revs
-        run: pre-commit run --all-files --show-diff-on-failure
+        run: prek run --all-files
         env:
           SKIP: pytest
 
       - uses: peter-evans/create-pull-request@v8
         with:
-          branch: chore/pre-commit-autoupdate
-          title: "chore: pre-commit autoupdate"
-          commit-message: "chore: pre-commit autoupdate"
+          branch: chore/prek-autoupdate
+          title: "chore: prek autoupdate"
+          commit-message: "chore: prek autoupdate"
           delete-branch: true
           body: |
-            Monthly `pre-commit autoupdate`. Hooks passed against the new revs in
+            Monthly `prek update`. Hooks passed against the new revs in
             this run.
 
-            Check each rev by hand before merging: `autoupdate` resolves some
+            Check each rev by hand before merging: `update` resolves some
             repos to a tag below their latest release (gitleaks does this), so a
             bump here can be a downgrade.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run this repo's pre-commit suite before Claude Code ends a turn.
+"""Run this repo's prek suite before Claude Code ends a turn.
 
 Wired as a Stop hook. Without it the verification step is `git commit`,
 which means the human is the one who discovers the lint error or the
@@ -36,7 +36,7 @@ EXTERNAL_STAGING_HOOK_IDS = frozenset(
 HOOK_ID_PATTERN = re.compile(r'^\s*-\s*id:\s*(\S+)')
 
 FAILURE_HEADER = (
-    'Stop blocked: pre-commit failed on the files changed this turn. '
+    'Stop blocked: prek failed on the files changed this turn. '
     'Fix these before reporting the work as done -- do not hand them to '
     'the user.'
 )
@@ -52,7 +52,7 @@ def read_payload(raw: str) -> dict[str, object]:
 
 
 def staging_hook_ids(config_text: str) -> list[str]:
-    """Find pre-commit hooks whose entry stages files with `git add`."""
+    """Find hooks whose entry stages files with `git add`."""
     ids: list[str] = []
     current = ''
     for line in config_text.splitlines():
@@ -114,14 +114,14 @@ def changed_paths(repo_root: Path) -> list[str]:
     )
 
 
-def run_pre_commit(
+def run_prek(
     repo_root: Path,
     paths: list[str],
     skip_ids: list[str],
 ) -> subprocess.CompletedProcess[str]:
     env = {**os.environ, 'SKIP': ','.join(skip_ids)}
     return subprocess.run(  # noqa: S603
-        ['pre-commit', 'run', '--files', *paths],  # noqa: S607
+        ['prek', 'run', '--files', *paths],  # noqa: S607
         cwd=repo_root,
         capture_output=True,
         text=True,
@@ -162,7 +162,7 @@ def main(raw_payload: str) -> int:
     repo_root, config, paths = target
 
     try:
-        result = run_pre_commit(
+        result = run_prek(
             repo_root,
             paths,
             staging_hook_ids(config.read_text()),

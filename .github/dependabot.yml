@@ -1,7 +1,7 @@
 version: 2
 
-# Actions only. Dependabot has no pre-commit ecosystem, so hook revs are bumped
-# by .github/workflows/pre-commit-autoupdate.yml instead.
+# Actions only. Hook revs are bumped by
+# .github/workflows/pre-commit-autoupdate.yml (prek update) instead.
 updates:
   - package-ecosystem: github-actions
     directory: /

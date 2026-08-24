@@ -14,11 +14,11 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 
 ## References
 
-- Read directly for this repo's (`dotfiles`) layout, conventions, pre-commit hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
+- Read directly for this repo's (`dotfiles`) layout, conventions, prek hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
 
 ## Code Review
 
-- A `Stop` hook (`scripts/verify_changes.py`, wired in `.claude/settings.json`) runs `pre-commit` against every changed file before a turn can end, and blocks the turn with the output if it fails. Fix what it reports. Hooks that `git add` are skipped, so formatting is still settled at commit time. `VERIFY_CHANGES_SKIP=1` disables it.
+- A `Stop` hook (`scripts/verify_changes.py`, wired in `.claude/settings.json`) runs `prek` against every changed file before a turn can end, and blocks the turn with the output if it fails. Fix what it reports. Hooks that `git add` are skipped, so formatting is still settled at commit time. `VERIFY_CHANGES_SKIP=1` disables it.
 - `/code-review` (and `/security-review` for auth/secrets/external input/dependency changes) is opt-in — run it yourself before pushing. Nothing prompts for it.
 - The adversarial red-team pass is `skill-tree:adversarial-review`. User-triggered only, like `/code-review ultra`. Especially useful for `password-store` operations and other auth/secrets.
 

@@ -105,9 +105,9 @@ secrets-load:
 ## @just 60 My Dev Tooling | Clone and install skill-tree, gtd, and git-a-grip
 projects: skill-tree gtd git-a-grip
 
-## @just 70 Verification | Run every pre-commit hook over the whole repo
+## @just 70 Verification | Run every prek hook over the whole repo
 check:
-    pre-commit run --all-files --show-diff-on-failure
+    prek run --all-files
 
 ## @just 71 Verification | Run the scripts/ test suite with coverage
 test:

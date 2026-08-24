@@ -28,15 +28,15 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux)
 - **Config files** in `config/` are symlinked to `~` by the bash install script. Edit them here, not in `~`.
 - **Secrets** are never committed. Use `password-store` (`pass`) and the `make insert-*`/`pull-*` targets.
 
-## Pre-commit
+## Prek
 
-Managed via `.pre-commit-config.yaml`. Active hooks:
+Managed via `.pre-commit-config.yaml` (prek reads this natively). Active hooks:
 
 - **shfmt** — shell formatting (4-space indent)
 - **shellcheck** — shell linting, a `language: system` local hook against the apt-installed binary (upstream's hook is docker-only). Deliberate disables live in `.shellcheckrc`; keep the repo at zero findings.
 - **ruff check + format** — Python linting and formatting
 - **embed-command** (git-a-grip) — keeps README install options in sync with `just` help output, which is itself generated from the `## @just` headers
-- Standard pre-commit-hooks (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
+- Standard pre-commit-hooks repo (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
 
 ## Shell Startup Performance
 

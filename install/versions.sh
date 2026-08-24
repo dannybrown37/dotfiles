@@ -12,12 +12,12 @@
 ##
 ## Pin anything whose version can change what a command reports; leave the rest
 ## unpinned. An unpinned tool drifts local and CI onto different versions
-## silently -- that is how pre-commit ended up 3.8.0 here and 4.x in CI.
+## silently -- that is how prek ended up pinned here and floating in CI.
 ##
-## Bump by hand. pre-commit-autoupdate.yml bumps hook revs, not these, and
+## Bump by hand. prek-autoupdate.yml bumps hook revs, not these, and
 ## dependabot cannot see them either.
 ##
 
 RUFF_VERSION=0.16.0
-PRE_COMMIT_VERSION=4.6.2
+PREK_VERSION=0.4.14
 JUST_VERSION=1.58.0
