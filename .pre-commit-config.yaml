@@ -2,7 +2,7 @@ repos:
   # ruff and pytest live in git-a-grip so every repo shares one copy, rather
   # than each keeping its own `bash -c '... && git add "$@"'` wrapper.
   - repo: https://github.com/dannybrown37/git-a-grip
-    rev: v0.11.1
+    rev: v0.12.0
     hooks:
       - id: ruff-check
         args: [--config, config/.ruff.toml]
@@ -21,6 +21,8 @@ repos:
         args: ['--marker=make', '--command=just']
         always_run: false
         files: ^(justfile|install/|README\.md)$
+      - id: zizmor
+        additional_dependencies: [zizmor==1.29.0]
       - id: block-private-terms
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
