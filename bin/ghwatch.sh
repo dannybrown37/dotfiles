@@ -45,8 +45,12 @@ ghwatch() { # @doc github-action-watch: watch the current repo's in-progress CI 
             | "\(.databaseId)\t\(.status)\t\(.workflowName)\t\(.headBranch)"' 2>/dev/null)"
 
     if [[ -z "${runs}" ]]; then
-        echo "No in-progress or queued runs for ${gh_repo}." >&2
-        return 1
+        echo "No in-progress or queued runs — showing last completed run:" >&2
+        echo ""
+        gh run list "${filters[@]}" --limit 1 --json databaseId \
+            -q '.[0].databaseId' 2>/dev/null \
+            | xargs -I{} gh run view {} -R "${gh_repo}"
+        return
     fi
 
     local run_line
