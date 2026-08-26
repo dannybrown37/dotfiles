@@ -5,3 +5,5 @@ config/.gitconfig-private*
 **/__pycache__/
 pass/
 .claude/handoffs/
+*.pem
+credentials*
