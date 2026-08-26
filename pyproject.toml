@@ -1,2 +1,11 @@
+[project]
+name = "dotfiles"
+version = "0.0.0"
+requires-python = "==3.13.*"
+
+[tool.mypy]
+files = ["scripts"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 addopts = "-n 6"
