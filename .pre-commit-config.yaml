@@ -22,6 +22,7 @@ repos:
         always_run: false
         files: ^(justfile|install/|README\.md)$
       - id: zizmor
+        args: [--config=.zizmor.yml]
         additional_dependencies: [zizmor==1.29.0]
       - id: block-private-terms
 
