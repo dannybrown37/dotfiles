@@ -1,0 +1,5 @@
+rules:
+  artipacked:
+    ignore:
+      # create-pull-request needs persisted credentials to push the branch
+      - pre-commit-autoupdate.yml
