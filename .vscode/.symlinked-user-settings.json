@@ -14,7 +14,6 @@
     "bombastity",
     "boto",
     "buildlogs",
-    "ccstats",
     "checkhealth",
     "checkinstall",
     "checkwinsize",
@@ -91,6 +90,7 @@
     "poetrynuke",
     "pprint",
     "preexec",
+    "prek",
     "psahksecretsin",
     "psahksecretsout",
     "psbashsecretsin",
@@ -130,7 +130,6 @@
     "tfpro",
     "tfsj",
     "tfvars",
-    "Tokenmaxxing",
     "toplevel",
     "touchpoints",
     "Tsvg",
@@ -140,7 +139,7 @@
     "vitest",
     "wslpath",
     "xfixes",
-    "xhigh"
+    "zizmor"
   ],
   "editor.accessibilitySupport": "off",
   "editor.rulers": [72, 79, 88, 100],
@@ -234,5 +233,5 @@
     "markdown": true,
     "scminput": false
   },
-  "terminal.integrated.enableMultiLinePasteWarning": "never"
+  "cSpell.enabled": false
 }
