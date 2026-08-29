@@ -22,25 +22,11 @@ _spotify_playback_json() {
 }
 
 spotify_copy_playing_link() {
-    local convert_to_musiclink=0
-    case "${1:-}" in
-        -m | --musiclink) convert_to_musiclink=1 ;;
-        "") ;;
-        *)
-            echo "Usage: spotify_copy_playing_link [-m|--musiclink]" >&2
-            return 2
-            ;;
-    esac
-
     local playback
     playback=$(_spotify_playback_json) || return 1
 
     local link
     link=$(jq -r '.item.external_urls.spotify' <<<"${playback}")
-
-    if [[ "${convert_to_musiclink}" -eq 1 ]]; then
-        link=$("${DOTFILES_DIR}/scripts/musiclink.sh" "${link}") || return 1
-    fi
 
     printf '%s' "${link}" | "${DOTFILES_DIR}/scripts/tmux-copy-to-clipboard.sh"
     echo "${link}"
@@ -92,8 +78,6 @@ spotify_now_playing_markdown() {
     title=$(jq -r '.item.name' <<<"${playback}")
     artist=$(jq -r '[.item.artists[].name] | join(", ")' <<<"${playback}")
     link=$(jq -r '.item.external_urls.spotify' <<<"${playback}")
-    link=$("${DOTFILES_DIR}/scripts/musiclink.sh" "${link}") || return 1
-
     local markdown="Song On Right Now: \"[${title}](${link})\" by ${artist}"
     printf '%s' "${markdown}" | "${DOTFILES_DIR}/scripts/tmux-copy-to-clipboard.sh"
     echo "${markdown}"

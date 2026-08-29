@@ -21,9 +21,8 @@ vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
 alias lg='lazygit'  # @doc Open lazygit TUI
 alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 alias gitdoctor='~/projects/dotfiles/scripts/git_auth_doctor.sh'  # @doc Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir]
-alias musiclink='~/projects/dotfiles/scripts/musiclink.sh'  # @doc Convert a Spotify/YouTube/etc link to a service-agnostic song.link URL: musiclink <url>
 alias screenshot='~/projects/dotfiles/scripts/screenshot.sh'  # @doc Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest]
-alias song='spotify_copy_playing_link -m'  # @doc Copy a service-agnostic musiclink for the currently playing Spotify track: song
+alias song='spotify_copy_playing_link'  # @doc Copy the Spotify link for the currently playing track: song
 alias sorn='spotify_now_playing_markdown'  # @doc Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn
 
 # Tools I'm trying out

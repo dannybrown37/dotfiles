@@ -9,7 +9,7 @@ repos:
       - id: ruff-format
         args: [--config, config/.ruff.toml]
       - id: pytest
-        args: ['--runner=uv run --with pytest pytest', scripts/, -q]
+        args: ['--runner=uv run --with pytest --with pytest-xdist pytest', scripts/, -q]
         files: ^scripts/.*\.py$
       - id: mypy
         args: ['--runner=uv run --with mypy mypy', scripts/, --ignore-missing-imports]

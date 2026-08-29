@@ -1,9 +1,8 @@
 """Tests for bin/spotify.sh's playing-track functions.
 
 Covers spotify_copy_playing_link and spotify_now_playing_markdown.
-spotify_player and the clipboard/musiclink scripts they shell out to are all
-stubbed, so nothing here touches Spotify's API, the Windows clipboard, or
-the network.
+spotify_player and the clipboard script they shell out to are all stubbed,
+so nothing here touches Spotify's API, the Windows clipboard, or the network.
 """
 
 import json
@@ -21,7 +20,6 @@ BASH = shutil.which('bash') or '/bin/bash'
 EXIT_USAGE = 2
 
 TRACK_URL = 'https://open.spotify.com/track/7si4G8Ky9JCTgzlg8BtFTq'
-MUSICLINK_URL = 'https://song.link/s/7si4G8Ky9JCTgzlg8BtFTq'
 TRACK_TITLE = 'The Fox in Motion'
 ARTISTS = ['Hop Along']
 NO_PLAYBACK_JSON = 'null'
@@ -80,11 +78,6 @@ def install_clipboard_stub(dotfiles_dir: Path, capture_file: Path) -> None:
     _write_executable(path, f"#!/usr/bin/env bash\ncat > '{capture_file}'\n")
 
 
-def install_musiclink_stub(dotfiles_dir: Path, output: str) -> None:
-    path = dotfiles_dir / 'scripts' / 'musiclink.sh'
-    _write_executable(path, f"#!/usr/bin/env bash\necho '{output}'\n")
-
-
 def run(
     stub_bin: Path,
     dotfiles_dir: Path,
@@ -123,44 +116,6 @@ class TestSpotifyCopyPlayingLink:
         assert capture_file.read_text() == TRACK_URL
         assert result.stdout.strip() == TRACK_URL
 
-    def test_musiclink_flag_converts_before_copying(
-        self,
-        stub_bin: Path,
-        dotfiles_dir: Path,
-        tmp_path: Path,
-    ) -> None:
-        install_spotify_player_stub(stub_bin, playback_json())
-        install_musiclink_stub(dotfiles_dir, MUSICLINK_URL)
-        capture_file = tmp_path / 'clipboard'
-        install_clipboard_stub(dotfiles_dir, capture_file)
-
-        result = run(
-            stub_bin,
-            dotfiles_dir,
-            'spotify_copy_playing_link',
-            ['-m'],
-        )
-
-        assert result.returncode == 0, result.stderr
-        assert capture_file.read_text() == MUSICLINK_URL
-
-    def test_unknown_flag_is_a_usage_error(
-        self,
-        stub_bin: Path,
-        dotfiles_dir: Path,
-    ) -> None:
-        install_spotify_player_stub(stub_bin, playback_json())
-
-        result = run(
-            stub_bin,
-            dotfiles_dir,
-            'spotify_copy_playing_link',
-            ['--bogus'],
-        )
-
-        assert result.returncode == EXIT_USAGE
-        assert 'usage' in result.stderr.lower()
-
 
 class TestSpotifyNowPlayingMarkdown:
     def test_copies_the_song_on_right_now_markdown_blurb(
@@ -170,7 +125,6 @@ class TestSpotifyNowPlayingMarkdown:
         tmp_path: Path,
     ) -> None:
         install_spotify_player_stub(stub_bin, playback_json())
-        install_musiclink_stub(dotfiles_dir, MUSICLINK_URL)
         capture_file = tmp_path / 'clipboard'
         install_clipboard_stub(dotfiles_dir, capture_file)
 
@@ -181,8 +135,9 @@ class TestSpotifyNowPlayingMarkdown:
             [],
         )
 
-        blurb = f'[{TRACK_TITLE}]({MUSICLINK_URL})" by Hop Along'
-        expected = f'Song On Right Now: "{blurb}'
+        expected = (
+            f'Song On Right Now: "[{TRACK_TITLE}]({TRACK_URL})" by Hop Along'
+        )
         assert result.returncode == 0, result.stderr
         assert capture_file.read_text() == expected
         assert result.stdout.strip() == expected
@@ -197,7 +152,6 @@ class TestSpotifyNowPlayingMarkdown:
             stub_bin,
             playback_json(artists=['Hop Along', 'Frances Quinlan']),
         )
-        install_musiclink_stub(dotfiles_dir, MUSICLINK_URL)
         install_clipboard_stub(dotfiles_dir, tmp_path / 'clipboard')
 
         result = run(
