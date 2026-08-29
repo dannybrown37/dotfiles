@@ -157,9 +157,9 @@ InsertSpotifyOutput(bashFunction) {
     SendRaw, % Trim(OutputVar, "`r`n")
 }
 
-; @doc song: ,,song -- insert a service-agnostic musiclink for the currently playing track
+; @doc song: ,,song -- insert a Spotify link for the currently playing track
 ::,,song::
-InsertSpotifyOutput("spotify_copy_playing_link -m")
+InsertSpotifyOutput("spotify_copy_playing_link")
 return
 
 ; @doc sorn: ,,sorn -- insert "Song On Right Now" markdown for the currently playing track

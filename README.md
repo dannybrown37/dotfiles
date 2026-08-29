@@ -139,7 +139,6 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
 | `mk` | Create a directory and cd into it | `bin/mk.sh` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
-| `musiclink` | Convert a Spotify/YouTube/etc link to a service-agnostic song.link URL: musiclink <url> | `config/.bash_aliases` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
@@ -150,8 +149,8 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `shot` | Alias for screenshot | `config/.bash_aliases` |
-| `song` | Copy a service-agnostic musiclink for the currently playing Spotify track: song | `config/.bash_aliases` |
-| `song` | ,,song -- insert a service-agnostic musiclink for the currently playing track | `ahk/hotstrings.ahk` |
+| `song` | Copy the Spotify link for the currently playing track: song | `config/.bash_aliases` |
+| `song` | ,,song -- insert a Spotify link for the currently playing track | `ahk/hotstrings.ahk` |
 | `sorn` | Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn | `config/.bash_aliases` |
 | `sorn` | ,,sorn -- insert "Song On Right Now" markdown for the currently playing track | `ahk/hotstrings.ahk` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |

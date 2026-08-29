@@ -14,6 +14,7 @@
     "bombastity",
     "boto",
     "buildlogs",
+    "ccstats",
     "checkhealth",
     "checkinstall",
     "checkwinsize",
@@ -129,6 +130,7 @@
     "tfpro",
     "tfsj",
     "tfvars",
+    "Tokenmaxxing",
     "toplevel",
     "touchpoints",
     "Tsvg",
@@ -137,7 +139,8 @@
     "virtualenv",
     "vitest",
     "wslpath",
-    "xfixes"
+    "xfixes",
+    "xhigh"
   ],
   "editor.accessibilitySupport": "off",
   "editor.rulers": [72, 79, 88, 100],
