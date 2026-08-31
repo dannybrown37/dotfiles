@@ -87,7 +87,7 @@ alias ga='git add'
 alias gaa='git add .'
 alias gap='git add -p'
 alias gb='git branch --sort=-committerdate | fzf | xargs git checkout' # @doc Fuzzy-find and checkout a git branch
-alias gc='git commit -m'
+# gc is a function in bin/git.sh (supports unquoted commit messages)
 alias gca='git commit --amend -m'
 alias gcb='git checkout -b'
 alias gcd='git checkout develop'
