@@ -107,6 +107,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
+| `gc` | Git commit with implicit quoting: gc fix the thing | `bin/git.sh` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
