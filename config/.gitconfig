@@ -26,6 +26,7 @@
     autostash = true
 [rerere]
     enabled = true
+    autoupdate = true
 [commit]
     verbose = true
 [log]
@@ -33,6 +34,12 @@
     date = relative
 [merge]
     conflictStyle = diff3
+    tool = nvimdiff
+[mergetool]
+    keepBackup = false
+# @doc git-alias: gmt -> git mergetool
+[alias]
+    gmt = mergetool
 [column]
     ui = auto
 [help]
