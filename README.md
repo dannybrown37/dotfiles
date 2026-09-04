@@ -42,6 +42,7 @@ Developer Tools:
   spotify         Install spotify_player TUI (remote control, no audio)
   terraform       Install Terraform (latest release)
   vscode          Install VS Code extensions and settings
+  ghstack         Install GitHub stacked PR CLI extension (gh stack)
   rust-tools      Install the optional cargo utilities (htmlq, jless, difftastic, mprocs)
 
 Environment-Specific:
@@ -113,6 +114,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
+| `ghstack` | GitHub stacked PRs extension (fast passthrough) | ghstack view | `bin/stubs.sh` |
 | `ghwatch` | github-action-watch: watch the current repo's in-progress CI | ghwatch [--any-branch] | `bin/ghwatch.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
@@ -127,6 +129,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gsl` | Git stash list | `config/.bash_aliases` |
 | `gsp` | Git stash pop | `config/.bash_aliases` |
 | `gss` | Git stash save | `config/.bash_aliases` |
+| `gstk` | Short alias for stacked PR helper | `config/.bash_aliases` |
 | `gwt` | git-worktree: gwt <add|list|rm|cd> [branch] [options] | `bin/gwt.sh` |
 | `hyperfine` | Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2' | `bin/stubs.sh` |
 | `just` | Command runner (modern Make alternative) | just <recipe> | `bin/stubs.sh` |
@@ -155,6 +158,8 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `sorn` | Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn | `config/.bash_aliases` |
 | `sorn` | ,,sorn -- insert "Song On Right Now" markdown for the currently playing track | `ahk/hotstrings.ahk` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
+| `stack` | Ergonomic wrapper for GitHub stacked PRs (gh stack) | stack help | `scripts/stack.sh` |
+| `stack` | Stacked PR helper wrapper | stack doctor | `config/.bash_aliases` |
 | `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
 | `terraform` | Provision infrastructure as code | terraform plan | `bin/stubs.sh` |
 | `tldr` | Simplified man pages with practical examples | tldr <cmd> | `bin/stubs.sh` |

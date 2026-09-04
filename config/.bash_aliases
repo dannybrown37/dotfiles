@@ -136,6 +136,8 @@ alias gs='git status'
 
 # GitHub CLI
 alias ghd='BROWSER="cmd.exe /c start chrome" gh dash'
+alias stack='~/projects/dotfiles/scripts/stack.sh'  # @doc Stacked PR helper wrapper | stack doctor
+alias gstk='stack'  # @doc Short alias for stacked PR helper
 
 function ghpr() {  # @doc Push branch and open GitHub PR creation page in browser | ghprc [--draft]
     local branch

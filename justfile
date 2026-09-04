@@ -82,6 +82,9 @@ gtd:
 git-a-grip:
     bash -c ". {{root_dir}}/install/git-a-grip.sh"
 
+ghstack:
+    bash -c ". {{root_dir}}/install/ghstack.sh"
+
 # ── Composite targets ────────────────────────────────────────────────────────
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else
 # assumes, and rust delivers the cargo that cli-tools needs for eza.
