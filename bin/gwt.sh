@@ -34,10 +34,22 @@ _gwt_pick_base_ref() {
         return 0
     fi
 
+    local develop_ref=""
+    if git show-ref --verify --quiet "refs/heads/develop"; then
+        develop_ref="develop"
+    elif git show-ref --verify --quiet "refs/remotes/origin/develop"; then
+        develop_ref="origin/develop"
+    fi
+
+    local latest_rc_ref=""
+    latest_rc_ref="$(git for-each-ref --sort=-committerdate \
+        --format='%(refname:short)' refs/heads refs/remotes \
+        | awk '/(^|\/)rc-/{print; exit}')"
+
     local selection
-    selection="$(printf "HEAD\n%s\n" "${refs}" \
+    selection="$(printf "HEAD\n%s\n%s\n%s\n" "${develop_ref}" "${latest_rc_ref}" "${refs}" \
         | awk '!seen[$0]++' \
-        | fzf --prompt="Base ref> " --query="${current_branch}")"
+        | fzf --prompt="Base ref> ")"
 
     if [[ -z "${selection}" ]]; then
         echo "No base ref selected." >&2
@@ -52,8 +64,17 @@ _gwt_add() {
     local base_ref="${2:-}"
 
     if [[ -z "${branch}" ]]; then
-        echo "Usage: gwt add <branch> [base-ref]" >&2
-        return 1
+        if [[ -t 0 ]]; then
+            read -rp "Branch name: " branch
+            if [[ -z "${branch}" ]]; then
+                echo "Branch name is required." >&2
+                return 1
+            fi
+        else
+            echo "Usage: gwt add <branch> [base-ref]" >&2
+            echo "Error: branch is required when not running in a TTY." >&2
+            return 1
+        fi
     fi
 
     if [[ -z "${base_ref}" ]]; then
@@ -114,13 +135,13 @@ _gwt_bootstrap() {
     if [[ -f "${wt_path}/package.json" ]]; then
         echo "  -> Installing Node dependencies"
         if [[ -f "${wt_path}/package-lock.json" ]]; then
-            (cd "${wt_path}" && npm ci --quiet) 2>&1 | sed 's/^/     /'
+            (cd "${wt_path}" && npm ci --prefer-offline --no-audit --no-fund --quiet) 2>&1 | sed 's/^/     /'
         elif [[ -f "${wt_path}/pnpm-lock.yaml" ]] && command -v pnpm &>/dev/null; then
-            (cd "${wt_path}" && pnpm install --frozen-lockfile --quiet) 2>&1 | sed 's/^/     /'
+            (cd "${wt_path}" && pnpm install --prefer-offline --frozen-lockfile --quiet) 2>&1 | sed 's/^/     /'
         elif [[ -f "${wt_path}/yarn.lock" ]] && command -v yarn &>/dev/null; then
-            (cd "${wt_path}" && yarn install --frozen-lockfile --quiet) 2>&1 | sed 's/^/     /'
+            (cd "${wt_path}" && yarn install --frozen-lockfile --prefer-offline --silent) 2>&1 | sed 's/^/     /'
         else
-            (cd "${wt_path}" && npm install --quiet) 2>&1 | sed 's/^/     /'
+            (cd "${wt_path}" && npm install --prefer-offline --no-audit --no-fund --quiet) 2>&1 | sed 's/^/     /'
         fi
     fi
 
