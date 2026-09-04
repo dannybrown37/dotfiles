@@ -24,13 +24,46 @@ _gwt_base_dir() {
     echo "$(dirname "${git_root}")/${repo_name}-worktrees"
 }
 
+_gwt_pick_base_ref() {
+    local current_branch="${1:-}"
+    local refs
+    refs="$(git for-each-ref --format='%(refname:short)' refs/heads)" || return 1
+
+    if [[ -z "${refs}" ]]; then
+        echo "HEAD"
+        return 0
+    fi
+
+    local selection
+    selection="$(printf "HEAD\n%s\n" "${refs}" \
+        | awk '!seen[$0]++' \
+        | fzf --prompt="Base ref> " --query="${current_branch}")"
+
+    if [[ -z "${selection}" ]]; then
+        echo "No base ref selected." >&2
+        return 1
+    fi
+
+    echo "${selection}"
+}
+
 _gwt_add() {
     local branch="${1:-}"
-    local base_ref="${2:-HEAD}"
+    local base_ref="${2:-}"
 
     if [[ -z "${branch}" ]]; then
         echo "Usage: gwt add <branch> [base-ref]" >&2
         return 1
+    fi
+
+    if [[ -z "${base_ref}" ]]; then
+        if command -v fzf &>/dev/null; then
+            local current_branch
+            current_branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+            base_ref="$(_gwt_pick_base_ref "${current_branch}")" || return 1
+        else
+            base_ref="HEAD"
+        fi
     fi
 
     local base_dir
@@ -66,14 +99,6 @@ _gwt_bootstrap() {
     git_root="$(git rev-parse --show-toplevel 2>/dev/null)"
 
     echo "Bootstrapping dependencies..."
-
-    # prek: hooks run via githooks/pre-commit (core.hooksPath), just warm the envs
-    if [[ -f "${wt_path}/.pre-commit-config.yaml" ]]; then
-        if command -v prek &>/dev/null; then
-            echo "  -> Installing prek hook environments"
-            (cd "${wt_path}" && prek install) 2>&1 | sed 's/^/     /'
-        fi
-    fi
 
     # Python: create venv and install deps
     if [[ -f "${wt_path}/pyproject.toml" ]] || [[ -f "${wt_path}/requirements.txt" ]]; then
