@@ -135,8 +135,6 @@ for file in "$DOTFILES_DIR"/bin/*.sh; do
     [[ -f "$file" ]] && source "$file"
 done
 
-source "$DOTFILES_DIR"/aws/bin.sh
-
 touch "${DOTFILES_DIR}/config/.secrets"
 . "${DOTFILES_DIR}/config/.secrets"
 
