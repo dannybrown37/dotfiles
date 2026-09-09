@@ -37,7 +37,7 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
         with:
-          just-version: ${{ env.JUST_VERSION }}
+          just-version: ${{ env.JUST_VERSION }} # zizmor: ignore[unpinned-tools]
 
       - name: Cache prek hook environments
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
