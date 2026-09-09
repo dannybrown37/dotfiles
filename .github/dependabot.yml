@@ -3,7 +3,7 @@ version: 2
 # Actions only. Hook revs are bumped by
 # .github/workflows/pre-commit-autoupdate.yml (prek update) instead.
 updates:
-  - package-ecosystem: github-actions
+  - package-ecosystem: github-actions # zizmor: ignore[dependabot-cooldown]
     directory: /
     schedule:
       interval: monthly

@@ -69,12 +69,19 @@ def install_stub(bin_dir: Path, body: str) -> None:
     path.chmod(0o755)
 
 
+def _is_file_safe(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except PermissionError:
+        return False
+
+
 def _path_without(binary: str) -> str:
     """Return $PATH with directories containing *binary* removed."""
     return os.pathsep.join(
         d
         for d in os.environ['PATH'].split(os.pathsep)
-        if not (Path(d) / binary).is_file()
+        if not _is_file_safe(Path(d) / binary)
     )
 
 
