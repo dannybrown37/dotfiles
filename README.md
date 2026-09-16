@@ -209,14 +209,13 @@ Updated with `just bench-shell`:
 
 ## Initial Windows Setup Notes
 
-For when you're truly starting from scratch.
+For when you're truly starting from scratch. `just windows` installs Windows Terminal, VS Code, AutoHotkey v2, and the rest of the winget-managed toolchain; only Chrome and the WSL distro itself are manual.
 
 ### Downloads
 
 - [Google Chrome](https://www.google.com/search?q=google+chrome+download)
-- [Windows Terminal](https://www.google.com/search?q=windows+terminal+download)
-- [Visual Studio Code](https://www.google.com/search?q=vs+code+download)
-- [AutoHotKey](https://www.autohotkey.com/download/) (v2) -- then `ahk && ahk startup` from WSL
+
+After WSL is up and this repo is cloned, run `just windows`, then `ahk && ahk startup` from WSL.
 
 ### Set Up a WSL Debian Distro
 

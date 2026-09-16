@@ -18,16 +18,24 @@ $wingetPackages = @{
     "sharkdp.fd"                = "fd"
     "sharkdp.bat"               = "bat"
     "junegunn.fzf"              = "fzf"
+    "AutoHotkey.AutoHotkey"     = $null
 }
 
 foreach ($id in $wingetPackages.Keys) {
     $cmd = $wingetPackages[$id]
 
-    if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
+    if ($cmd) {
+        $installed = [bool](Get-Command $cmd -ErrorAction SilentlyContinue)
+    } else {
+        $listed = winget list --id $id --exact --accept-source-agreements 2>$null | Out-String
+        $installed = $listed -match [regex]::Escape($id)
+    }
+
+    if (-not $installed) {
         Write-Host "Installing $id ..."
         winget install --id $id --exact --accept-source-agreements --accept-package-agreements
     } else {
-        Write-Host "$cmd already installed, skipping"
+        Write-Host "$id already installed, skipping"
     }
 }
 
