@@ -27,7 +27,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
 for cargo_tool in eza just; do
     if ! command -v "${cargo_tool}" &>/dev/null; then
         if command -v cargo &>/dev/null; then
-            cargo install "${cargo_tool}"
+            cargo install --locked "${cargo_tool}"
         else
             echo "${cargo_tool} needs cargo -- run 'make rust' then 'make cli-tools'" >&2
         fi
