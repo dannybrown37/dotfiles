@@ -49,6 +49,7 @@ Environment-Specific:
   gnome           Install Gnome extensions
   select-nerdfont Interactively pick and install a Nerd Font (Windows)
   win32yank       Install win32yank clipboard bridge (WSL only)
+  win-dev         Install Windows-side dev tooling (git, uv, node, typescript, etc.)
   wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
   komo            Install komorebi/whkd if needed, then (re)start it
 
