@@ -8,3 +8,4 @@ pass/
 .claude/handoffs/
 *.pem
 credentials*
+todo.txt

@@ -206,7 +206,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 Updated with `just bench-shell`:
 
 <!-- bench:start -->
-10 runs — min: 0.039s · median: 0.044s · avg: 0.044s · max: 0.048s (updated 2026-09-18)
+10 runs — min: 0.042s · median: 0.044s · avg: 0.045s · max: 0.052s (updated 2026-09-18)
 <!-- bench:end -->
 
 ### Further Reading
