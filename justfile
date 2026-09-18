@@ -85,8 +85,12 @@ gtd:
 git-a-grip:
     bash -c ". {{root_dir}}/install/git-a-grip.sh"
 
-ghstack:
+## @just 36 Developer Tools | Install git workflow tools (ghstack, git-absorb, git-branchless, gh-dash)
+git-tools:
     bash -c ". {{root_dir}}/install/ghstack.sh"
+    bash -c ". {{root_dir}}/install/git-absorb.sh"
+    bash -c ". {{root_dir}}/install/git-branchless.sh"
+    bash -c ". {{root_dir}}/install/gh-dash.sh"
 
 # ── Composite targets ────────────────────────────────────────────────────────
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else

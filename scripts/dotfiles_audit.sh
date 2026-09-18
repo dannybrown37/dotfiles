@@ -137,6 +137,7 @@ fi
 section "GitHub & Auth"
 check "gh" "gh --version | head -1 | awk '{print \$3}'" "sudo apt install gh"
 check "ghstack" "gh extension list | awk -F '\\t' '\$1==\"gh stack\"{print \$3; exit}'" "make ghstack"
+check "gh-dash" "gh extension list | awk -F '\\t' '\$1==\"gh dash\"{print \$3; exit}'" "make gh-dash"
 
 GH_AUTH=$(gh auth status 2>&1)
 if echo "$GH_AUTH" | grep -q "Logged in to"; then
@@ -280,6 +281,9 @@ for tool in "${cargo_tools[@]}"; do
         fail "cargo: $tool" "cargo install $tool"
     fi
 done
+
+check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: make git-absorb)"
+check "git-branchless" "git-branchless --version 2>&1 | awk '{print \$NF}'" "cargo install --locked git-branchless  (or: make git-branchless)"
 
 # ── Dev Tooling ───────────────────────────────────────────────────────────────
 

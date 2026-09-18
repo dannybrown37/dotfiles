@@ -42,7 +42,7 @@ Developer Tools:
   spotify         Install spotify_player TUI (remote control, no audio)
   terraform       Install Terraform (latest release)
   vscode          Install VS Code extensions and settings
-  ghstack         Install GitHub stacked PR CLI extension (gh stack)
+  git-tools       Install git workflow tools (ghstack, git-absorb, git-branchless, gh-dash)
   rust-tools      Install the optional cargo utilities (htmlq, jless, difftastic, mprocs)
 
 Environment-Specific:
@@ -111,11 +111,14 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
+| `gh-dash` | Terminal GitHub dashboard -- PRs, issues, notifications | gh-dash | `bin/stubs.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
 | `ghstack` | GitHub stacked PRs extension (fast passthrough) | ghstack view | `bin/stubs.sh` |
 | `ghwatch` | github-action-watch: watch the current repo's in-progress CI | ghwatch [--any-branch] | `bin/ghwatch.sh` |
+| `git-absorb` | Auto-fixup commits by matching hunks to the right commit | git-absorb | `bin/stubs.sh` |
+| `git-branchless` | Stacked-diff workflow + smartlog for git | git-branchless smartlog | `bin/stubs.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |

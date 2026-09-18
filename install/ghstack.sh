@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @just 36 Developer Tools | Install GitHub stacked PR CLI extension (gh stack)
+## Install GitHub stacked PR CLI extension (gh stack)
 
 set -euo pipefail
 
