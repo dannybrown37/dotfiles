@@ -3,6 +3,7 @@ config/.secrets*
 config/.gitconfig-private*
 **/.env
 **/__pycache__/
+.coverage
 pass/
 .claude/handoffs/
 *.pem

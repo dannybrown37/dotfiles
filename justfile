@@ -115,6 +115,10 @@ secrets-load:
 ## @just 60 My Dev Tooling | Clone and install skill-tree, gtd, and git-a-grip
 projects: skill-tree gtd git-a-grip
 
+## @just 74 Verification | Benchmark interactive shell startup time (10 runs default, pass N to override)
+bench-shell runs='10':
+    bash "{{root_dir}}/scripts/bench-shell.sh" "{{runs}}"
+
 ## @just 70 Verification | Run every prek hook over the whole repo
 check:
     prek run --all-files
