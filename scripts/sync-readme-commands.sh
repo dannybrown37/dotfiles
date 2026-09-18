@@ -88,6 +88,11 @@ fi
 
 if diff -q "$README" "${README}.tmp" > /dev/null 2>&1; then
     rm "${README}.tmp"
+elif [[ "${CI:-}" == "true" ]]; then
+    echo "ERROR: README.md @doc commands are out of date. Run locally to fix:" >&2
+    diff -u "$README" "${README}.tmp" >&2 || true
+    rm "${README}.tmp"
+    exit 1
 else
     mv "${README}.tmp" "$README"
     echo "README.md updated with @doc commands"
