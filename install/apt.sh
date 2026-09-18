@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 11 Start Here | Update apt and install every apt package this repo needs
 
 ##

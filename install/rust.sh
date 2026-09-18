@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 24 Languages & Runtimes | Install the Rust toolchain (rustup, latest stable)
 
 ##

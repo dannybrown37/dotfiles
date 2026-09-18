@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 14 Start Here | Install the core CLI tools with no usable distro package
 
 ##

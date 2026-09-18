@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 40 Environment-Specific | Install Gnome extensions
 
 

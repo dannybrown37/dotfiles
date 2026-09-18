@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 16 Start Here | Clone the private password-store for secret sync
 
 ##

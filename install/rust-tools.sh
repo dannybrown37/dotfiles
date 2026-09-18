@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 36 Developer Tools | Install the optional cargo utilities (htmlq, jless, difftastic, mprocs)
 
 ##

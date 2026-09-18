@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 ## @just 30 Developer Tools | Install Neovim
 
 ##

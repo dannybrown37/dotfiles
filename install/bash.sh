@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 12 Start Here | Install the Bash profile (symlinks, prompt, completion, history)
 
 ##

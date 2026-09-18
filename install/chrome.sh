@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 15 Start Here | Install Google Chrome
 
 ##

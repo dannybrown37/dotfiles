@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 20 Languages & Runtimes | Install Python environment (uv, select uv tools)
 
 ##

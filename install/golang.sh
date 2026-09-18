@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 23 Languages & Runtimes | Install Go environment (latest Golang version)
 
 ##

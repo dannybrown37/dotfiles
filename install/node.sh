@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 ## @just 21 Languages & Runtimes | Install Node.js environment (n, Node 22, select global packages)
 
 ##
