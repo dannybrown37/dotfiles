@@ -51,6 +51,38 @@ jobs:
         env:
           SKIP: pytest
 
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Syntax-check all install scripts
+        run: |
+          failed=0
+          for f in install/*.sh; do
+              if ! bash -n "$f"; then
+                  echo "FAIL: $f" >&2
+                  failed=1
+              fi
+          done
+          exit "$failed"
+
+      - name: Load pinned tool versions
+        run: grep -E '^[A-Z_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
+
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+        with:
+          just-version: ${{ env.JUST_VERSION }} # zizmor: ignore[unpinned-tools]
+
+      - name: Bootstrap (safe subset)
+        run: just apt rust symlinks cli-tools lazygit
+
+      - name: Idempotency — re-run the same subset
+        run: just apt rust symlinks cli-tools lazygit
+
   test:
     runs-on: ubuntu-latest
     steps:
