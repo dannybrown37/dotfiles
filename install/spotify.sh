@@ -54,7 +54,8 @@ fi
 # shellcheck source=install/link_config.sh
 source "$(dirname "${BASH_SOURCE[0]}")/link_config.sh"
 
-config_src="${HOME}/projects/dotfiles/config/spotify-player"
+dotfiles="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+config_src="${dotfiles}/config/spotify-player"
 
 for config_file in app.toml keymap.toml; do
     link_config "${config_src}/${config_file}" \

@@ -37,5 +37,7 @@ echo "lazygit ${latest_version} installed at $(command -v lazygit)"
 # shellcheck source=install/link_config.sh
 source "$(dirname "${BASH_SOURCE[0]}")/link_config.sh"
 
-link_config "${HOME}/projects/dotfiles/config/lazygit.yml" \
+dotfiles="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+link_config "${dotfiles}/config/lazygit.yml" \
     "${HOME}/.config/lazygit/config.yml"
