@@ -127,6 +127,10 @@ check:
 test:
     uv run --with pytest --with pytest-cov pytest --cov=scripts --cov-report=term-missing "{{root_dir}}/scripts/"
 
+## @just 76 Verification | Syntax-check every shell script (bash -n + shellcheck)
+test-shell:
+    bash "{{root_dir}}/scripts/test_shell_syntax.sh"
+
 ## @just 72 Verification | Audit this machine against every dotfiles dependency (read-only)
 audit:
     bash "{{root_dir}}/scripts/dotfiles_audit.sh"

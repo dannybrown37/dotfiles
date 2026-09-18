@@ -12,12 +12,12 @@ curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/thi
 
 ## Install Options
 
-The output of `make` (aliased to `just`) in the root directory:
+The output of `just` in the root directory:
 
 <!-- make:start -->
 
 ```
-Usage: make [option]
+Usage: just [option]
 
 Start Here:
   bootstrap       Set up a new machine end to end (every target below it)
@@ -68,6 +68,7 @@ Verification:
   test            Run the scripts/ test suite with coverage
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
+  test-shell      Syntax-check every shell script (bash -n + shellcheck)
 ```
 
 <!-- make:end -->
@@ -139,7 +140,6 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
 | `lazygit` | TUI git client | lg (alias) | `bin/stubs.sh` |
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
-| `make` | Run make, or just if a justfile exists and no Makefile | make <target> | `bin/make.sh` |
 | `media` | Open educational media reference | `config/.bash_aliases` |
 | `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
 | `mk` | Create a directory and cd into it | `bin/mk.sh` |

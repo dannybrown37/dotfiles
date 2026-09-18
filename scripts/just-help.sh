@@ -57,7 +57,7 @@ justfile_headers() {
     ' "${root}/justfile"
 }
 
-echo "Usage: make [option]"
+echo "Usage: just [option]"
 
 {
     install_headers
