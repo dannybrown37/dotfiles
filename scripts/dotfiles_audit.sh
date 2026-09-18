@@ -385,6 +385,36 @@ else
     fi
 fi
 
+# ── Secrets ───────────────────────────────────────────────────────────────────
+
+section "Secrets"
+SECRETS_FILE="${DOTFILES_DIR}/config/.secrets"
+
+if [[ ! -f "$SECRETS_FILE" ]]; then
+    fail ".secrets file" "run: just secrets-load"
+elif [[ ! -s "$SECRETS_FILE" ]]; then
+    fail ".secrets loaded" "file exists but is empty — run: just secrets-load"
+else
+    SECRETS_LINES=$(grep -cve '^\s*$' "$SECRETS_FILE" 2>/dev/null || echo 0)
+    ok ".secrets loaded" "${SECRETS_LINES} non-blank line(s)"
+fi
+
+STORE_DIR="${PASSWORD_STORE_DIR:-${HOME}/.password-store}"
+if [[ -d "${STORE_DIR}/.git" ]]; then
+    STORE_LAST=$(git -C "$STORE_DIR" log -1 --format='%ci' 2>/dev/null || echo "")
+    SECRETS_MTIME=$(stat -c '%Y' "$SECRETS_FILE" 2>/dev/null || echo 0)
+    if [[ -n "$STORE_LAST" && "$SECRETS_MTIME" -gt 0 ]]; then
+        STORE_EPOCH=$(date -d "$STORE_LAST" +%s 2>/dev/null || echo 0)
+        if [[ "$STORE_EPOCH" -gt "$SECRETS_MTIME" ]]; then
+            warn ".secrets freshness" "store updated after last load (${STORE_LAST%% *}) — run: just secrets-load"
+        else
+            ok ".secrets freshness" "up to date with password-store"
+        fi
+    fi
+else
+    warn ".secrets freshness" "password-store has no git history — cannot check staleness"
+fi
+
 # ── Environment Variables ─────────────────────────────────────────────────────
 
 section "Environment Variables"
