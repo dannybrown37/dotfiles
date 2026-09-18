@@ -17,6 +17,8 @@ set -euo pipefail
 ##
 # shellcheck source=install/cargo_env.sh
 source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
 
 ##
 ## Install eza (modern ls replacement, community fork of exa)
@@ -43,7 +45,7 @@ done
 if ! command -v tokei &>/dev/null; then
     tmp_dir=$(mktemp -d)
     curl -sLo "${tmp_dir}/tokei.tar.gz" \
-        "https://github.com/XAMPPRocky/tokei/releases/download/v12.1.2/tokei-x86_64-unknown-linux-gnu.tar.gz"
+        "https://github.com/XAMPPRocky/tokei/releases/download/v${TOKEI_VERSION}/tokei-x86_64-unknown-linux-gnu.tar.gz"
     tar -xf "${tmp_dir}/tokei.tar.gz" -C "${tmp_dir}"
     sudo install "${tmp_dir}/tokei" /usr/local/bin/tokei
     rm -rf "${tmp_dir}"
@@ -56,10 +58,9 @@ fi
 ##
 
 if ! command -v hyperfine &>/dev/null; then
-    hf_version=$(curl -s https://api.github.com/repos/sharkdp/hyperfine/releases/latest | jq -r '.tag_name' | sed 's/v//')
     tmp_deb=$(mktemp --suffix=.deb)
     curl -sLo "${tmp_deb}" \
-        "https://github.com/sharkdp/hyperfine/releases/download/v${hf_version}/hyperfine_${hf_version}_amd64.deb"
+        "https://github.com/sharkdp/hyperfine/releases/download/v${HYPERFINE_VERSION}/hyperfine_${HYPERFINE_VERSION}_amd64.deb"
     sudo dpkg -i "${tmp_deb}"
     rm "${tmp_deb}"
 else
@@ -71,10 +72,9 @@ fi
 ##
 
 if ! command -v glow &>/dev/null; then
-    glow_version=$(curl -s https://api.github.com/repos/charmbracelet/glow/releases/latest | jq -r '.tag_name' | sed 's/v//')
     tmp_deb=$(mktemp --suffix=.deb)
     curl -sLo "${tmp_deb}" \
-        "https://github.com/charmbracelet/glow/releases/download/v${glow_version}/glow_${glow_version}_amd64.deb"
+        "https://github.com/charmbracelet/glow/releases/download/v${GLOW_VERSION}/glow_${GLOW_VERSION}_amd64.deb"
     sudo dpkg -i "${tmp_deb}"
     rm "${tmp_deb}"
 else
@@ -97,10 +97,9 @@ fi
 ##
 
 if ! command -v delta &>/dev/null; then
-    delta_version=$(curl -s https://api.github.com/repos/dandavison/delta/releases/latest | jq -r '.tag_name')
     tmp_deb=$(mktemp --suffix=.deb)
     curl -sLo "${tmp_deb}" \
-        "https://github.com/dandavison/delta/releases/download/${delta_version}/git-delta_${delta_version}_amd64.deb"
+        "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/git-delta_${DELTA_VERSION}_amd64.deb"
     sudo dpkg -i "${tmp_deb}"
     rm "${tmp_deb}"
 else

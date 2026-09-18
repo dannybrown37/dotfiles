@@ -18,3 +18,8 @@ else
     cargo install --locked git-branchless
     echo "git-branchless installed: $(git-branchless --version)"
 fi
+
+dotfiles_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -d "${dotfiles_dir}/.git" ]]; then
+    git -C "${dotfiles_dir}" branchless init --main-branch main
+fi

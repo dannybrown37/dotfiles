@@ -8,7 +8,9 @@ if [[ -z "${ON_WINDOWS:-}" ]]; then
     exit 0
 fi
 
-readonly VERSION="0.1.1"
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+readonly VERSION="${WIN32YANK_VERSION}"
 
 current_version=$(win32yank.exe --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "none")
 
