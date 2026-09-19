@@ -100,9 +100,9 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
 | `croc` | Send files between machines securely | croc send <file> | `bin/stubs.sh` |
 | `delta` | Syntax-highlighting pager for git diffs (replaces less) | `bin/stubs.sh` |
-| `docker` | Containers -- via Docker Desktop on the Windows host | docker-up to start it | `bin/stubs.sh` |
 | `docker-doctor` | Diagnose why the docker CLI can't reach a daemon under WSL | docker-doctor | `bin/docker.sh` |
 | `docker-up` | Start Docker Desktop from WSL and block until the daemon answers | docker-up [timeout_seconds] | `bin/docker.sh` |
+| `docker` | Containers -- via Docker Desktop on the Windows host | docker-up to start it | `bin/stubs.sh` |
 | `dotaudit` | Audit system for dotfile setup compliance | `config/.bash_aliases` |
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
 | `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `bin/timestamps.sh` |
@@ -113,20 +113,20 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
 | `gh-dash` | Terminal GitHub dashboard -- PRs, issues, notifications | gh-dash | `bin/stubs.sh` |
-| `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
 | `ghstack` | GitHub stacked PRs extension (fast passthrough) | ghstack view | `bin/stubs.sh` |
 | `ghwatch` | github-action-watch: watch the current repo's in-progress CI | ghwatch [--any-branch] | `bin/ghwatch.sh` |
+| `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `git-absorb` | Auto-fixup commits by matching hunks to the right commit | git-absorb | `bin/stubs.sh` |
 | `git-branchless` | Stacked-diff workflow + smartlog for git | git-branchless smartlog | `bin/stubs.sh` |
+| `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
-| `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |
-| `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
 | `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
+| `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
 | `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
 | `grl` | List recent CI runs on current branch | `config/.bash_aliases` |
 | `grw` | Watch CI run for current branch live | grw | `config/.bash_aliases` |
@@ -142,22 +142,22 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
 | `media` | Open educational media reference | `config/.bash_aliases` |
 | `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
-| `mk` | Create a directory and cd into it | `bin/mk.sh` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
+| `mk` | Create a directory and cd into it | `bin/mk.sh` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
-| `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `bin/ntfy.sh` |
+| `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
 | `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `shot` | Alias for screenshot | `config/.bash_aliases` |
-| `song` | Copy the Spotify link for the currently playing track: song | `config/.bash_aliases` |
 | `song` | ,,song -- insert a Spotify link for the currently playing track | `ahk/hotstrings.ahk` |
-| `sorn` | Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn | `config/.bash_aliases` |
+| `song` | Copy the Spotify link for the currently playing track: song | `config/.bash_aliases` |
 | `sorn` | ,,sorn -- insert "Song On Right Now" markdown for the currently playing track | `ahk/hotstrings.ahk` |
+| `sorn` | Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn | `config/.bash_aliases` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
 | `stack` | Ergonomic wrapper for GitHub stacked PRs (gh stack) | stack help | `scripts/stack.sh` |
 | `stack` | Stacked PR helper wrapper | stack doctor | `config/.bash_aliases` |

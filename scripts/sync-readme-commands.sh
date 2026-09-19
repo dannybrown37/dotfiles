@@ -66,7 +66,7 @@ if [[ -d "$AHK_DIR" ]]; then
     done
 fi
 
-docs=$(echo "$docs" | sort | sed '/^$/d')
+docs=$(echo "$docs" | LC_ALL=C sort -f | sed '/^$/d')
 
 start_line=$(grep -n "$MARKER_START" "$README" | head -1 | cut -d: -f1)
 end_line=$(grep -n "$MARKER_END" "$README" | head -1 | cut -d: -f1)
