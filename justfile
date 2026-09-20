@@ -99,6 +99,9 @@ git-tools: _lazygit
 ## @just 10 Start Here | Full machine setup (apt, rust, bash, cli-tools, chrome, git-tools, password-store)
 bootstrap: _apt rust _bash _cli-tools _chrome git-tools _password-store
 
+# CI-safe subset: no bash/chrome/password-store (needs GPG), no symlinks (needs $HOME layout)
+_ci: _apt rust symlinks _cli-tools _lazygit
+
 ## @just 32 Developer Tools | Install VS Code extensions and settings
 vscode:
     bash -c ". {{root_dir}}/.vscode/vsc_extensions.sh"

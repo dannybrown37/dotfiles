@@ -78,10 +78,10 @@ jobs:
           just-version: ${{ env.JUST_VERSION }} # zizmor: ignore[unpinned-tools]
 
       - name: Bootstrap (safe subset)
-        run: just apt rust symlinks cli-tools lazygit
+        run: just _ci
 
       - name: Idempotency — re-run the same subset
-        run: just apt rust symlinks cli-tools lazygit
+        run: just _ci
 
   test:
     runs-on: ubuntu-latest
