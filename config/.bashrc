@@ -40,6 +40,7 @@ export DOTFILES_DIR="${HOME}/projects/dotfiles"
 export NOTES_DIR="${HOME}/notes"
 export EDITOR="nvim"
 export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
+export PYRIGHT_PYTHON_FORCE_VERSION=latest
 
 # Without this, gpg cannot find a terminal to prompt on when it is invoked with
 # stdin redirected -- which is how git hooks run pass. Guarded because `tty`
