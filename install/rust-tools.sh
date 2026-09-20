@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 36 Developer Tools | Install the optional cargo utilities (htmlq, jless, difftastic, mprocs)
+## @just 34 Developer Tools | Install optional cargo utilities (htmlq, jless, difftastic, mprocs)
 
 ##
 ## Separated out of install/rust.sh so `make bootstrap` can depend on the Rust

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 12 Start Here | Install the Bash profile (symlinks, prompt, completion, history)
+## Install the Bash profile (symlinks, prompt, completion, history)
 
 ##
 ## The actual bash profile, which is what `make bash` always claimed to be and

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @just 41 Environment-Specific | Install win32yank clipboard bridge (WSL only)
+## Install win32yank clipboard bridge (WSL only)
 
 set -euo pipefail
 

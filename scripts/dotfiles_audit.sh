@@ -129,7 +129,7 @@ check "terraform"  "terraform version -json | jq -r '.terraform_version'"   "mak
 # ── WSL Clipboard ────────────────────────────────────────────────────────────
 
 if [[ -n "${ON_WINDOWS:-}" ]]; then
-    check "win32yank.exe" "command -v win32yank.exe" "just win32yank"
+    check "win32yank.exe" "command -v win32yank.exe" "just windows"
 fi
 
 # ── GitHub & Auth ─────────────────────────────────────────────────────────────

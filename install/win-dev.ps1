@@ -1,4 +1,4 @@
-## @just 42 Environment-Specific | Install Windows-side dev tooling (git, uv, node, typescript, etc.)
+## Install Windows-side dev tooling (git, uv, node, typescript, etc.)
 
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 

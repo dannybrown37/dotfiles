@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 16 Start Here | Clone the private password-store for secret sync
+## Clone the private password-store for secret sync
 
 ##
 ## Split out of the old install/bash.sh. Worth its own target because it is the

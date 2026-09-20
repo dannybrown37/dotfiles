@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 40 Environment-Specific | Install Gnome extensions
+## @just 40 Environment-Specific | Install Gnome extensions (dash-to-dock, just-perfection)
 
 
 pipx install gnome-extensions-cli --system-site-packages

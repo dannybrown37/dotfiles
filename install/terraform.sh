@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @just 34 Developer Tools | Install Terraform (latest release)
+## @just 35 Developer Tools | Install Terraform (latest release)
 
 ##
 ## Install latest version of terraform (skips if already current)

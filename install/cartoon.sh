@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## @just 32 Developer Tools | Install cartoon CLI and hook
+## Install cartoon CLI and hook
 
 ##
 ## Install the latest version of cartoon and wire up its hook

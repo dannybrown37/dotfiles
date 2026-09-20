@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 14 Start Here | Install the core CLI tools with no usable distro package
+## Install core CLI tools that have no usable distro package
 
 ##
 ## Split out of the old install/bash.sh, where these sat interleaved with the

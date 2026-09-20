@@ -20,13 +20,8 @@ The output of `just` in the root directory:
 Usage: just [option]
 
 Start Here:
-  bootstrap       Set up a new machine end to end (every target below it)
-  apt             Update apt and install every apt package this repo needs
-  bash            Install the Bash profile (symlinks, prompt, completion, history)
+  bootstrap       Full machine setup (apt, rust, bash, cli-tools, chrome, git-tools, password-store)
   symlinks        Symlink every tracked config into $HOME (idempotent, no network)
-  cli-tools       Install the core CLI tools with no usable distro package
-  chrome          Install Google Chrome
-  password-store  Clone the private password-store for secret sync
 
 Languages & Runtimes:
   python          Install Python environment (uv, select uv tools)
@@ -36,39 +31,30 @@ Languages & Runtimes:
   rust            Install the Rust toolchain (rustup, latest stable)
 
 Developer Tools:
+  git-tools       Install git workflow tools (lazygit, ghstack, git-absorb, git-branchless, gh-dash)
   nvim            Install Neovim
-  lazygit         Install lazygit TUI git client
-  cartoon         Install cartoon CLI and hook
-  spotify         Install spotify_player TUI (remote control, no audio)
-  terraform       Install Terraform (latest release)
   vscode          Install VS Code extensions and settings
-  git-tools       Install git workflow tools (ghstack, git-absorb, git-branchless, gh-dash)
-  rust-tools      Install the optional cargo utilities (htmlq, jless, difftastic, mprocs)
+  ai              Install AI coding tools (cartoon)
+  rust-tools      Install optional cargo utilities (htmlq, jless, difftastic, mprocs)
+  terraform       Install Terraform (latest release)
+  spotify         Install spotify_player TUI (remote control, no audio)
 
 Environment-Specific:
-  gnome           Install Gnome extensions
-  select-nerdfont Interactively pick and install a Nerd Font (Windows)
-  win32yank       Install win32yank clipboard bridge (WSL only)
-  win-dev         Install Windows-side dev tooling (git, uv, node, typescript, etc.)
-  wsl-fonts       Install Starship + JetBrainsMono Nerd Font (WSL to Windows)
-  komo            Install komorebi/whkd if needed, then (re)start it
+  gnome           Install Gnome extensions (dash-to-dock, just-perfection)
+  windows         Install Windows-side tooling (win-dev, win32yank, komo)
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
   secrets-load    Pull private repo, load secrets from password-store to local files
 
 My Dev Tooling:
-  projects        Clone and install skill-tree, gtd, and git-a-grip
-  skill-tree      Clone skill-tree and run its setup script
-  gtd             Clone gtd and install it with uv
-  git-a-grip      Clone git-a-grip and install it with uv
+  my-dev-tools    Clone and install skill-tree, gtd, and git-a-grip
 
 Verification:
   check           Run every prek hook over the whole repo
-  test            Run the scripts/ test suite with coverage
+  test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
-  test-shell      Syntax-check every shell script (bash -n + shellcheck)
 ```
 
 <!-- make:end -->
