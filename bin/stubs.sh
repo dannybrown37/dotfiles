@@ -16,7 +16,6 @@ gh() { command gh "$@"; }                  # @doc GitHub CLI -- PRs, issues, wor
 gh-dash() { command gh dash "$@"; }           # @doc Terminal GitHub dashboard -- PRs, issues, notifications | gh-dash
 ghstack() { command gh stack "$@"; }       # @doc GitHub stacked PRs extension (fast passthrough) | ghstack view
 git-absorb() { command git-absorb "$@"; } # @doc Auto-fixup commits by matching hunks to the right commit | git-absorb
-git-branchless() { command git-branchless "$@"; } # @doc Stacked-diff workflow + smartlog for git | git-branchless smartlog
 git-open() { command git-open "$@"; }   # @doc Open current repo/branch in browser | git-open [remote] [branch]
 glow() { command glow "$@"; }           # @doc Render markdown in the terminal | glow <file>
 hyperfine() { command hyperfine "$@"; } # @doc Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2'

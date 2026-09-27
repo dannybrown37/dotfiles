@@ -285,7 +285,6 @@ for tool in "${cargo_tools[@]}"; do
 done
 
 check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: just git-tools)"
-check "git-branchless" "git-branchless --version 2>&1 | awk '{print \$NF}'" "cargo install --locked git-branchless  (or: just git-tools)"
 
 # ── Dev Tooling ───────────────────────────────────────────────────────────────
 

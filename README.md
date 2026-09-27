@@ -31,7 +31,7 @@ Languages & Runtimes:
   rust            Install the Rust toolchain (rustup, latest stable)
 
 Developer Tools:
-  git-tools       Install git workflow tools (lazygit, ghstack, git-absorb, git-branchless, gh-dash)
+  git-tools       Install git workflow tools (lazygit, ghstack, git-absorb, gh-dash)
   nvim            Install Neovim
   vscode          Install VS Code extensions and settings
   ai              Install AI coding tools (cartoon)
@@ -108,7 +108,6 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `ghwatch` | github-action-watch: watch the current repo's in-progress CI | ghwatch [--any-branch] | `bin/ghwatch.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `git-absorb` | Auto-fixup commits by matching hunks to the right commit | git-absorb | `bin/stubs.sh` |
-| `git-branchless` | Stacked-diff workflow + smartlog for git | git-branchless smartlog | `bin/stubs.sh` |
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
