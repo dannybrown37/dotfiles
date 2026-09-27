@@ -1,6 +1,0 @@
-#!/bin/sh
-## START BRANCHLESS CONFIG
-
-git branchless hook pre-auto-gc "$@"
-
-## END BRANCHLESS CONFIG
