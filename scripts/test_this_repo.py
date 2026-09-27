@@ -1,4 +1,4 @@
-"""Tests for install/this_repo.sh, the curl | bash entrypoint for a fresh machine."""
+"""Tests for install/this_repo.sh, the curl | bash fresh-machine entrypoint."""
 
 import shutil
 import subprocess
@@ -32,7 +32,7 @@ def write_executable(path: Path, body: str) -> None:
 
 
 class Machine:
-    """A fake fresh machine: stubbed sudo/git, empty $HOME, no `just` on PATH."""
+    """Fake fresh machine: stubbed sudo/git, empty $HOME, no `just` on PATH."""
 
     def __init__(self, tmp_path: Path) -> None:
         self.home = tmp_path / 'home'
@@ -50,7 +50,8 @@ class Machine:
         write_executable(
             self.stub_bin / 'git',
             'echo "git $1" >> "${CALL_LOG}"\n'
-            '[[ "$1" == clone ]] && cp -r "${UPSTREAM}" "${3:-$(basename "$2")}"\n'
+            '[[ "$1" == clone ]] && '
+            'cp -r "${UPSTREAM}" "${3:-$(basename "$2")}"\n'
             'true\n',
         )
 
@@ -78,11 +79,11 @@ class Machine:
 
     def run(
         self,
+        extra_env: dict[str, str] | None = None,
         *,
         piped: bool = False,
-        **extra_env: str,
     ) -> subprocess.CompletedProcess[str]:
-        """Run the script, optionally as `curl ... | bash` would (script on stdin).
+        """Run the script, optionally as `curl ... | bash` would (via stdin).
 
         A new session detaches from any controlling terminal, so /dev/tty is
         unavailable -- as in CI -- no matter where the tests are run from.
@@ -92,7 +93,7 @@ class Machine:
             if piped
             else ['/usr/bin/env', 'bash', str(SCRIPT)],
             input=SCRIPT.read_text() if piped else '',
-            env=self.env(**extra_env),
+            env=self.env(**(extra_env or {})),
             capture_output=True,
             text=True,
             check=False,
@@ -128,7 +129,7 @@ def test_fresh_machine_installs_just_before_running_bootstrap(
 def test_existing_projects_dir_and_clone_do_not_abort(
     machine: Machine,
 ) -> None:
-    """The old script's bare `mkdir projects` failed under `set -e` on a re-run."""
+    """The old bare `mkdir projects` failed under `set -e` on a re-run."""
     shutil.copytree(machine.upstream, machine.dotfiles_dir)
 
     result = machine.run()
@@ -166,14 +167,17 @@ def test_runs_the_requested_bootstrap_recipe(
     extra_env: dict[str, str],
     expected_call: str,
 ) -> None:
-    result = machine.run(piped=False, **extra_env)
+    result = machine.run(extra_env)
 
     assert result.returncode == 0, result.stderr
     assert expected_call in machine.calls()
 
 
 def test_curl_pipe_survives_a_step_that_reads_stdin(machine: Machine) -> None:
-    """Under `curl | bash`, a step reading stdin eats the unread rest of the script."""
+    """Under `curl | bash`, a step reading stdin eats the rest of the script.
+
+    Wrapping the body in main() makes bash parse it all before running any.
+    """
     machine.build_upstream(apt_sh_extra='cat > /dev/null\n')
 
     result = machine.run(piped=True)

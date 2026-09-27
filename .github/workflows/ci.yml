@@ -69,19 +69,20 @@ jobs:
           done
           exit "$failed"
 
-      - name: Load pinned tool versions
-        run: grep -E '^[A-Z_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
+      # Through the README's curl | bash entrypoint rather than setup-just, so
+      # CI proves a machine with no `just` can get one. DOTFILES_DIR points it
+      # at this checkout instead of cloning main.
+      - name: Bootstrap via this_repo.sh (safe subset)
+        run: bash install/this_repo.sh
+        env:
+          DOTFILES_DIR: ${{ github.workspace }}
+          DOTFILES_BOOTSTRAP_RECIPE: _ci
 
-      - name: Install just
-        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
-        with:
-          just-version: ${{ env.JUST_VERSION }} # zizmor: ignore[unpinned-tools]
-
-      - name: Bootstrap (safe subset)
-        run: just _ci
-
-      - name: Idempotency — re-run the same subset
-        run: just _ci
+      - name: Idempotency — re-run the same entrypoint
+        run: bash install/this_repo.sh
+        env:
+          DOTFILES_DIR: ${{ github.workspace }}
+          DOTFILES_BOOTSTRAP_RECIPE: _ci
 
   test:
     runs-on: ubuntu-latest
