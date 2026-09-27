@@ -14,9 +14,14 @@ REPO = Path(__file__).parent.parent
 GITCONFIG = REPO / 'config' / '.gitconfig'
 SCRIPT = REPO / 'scripts' / 'git_workflow.sh'
 FIVE_LINES = 'a\nb\nc\nd\ne\n'
+EXIT_USAGE = 2
 GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
 if [ "$1 $2" = 'pr view' ]; then
+    if [ -e "${GH_CALLS_FILE}.watched" ] \\
+        && [ -n "${GH_PR_STATE_AFTER_WATCH:-}" ]; then
+        GH_PR_STATE="${GH_PR_STATE_AFTER_WATCH}"
+    fi
     [ -n "${GH_PR_STATE:-}" ] || { echo 'no pull requests found' >&2; exit 1; }
     case "$*" in
         *headRefOid*) echo "${GH_PR_STATE} ${GH_PR_HEAD:-}" ;;
@@ -26,6 +31,10 @@ fi
 if [ "$1 $2" = 'pr merge' ] && [ -n "${GH_MERGE_FAILS:-}" ]; then
     echo "${GH_MERGE_FAILS}" >&2
     exit 1
+fi
+if [ "$*" = 'pr checks --watch' ]; then
+    touch "${GH_CALLS_FILE}.watched"
+    [ -z "${GH_WATCH_FAILS:-}" ] || exit 1
 fi
 if [ "$*" = 'pr checks' ]; then
     n=$(( $(cat "${GH_CALLS_FILE}.polls" 2>/dev/null || echo 0) + 1 ))
@@ -270,12 +279,16 @@ def test_ship_titles_pr_with_top_prefix_and_branch_name(
     )
     assert 'refs/heads/main-branch-protection' in remote.stdout
     body = '\n'.join(f'- {s}' for s in subjects)
-    assert Path(env['GH_CALLS_FILE']).read_text() == (
-        'gh pr view --json state -q .state\n'
-        f'gh pr create --title {title} --body {body}\n'
-        'gh pr merge --auto --squash --delete-branch\n'
-        'gh pr checks\n'
-        'gh pr checks --watch\n'
+    assert (
+        Path(env['GH_CALLS_FILE'])
+        .read_text()
+        .startswith(
+            'gh pr view --json state -q .state\n'
+            f'gh pr create --title {title} --body {body}\n'
+            'gh pr merge --auto --squash --delete-branch\n'
+            'gh pr checks\n'
+            'gh pr checks --watch\n',
+        )
     )
 
 
@@ -324,7 +337,8 @@ def test_ship_reuses_open_pr(
     calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
     creates = state != 'OPEN'
     assert any(c.startswith('gh pr create') for c in calls) == creates
-    assert calls[-3:] == [
+    merge = calls.index('gh pr merge --auto --squash --delete-branch')
+    assert calls[merge : merge + 3] == [
         'gh pr merge --auto --squash --delete-branch',
         'gh pr checks',
         'gh pr checks --watch',
@@ -391,6 +405,93 @@ def test_ship_refuses_on_main(clone: Path, env: dict[str, str]) -> None:
 
 def head(clone: Path, env: dict[str, str]) -> str:
     return git(clone, 'rev-parse', 'HEAD', env=env).stdout.strip()
+
+
+def ready_to_ship(clone: Path, env: dict[str, str]) -> None:
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: one', env=env)
+    env['GH_PR_STATE_AFTER_WATCH'] = 'MERGED'
+    env['GH_PR_HEAD'] = head(clone, env)
+
+
+def current_branch(clone: Path, env: dict[str, str]) -> str:
+    return git(clone, 'branch', '--show-current', env=env).stdout.strip()
+
+
+def test_ship_runs_done_after_auto_merge(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+    (clone / 'new.txt').write_text('untracked\n')
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
+    assert (current_branch(clone, env), subject) == ('main', 'upstream')
+    assert (clone / 'new.txt').read_text() == 'untracked\n'
+
+
+@pytest.mark.parametrize(
+    ('args', 'env_overrides', 'message'),
+    [
+        ((), {'GH_PR_HEAD': '0' * 40}, 'git rescue <topic>'),
+        (
+            (),
+            {'GH_PR_STATE_AFTER_WATCH': 'OPEN'},
+            'run git done once it merges',
+        ),
+        (('--no-done',), {}, ''),
+        (
+            (),
+            {'GH_MERGE_FAILS': 'Auto merge is not allowed'},
+            'gh pr merge --squash --delete-branch',
+        ),
+    ],
+    ids=['commits-after-ship', 'never-merged', 'no-done', 'auto-merge-off'],
+)
+def test_ship_stays_on_branch_when_done_is_unsafe(
+    clone: Path,
+    env: dict[str, str],
+    args: tuple[str, ...],
+    env_overrides: dict[str, str],
+    message: str,
+) -> None:
+    ready_to_ship(clone, env)
+    env.update(env_overrides)
+
+    result = git(clone, 'ship', *args, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert current_branch(clone, env) == 'topic'
+    assert message in result.stderr
+
+
+def test_ship_stays_on_branch_when_ci_fails(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+    env['GH_WATCH_FAILS'] = '1'
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode != 0
+    assert current_branch(clone, env) == 'topic'
+
+
+def test_ship_rejects_unknown_argument(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = git(clone, 'ship', '--bogus', env=env)
+
+    assert result.returncode == EXIT_USAGE
+    assert 'usage: git ship [--no-done]' in result.stderr
+    assert not Path(env['GH_CALLS_FILE']).exists()
 
 
 def on_merged_branch(clone: Path, env: dict[str, str]) -> None:
