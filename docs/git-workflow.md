@@ -35,6 +35,7 @@ Between `start` and `ship`: make commits as usual.
 - PR title = top commit prefix + branch name: `feat:` + `main-branch-protection` -> `feat: main branch protection`.
   Rank: feat > fix > perf > refactor > revert > build > ci > docs > test > style > chore.
 - Committed after the merge? `git rescue <topic>`, then `git ship`.
+- Committed on `main` by mistake? `git start <topic>` moves the commits to `<topic>` and resets `main`.
 
 ## Stacked PRs
 

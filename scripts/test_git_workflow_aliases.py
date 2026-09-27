@@ -236,6 +236,52 @@ def test_start_failure_restores_branch_and_changes(
     assert git(clone, 'stash', 'list', env=env).stdout == ''
 
 
+def commit_on_main(clone: Path, env: dict[str, str], text: str) -> None:
+    (clone / 'f.txt').write_text(text)
+    git(clone, 'commit', '-am', 'fix: direct on main', env=env)
+
+
+@pytest.mark.parametrize('origin_moved', [True, False])
+def test_start_on_main_moves_local_commits_to_new_branch(
+    clone: Path,
+    env: dict[str, str],
+    origin_moved: bool,  # noqa: FBT001
+) -> None:
+    if not origin_moved:
+        git(clone, 'pull', '--quiet', env=env)
+    commit_on_main(clone, env, FIVE_LINES.replace('a', 'A'))
+    (clone / 'new.txt').write_text('untracked\n')
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert current_branch(clone, env) == 'my-topic'
+    assert subject_of(clone, env) == 'fix: direct on main'
+    assert subject_of(clone, env, 'HEAD~') == 'upstream'
+    main = git(clone, 'rev-parse', 'main', 'origin/main', env=env).stdout
+    assert len(set(main.split())) == 1
+    assert (clone / 'new.txt').read_text() == 'untracked\n'
+    assert git(clone, 'stash', 'list', env=env).stdout == ''
+
+
+def test_start_on_main_keeps_commits_on_new_branch_when_rebase_conflicts(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    commit_on_main(clone, env, 'mine\n')
+    seed = clone.parent / 'seed'
+    (seed / 'f.txt').write_text('theirs\n')
+    git(seed, 'commit', '-am', 'fix: other', env=env)
+    git(seed, 'push', 'origin', 'HEAD:main', env=env)
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode != 0
+    assert 'git rebase --continue' in result.stderr
+    assert subject_of(clone, env, 'my-topic') == 'fix: direct on main'
+    assert subject_of(clone, env, 'main') == 'fix: other'
+
+
 def test_start_with_clean_tree_leaves_older_stashes_alone(
     clone: Path,
     env: dict[str, str],
