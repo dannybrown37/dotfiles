@@ -14,9 +14,12 @@ repos:
         args: [--config, config/.ruff.toml]
       - id: ruff-format
         args: [--config, config/.ruff.toml]
+      # Push, not commit: the full suite is slow, and CI's test job gates
+      # merges anyway. Runs from githooks/pre-push.
       - id: pytest
         args: ['--runner=uv run pytest', scripts/, -q]
         files: ^scripts/.*\.py$
+        stages: [pre-push]
       - id: mypy
         args: ['--runner=uv run --with mypy mypy', scripts/, --ignore-missing-imports]
         files: ^scripts/.*\.py$

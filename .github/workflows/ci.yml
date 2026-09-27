@@ -49,13 +49,13 @@ jobs:
           path: ~/.cache/prek
           key: prek-${{ hashFiles('.pre-commit-config.yaml', 'install/versions.sh') }}
 
-      # The pytest hook duplicates the `test` job below; skip it by hook id.
       # no-commit-to-branch guards local commits, and a push to main checks
-      # out branch main here, so it would always fail.
+      # out branch main here, so it would always fail. The pytest hook is
+      # pre-push only, so the `test` job below is its sole CI run.
       - name: Run prek hooks
         run: prek run --all-files
         env:
-          SKIP: pytest,no-commit-to-branch
+          SKIP: no-commit-to-branch
 
   changes:
     runs-on: ubuntu-latest
