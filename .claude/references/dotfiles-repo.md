@@ -1,6 +1,6 @@
 # Dotfiles Repo
 
-This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux). Bootstrap a full dev environment from a clean machine with `make`.
+This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux). Bootstrap a full dev environment from a clean machine with `just bootstrap`.
 
 ## Repo Layout
 
@@ -11,9 +11,10 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux)
 ├── config/         Dotfiles symlinked to ~ (.bashrc, .gitconfig, .tmux.conf, .ruff.toml, etc.)
 │   └── .secrets    Untracked secrets file managed via password-store
 ├── docs/           Long-form documentation (secrets, GitHub accounts) linked from README
-├── install/        Per-tool bootstrap scripts invoked by Make targets
+├── githooks/       Tracked git hooks (core.hooksPath) -- pre-commit runs prek
+├── install/        Per-tool bootstrap scripts invoked by justfile recipes
 ├── nvim/           Neovim config (lazy.nvim, Lua)
-├── pass/           password-store related config
+├── references/     Personal reference material (mental models, media, vim notes)
 ├── scripts/        **Non-sourced** scripts — standalone executables, use shebang + set -euo pipefail
 ├── wsl/            WSL-specific scripts and config
 ├── .vscode/        VS Code settings and extension list
@@ -23,11 +24,11 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux)
 
 ## Key Conventions
 
-- **Install scripts** live in `install/`, are self-contained and idempotent, and register themselves as recipes by carrying a `## @just <order> <Section> | <description>` header. The filename is the recipe name (`install/spotify.sh` → `make spotify`). The help script `scripts/just-help.sh` renders the target list from those headers — nothing is listed by hand, and a script without a header is not discoverable. See the `add-dotfiles-tooling` skill.
+- **Install scripts** live in `install/`, are self-contained and idempotent, and register themselves as recipes by carrying a `## @just <order> <Section> | <description>` header. The filename is the recipe name (`install/spotify.sh` → `just spotify`). The help script `scripts/just-help.sh` renders the target list from those headers — nothing is listed by hand, and a script without a header is not discoverable. See the `add-dotfiles-tooling` skill.
 - **Shell utilities** in `bin/` are **sourced** by `.bashrc`. They can call other functions and use dynamic shell state. No shebang needed.
 - **Standalone scripts** in `scripts/` are **non-sourced** executables. Use `#!/usr/bin/env bash` and `set -euo pipefail`.
-- **Config files** in `config/` are symlinked to `~` by the bash install script. Edit them here, not in `~`.
-- **Secrets** are never committed. Use `password-store` (`pass`) and the `make insert-*`/`pull-*` targets.
+- **Config files** in `config/` are symlinked to `~` by `install/symlinks.sh` (`just symlinks`). Edit them here, not in `~`.
+- **Secrets** are never committed. Use `password-store` (`pass`) and the `just secrets-save`/`secrets-load` recipes (see `docs/secrets.md`).
 
 ## Prek
 

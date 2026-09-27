@@ -22,7 +22,7 @@ readonly FEATURES="image,fzf"
 readonly USER_AGENT="dotfiles-install-script (https://github.com/dannybrown37/dotfiles)"
 
 if ! command -v cargo &>/dev/null; then
-    echo "cargo not found — run 'make rust' first" >&2
+    echo "cargo not found — run 'just rust' first" >&2
     exit 1
 fi
 

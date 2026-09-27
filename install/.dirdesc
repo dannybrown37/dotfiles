@@ -1,1 +1,1 @@
-Bootstrap install scripts invoked via Make targets
+Bootstrap install scripts invoked via justfile recipes

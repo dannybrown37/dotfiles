@@ -9,7 +9,7 @@
 ## Needed because every Make target is its own `bash -c`, so nothing rust.sh
 ## does to PATH survives into the next target. The only thing that normally adds
 ## cargo is config/.bashrc, and a non-interactive shell never reads it. On a
-## fresh machine that meant `make bootstrap` installed the toolchain in its
+## fresh machine that meant `just bootstrap` installed the toolchain in its
 ## `rust` step and then could not find cargo in its `cli-tools` step -- eza was
 ## skipped, with rust sitting right there installed. Ordering the composite
 ## correctly is necessary but not sufficient; each cargo-using script has to

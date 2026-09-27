@@ -61,9 +61,9 @@ check_symlink() {
             warn "$label" "exists but points to '$actual' (expected '$target')"
         fi
     elif [[ -f "$link" ]]; then
-        warn "$label" "$link is a real file, not a symlink — run: make symlinks"
+        warn "$label" "$link is a real file, not a symlink — run: just symlinks"
     else
-        fail "$label" "run: make symlinks"
+        fail "$label" "run: just symlinks"
     fi
 }
 
@@ -111,20 +111,20 @@ done
 # ── Core CLI Tools ────────────────────────────────────────────────────────────
 
 section "Core CLI Tools"
-check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: make cli-tools)"
-check "just"       "just --version | awk '{print \$2}'"                             "cargo install just  (or: make cli-tools)"
-check "tokei"      "tokei --version | awk '{print \$2}'"                    "make cli-tools"
-check "hyperfine"  "hyperfine --version | awk '{print \$2}'"                "make cli-tools"
-check "glow"       "glow --version | awk '{print \$3}'"                     "make cli-tools"
-check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "make cli-tools  (installs to ~/.local/bin)"
-check "delta"      "delta --version | awk '{print \$2}'"                    "make cli-tools"
-check "atuin"      "atuin --version | awk '{print \$2}'"                    "make bash"
-check "croc"       "croc --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'" "make cli-tools  (installs to ~/.local/bin)"
-check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "make wsl-fonts"
-check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "make lazygit"
-check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "make nvim"
-check "cartoon"    "cartoon --version | awk '{print \$2}'"                  "make cartoon"
-check "terraform"  "terraform version -json | jq -r '.terraform_version'"   "make terraform"
+check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: just _cli-tools)"
+check "just"       "just --version | awk '{print \$2}'"                             "cargo install just  (or: just _cli-tools)"
+check "tokei"      "tokei --version | awk '{print \$2}'"                    "just _cli-tools"
+check "hyperfine"  "hyperfine --version | awk '{print \$2}'"                "just _cli-tools"
+check "glow"       "glow --version | awk '{print \$3}'"                     "just _cli-tools"
+check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "just _cli-tools  (installs to ~/.local/bin)"
+check "delta"      "delta --version | awk '{print \$2}'"                    "just _cli-tools"
+check "atuin"      "atuin --version | awk '{print \$2}'"                    "just _bash"
+check "croc"       "croc --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'" "just _cli-tools  (installs to ~/.local/bin)"
+check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "just _wsl-fonts"
+check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "just git-tools"
+check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "just nvim"
+check "cartoon"    "cartoon --version | awk '{print \$2}'"                  "just ai"
+check "terraform"  "terraform version -json | jq -r '.terraform_version'"   "just terraform"
 
 # ── WSL Clipboard ────────────────────────────────────────────────────────────
 
@@ -136,8 +136,8 @@ fi
 
 section "GitHub & Auth"
 check "gh" "gh --version | head -1 | awk '{print \$3}'" "sudo apt install gh"
-check "ghstack" "gh extension list | awk -F '\\t' '\$1==\"gh stack\"{print \$3; exit}'" "make ghstack"
-check "gh-dash" "gh extension list | awk -F '\\t' '\$1==\"gh dash\"{print \$3; exit}'" "make gh-dash"
+check "ghstack" "gh extension list | awk -F '\\t' '\$1==\"gh stack\"{print \$3; exit}'" "just git-tools"
+check "gh-dash" "gh extension list | awk -F '\\t' '\$1==\"gh dash\"{print \$3; exit}'" "just git-tools"
 
 GH_AUTH=$(gh auth status 2>&1)
 if echo "$GH_AUTH" | grep -q "Logged in to"; then
@@ -198,14 +198,14 @@ fi
 if [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
     ok "tmux tpm" "installed"
 else
-    fail "tmux tpm" "run: make bash  (or: git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm)"
+    fail "tmux tpm" "run: just _bash  (or: git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm)"
 fi
 
 # ── Node / NPM ────────────────────────────────────────────────────────────────
 
 section "Node / NPM"
 check "n"    "n --version"                          "curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n | sudo bash -s 22"
-check "node" "node --version | sed 's/v//'"         "make node"
+check "node" "node --version | sed 's/v//'"         "just node"
 check "npm"  "npm --version"                         "comes with node"
 
 NODE_VER=$(node --version 2>/dev/null | sed 's/v//' | cut -d. -f1)
@@ -218,7 +218,7 @@ fi
 # shell, silently sending global npm installs to the wrong Node.
 NODE_PATH_RESOLVED=$(command -v node 2>/dev/null)
 if [[ "$NODE_PATH_RESOLVED" == *"/.nvm/"* ]]; then
-    fail "node source" "resolves to nvm ($NODE_PATH_RESOLVED) — remove ~/.nvm, then: make node"
+    fail "node source" "resolves to nvm ($NODE_PATH_RESOLVED) — remove ~/.nvm, then: just node"
 elif [[ -d "$HOME/.nvm" ]]; then
     warn "nvm leftover" "$HOME/.nvm still exists — this repo uses n; run: rm -rf ~/.nvm"
 else
@@ -257,20 +257,20 @@ done
 # ── Go ────────────────────────────────────────────────────────────────────────
 
 section "Go"
-check "go" "go version | awk '{print \$3}' | sed 's/go//'" "make golang"
+check "go" "go version | awk '{print \$3}' | sed 's/go//'" "just golang"
 
 if [[ -d "/usr/local/go" ]]; then
     ok "GOROOT" "/usr/local/go"
 else
-    fail "GOROOT" "/usr/local/go missing — run: make golang"
+    fail "GOROOT" "/usr/local/go missing — run: just golang"
 fi
 
 # ── Rust ──────────────────────────────────────────────────────────────────────
 
 section "Rust"
-check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "make rust"
-check "cargo"   "cargo --version | awk '{print \$2}'"         "make rust"
-check "rustc"   "rustc --version | awk '{print \$2}'"         "make rust"
+check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "just rust"
+check "cargo"   "cargo --version | awk '{print \$2}'"         "just rust"
+check "rustc"   "rustc --version | awk '{print \$2}'"         "just rust"
 
 cargo_tools=(htmlq jless mprocs)
 for tool in "${cargo_tools[@]}"; do
@@ -282,8 +282,8 @@ for tool in "${cargo_tools[@]}"; do
     fi
 done
 
-check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: make git-absorb)"
-check "git-branchless" "git-branchless --version 2>&1 | awk '{print \$NF}'" "cargo install --locked git-branchless  (or: make git-branchless)"
+check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: just git-tools)"
+check "git-branchless" "git-branchless --version 2>&1 | awk '{print \$NF}'" "cargo install --locked git-branchless  (or: just git-tools)"
 
 # ── Dev Tooling ───────────────────────────────────────────────────────────────
 
@@ -306,21 +306,21 @@ elif [[ -d "$HOME/.password-store" ]]; then
     warn "password-store" "present but not a git repo — secrets-save/load won't sync"
 else
     # shellcheck disable=SC2088  # display string, not a path being expanded
-    warn "password-store" "~/.password-store missing — run: make password-store"
+    warn "password-store" "~/.password-store missing — run: just _password-store"
 fi
 
 HOOKS_PATH=$(git -C "$DOTFILES_DIR" config --get core.hooksPath 2>/dev/null)
 if [[ "$HOOKS_PATH" == "githooks" ]]; then
     ok "git hooks" "core.hooksPath -> githooks"
 else
-    fail "git hooks" "run: make password-store  (sets core.hooksPath so commits run prek)"
+    fail "git hooks" "run: just _password-store  (sets core.hooksPath so commits run prek)"
 fi
 
 if git -C "$DOTFILES_DIR" config --get-all credential.https://github.com.helper 2>/dev/null |
     grep -q "git-credential-personal"; then
     ok "personal git credentials" "dotfiles uses MY_GITHUB_TOKEN"
 else
-    fail "personal git credentials" "run: make symlinks  (includeIf -> ~/.gitconfig-personal)"
+    fail "personal git credentials" "run: just symlinks  (includeIf -> ~/.gitconfig-personal)"
 fi
 
 if [[ -n "${MY_GITHUB_TOKEN:-}" ]]; then
@@ -379,7 +379,7 @@ else
                 ver=$(echo "$matched" | sed "s/^${ext}-//i" | sed 's/-linux.*$//')
                 ok "$ext" "$ver"
             else
-                fail "$ext" "code --install-extension ${ext}  (or: make vscode)"
+                fail "$ext" "code --install-extension ${ext}  (or: just vscode)"
             fi
         done
     fi

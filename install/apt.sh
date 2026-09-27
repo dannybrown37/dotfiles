@@ -3,7 +3,7 @@ set -euo pipefail
 ## Update apt and install every apt package this repo needs
 
 ##
-## Split out of the old install/bash.sh. First step of `make bootstrap`, and the
+## Split out of the old install/bash.sh. First step of `just bootstrap`, and the
 ## one every other install script assumes has run -- curl, wget, jq, git and gh
 ## all come from here, and cli-tools.sh needs jq to resolve release tags.
 ##

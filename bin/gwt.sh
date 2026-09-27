@@ -157,12 +157,12 @@ _gwt_bootstrap() {
         (cd "${wt_path}" && cargo fetch --quiet) 2>&1 | sed 's/^/     /'
     fi
 
-    # Makefile: build
-    if [[ -f "${wt_path}/Makefile" ]]; then
+    # dotfiles: pull secrets into the new worktree
+    if [[ -f "${wt_path}/justfile" ]]; then
         # verify dotfiles repo specifically
         if [[ "${git_root}" == "${HOME}/projects/dotfiles" ]]; then
             echo "  -> Loading secrets for dotfiles repo"
-            (cd "${wt_path}" && make secrets-load) 2>&1 | sed 's/^/     /'
+            (cd "${wt_path}" && just secrets-load) 2>&1 | sed 's/^/     /'
         fi
     fi
 

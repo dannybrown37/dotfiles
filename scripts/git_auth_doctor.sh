@@ -317,12 +317,12 @@ for include in "${HOME}/.gitconfig-personal" "${HOME}/.gitconfig-private"; do
         if [[ -L "$include" ]]; then
             ok "$label" "→ $(readlink "$include")"
         else
-            warn "$label" "real file, not a symlink — run: make symlinks"
+            warn "$label" "real file, not a symlink — run: just symlinks"
         fi
     elif [[ "$include" == *private ]]; then
         warn "$label" "absent — only personal remotes have an identity here"
     else
-        fail "$label" "missing — git ignores an includeIf pointing at a nonexistent file, silently. Run: make symlinks"
+        fail "$label" "missing — git ignores an includeIf pointing at a nonexistent file, silently. Run: just symlinks"
     fi
 done
 
@@ -358,7 +358,7 @@ fi
 if [[ -n "${MY_GITHUB_TOKEN:-}" ]]; then
     ok "MY_GITHUB_TOKEN" "$(token_fingerprint "$MY_GITHUB_TOKEN")"
 elif [[ "$expects_personal_helper" == true ]]; then
-    fail "MY_GITHUB_TOKEN" "not exported — helper falls back to gh, which returns GITHUB_TOKEN (the work token). Check: grep MY_GITHUB_TOKEN config/.secrets, then: make secrets-load"
+    fail "MY_GITHUB_TOKEN" "not exported — helper falls back to gh, which returns GITHUB_TOKEN (the work token). Check: grep MY_GITHUB_TOKEN config/.secrets, then: just secrets-load"
 else
     warn "MY_GITHUB_TOKEN" "not exported — not needed for '$remote_owner'"
 fi

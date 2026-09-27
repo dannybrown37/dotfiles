@@ -4,7 +4,7 @@
 set -euo pipefail
 
 if ! command -v gh &>/dev/null; then
-    echo "gh CLI is required -- run 'make apt' first" >&2
+    echo "gh CLI is required -- run 'just _apt' first" >&2
     exit 1
 fi
 
