@@ -99,7 +99,7 @@ def clone(tmp_path: Path, env: dict[str, str], base: str) -> Path:
     (seed / 'f.txt').write_text(FIVE_LINES)
     git(seed, 'add', 'f.txt', env=env)
     git(seed, 'commit', '-m', 'first', env=env)
-    git(seed, 'push', 'origin', f'HEAD:{base}', 'HEAD:main', env=env)
+    git(seed, 'push', 'origin', *{f'HEAD:{base}', 'HEAD:main'}, env=env)
     work = tmp_path / 'work'
     git(tmp_path, 'clone', str(origin), str(work), env=env)
     git(seed, 'commit', '--allow-empty', '-m', 'upstream', env=env)
