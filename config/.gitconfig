@@ -38,8 +38,14 @@
 [mergetool]
     keepBackup = false
 # @doc git-alias: gmt -> git mergetool
+# @doc git-alias: start <topic> -> fresh branch off updated main, carrying uncommitted changes
+# @doc git-alias: ship -> push, open PR titled "<top commit prefix>: <branch>", auto-merge on green, watch checks
+# @doc git-alias: done -> back to updated main after merge
 [alias]
     gmt = mergetool
+    start = "!f() { [ -n \"$1\" ] || { echo 'usage: git start <topic>' >&2; return 2; }; from=$(git branch --show-current); stashed=0; if [ -n \"$(git status --porcelain)\" ]; then git stash push -u -m \"git start $1\" || return 1; stashed=1; fi; if ! { git switch main && git pull --ff-only && git switch -c \"$1\"; }; then [ \"$stashed\" = 0 ] || { git switch \"$from\" >/dev/null 2>&1; git stash pop; }; return 1; fi; [ \"$stashed\" = 0 ] || git stash pop || { echo 'carried changes conflict: fix the files, git add them, then git stash drop' >&2; return 1; }; }; f"
+    ship = "!f() { b=$(git branch --show-current); [ \"$b\" != main ] || { echo 'on main: run git start <topic> first' >&2; return 2; }; p=$(git log --format=%s origin/main..HEAD | awk 'BEGIN { n = split(\"chore style test docs ci build revert refactor perf fix feat\", o, \" \"); for (i = 1; i <= n; i++) rank[o[i]] = i } match($0, /^[a-z]+(\\([^)]*\\))?!?:/) { k = $0; sub(/[(!:].*/, \"\", k); if (rank[k] > top) { top = rank[k]; p = k } if (substr($0, RLENGTH - 1, 1) == \"!\") bang = \"!\" } END { if (p) print p bang }'); [ -n \"$p\" ] || { echo 'no conventional commit prefix in origin/main..HEAD' >&2; return 2; }; git push -u origin HEAD && gh pr create --title \"$p: $(echo \"$b\" | tr '_-' '  ')\" --body \"$(git log --reverse --format='- %s' origin/main..HEAD)\" && gh pr merge --auto --rebase --delete-branch && gh pr checks --watch; }; f"
+    done = "!git switch main && git pull --ff-only"
 [column]
     ui = auto
 [help]
