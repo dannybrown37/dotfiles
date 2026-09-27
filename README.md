@@ -56,9 +56,6 @@ Verification:
   test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
-
-Reference:
-  git             Show the git workflow cheat sheet (start / ship / done)
 ```
 
 <!-- make:end -->
@@ -114,6 +111,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
 | `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
+| `gitwf` | Show the git workflow cheat sheet (git start / ship / done) | `config/.bash_aliases` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |
 | `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
@@ -203,7 +201,7 @@ Updated with `just bench-shell`:
 
 - [Handling Secrets](docs/secrets.md) — password-store sync, manifest format, new machine setup
 - [Multiple GitHub Accounts](docs/github-accounts.md) — identity routing, credential helpers, `gitdoctor`
-- [Git Workflow](docs/git-workflow.md) — branch, PR, auto-merge on green CI (`just git` to view)
+- [Git Workflow](docs/git-workflow.md) — branch, PR, auto-merge on green CI (`gitwf` to view)
 
 ## Initial Windows Setup Notes
 
