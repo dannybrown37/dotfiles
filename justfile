@@ -85,11 +85,10 @@ _gtd:
 _git-a-grip:
     bash -c ". {{root_dir}}/install/git-a-grip.sh"
 
-## @just 30 Developer Tools | Install git workflow tools (lazygit, ghstack, git-absorb, git-branchless, gh-dash)
+## @just 30 Developer Tools | Install git workflow tools (lazygit, ghstack, git-absorb, gh-dash)
 git-tools: _lazygit
     bash -c ". {{root_dir}}/install/ghstack.sh"
     bash -c ". {{root_dir}}/install/git-absorb.sh"
-    bash -c ". {{root_dir}}/install/git-branchless.sh"
     bash -c ". {{root_dir}}/install/gh-dash.sh"
 
 # ── Composite targets ────────────────────────────────────────────────────────
