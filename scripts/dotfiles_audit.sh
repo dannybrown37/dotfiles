@@ -130,6 +130,8 @@ check "terraform"  "terraform version -json | jq -r '.terraform_version'"   "jus
 
 if [[ -n "${ON_WINDOWS:-}" ]]; then
     check "win32yank.exe" "command -v win32yank.exe" "just windows"
+    check "AutoHotkey v2" "test -x '/mnt/c/Program Files/AutoHotkey/v2/AutoHotkey64.exe' && echo installed" "https://www.autohotkey.com/download/"
+    check "AHK autocorrect list" "test -s '${DOTFILES_DIR}/ahk/vendor/AutoCorrectHotstrings.ahk' && echo present" "ahk"
 fi
 
 # ── GitHub & Auth ─────────────────────────────────────────────────────────────

@@ -31,7 +31,7 @@ alias cinplay='asciinema play session.cast'  # @doc Replay session.cast recordin
 # Cargo package aliases
 
 if [[ -n "${ON_WINDOWS}" ]]; then
-    alias ahk='${DOTFILES_DIR}/ahk/ahk.sh' # @doc Run all AutoHotKey scripts (Windows only)
+    alias ahk='${DOTFILES_DIR}/ahk/ahk.sh' # @doc Start AutoHotkey (ahk/main.ahk); ahk --help for more (Windows only)
     alias beep='powershell.exe -c "[console]::beep(261, 300)"'  # @doc Play a beep sound (Windows only)
     alias komo='just -f "${DOTFILES_DIR}/justfile" komo' # @doc Reset komorebi window manager (Windows only)
 fi

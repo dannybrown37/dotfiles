@@ -1,10 +1,4 @@
 ; @doc quick_run: Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session
-#SingleInstance Force
-#NoEnv
-#Warn
-#Persistent
-SetTitleMatchMode, 2
-
 ; The window is created once and then only ever shown or hidden, never
 ; relaunched. That is the whole point: spawning wt.exe per press cost about a
 ; second, while `bash -lic exit` is only ~136ms -- the window was the expense,
@@ -13,28 +7,26 @@ SetTitleMatchMode, 2
 ;
 ; komorebi is told to ignore this title in wsl/komorebi.json, so showing and
 ; hiding it does not disturb the tiling layout.
-global QuickRunTitle := "WSL Quick Run ahk_exe WindowsTerminal.exe"
+QuickRunTitle := "WSL Quick Run ahk_exe WindowsTerminal.exe"
 
-!p::
+!p:: {
     ; WinExist/WinShow cannot see a window we previously hid without this.
-    DetectHiddenWindows, On
+    DetectHiddenWindows(true)
     windowHandleId := WinExist(QuickRunTitle)
 
-    if (!windowHandleId) {
-        DetectHiddenWindows, Off
-        shell := ComObjCreate("WScript.Shell")
-        shell.Run("wt.exe -w quickrun --title ""WSL Quick Run"" wsl.exe -- bash -c ""tmux new-session -A -s quickrun""", 0, false)
+    if !windowHandleId {
+        shell := ComObject("WScript.Shell")
+        shell.Run('wt.exe -w quickrun --title "WSL Quick Run" wsl.exe -- bash -c "tmux new-session -A -s quickrun"', 0, false)
         return
     }
 
     ; Visible *and* focused means this press is a dismissal. Visible but
     ; unfocused means it is buried behind something, so raise it instead --
     ; hiding there would feel like the hotkey did nothing.
-    if (WinActive(QuickRunTitle)) {
-        WinHide, ahk_id %windowHandleId%
+    if WinActive(QuickRunTitle) {
+        WinHide(windowHandleId)
     } else {
-        WinShow, ahk_id %windowHandleId%
-        WinActivate, ahk_id %windowHandleId%
+        WinShow(windowHandleId)
+        WinActivate(windowHandleId)
     }
-    DetectHiddenWindows, Off
-return
+}
