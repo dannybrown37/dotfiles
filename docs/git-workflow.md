@@ -24,6 +24,7 @@ main ─●─────────────────────┼─
 `git ship` skips `git done` (you stay on the branch) when:
 
 - you pass `--no-done`
+- you pass `--no-auto` (auto-merge stays off: merge by hand once CI is green)
 - auto-merge is off
 - the PR is not merged 60s after CI goes green
 - you committed while CI ran: run `git rescue <topic>`
