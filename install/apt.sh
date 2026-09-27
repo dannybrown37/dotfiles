@@ -13,6 +13,21 @@ set -euo pipefail
 # shellcheck source=install/apt_packages.sh
 source "$(dirname "${BASH_SOURCE[0]}")/apt_packages.sh"
 
+## Debian's own gh lags years behind; GitHub's repo tracks every release, so
+## `apt upgrade` below keeps gh current. Steps from cli/cli docs/install_linux.md.
+gh_keyring=/etc/apt/keyrings/githubcli-archive-keyring.gpg
+gh_apt_list="${GH_APT_LIST:-/etc/apt/sources.list.d/github-cli.list}"
+if [[ ! -f "${gh_apt_list}" ]]; then
+    command -v wget >/dev/null || { sudo apt -y update && sudo apt install -y wget; }
+    gh_key=$(mktemp)
+    wget -nv -O "${gh_key}" https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    sudo mkdir -p -m 755 /etc/apt/keyrings
+    sudo install -m 644 "${gh_key}" "${gh_keyring}"
+    rm -f "${gh_key}"
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=${gh_keyring}] https://cli.github.com/packages stable main" |
+        sudo tee "${gh_apt_list}" >/dev/null
+fi
+
 sudo apt -y update
 sudo apt -y upgrade
 
