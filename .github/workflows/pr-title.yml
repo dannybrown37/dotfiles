@@ -1,0 +1,39 @@
+name: PR title
+
+# Squash merges put the PR title on main as the commit message, and no local
+# commit-msg hook ever sees it. Check it with the same pinned commitizen hook.
+# Its own workflow so that `edited` (a title fix) doesn't re-run all of CI.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  conventional-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Load pinned tool versions
+        run: grep -E '^[A-Z_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
+
+      - name: Install prek
+        run: |
+          uv tool install "prek==${PREK_VERSION}"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Check PR title is a conventional commit
+        run: |
+          printf '%s\n' "${PR_TITLE}" > "${RUNNER_TEMP}/pr-title"
+          prek run commitizen --hook-stage commit-msg \
+              --commit-msg-filename "${RUNNER_TEMP}/pr-title"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}

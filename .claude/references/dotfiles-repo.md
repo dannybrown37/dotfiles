@@ -11,7 +11,7 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux)
 ├── config/         Dotfiles symlinked to ~ (.bashrc, .gitconfig, .tmux.conf, .ruff.toml, etc.)
 │   └── .secrets    Untracked secrets file managed via password-store
 ├── docs/           Long-form documentation (secrets, GitHub accounts) linked from README
-├── githooks/       Tracked git hooks (core.hooksPath) -- pre-commit runs prek
+├── githooks/       Tracked git hooks (core.hooksPath) -- pre-commit and commit-msg forward to prek
 ├── install/        Per-tool bootstrap scripts invoked by justfile recipes
 ├── nvim/           Neovim config (lazy.nvim, Lua)
 ├── references/     Personal reference material (mental models, media, vim notes)
@@ -37,6 +37,7 @@ Managed via `.pre-commit-config.yaml` (prek reads this natively). Active hooks:
 - **shfmt** — shell formatting (4-space indent)
 - **shellcheck** — shell linting, a `language: system` local hook against the apt-installed binary (upstream's hook is docker-only). Deliberate disables live in `.shellcheckrc`; keep the repo at zero findings.
 - **ruff check + format** — Python linting and formatting
+- **commitizen-early** (git-a-grip) + **commitizen** — conventional commit messages. `-early` rejects a bad `-m` message before the slow hooks run; the commit-msg stage (via `githooks/commit-msg`) catches editor/rebase messages. `pr-title.yml` applies the same hook to PR titles, which become the squash-merge commit on `main`.
 - **embed-command** (git-a-grip) — keeps README install options in sync with `just` help output, which is itself generated from the `## @just` headers
 - Standard pre-commit-hooks repo (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
 

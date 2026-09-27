@@ -8,7 +8,7 @@ Stacked-diff workflow + smartlog for git. Installed via `install/git-branchless.
 - `install/git-branchless.sh` runs `git branchless init --main-branch main` after install,
   which generates hooks into `githooks/` (where `core.hooksPath` points)
 - Generated hooks are `.gitignore`d — they're regenerated per-machine by the install script
-- `githooks/pre-commit` is the only committed hook (runs prek)
+- `githooks/pre-commit` and `githooks/commit-msg` are the only committed hooks (both forward to prek)
 
 ## Workflow Overview
 
