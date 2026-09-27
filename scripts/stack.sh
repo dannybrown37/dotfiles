@@ -80,7 +80,7 @@ doctor() {
         ext_version="$(stack_extension_version)"
         echo "✅ gh-stack: ${ext_version:-installed}"
     else
-        echo "❌ gh-stack: missing (run 'stack setup' or 'make ghstack')" >&2
+        echo "❌ gh-stack: missing (run 'stack setup' or 'just git-tools')" >&2
         errors=$((errors + 1))
     fi
 

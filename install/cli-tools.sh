@@ -11,7 +11,7 @@ set -euo pipefail
 ## package or has one too old to be worth using.
 ##
 ## Needs apt.sh to have run: jq resolves the release tags, curl fetches them.
-## eza needs cargo, so `make bootstrap` runs `rust` before this -- and cargo_env.sh
+## eza needs cargo, so `just bootstrap` runs `rust` before this -- and cargo_env.sh
 ## is what actually makes that ordering count, since PATH does not cross a Make
 ## target boundary.
 ##
@@ -31,7 +31,7 @@ for cargo_tool in eza just; do
         if command -v cargo &>/dev/null; then
             cargo install --locked "${cargo_tool}"
         else
-            echo "${cargo_tool} needs cargo -- run 'make rust' then 'make cli-tools'" >&2
+            echo "${cargo_tool} needs cargo -- run 'just rust' then 'just _cli-tools'" >&2
         fi
     else
         echo "${cargo_tool} is already installed on this system"

@@ -3,10 +3,10 @@ set -euo pipefail
 ## Install the Bash profile (symlinks, prompt, completion, history)
 
 ##
-## The actual bash profile, which is what `make bash` always claimed to be and
+## The actual bash profile, which is what `make bash` (now `just _bash`) always claimed to be and
 ## for a long time was not -- it used to also install seven CLI tools, Chrome and
-## the password-store. Those are `make cli-tools`, `make chrome` and
-## `make password-store` now.
+## the password-store. Those are `just _cli-tools`, `just _chrome` and
+## `just _password-store` now.
 ##
 ## Everything here is either sourced by config/.bashrc at startup or is a file
 ## .bashrc looks for, so this and symlinks.sh together are what make a login
@@ -17,7 +17,7 @@ script_dir="$(dirname "${BASH_SOURCE[0]}")"
 
 ##
 ## The .bashrc/.inputrc/.tmux.conf symlinks -- a bash profile with no .bashrc is
-## not a profile. Idempotent, so re-running under `make bootstrap` is free.
+## not a profile. Idempotent, so re-running under `just bootstrap` is free.
 ##
 
 bash "${script_dir}/symlinks.sh"

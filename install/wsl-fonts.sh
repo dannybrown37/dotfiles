@@ -54,12 +54,12 @@ fi
 
 ##
 ## The terminal font setting is NOT patched in here. It is tracked, in
-## .vscode/.symlinked-user-settings.json, and `make vscode` symlinks Windows'
+## .vscode/.symlinked-user-settings.json, and `just vscode` symlinks Windows'
 ## settings.json at that file.
 ##
 ## This block used to rewrite settings.json in place, and every run printed
 ## ">>> VSCode settings not found at expected path. Manually add ...". Both
-## halves were wrong. The `[[ -f ]]` test always failed because `make vscode`
+## halves were wrong. The `[[ -f ]]` test always failed because `just vscode`
 ## makes settings.json a Windows-side symlink to a UNC \\wsl.localhost\... path,
 ## which WSL cannot dereference (`ls` reports an I/O error on it) -- so the
 ## advice was to hand-add a key that was already set. And had the test ever
@@ -68,4 +68,4 @@ fi
 ## strictly worse one, in a file that is a symlink into this repo.
 ##
 
-echo "VSCode terminal font is tracked in .vscode/.symlinked-user-settings.json (run: make vscode)"
+echo "VSCode terminal font is tracked in .vscode/.symlinked-user-settings.json (run: just vscode)"

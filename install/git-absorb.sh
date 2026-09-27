@@ -7,7 +7,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
 
 if ! command -v cargo &>/dev/null; then
-    echo "git-absorb needs cargo -- run 'make rust' first" >&2
+    echo "git-absorb needs cargo -- run 'just rust' first" >&2
     # shellcheck disable=SC2317  # reachable when executed rather than sourced
     return 1 2>/dev/null || exit 1
 fi

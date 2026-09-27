@@ -6,7 +6,7 @@
 ## Usage: check-tool-wiring.sh <tool> [--apt-package <pkg>] [--no-stub]
 ##
 ## --apt-package  when the apt package name differs (fd-find -> fd)
-## --no-stub      for language runtimes and action-only Make targets that
+## --no-stub      for language runtimes and action-only just recipes that
 ##                deliberately have no passthrough stub
 ##
 ## Tools arrive three ways, and they need different wiring:

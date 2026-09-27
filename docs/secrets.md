@@ -3,8 +3,8 @@
 Assuming you are properly authorized to do so on the machine in question:
 
 ```bash
-make secrets-save    # git pull → local → password-store → git push
-make secrets-load    # git pull → password-store → local (backs up changed files first)
+just secrets-save    # git pull → local → password-store → git push
+just secrets-load    # git pull → password-store → local (backs up changed files first)
 ```
 
 Manages local gitignored files via the encrypted `password-store`.
@@ -42,13 +42,13 @@ therefore overwrites the local file with the store's copy, saving the displaced 
 alongside it as `<file>.bak` first. Keep a file out of the manifest if both machines edit it
 independently and you'd want both sets of edits back.
 
-**Sync is opt-in:** run `make secrets-save` (encrypt changed files, push the store) and
-`make secrets-load` (pull the store, decrypt to local files) yourself. Earlier versions ran these
+**Sync is opt-in:** run `just secrets-save` (encrypt changed files, push the store) and
+`just secrets-load` (pull the store, decrypt to local files) yourself. Earlier versions ran these
 automatically from `pre-push`/`post-merge` git hooks; those hooks are gone, so a plain
 `git push`/`git pull` here no longer touches the store. Unchanged entries are skipped, so a
 `secrets-save` with nothing to do adds no commit.
 
-**New machine setup:** `make password-store` clones the store if `~/.password-store` doesn't exist yet —
+**New machine setup:** `just _password-store` clones the store if `~/.password-store` doesn't exist yet —
 tries `gh auth login` + `gh repo clone` first (no token to copy by hand), falling back to a
 `PASSWORD_STORE_REMOTE` prompt (may embed a token — treat as a raw secret) if `gh` can't. Requires
 your GPG private key already imported — that transfer stays manual/out-of-band.

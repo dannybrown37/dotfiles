@@ -3,19 +3,19 @@ set -euo pipefail
 ## @just 34 Developer Tools | Install optional cargo utilities (htmlq, jless, difftastic, mprocs)
 
 ##
-## Separated out of install/rust.sh so `make bootstrap` can depend on the Rust
+## Separated out of install/rust.sh so `just bootstrap` can depend on the Rust
 ## toolchain without building four crates that are not core workflow. Nothing
 ## else depends on these; they are here rather than deleted so the install
 ## recipe is not lost.
 ##
-## Needs cargo -- run `make rust` first.
+## Needs cargo -- run `just rust` first.
 ##
 # shellcheck source=install/cargo_env.sh
 source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
 
 if ! command -v cargo &>/dev/null; then
-    echo "rust-tools needs cargo -- run 'make rust' first" >&2
-    # The Makefile sources its targets, so `return` is the correct exit; `|| exit`
+    echo "rust-tools needs cargo -- run 'just rust' first" >&2
+    # The justfile sources its targets, so `return` is the correct exit; `|| exit`
     # covers being run as `bash install/rust-tools.sh`, where a top-level
     # `return` is an error.
     # shellcheck disable=SC2317  # reachable when executed rather than sourced

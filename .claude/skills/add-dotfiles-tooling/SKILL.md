@@ -16,7 +16,7 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
    cleanup, install, confirm, optional config symlink.
 
    **Name the file after the recipe you want** — the filename *is* the recipe name
-   (`install/spotify.sh` → `make spotify`), so don't name it after the upstream project.
+   (`install/spotify.sh` → `just spotify`), so don't name it after the upstream project.
 
 2. Give it a `## @just` header, directly under the shebang:
 
@@ -52,9 +52,9 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
    ```
 
 A Windows-only tool works the same way with a `.ps1` extension — `install/komo.ps1` carries
-the same header and becomes `make komo`, run via `powershell.exe`.
+the same header and becomes `just komo`, run via `powershell.exe`.
 
-Recipes with no install script of their own (`vscode`, `projects`, `secrets-*`) keep their
+Recipes with no install script of their own (`vscode`, `my-dev-tools`, `secrets-*`) keep their
 header in the `justfile`, directly above the recipe.
 
 ## Verifying Wiring

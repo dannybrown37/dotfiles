@@ -50,7 +50,7 @@ link_config "${dotfiles}/config/starship.toml" \
 
 if ((failures > 0)); then
     echo "${failures} config symlink(s) not created -- see above." >&2
-    # The Makefile sources its targets, so `return` is the correct exit here;
+    # The justfile sources its targets, so `return` is the correct exit here;
     # `|| exit` covers being run as `bash install/symlinks.sh` from bootstrap,
     # where a top-level `return` is an error. Also keeps a hand-typed
     # `source install/symlinks.sh` from closing the user's terminal.
