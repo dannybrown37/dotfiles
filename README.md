@@ -56,6 +56,9 @@ Verification:
   test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
+
+Reference:
+  git             Show the git workflow cheat sheet (start / ship / done)
 ```
 
 <!-- make:end -->
@@ -200,6 +203,7 @@ Updated with `just bench-shell`:
 
 - [Handling Secrets](docs/secrets.md) — password-store sync, manifest format, new machine setup
 - [Multiple GitHub Accounts](docs/github-accounts.md) — identity routing, credential helpers, `gitdoctor`
+- [Git Workflow](docs/git-workflow.md) — branch, PR, auto-merge on green CI (`just git` to view)
 
 ## Initial Windows Setup Notes
 
