@@ -6,8 +6,10 @@ repos:
   - repo: https://github.com/dannybrown37/git-a-grip
     rev: v0.13.0
     hooks:
+      # git-a-grip only floors commitizen (>=4.0); match the commit-msg hook's rev.
       - id: commitizen-early
         fail_fast: true
+        additional_dependencies: [commitizen==4.19.0]
       - id: ruff-check
         args: [--config, config/.ruff.toml]
       - id: ruff-format
