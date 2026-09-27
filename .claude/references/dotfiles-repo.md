@@ -44,7 +44,7 @@ Managed via `.pre-commit-config.yaml` (prek reads this natively). Active hooks:
 ## CI
 
 - `.github/workflows/ci.yml` runs `lint`, `test` and `bootstrap`, all required checks on `main`.
-- `bootstrap` (~5 min cold) runs only when `scripts/ci_needs_bootstrap.sh` sees a bootstrap path change (`install/`, `config/`, `justfile`, `scripts/just-help.sh`, `ci.yml`), plus a weekly cold run and on `workflow_dispatch`. Otherwise it is skipped, which counts as passing. Add a path there if a new file changes what `just _ci` does.
+- `bootstrap` (~5 min cold) runs only when `scripts/ci_needs_bootstrap.sh` sees a bootstrap path change (`install/`, `ci.yml`, or a file added/removed/renamed under `config/` -- edits there cannot break a symlink), plus a weekly cold run and on `workflow_dispatch`. Otherwise it is skipped, which counts as passing. The `justfile` is left out on purpose: lint's `embed-command` hook already runs `just`, and the weekly run catches a broken `_ci` recipe. Add a path there if a new file changes what `just _ci` does.
 
 ## Shell Startup Performance
 

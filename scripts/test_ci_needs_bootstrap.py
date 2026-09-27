@@ -61,10 +61,10 @@ def repo(tmp_path: Path) -> Path:
     ('changed_path', 'expected'),
     [
         ('install/apt.sh', 'true'),
-        ('justfile', 'true'),
-        ('config/.bashrc', 'true'),
+        ('justfile', 'false'),
+        ('config/.newrc', 'true'),
         ('.github/workflows/ci.yml', 'true'),
-        ('scripts/just-help.sh', 'true'),
+        ('scripts/just-help.sh', 'false'),
         ('README.md', 'false'),
         ('bin/gwt.sh', 'false'),
         ('scripts/other.py', 'false'),
@@ -79,6 +79,28 @@ def test_decides_from_changed_paths(
 ) -> None:
     base = git(repo, 'rev-parse', 'HEAD')
     head = commit_file(repo, changed_path)
+
+    assert needs_bootstrap(repo, base, head) == expected
+
+
+@pytest.mark.parametrize(
+    ('change', 'expected'),
+    [
+        (['sh', '-c', 'echo edited >> config/.bashrc'], 'false'),
+        (['git', 'rm', '--quiet', 'config/.bashrc'], 'true'),
+        (['git', 'mv', 'config/.bashrc', 'config/.bashrc2'], 'true'),
+    ],
+)
+def test_config_only_bootstraps_when_files_come_or_go(
+    repo: Path,
+    change: list[str],
+    expected: str,
+) -> None:
+    """Bootstrap only symlinks config/ files, so edits can't break it."""
+    base = commit_file(repo, 'config/.bashrc')
+    subprocess.run(['/usr/bin/env', *change], cwd=repo, check=True)  # noqa: S603
+    git(repo, 'commit', '--quiet', '--all', '--message', 'change config')
+    head = git(repo, 'rev-parse', 'HEAD')
 
     assert needs_bootstrap(repo, base, head) == expected
 
