@@ -201,7 +201,9 @@ def test_start_failure_restores_branch_and_changes(
     clone: Path,
     env: dict[str, str],
 ) -> None:
-    git(clone, 'commit', '--allow-empty', '-m', 'diverge main', env=env)
+    (clone / 'main_only.txt').write_text('diverged\n')
+    git(clone, 'add', 'main_only.txt', env=env)
+    git(clone, 'commit', '-m', 'diverge main', env=env)
     on_branch_with_committed_edit(clone, env)
     (clone / 'new.txt').write_text('untracked\n')
 
@@ -547,3 +549,64 @@ def test_done_refuses_when_local_main_has_unmerged_work(
     assert 'local main has commits not on origin/main' in result.stderr
     subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
     assert subject == 'fix: direct on main'
+
+
+def test_done_carries_uncommitted_changes_to_main(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    git(clone, 'switch', '-c', 'my-topic', env=env)
+    (clone / 'f.txt').write_text(FIVE_LINES.replace('e', 'E'))
+    (clone / 'new.txt').write_text('untracked\n')
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    branch = git(clone, 'branch', '--show-current', env=env).stdout.strip()
+    subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
+    assert (branch, subject) == ('main', 'upstream')
+    assert (clone / 'f.txt').read_text() == FIVE_LINES.replace('e', 'E')
+    assert (clone / 'new.txt').read_text() == 'untracked\n'
+    assert git(clone, 'stash', 'list', env=env).stdout == ''
+    assert 'git start <topic>' in result.stderr
+
+
+def test_done_failure_restores_branch_and_changes(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    main_diverged_from_origin(clone, env, upstream_text='other\n')
+    (clone / 'new.txt').write_text('untracked\n')
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode != 0
+    assert 'local main has commits not on origin/main' in result.stderr
+    branch = git(clone, 'branch', '--show-current', env=env).stdout.strip()
+    assert branch == 'my-topic'
+    assert (clone / 'new.txt').read_text() == 'untracked\n'
+    assert git(clone, 'stash', 'list', env=env).stdout == ''
+
+
+@pytest.mark.parametrize(
+    'args',
+    [('done',), ('start', 'my-topic')],
+)
+def test_never_checks_out_stale_main(
+    clone: Path,
+    env: dict[str, str],
+    args: tuple[str, ...],
+) -> None:
+    stale_main = git(clone, 'rev-parse', 'main', env=env).stdout.strip()
+    git(clone, 'switch', '-c', 'old-topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: work', env=env)
+    seen_before = len(reflog(clone, env))
+
+    result = git(clone, *args, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert stale_main not in reflog(clone, env)[: -seen_before or None]
+
+
+def reflog(clone: Path, env: dict[str, str]) -> list[str]:
+    return git(clone, 'reflog', '--format=%H', 'HEAD', env=env).stdout.split()

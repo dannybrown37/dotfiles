@@ -4,7 +4,7 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.0.0"
+readonly VERSION="1.1.0"
 
 usage() {
     cat <<'EOF'
@@ -12,7 +12,7 @@ Usage: git <command> [args...]
 
   git start <topic>    Go to main, pull, make branch <topic> (carries uncommitted changes)
   git ship             Push, open a PR, turn on auto-merge, watch CI
-  git done             After the merge: go back to main and pull
+  git done             After the merge: go back to main and pull (carries uncommitted changes)
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
 
 See docs/git-workflow.md.
@@ -58,15 +58,15 @@ wait_for_checks() {
     done
 }
 
-cmd_start() {
-    local topic="${1:-}" from stashed=0
-    [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" 'usage: git start <topic>'
+with_carried_changes() {
+    local label="$1" from stashed=0
+    shift
     from="$(git branch --show-current)"
     if [[ -n "$(git status --porcelain)" ]]; then
-        git stash push -u -m "git start ${topic}"
+        git stash push -u -m "${label}"
         stashed=1
     fi
-    if ! { git switch main && git pull --ff-only && git switch -c "${topic}"; }; then
+    if ! "$@"; then
         if [[ "${stashed}" == 1 ]]; then
             git switch "${from}" >/dev/null 2>&1 || true
             git stash pop
@@ -76,6 +76,12 @@ cmd_start() {
     if [[ "${stashed}" == 1 ]] && ! git stash pop; then
         fail 1 'carried changes conflict: fix the files, git add them, then git stash drop'
     fi
+}
+
+cmd_start() {
+    local topic="${1:-}"
+    [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" 'usage: git start <topic>'
+    with_carried_changes "git start ${topic}" branch_from_main "${topic}"
 }
 
 cmd_ship() {
@@ -114,17 +120,37 @@ cmd_rescue() {
     git rebase --onto origin/main "${merged_head}"
 }
 
-cmd_done() {
-    git switch main
-    git fetch origin main
-    if git merge-base --is-ancestor main origin/main; then
-        git merge --ff-only origin/main
-    elif git diff --quiet main origin/main; then
+# Moves the main ref before any checkout, so the working tree never holds a
+# stale main (file watchers like ahk/main.ahk reload on every change).
+update_main() {
+    git fetch origin main || return 1
+    if ! git merge-base --is-ancestor main origin/main; then
+        if ! git diff --quiet main origin/main; then
+            echo 'local main has commits not on origin/main: git switch -c <topic> main to keep them, then git branch -f main origin/main' >&2
+            return 1
+        fi
         echo 'local main matches origin/main (already squash-merged): resetting to it' >&2
+    fi
+    if [[ "$(git branch --show-current)" == main ]]; then
         git reset --keep origin/main
     else
-        fail 1 'local main has commits not on origin/main: git switch -c <topic> to keep them, then git branch -f main origin/main'
+        git branch -f main origin/main
     fi
+}
+
+sync_main() {
+    update_main && git switch main
+}
+
+branch_from_main() {
+    update_main && git switch -c "$1" main
+}
+
+cmd_done() {
+    local dirty
+    dirty="$(git status --porcelain)"
+    with_carried_changes 'git done' sync_main
+    [[ -z "${dirty}" ]] || echo 'carried uncommitted changes to main: git start <topic> to keep working' >&2
 }
 
 main() {
