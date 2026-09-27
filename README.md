@@ -68,10 +68,11 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 
 | Command | Description | Source |
 | --- | --- | --- |
-| `ahk` | Run all AutoHotKey scripts (Windows only) | `config/.bash_aliases` |
+| `ahk` | Start AutoHotkey (ahk/main.ahk); ahk --help for more (Windows only) | `config/.bash_aliases` |
 | `app_toggle` | Ctrl+Shift+X/C/D - Toggle focus for VS Code / Chrome / Teams; Alt+A - jump to tmux in VSCode's terminal; Alt+S - same, but to the spotify_player tmux window | `ahk/app_toggle.ahk` |
 | `asciinema` | Record and replay terminal sessions | asciinema rec session.cast | `bin/stubs.sh` |
 | `atuin` | Shell history search/sync (replaces Ctrl+R) | atuin search | `bin/stubs.sh` |
+| `autocorrect` | Fixes ~7,000 common typos as you type, everywhere except VS Code and terminals (community list, fetched by `ahk`) | `ahk/autocorrect.ahk` |
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
 | `beep` | Play a beep sound (Windows only) | `config/.bash_aliases` |
 | `bl` | Alias for backlog command from skill-tree | `config/.bash_aliases` |
@@ -80,6 +81,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
 | `chafa` | Render an image as terminal ANSI art -- powers `screenshot pick` previews | chafa <image> | `bin/stubs.sh` |
+| `chrome` | Alt+C in Chrome - copy the current tab as a markdown link, tracking params stripped | `ahk/chrome.ahk` |
 | `cht` | Query cht.sh for info on many technologies | `bin/chtsh.sh` |
 | `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
 | `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
@@ -137,11 +139,13 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
 | `pcb` | Print clipboard contents | `config/.bash_aliases` |
+| `picker` | Alt+, - fuzzy-search every ,, snippet and bash alias, Enter inserts it into the window you were in | `ahk/picker.ahk` |
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `bin/ntfy.sh` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
 | `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
+| `selection` | Alt+T - transform selected text (case, JSON, URL) from a keyboard menu; Alt+G - open selection (or clipboard) as URL / Jira key / Google search | `ahk/selection.ahk` |
 | `shot` | Alias for screenshot | `config/.bash_aliases` |
 | `song` | ,,song -- insert a Spotify link for the currently playing track | `ahk/hotstrings.ahk` |
 | `song` | Copy the Spotify link for the currently playing track: song | `config/.bash_aliases` |
@@ -170,7 +174,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 <!-- @doc:structure:start -->
 | Directory | Description |
 | --- | --- |
-| `ahk/` | AutoHotKey scripts for Windows (hotstrings, secrets) |
+| `ahk/` | AutoHotkey v2 scripts for Windows, run as one process from main.ahk |
 | `aws/` | AWS helper scripts and configuration |
 | `bin/` | Sourced shell scripts loaded into the current session |
 | `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
@@ -213,7 +217,7 @@ For when you're truly starting from scratch.
 - [Google Chrome](https://www.google.com/search?q=google+chrome+download)
 - [Windows Terminal](https://www.google.com/search?q=windows+terminal+download)
 - [Visual Studio Code](https://www.google.com/search?q=vs+code+download)
-- [AutoHotKey](https://www.autohotkey.com/download/)
+- [AutoHotKey](https://www.autohotkey.com/download/) (v2) -- then `ahk && ahk startup` from WSL
 
 ### Set Up a WSL Debian Distro
 
