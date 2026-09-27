@@ -1,4 +1,4 @@
-"""Tests for the start/ship/done aliases in config/.gitconfig.
+"""Tests for the start/ship/rescue/done aliases in config/.gitconfig.
 
 `gh` is stubbed on PATH so tests never hit GitHub.
 """
@@ -15,7 +15,10 @@ GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
 if [ "$1 $2" = 'pr view' ]; then
     [ -n "${GH_PR_STATE:-}" ] || { echo 'no pull requests found' >&2; exit 1; }
-    echo "${GH_PR_STATE}"
+    case "$*" in
+        *headRefOid*) echo "${GH_PR_STATE} ${GH_PR_HEAD:-}" ;;
+        *) echo "${GH_PR_STATE}" ;;
+    esac
 fi
 if [ "$*" = 'pr checks' ]; then
     n=$(( $(cat "${GH_CALLS_FILE}.polls" 2>/dev/null || echo 0) + 1 ))
@@ -280,6 +283,7 @@ def test_ship_refuses_when_pr_already_merged(
 
     assert result.returncode != 0
     assert 'already merged: run git done' in result.stderr
+    assert 'git rescue <topic>' in result.stderr
     assert git(clone, 'ls-remote', 'origin', 'topic', env=env).stdout == ''
     assert Path(env['GH_CALLS_FILE']).read_text() == (
         'gh pr view --json state -q .state\n'
@@ -306,6 +310,109 @@ def test_ship_refuses_on_main(clone: Path, env: dict[str, str]) -> None:
     assert result.returncode != 0
     assert 'on main' in result.stderr
     assert not Path(env['GH_CALLS_FILE']).exists()
+
+
+def head(clone: Path, env: dict[str, str]) -> str:
+    return git(clone, 'rev-parse', 'HEAD', env=env).stdout.strip()
+
+
+def on_merged_branch(clone: Path, env: dict[str, str]) -> None:
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: merged', env=env)
+    env['GH_PR_STATE'] = 'MERGED'
+    env['GH_PR_HEAD'] = head(clone, env)
+
+
+def test_rescue_moves_commits_after_merge_onto_new_branch(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    on_merged_branch(clone, env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: late one', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: late two', env=env)
+
+    result = git(clone, 'rescue', 'late-fixes', env=env)
+
+    assert result.returncode == 0, result.stderr
+    branch = git(clone, 'branch', '--show-current', env=env).stdout.strip()
+    subjects = git(
+        clone,
+        'log',
+        '--format=%s',
+        'origin/main..HEAD',
+        env=env,
+    ).stdout.splitlines()
+    base = git(clone, 'merge-base', 'HEAD', 'origin/main', env=env)
+    assert branch == 'late-fixes'
+    assert subjects == ['fix: late two', 'fix: late one']
+    assert (
+        base.stdout.strip()
+        == git(
+            clone,
+            'rev-parse',
+            'origin/main',
+            env=env,
+        ).stdout.strip()
+    )
+
+
+def assert_rescue_refused(
+    clone: Path,
+    env: dict[str, str],
+    message: str,
+) -> None:
+    before = head(clone, env)
+
+    result = git(clone, 'rescue', 'late-fixes', env=env)
+
+    assert result.returncode != 0
+    assert message in result.stderr
+    branch = git(clone, 'branch', '--show-current', env=env).stdout.strip()
+    assert (branch, head(clone, env)) == ('topic', before)
+
+
+@pytest.mark.parametrize(
+    ('state', 'late_commits', 'message'),
+    [
+        ('OPEN', 1, 'no merged PR for this branch: use git ship'),
+        ('', 1, 'no merged PR for this branch: use git ship'),
+        ('MERGED', 0, 'nothing to rescue: run git done'),
+    ],
+)
+def test_rescue_refuses_without_merged_pr_and_late_commits(
+    clone: Path,
+    env: dict[str, str],
+    state: str,
+    late_commits: int,
+    message: str,
+) -> None:
+    on_merged_branch(clone, env)
+    env['GH_PR_STATE'] = state
+    for _ in range(late_commits):
+        git(clone, 'commit', '--allow-empty', '-m', 'fix: late', env=env)
+
+    assert_rescue_refused(clone, env, message)
+
+
+def test_rescue_refuses_with_uncommitted_changes(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    on_merged_branch(clone, env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: late', env=env)
+    (clone / 'f.txt').write_text('changed\n')
+
+    assert_rescue_refused(clone, env, 'commit or stash them first')
+
+
+def test_rescue_without_topic_prints_usage(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    result = git(clone, 'rescue', env=env)
+
+    assert result.returncode != 0
+    assert 'usage: git rescue <topic>' in result.stderr
 
 
 def test_done_returns_to_updated_main(
