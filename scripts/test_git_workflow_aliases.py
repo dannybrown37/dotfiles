@@ -13,6 +13,10 @@ GITCONFIG = Path(__file__).parent.parent / 'config' / '.gitconfig'
 FIVE_LINES = 'a\nb\nc\nd\ne\n'
 GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
+if [ "$1 $2" = 'pr view' ]; then
+    [ -n "${GH_PR_STATE:-}" ] || { echo 'no pull requests found' >&2; exit 1; }
+    echo "${GH_PR_STATE}"
+fi
 if [ "$*" = 'pr checks' ]; then
     n=$(( $(cat "${GH_CALLS_FILE}.polls" 2>/dev/null || echo 0) + 1 ))
     echo "$n" > "${GH_CALLS_FILE}.polls"
@@ -204,6 +208,7 @@ def test_ship_titles_pr_with_top_prefix_and_branch_name(
     assert 'refs/heads/main-branch-protection' in remote.stdout
     body = '\n'.join(f'- {s}' for s in subjects)
     assert Path(env['GH_CALLS_FILE']).read_text() == (
+        'gh pr view --json state -q .state\n'
         f'gh pr create --title {title} --body {body}\n'
         'gh pr merge --auto --squash --delete-branch\n'
         'gh pr checks\n'
@@ -235,6 +240,50 @@ def test_ship_waits_for_ci_checks_before_watching(
     watched = returncode == 0
     assert ('gh pr checks --watch' in calls) == watched
     assert ('run gh pr checks --watch later' in result.stderr) != watched
+
+
+@pytest.mark.parametrize(
+    'state',
+    ['OPEN', 'CLOSED'],
+)
+def test_ship_reuses_open_pr(
+    clone: Path,
+    env: dict[str, str],
+    state: str,
+) -> None:
+    env['GH_PR_STATE'] = state
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: one', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    creates = state != 'OPEN'
+    assert any(c.startswith('gh pr create') for c in calls) == creates
+    assert calls[-3:] == [
+        'gh pr merge --auto --squash --delete-branch',
+        'gh pr checks',
+        'gh pr checks --watch',
+    ]
+
+
+def test_ship_refuses_when_pr_already_merged(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    env['GH_PR_STATE'] = 'MERGED'
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: one', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode != 0
+    assert 'already merged: run git done' in result.stderr
+    assert git(clone, 'ls-remote', 'origin', 'topic', env=env).stdout == ''
+    assert Path(env['GH_CALLS_FILE']).read_text() == (
+        'gh pr view --json state -q .state\n'
+    )
 
 
 def test_ship_refuses_without_conventional_commits(
