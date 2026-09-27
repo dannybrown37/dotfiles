@@ -530,6 +530,27 @@ def test_ship_stays_on_branch_when_done_is_unsafe(
     assert message in result.stderr
 
 
+@pytest.mark.parametrize(
+    'args',
+    [('--no-auto',), ('--no-auto', '--no-done'), ('--no-done', '--no-auto')],
+)
+def test_ship_no_auto_skips_auto_merge_and_stays_on_branch(
+    clone: Path,
+    env: dict[str, str],
+    args: tuple[str, ...],
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = git(clone, 'ship', *args, env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert not [call for call in calls if call.startswith('gh pr merge')]
+    assert calls[-2:] == ['gh pr checks', 'gh pr checks --watch']
+    assert current_branch(clone, env) == 'topic'
+    assert 'CI green: gh pr merge --squash --delete-branch' in result.stderr
+
+
 def test_ship_stays_on_branch_when_ci_fails(
     clone: Path,
     env: dict[str, str],
@@ -552,7 +573,7 @@ def test_ship_rejects_unknown_argument(
     result = git(clone, 'ship', '--bogus', env=env)
 
     assert result.returncode == EXIT_USAGE
-    assert 'usage: git ship [--no-done]' in result.stderr
+    assert 'usage: git ship [--no-auto] [--no-done]' in result.stderr
     assert not Path(env['GH_CALLS_FILE']).exists()
 
 

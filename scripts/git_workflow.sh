@@ -4,7 +4,7 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.5.0"
+readonly VERSION="1.6.0"
 
 usage() {
     cat <<'EOF'
@@ -13,7 +13,9 @@ Usage: git <command> [args...]
   git start <topic>    Go to the base branch, pull, make branch <topic> (carries uncommitted changes)
                        On the base with local commits: move them to <topic>
   git start -s <topic> Stack: make branch <topic> on top of the current branch
-  git ship [--no-done] Push, open a PR, turn on auto-merge, watch CI, then git done
+  git ship [--no-auto] [--no-done]
+                       Push, open a PR, turn on auto-merge, watch CI, then git done
+                       --no-auto: leave auto-merge off, merge by hand after CI
                        Stacked: the PR targets the parent branch, no auto-merge
   git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
                        Stacked: once the parent merges or moves, rebase onto it and stay
@@ -196,12 +198,14 @@ require_open_parent() {
 }
 
 cmd_ship() {
-    local branch parent since prefix state auto=1 run_done=1
-    case "${1:-}" in
-    '') ;;
-    --no-done) run_done=0 ;;
-    *) fail "${EXIT_USAGE}" 'usage: git ship [--no-done]' ;;
-    esac
+    local arg branch parent since prefix state auto=1 run_done=1
+    for arg in "$@"; do
+        case "${arg}" in
+        --no-auto) auto=0 ;;
+        --no-done) run_done=0 ;;
+        *) fail "${EXIT_USAGE}" 'usage: git ship [--no-auto] [--no-done]' ;;
+        esac
+    done
     branch="$(git branch --show-current)"
     [[ "${branch}" != "${BASE}" ]] || fail "${EXIT_USAGE}" "on ${BASE}: run git start <topic> first"
     parent="$(stack_parent "${branch}")"
@@ -224,7 +228,7 @@ cmd_ship() {
     fi
     if [[ -n "${parent}" ]]; then
         auto=0
-    elif ! gh pr merge --auto --squash --delete-branch; then
+    elif [[ "${auto}" == 1 ]] && ! gh pr merge --auto --squash --delete-branch; then
         auto=0
         echo 'auto-merge is off: watching CI, then merge by hand' >&2
     fi
