@@ -92,6 +92,7 @@ alias gcd='git checkout develop'
 alias gcdf='git clone https://www.github.com/dannybrown37/dotfiles'
 alias gcl='git checkout -'
 alias gds='git diff --staged'
+alias gitwf='glow "${DOTFILES_DIR}/docs/git-workflow.md" 2>/dev/null || cat "${DOTFILES_DIR}/docs/git-workflow.md"' # @doc Show the git workflow cheat sheet (git start / ship / done)
 alias gcm='git checkout main'
 alias gco='git checkout'
 __git_complete gco _git_checkout

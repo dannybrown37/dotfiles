@@ -141,10 +141,6 @@ test:
 audit:
     bash "{{root_dir}}/scripts/dotfiles_audit.sh"
 
-## @just 80 Reference | Show the git workflow cheat sheet (start / ship / done)
-git:
-    @if command -v glow >/dev/null; then glow "{{root_dir}}/docs/git-workflow.md"; else cat "{{root_dir}}/docs/git-workflow.md"; fi
-
 ## @just 73 Verification | Diagnose a refused git push -- credentials, remotes, transport (read-only)
 doctor:
     bash "{{root_dir}}/scripts/git_auth_doctor.sh"
