@@ -79,7 +79,7 @@ cmd_start() {
 }
 
 cmd_ship() {
-    local branch prefix state
+    local branch prefix state auto=1
     branch="$(git branch --show-current)"
     [[ "${branch}" != main ]] || fail "${EXIT_USAGE}" 'on main: run git start <topic> first'
     prefix="$(git log --format=%s origin/main..HEAD | top_prefix)"
@@ -93,9 +93,11 @@ cmd_ship() {
             --title "${prefix}: $(tr '_-' '  ' <<<"${branch}")" \
             --body "$(git log --reverse --format='- %s' origin/main..HEAD)"
     fi
-    gh pr merge --auto --squash --delete-branch
+    gh pr merge --auto --squash --delete-branch || auto=0
+    [[ "${auto}" == 1 ]] || echo 'auto-merge is off: watching CI, then merge by hand' >&2
     wait_for_checks
     gh pr checks --watch
+    [[ "${auto}" == 1 ]] || echo 'CI green: gh pr merge --squash --delete-branch' >&2
 }
 
 cmd_rescue() {
