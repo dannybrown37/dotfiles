@@ -16,37 +16,26 @@ main ─●─────────────────────┼─
 |---|---|
 | `git start <topic>` | Go to `main`, pull the latest, make a new branch `<topic>` |
 | `git ship` | Push, open a PR, turn on auto-merge, watch CI live |
-| `git done` | After the merge: go back to `main` and pull |
+| `git done` | After the merge: go back to `main` and pull (carries uncommitted changes) |
 
 Between `start` and `ship`: make commits as usual.
 
 ## Rules
 
-- Never commit on `main`. A pre-commit hook refuses it, and `git ship` refuses to run there.
-- Every commit starts with a prefix: `feat:`, `fix:`, `docs:`, `ci:`, `chore:`, ...
-  A hook checks this when you commit.
-- Name the branch so it reads like a title: `main-branch-protection`, not `stuff`.
-- PR title is made for you: `<top prefix>: <branch name>`. The PR is squashed into one commit on `main` with that title.
-  Branch `main-branch-protection` + commits `ci:` and `feat:` -> `feat: main branch protection`.
+- PR title = top commit prefix + branch name: `feat:` + `main-branch-protection` -> `feat: main branch protection`.
   Rank: feat > fix > perf > refactor > revert > build > ci > docs > test > style > chore.
-- Auto-merge waits for CI. Red CI = no merge. Fix, commit, `git push`. PR updates itself.
-- Repo has auto-merge off? `git ship` still watches CI, then prints the merge command to run by hand.
-- `git ship` again is safe: it pushes, reuses the open PR, and watches CI.
-  If the PR already merged, it stops and tells you to run `git done`.
-- Committed more after the PR merged? `git rescue <topic>` moves those commits
-  to a new branch `<topic>` off the latest `main`. Then `git ship`.
-- Committed on `main` by mistake, then shipped it from a branch? `git done` sees
-  that the squash on GitHub holds the same files and resets `main` to it.
-  If the files differ, it stops and tells you how to save the commits.
+- Committed after the merge? `git rescue <topic>`, then `git ship`.
 
-## Plain-English git words
+## Stacked PRs
 
-| Command | Means |
+PRs that build on each other: `main <- a <- b <- c`. Uses `gh stack` (`stack setup` once).
+
+| Command | What it does |
 |---|---|
-| `git switch <branch>` | Move to a branch |
-| `git switch -c <name>` | Create a branch and move to it (old form: `git checkout -b`) |
-| `git add -p` | Pick which pieces of a change go in the next commit, one at a time |
-| `git stash` / `git stash pop` | Put uncommitted changes aside / bring them back |
-| `git pull --ff-only` | Get new commits; refuse if your copy has split from GitHub's |
-| `gh pr checks --watch` | Show CI status for this PR until it finishes |
-| `gh pr view --web` | Open this PR in the browser |
+| `stack start <name>` | Start a stack, first branch |
+| `stack next <name>` | New branch on top of the current one |
+| `stack ship` | Push all, open a PR per branch |
+| `stack sync` | Rebase the stack after a lower PR changes or merges |
+| `stack land` | Merge the stack (all or nothing) |
+
+`stack help` for all commands.
