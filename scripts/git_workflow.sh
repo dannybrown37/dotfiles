@@ -4,15 +4,18 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.3.0"
+readonly VERSION="1.4.0"
 
 usage() {
     cat <<'EOF'
 Usage: git <command> [args...]
 
   git start <topic>    Go to the base branch, pull, make branch <topic> (carries uncommitted changes)
+  git start -s <topic> Stack: make branch <topic> on top of the current branch
   git ship [--no-done] Push, open a PR, turn on auto-merge, watch CI, then git done
+                       Stacked: the PR targets the parent branch, no auto-merge
   git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
+                       Stacked: once the parent merges or moves, rebase onto it and stay
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
 
 The base branch is origin's default branch (main, master, develop, ...).
@@ -114,13 +117,64 @@ with_carried_changes() {
 }
 
 cmd_start() {
-    local topic="${1:-}"
-    [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" 'usage: git start <topic>'
-    with_carried_changes "git start ${topic}" branch_from_base "${topic}"
+    local arg topic='' stack=0 usage='usage: git start [-s] <topic>'
+    for arg in "$@"; do
+        case "${arg}" in
+        -s | --stack) stack=1 ;;
+        -*) fail "${EXIT_USAGE}" "${usage}" ;;
+        *)
+            [[ -z "${topic}" ]] || fail "${EXIT_USAGE}" "${usage}"
+            topic="${arg}"
+            ;;
+        esac
+    done
+    [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" "${usage}"
+    if [[ "${stack}" == 1 ]]; then
+        stack_on_current "${topic}"
+    else
+        with_carried_changes "git start ${topic}" branch_from_base "${topic}"
+    fi
+}
+
+stack_on_current() {
+    local topic="$1" parent
+    parent="$(git branch --show-current)"
+    [[ -n "${parent}" && "${parent}" != "${BASE}" ]] ||
+        fail "${EXIT_USAGE}" "on ${parent:-detached HEAD}: nothing to stack on, use git start ${topic}"
+    git switch -c "${topic}"
+    git config "branch.${topic}.stackParent" "${parent}"
+    git config "branch.${topic}.stackBase" "$(git rev-parse HEAD)"
+}
+
+stack_parent() {
+    git config --get "branch.$1.stackParent" || true
+}
+
+# The newest commit the branch shares with its parent. The parent tip is exact
+# while the branch sits on it; once the parent is rewritten (squash-merged or
+# restacked) only the recorded stackBase still marks the fork.
+stack_fork() {
+    local branch="$1" parent="$2" base
+    if git merge-base --is-ancestor "${parent}" HEAD 2>/dev/null; then
+        echo "${parent}"
+    elif base="$(git config --get "branch.${branch}.stackBase")" &&
+        git merge-base --is-ancestor "${base}" HEAD; then
+        echo "${base}"
+    else
+        fail 1 "can't find where ${branch} forks from ${parent}"
+    fi
+}
+
+require_open_parent() {
+    local parent="$1" state
+    git ls-remote --exit-code --heads origin "${parent}" >/dev/null ||
+        fail "${EXIT_USAGE}" "${parent} is not on origin: git ship it first"
+    state="$(gh pr view "${parent}" --json state -q .state 2>/dev/null || true)"
+    [[ "${state}" != MERGED ]] || fail "${EXIT_USAGE}" "${parent} already merged: run git done first"
 }
 
 cmd_ship() {
-    local branch prefix state auto=1 run_done=1
+    local branch parent since prefix state auto=1 run_done=1
     case "${1:-}" in
     '') ;;
     --no-done) run_done=0 ;;
@@ -128,23 +182,35 @@ cmd_ship() {
     esac
     branch="$(git branch --show-current)"
     [[ "${branch}" != "${BASE}" ]] || fail "${EXIT_USAGE}" "on ${BASE}: run git start <topic> first"
-    prefix="$(git log --format=%s "origin/${BASE}..HEAD" | top_prefix)"
-    [[ -n "${prefix}" ]] || fail "${EXIT_USAGE}" "no conventional commit prefix in origin/${BASE}..HEAD"
+    parent="$(stack_parent "${branch}")"
+    since="origin/${BASE}"
+    if [[ -n "${parent}" ]]; then
+        since="$(stack_fork "${branch}" "${parent}")"
+    fi
+    prefix="$(git log --format=%s "${since}..HEAD" | top_prefix)"
+    [[ -n "${prefix}" ]] || fail "${EXIT_USAGE}" "no conventional commit prefix in ${since}..HEAD"
+    [[ -z "${parent}" ]] || require_open_parent "${parent}"
     state="$(gh pr view --json state -q .state 2>/dev/null || true)"
     [[ "${state}" != MERGED ]] ||
         fail "${EXIT_USAGE}" "PR for ${branch} already merged: run git done, or git rescue <topic> to keep new commits"
     git push -u origin HEAD
     if [[ "${state}" != OPEN ]]; then
         gh pr create \
-            --base "${BASE}" \
+            --base "${parent:-${BASE}}" \
             --title "${prefix}: $(tr '_-' '  ' <<<"${branch}")" \
-            --body "$(git log --reverse --format='- %s' "origin/${BASE}..HEAD")"
+            --body "$(git log --reverse --format='- %s' "${since}..HEAD")"
     fi
-    gh pr merge --auto --squash --delete-branch || auto=0
-    [[ "${auto}" == 1 ]] || echo 'auto-merge is off: watching CI, then merge by hand' >&2
+    if [[ -n "${parent}" ]]; then
+        auto=0
+    elif ! gh pr merge --auto --squash --delete-branch; then
+        auto=0
+        echo 'auto-merge is off: watching CI, then merge by hand' >&2
+    fi
     wait_for_checks
     gh pr checks --watch
-    if [[ "${auto}" == 0 ]]; then
+    if [[ -n "${parent}" ]]; then
+        echo "CI green: once ${parent} merges, run git done here" >&2
+    elif [[ "${auto}" == 0 ]]; then
         echo 'CI green: gh pr merge --squash --delete-branch' >&2
     elif [[ "${run_done}" == 1 ]]; then
         done_after_merge
@@ -194,8 +260,41 @@ branch_from_base() {
     update_base && git switch -c "$1" "${BASE}"
 }
 
+# Config moves before the rebase, so a conflict leaves nothing to redo:
+# finish the rebase and push.
+restack() {
+    local branch="$1" parent="$2" fork onto
+    fork="$(stack_fork "${branch}" "${parent}")"
+    if [[ "$(gh pr view "${parent}" --json state -q .state 2>/dev/null || true)" == MERGED ]]; then
+        git fetch origin "${BASE}"
+        onto="origin/${BASE}"
+        git config --unset "branch.${branch}.stackParent"
+        git config --unset "branch.${branch}.stackBase"
+        if [[ "$(gh pr view --json state -q .state 2>/dev/null || true)" == OPEN ]]; then
+            gh pr edit --base "${BASE}"
+        fi
+    elif [[ "${fork}" == "${parent}" ]]; then
+        echo "${parent} not merged yet: nothing to do" >&2
+        return
+    else
+        onto="${parent}"
+        git config "branch.${branch}.stackBase" "$(git rev-parse "${parent}")"
+    fi
+    git rebase --autostash --onto "${onto}" "${fork}" ||
+        fail 1 'fix the conflicts, git rebase --continue, then git push --force-with-lease'
+    if git rev-parse --verify --quiet "refs/remotes/origin/${branch}" >/dev/null; then
+        git push --force-with-lease origin HEAD
+    fi
+}
+
 cmd_done() {
-    local dirty
+    local branch parent dirty
+    branch="$(git branch --show-current)"
+    parent="$(stack_parent "${branch}")"
+    if [[ -n "${parent}" ]]; then
+        restack "${branch}" "${parent}"
+        return
+    fi
     dirty="$(git status --porcelain)"
     with_carried_changes 'git done' sync_base
     [[ -z "${dirty}" ]] || echo "carried uncommitted changes to ${BASE}: git start <topic> to keep working" >&2

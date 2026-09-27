@@ -38,10 +38,10 @@
 [mergetool]
     keepBackup = false
 # @doc git-alias: gmt -> git mergetool
-# @doc git-alias: start <topic> -> fresh branch off updated main, carrying uncommitted changes
-# @doc git-alias: ship -> push, open PR (or reuse the open one) titled "<top commit prefix>: <branch>", auto-merge on green, wait for CI to start, watch checks
+# @doc git-alias: start [-s] <topic> -> fresh branch off updated main, carrying uncommitted changes; -s stacks it on the current branch
+# @doc git-alias: ship -> push, open PR (or reuse the open one) titled "<top commit prefix>: <branch>", auto-merge on green, wait for CI to start, watch checks; stacked: PR targets the parent, no auto-merge
 # @doc git-alias: rescue <topic> -> commits made after the PR merged move to a new branch off updated main
-# @doc git-alias: done -> back to updated main after merge (drops a local main commit the squash already holds)
+# @doc git-alias: done -> back to updated main after merge (drops a local main commit the squash already holds); stacked: rebase onto the merged or moved parent
 [alias]
     gmt = mergetool
     start = "!\"${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh\" start"
