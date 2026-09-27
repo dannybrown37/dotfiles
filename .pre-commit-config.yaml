@@ -1,9 +1,13 @@
+default_stages: [pre-commit]
+
 repos:
   # ruff and pytest live in git-a-grip so every repo shares one copy, rather
   # than each keeping its own `bash -c '... && git add "$@"'` wrapper.
   - repo: https://github.com/dannybrown37/git-a-grip
     rev: v0.13.0
     hooks:
+      - id: commitizen-early
+        fail_fast: true
       - id: ruff-check
         args: [--config, config/.ruff.toml]
       - id: ruff-format
@@ -25,6 +29,14 @@ repos:
         args: [--config=.zizmor.yml]
         additional_dependencies: [zizmor==1.29.0]
       - id: block-private-terms
+
+  # commitizen-early only sees `-m`/`-F` messages; this catches the rest
+  # (editor, merge, rebase). Runs from githooks/commit-msg.
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.19.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

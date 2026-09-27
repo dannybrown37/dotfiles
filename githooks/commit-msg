@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Same forwarding as githooks/pre-commit: core.hooksPath points here, so
+# prek can't install its own commit-msg hook.
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+
+if ! command -v prek &>/dev/null || [[ ! -f "${repo_root}/.pre-commit-config.yaml" ]]; then
+    exit 0
+fi
+
+exec prek run --hook-stage commit-msg --commit-msg-filename "$1"

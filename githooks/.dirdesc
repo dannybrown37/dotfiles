@@ -1,1 +1,1 @@
-Tracked git hooks (core.hooksPath) -- forwards commits to pre-commit
+Tracked git hooks (core.hooksPath) -- forward pre-commit and commit-msg to prek

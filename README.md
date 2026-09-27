@@ -173,7 +173,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `bin/` | Sourced shell scripts loaded into the current session |
 | `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
 | `docs/` | Long-form documentation extracted from the README |
-| `githooks/` | Tracked git hooks (core.hooksPath) -- forwards commits to pre-commit |
+| `githooks/` | Tracked git hooks (core.hooksPath) -- forward pre-commit and commit-msg to prek |
 | `install/` | Bootstrap install scripts invoked via justfile recipes |
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
