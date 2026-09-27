@@ -4,19 +4,29 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.2.0"
+readonly VERSION="1.3.0"
 
 usage() {
     cat <<'EOF'
 Usage: git <command> [args...]
 
-  git start <topic>    Go to main, pull, make branch <topic> (carries uncommitted changes)
+  git start <topic>    Go to the base branch, pull, make branch <topic> (carries uncommitted changes)
   git ship [--no-done] Push, open a PR, turn on auto-merge, watch CI, then git done
-  git done             After the merge: go back to main and pull (carries uncommitted changes)
+  git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
 
+The base branch is origin's default branch (main, master, develop, ...).
 See docs/git-workflow.md.
 EOF
+}
+
+base_branch() {
+    local head
+    head="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD)" ||
+        { git remote set-head origin --auto >/dev/null &&
+            head="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD)"; } ||
+        fail 1 "can't find origin's default branch: run git remote set-head origin <branch>"
+    echo "${head#origin/}"
 }
 
 fail() {
@@ -106,7 +116,7 @@ with_carried_changes() {
 cmd_start() {
     local topic="${1:-}"
     [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" 'usage: git start <topic>'
-    with_carried_changes "git start ${topic}" branch_from_main "${topic}"
+    with_carried_changes "git start ${topic}" branch_from_base "${topic}"
 }
 
 cmd_ship() {
@@ -117,17 +127,18 @@ cmd_ship() {
     *) fail "${EXIT_USAGE}" 'usage: git ship [--no-done]' ;;
     esac
     branch="$(git branch --show-current)"
-    [[ "${branch}" != main ]] || fail "${EXIT_USAGE}" 'on main: run git start <topic> first'
-    prefix="$(git log --format=%s origin/main..HEAD | top_prefix)"
-    [[ -n "${prefix}" ]] || fail "${EXIT_USAGE}" 'no conventional commit prefix in origin/main..HEAD'
+    [[ "${branch}" != "${BASE}" ]] || fail "${EXIT_USAGE}" "on ${BASE}: run git start <topic> first"
+    prefix="$(git log --format=%s "origin/${BASE}..HEAD" | top_prefix)"
+    [[ -n "${prefix}" ]] || fail "${EXIT_USAGE}" "no conventional commit prefix in origin/${BASE}..HEAD"
     state="$(gh pr view --json state -q .state 2>/dev/null || true)"
     [[ "${state}" != MERGED ]] ||
         fail "${EXIT_USAGE}" "PR for ${branch} already merged: run git done, or git rescue <topic> to keep new commits"
     git push -u origin HEAD
     if [[ "${state}" != OPEN ]]; then
         gh pr create \
+            --base "${BASE}" \
             --title "${prefix}: $(tr '_-' '  ' <<<"${branch}")" \
-            --body "$(git log --reverse --format='- %s' origin/main..HEAD)"
+            --body "$(git log --reverse --format='- %s' "origin/${BASE}..HEAD")"
     fi
     gh pr merge --auto --squash --delete-branch || auto=0
     [[ "${auto}" == 1 ]] || echo 'auto-merge is off: watching CI, then merge by hand' >&2
@@ -149,42 +160,45 @@ cmd_rescue() {
     merged_head="${pr#* }"
     late="$(git rev-list "${merged_head}..HEAD")"
     [[ -n "${late}" ]] || fail "${EXIT_USAGE}" 'nothing to rescue: run git done'
-    git fetch origin main
+    git fetch origin "${BASE}"
     git switch -c "${topic}"
-    git rebase --onto origin/main "${merged_head}"
+    git rebase --onto "origin/${BASE}" "${merged_head}"
 }
 
-# Moves the main ref before any checkout, so the working tree never holds a
-# stale main (file watchers like ahk/main.ahk reload on every change).
-update_main() {
-    git fetch origin main || return 1
-    if ! git merge-base --is-ancestor main origin/main; then
-        if ! git diff --quiet main origin/main; then
-            echo 'local main has commits not on origin/main: git switch -c <topic> main to keep them, then git branch -f main origin/main' >&2
+# Moves the base ref before any checkout, so the working tree never holds a
+# stale base (file watchers like ahk/main.ahk reload on every change).
+update_base() {
+    local remote="origin/${BASE}"
+    git fetch origin "${BASE}" || return 1
+    if ! git rev-parse --verify --quiet "${BASE}" >/dev/null; then
+        git branch --track "${BASE}" "${remote}" >/dev/null
+    elif ! git merge-base --is-ancestor "${BASE}" "${remote}"; then
+        if ! git diff --quiet "${BASE}" "${remote}"; then
+            echo "local ${BASE} has commits not on ${remote}: git switch -c <topic> ${BASE} to keep them, then git branch -f ${BASE} ${remote}" >&2
             return 1
         fi
-        echo 'local main matches origin/main (already squash-merged): resetting to it' >&2
+        echo "local ${BASE} matches ${remote} (already squash-merged): resetting to it" >&2
     fi
-    if [[ "$(git branch --show-current)" == main ]]; then
-        git reset --keep origin/main
+    if [[ "$(git branch --show-current)" == "${BASE}" ]]; then
+        git reset --keep "${remote}"
     else
-        git branch -f main origin/main
+        git branch -f "${BASE}" "${remote}"
     fi
 }
 
-sync_main() {
-    update_main && git switch main
+sync_base() {
+    update_base && git switch "${BASE}"
 }
 
-branch_from_main() {
-    update_main && git switch -c "$1" main
+branch_from_base() {
+    update_base && git switch -c "$1" "${BASE}"
 }
 
 cmd_done() {
     local dirty
     dirty="$(git status --porcelain)"
-    with_carried_changes 'git done' sync_main
-    [[ -z "${dirty}" ]] || echo 'carried uncommitted changes to main: git start <topic> to keep working' >&2
+    with_carried_changes 'git done' sync_base
+    [[ -z "${dirty}" ]] || echo "carried uncommitted changes to ${BASE}: git start <topic> to keep working" >&2
 }
 
 main() {
@@ -195,6 +209,9 @@ main() {
 
     local cmd="$1"
     shift
+    case "${cmd}" in
+    start | ship | rescue | done) BASE="$(base_branch)" ;;
+    esac
     case "${cmd}" in
     -h | --help | help) usage ;;
     -v | --version) echo "git_workflow ${VERSION}" ;;
