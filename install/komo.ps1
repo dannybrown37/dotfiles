@@ -1,4 +1,4 @@
-## Install komorebi/whkd if needed, then (re)start it
+## @just 42 Environment-Specific | Reset komorebi/whkd: install if needed, clear phantom windows, restart
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
 if (-not (Get-Command komorebic -ErrorAction SilentlyContinue)) {

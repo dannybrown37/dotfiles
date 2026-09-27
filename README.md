@@ -41,7 +41,8 @@ Developer Tools:
 
 Environment-Specific:
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
-  windows         Install Windows-side tooling (win-dev, win32yank, komo)
+  windows         Install Windows-side tooling (win-dev, win32yank)
+  komo            Reset komorebi/whkd: install if needed, clear phantom windows, restart
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo

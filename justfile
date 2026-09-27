@@ -67,7 +67,7 @@ _select-nerdfont:
 _wsl-fonts:
     bash -c ". {{root_dir}}/install/wsl-fonts.sh"
 
-_komo:
+komo:
     powershell.exe -ExecutionPolicy Bypass -File "{{root_dir}}/install/komo.ps1"
 
 _win-dev:
@@ -118,8 +118,8 @@ secrets-save:
 secrets-load:
     bash -c "{{root_dir}}/scripts/secrets.sh load"
 
-## @just 40 Environment-Specific | Install Windows-side tooling (win-dev, win32yank, komo)
-windows: _win-dev _win32yank _komo
+## @just 41 Environment-Specific | Install Windows-side tooling (win-dev, win32yank)
+windows: _win-dev _win32yank
 
 ## @just 60 My Dev Tooling | Clone and install skill-tree, gtd, and git-a-grip
 my-dev-tools: _skill-tree _gtd _git-a-grip
