@@ -86,19 +86,24 @@ def env(tmp_path: Path) -> dict[str, str]:
 
 
 @pytest.fixture
-def clone(tmp_path: Path, env: dict[str, str]) -> Path:
+def base() -> str:
+    return 'main'
+
+
+@pytest.fixture
+def clone(tmp_path: Path, env: dict[str, str], base: str) -> Path:
     origin = tmp_path / 'origin.git'
-    git(tmp_path, 'init', '--bare', '-b', 'main', str(origin), env=env)
+    git(tmp_path, 'init', '--bare', '-b', base, str(origin), env=env)
     seed = tmp_path / 'seed'
     git(tmp_path, 'clone', str(origin), str(seed), env=env)
     (seed / 'f.txt').write_text(FIVE_LINES)
     git(seed, 'add', 'f.txt', env=env)
     git(seed, 'commit', '-m', 'first', env=env)
-    git(seed, 'push', 'origin', 'HEAD:main', env=env)
+    git(seed, 'push', 'origin', f'HEAD:{base}', 'HEAD:main', env=env)
     work = tmp_path / 'work'
     git(tmp_path, 'clone', str(origin), str(work), env=env)
     git(seed, 'commit', '--allow-empty', '-m', 'upstream', env=env)
-    git(seed, 'push', 'origin', 'HEAD:main', env=env)
+    git(seed, 'push', 'origin', f'HEAD:{base}', env=env)
     return work
 
 
@@ -284,7 +289,7 @@ def test_ship_titles_pr_with_top_prefix_and_branch_name(
         .read_text()
         .startswith(
             'gh pr view --json state -q .state\n'
-            f'gh pr create --title {title} --body {body}\n'
+            f'gh pr create --base main --title {title} --body {body}\n'
             'gh pr merge --auto --squash --delete-branch\n'
             'gh pr checks\n'
             'gh pr checks --watch\n',
@@ -711,3 +716,118 @@ def test_never_checks_out_stale_main(
 
 def reflog(clone: Path, env: dict[str, str]) -> list[str]:
     return git(clone, 'reflog', '--format=%H', 'HEAD', env=env).stdout.split()
+
+
+NON_MAIN_BASES = pytest.mark.parametrize('base', ['develop', 'master'])
+
+
+def subject_of(clone: Path, env: dict[str, str], rev: str = 'HEAD') -> str:
+    return git(clone, 'log', '-1', '--format=%s', rev, env=env).stdout.strip()
+
+
+@NON_MAIN_BASES
+def test_start_branches_from_remote_default_branch(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    git(clone, 'switch', '-c', 'old-topic', env=env)
+    git(clone, 'branch', '-D', base, env=env)
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert current_branch(clone, env) == 'my-topic'
+    assert subject_of(clone, env) == 'upstream'
+    assert subject_of(clone, env, base) == 'upstream'
+
+
+@NON_MAIN_BASES
+def test_start_finds_base_without_origin_head(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    git(clone, 'remote', 'set-head', 'origin', '--delete', env=env)
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert subject_of(clone, env) == 'upstream'
+    assert subject_of(clone, env, base) == 'upstream'
+
+
+@NON_MAIN_BASES
+def test_done_returns_to_remote_default_branch(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    git(clone, 'switch', '-c', 'my-topic', env=env)
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert (current_branch(clone, env), subject_of(clone, env)) == (
+        base,
+        'upstream',
+    )
+
+
+@NON_MAIN_BASES
+def test_ship_targets_remote_default_branch(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert (
+        f'gh pr create --base {base} --title feat: topic --body - feat: one'
+        in calls
+    )
+    assert (current_branch(clone, env), subject_of(clone, env)) == (
+        base,
+        'upstream',
+    )
+
+
+@NON_MAIN_BASES
+def test_ship_refuses_on_base(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    git(clone, 'switch', base, env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode != 0
+    assert f'on {base}: run git start <topic> first' in result.stderr
+
+
+@NON_MAIN_BASES
+def test_rescue_rebases_onto_remote_default_branch(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    on_merged_branch(clone, env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: late', env=env)
+
+    result = git(clone, 'rescue', 'late-fixes', env=env)
+
+    assert result.returncode == 0, result.stderr
+    subjects = git(
+        clone,
+        'log',
+        '--format=%s',
+        f'origin/{base}..HEAD',
+        env=env,
+    ).stdout.splitlines()
+    assert subjects == ['fix: late']
+    assert subject_of(clone, env, 'HEAD~1') == 'upstream'

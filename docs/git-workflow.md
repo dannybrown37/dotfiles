@@ -1,6 +1,9 @@
 # Git workflow
 
-`main` changes only through a PR. A PR merges only when CI is green.
+The base branch changes only through a PR. A PR merges only when CI is green.
+
+The base branch is origin's default branch: `main`, `master`, `develop`, etc.
+The diagram says `main`; read it as "the base branch".
 
 ```
 git start my-topic      git ship              git done (ship runs it)
@@ -14,9 +17,9 @@ main ─●─────────────────────┼─
 
 | Command | What it does |
 |---|---|
-| `git start <topic>` | Go to `main`, pull the latest, make a new branch `<topic>` |
+| `git start <topic>` | Go to the base branch, pull the latest, make a new branch `<topic>` |
 | `git ship` | Push, open a PR, turn on auto-merge, watch CI live, then `git done` once merged |
-| `git done` | After the merge: go back to `main` and pull (carries uncommitted changes) |
+| `git done` | After the merge: go back to the base branch and pull (carries uncommitted changes) |
 
 `git ship` skips `git done` (you stay on the branch) when:
 
