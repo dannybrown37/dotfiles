@@ -4,14 +4,14 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.1.0"
+readonly VERSION="1.2.0"
 
 usage() {
     cat <<'EOF'
 Usage: git <command> [args...]
 
   git start <topic>    Go to main, pull, make branch <topic> (carries uncommitted changes)
-  git ship             Push, open a PR, turn on auto-merge, watch CI
+  git ship [--no-done] Push, open a PR, turn on auto-merge, watch CI, then git done
   git done             After the merge: go back to main and pull (carries uncommitted changes)
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
 
@@ -58,6 +58,31 @@ wait_for_checks() {
     done
 }
 
+merged_head() {
+    local pr polls=0
+    while [[ "${polls}" -lt 30 ]]; do
+        pr="$(gh pr view --json state,headRefOid -q '.state + " " + .headRefOid' 2>/dev/null || true)"
+        if [[ "${pr%% *}" == MERGED ]]; then
+            echo "${pr#* }"
+            return
+        fi
+        polls=$((polls + 1))
+        sleep "${GIT_SHIP_POLL_SECS:-2}"
+    done
+    return 1
+}
+
+done_after_merge() {
+    local merged
+    if ! merged="$(merged_head)"; then
+        echo 'CI green but PR not merged after 60s: run git done once it merges' >&2
+    elif [[ "${merged}" != "$(git rev-parse HEAD)" ]]; then
+        echo 'PR merged without your newest commits: run git rescue <topic>' >&2
+    else
+        cmd_done
+    fi
+}
+
 with_carried_changes() {
     local label="$1" from stashed=0
     shift
@@ -85,7 +110,12 @@ cmd_start() {
 }
 
 cmd_ship() {
-    local branch prefix state auto=1
+    local branch prefix state auto=1 run_done=1
+    case "${1:-}" in
+    '') ;;
+    --no-done) run_done=0 ;;
+    *) fail "${EXIT_USAGE}" 'usage: git ship [--no-done]' ;;
+    esac
     branch="$(git branch --show-current)"
     [[ "${branch}" != main ]] || fail "${EXIT_USAGE}" 'on main: run git start <topic> first'
     prefix="$(git log --format=%s origin/main..HEAD | top_prefix)"
@@ -103,7 +133,11 @@ cmd_ship() {
     [[ "${auto}" == 1 ]] || echo 'auto-merge is off: watching CI, then merge by hand' >&2
     wait_for_checks
     gh pr checks --watch
-    [[ "${auto}" == 1 ]] || echo 'CI green: gh pr merge --squash --delete-branch' >&2
+    if [[ "${auto}" == 0 ]]; then
+        echo 'CI green: gh pr merge --squash --delete-branch' >&2
+    elif [[ "${run_done}" == 1 ]]; then
+        done_after_merge
+    fi
 }
 
 cmd_rescue() {

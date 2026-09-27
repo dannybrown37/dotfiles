@@ -3,7 +3,7 @@
 `main` changes only through a PR. A PR merges only when CI is green.
 
 ```
-git start my-topic      git ship                        git done
+git start my-topic      git ship              git done (ship runs it)
       │                     │                               │
 main ─●─────────────────────┼───────────────────────────────●── main
        \                    │                              /
@@ -15,8 +15,15 @@ main ─●─────────────────────┼─
 | Command | What it does |
 |---|---|
 | `git start <topic>` | Go to `main`, pull the latest, make a new branch `<topic>` |
-| `git ship` | Push, open a PR, turn on auto-merge, watch CI live |
+| `git ship` | Push, open a PR, turn on auto-merge, watch CI live, then `git done` once merged |
 | `git done` | After the merge: go back to `main` and pull (carries uncommitted changes) |
+
+`git ship` skips `git done` (you stay on the branch) when:
+
+- you pass `--no-done`
+- auto-merge is off
+- the PR is not merged 60s after CI goes green
+- you committed while CI ran: run `git rescue <topic>`
 
 Between `start` and `ship`: make commits as usual.
 
