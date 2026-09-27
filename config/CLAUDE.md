@@ -4,10 +4,13 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 
 ## General Approach
 
-- Prefer a TDD approach, with tests written before code.
+- Use TDD (test first) for logic: branching, parsing, state, anything with a bug that could come back.
+- Skip new tests for config, docs, glue, and one-line wiring. Instead, prove it works with `/verify`
+  (run it, show the evidence), and say which one you picked and why.
+- A bug fix always gets a regression test.
 - We'll be doing Human-in-the-Loop AI-assisted coding.
   - Unless specifically requested to build end to end, you should implement code in discrete, testable steps, then wait for human feedback before continuing.
-  - You should always write tests for your code, and provide commands to run them to the user.
+  - When you write tests, provide commands to run them to the user.
   - You should not be adding, committing, or pushing code, the user will do that manually.
 
 ## Communication Style
