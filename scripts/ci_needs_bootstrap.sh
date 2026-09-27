@@ -12,7 +12,13 @@ set -euo pipefail
 ## (the check would never report, and the PR would wait on it forever).
 ##
 
-readonly bootstrap_paths='^(install/|config/|justfile$|scripts/just-help\.sh$|\.github/workflows/ci\.yml$)'
+# Not the justfile or just-help.sh: lint's embed-command hook runs `just`, which
+# parses the whole justfile and runs the help script on every PR. An edit to a
+# `_ci` recipe slips past, but the weekly cold run catches it.
+readonly bootstrap_paths='^(install/|\.github/workflows/ci\.yml$)'
+# Bootstrap symlinks config/ files but never reads them, so only a file coming
+# or going can break it -- an edit to one can't.
+readonly config_paths='^config/'
 
 base="${1:-}"
 head="${2:?usage: ci_needs_bootstrap.sh <base-sha> <head-sha>}"
@@ -29,8 +35,10 @@ fi
 # Three dots: diff from the merge base, so commits that landed on main after
 # the PR branched don't count as the PR's changes.
 changed="$(git diff --name-only "${base}...${head}")"
+added_or_removed="$(git diff --name-only --no-renames --diff-filter=AD "${base}...${head}")"
 
-if grep -qE "${bootstrap_paths}" <<<"${changed}"; then
+if grep -qE "${bootstrap_paths}" <<<"${changed}" ||
+    grep -qE "${config_paths}" <<<"${added_or_removed}"; then
     echo true
 else
     echo false
