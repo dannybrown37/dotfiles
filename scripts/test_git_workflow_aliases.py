@@ -23,6 +23,10 @@ if [ "$1 $2" = 'pr view' ]; then
         *) echo "${GH_PR_STATE}" ;;
     esac
 fi
+if [ "$1 $2" = 'pr merge' ] && [ -n "${GH_MERGE_FAILS:-}" ]; then
+    echo "${GH_MERGE_FAILS}" >&2
+    exit 1
+fi
 if [ "$*" = 'pr checks' ]; then
     n=$(( $(cat "${GH_CALLS_FILE}.polls" 2>/dev/null || echo 0) + 1 ))
     echo "$n" > "${GH_CALLS_FILE}.polls"
@@ -323,6 +327,23 @@ def test_ship_reuses_open_pr(
         'gh pr checks',
         'gh pr checks --watch',
     ]
+
+
+def test_ship_watches_ci_when_auto_merge_not_allowed(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    env['GH_MERGE_FAILS'] = 'Auto merge is not allowed for this repository'
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: one', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert calls[-2:] == ['gh pr checks', 'gh pr checks --watch']
+    assert 'Auto merge is not allowed' in result.stderr
+    assert 'gh pr merge --squash --delete-branch' in result.stderr
 
 
 def test_ship_refuses_when_pr_already_merged(
