@@ -41,6 +41,11 @@ Managed via `.pre-commit-config.yaml` (prek reads this natively). Active hooks:
 - **embed-command** (git-a-grip) — keeps README install options in sync with `just` help output, which is itself generated from the `## @just` headers
 - Standard pre-commit-hooks repo (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
 
+## CI
+
+- `.github/workflows/ci.yml` runs `lint`, `test` and `bootstrap`, all required checks on `main`.
+- `bootstrap` (~5 min cold) runs only when `scripts/ci_needs_bootstrap.sh` sees a bootstrap path change (`install/`, `config/`, `justfile`, `scripts/just-help.sh`, `ci.yml`), plus a weekly cold run and on `workflow_dispatch`. Otherwise it is skipped, which counts as passing. Add a path there if a new file changes what `just _ci` does.
+
 ## Shell Startup Performance
 
 **Lazy-load anything that isn't needed in every shell.** This is the single most important rule for keeping startup fast.
