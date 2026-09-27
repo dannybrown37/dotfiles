@@ -11,6 +11,17 @@ import pytest
 
 GITCONFIG = Path(__file__).parent.parent / 'config' / '.gitconfig'
 FIVE_LINES = 'a\nb\nc\nd\ne\n'
+GH_STUB = """#!/usr/bin/env bash
+echo "gh $*" >> "${GH_CALLS_FILE}"
+if [ "$*" = 'pr checks' ]; then
+    n=$(( $(cat "${GH_CALLS_FILE}.polls" 2>/dev/null || echo 0) + 1 ))
+    echo "$n" > "${GH_CALLS_FILE}.polls"
+    if [ "$n" -le "${GH_NO_CHECKS_FOR:-0}" ]; then
+        echo "no checks reported on the 'topic' branch" >&2
+        exit 1
+    fi
+fi
+"""
 
 
 def git(
@@ -33,7 +44,7 @@ def env(tmp_path: Path) -> dict[str, str]:
     stub_bin = tmp_path / 'bin'
     stub_bin.mkdir()
     gh = stub_bin / 'gh'
-    gh.write_text('#!/usr/bin/env bash\necho "gh $*" >> "${GH_CALLS_FILE}"\n')
+    gh.write_text(GH_STUB)
     gh.chmod(0o755)
     return {
         **os.environ,
@@ -46,6 +57,7 @@ def env(tmp_path: Path) -> dict[str, str]:
         'GIT_COMMITTER_NAME': 't',
         'GIT_COMMITTER_EMAIL': 't@example.com',
         'GH_CALLS_FILE': str(tmp_path / 'gh_calls'),
+        'GIT_SHIP_POLL_SECS': '0',
     }
 
 
@@ -194,8 +206,35 @@ def test_ship_titles_pr_with_top_prefix_and_branch_name(
     assert Path(env['GH_CALLS_FILE']).read_text() == (
         f'gh pr create --title {title} --body {body}\n'
         'gh pr merge --auto --squash --delete-branch\n'
+        'gh pr checks\n'
         'gh pr checks --watch\n'
     )
+
+
+@pytest.mark.parametrize(
+    ('no_checks_for', 'returncode'),
+    [
+        (2, 0),
+        (30, 1),
+    ],
+)
+def test_ship_waits_for_ci_checks_before_watching(
+    clone: Path,
+    env: dict[str, str],
+    no_checks_for: int,
+    returncode: int,
+) -> None:
+    env['GH_NO_CHECKS_FOR'] = str(no_checks_for)
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: one', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == returncode, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    watched = returncode == 0
+    assert ('gh pr checks --watch' in calls) == watched
+    assert ('run gh pr checks --watch later' in result.stderr) != watched
 
 
 def test_ship_refuses_without_conventional_commits(
