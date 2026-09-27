@@ -1,6 +1,7 @@
 """Tests for the start/ship/rescue/done aliases in config/.gitconfig.
 
-`gh` is stubbed on PATH so tests never hit GitHub.
+The aliases delegate to scripts/git_workflow.sh. `gh` is stubbed on PATH so
+tests never hit GitHub.
 """
 
 import os
@@ -9,7 +10,9 @@ from pathlib import Path
 
 import pytest
 
-GITCONFIG = Path(__file__).parent.parent / 'config' / '.gitconfig'
+REPO = Path(__file__).parent.parent
+GITCONFIG = REPO / 'config' / '.gitconfig'
+SCRIPT = REPO / 'scripts' / 'git_workflow.sh'
 FIVE_LINES = 'a\nb\nc\nd\ne\n'
 GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
@@ -59,6 +62,7 @@ def env(tmp_path: Path) -> dict[str, str]:
         'HOME': str(tmp_path / 'home'),
         'GIT_CONFIG_GLOBAL': str(GITCONFIG),
         'GIT_CONFIG_NOSYSTEM': '1',
+        'DOTFILES_DIR': str(REPO),
         'GIT_AUTHOR_NAME': 't',
         'GIT_AUTHOR_EMAIL': 't@example.com',
         'GIT_COMMITTER_NAME': 't',
@@ -83,6 +87,56 @@ def clone(tmp_path: Path, env: dict[str, str]) -> Path:
     git(seed, 'commit', '--allow-empty', '-m', 'upstream', env=env)
     git(seed, 'push', 'origin', 'HEAD:main', env=env)
     return work
+
+
+def run_script(
+    *args: str,
+    env: dict[str, str],
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        [str(SCRIPT), *args],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize('flag', ['--version', '-v'])
+def test_script_prints_version_without_git_repo(
+    env: dict[str, str],
+    flag: str,
+) -> None:
+    result = run_script(flag, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.startswith('git_workflow ')
+
+
+@pytest.mark.parametrize(
+    ('args', 'returncode'),
+    [
+        ([], 2),
+        (['--help'], 0),
+        (['bogus'], 2),
+    ],
+)
+def test_script_prints_usage(
+    env: dict[str, str],
+    args: list[str],
+    returncode: int,
+) -> None:
+    result = run_script(*args, env=env)
+
+    assert result.returncode == returncode
+    assert 'git start <topic>' in result.stdout + result.stderr
+
+
+def test_gitconfig_aliases_only_delegate_to_script() -> None:
+    lines = GITCONFIG.read_text().splitlines()
+    script = '${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh'
+    for name in ('start', 'ship', 'rescue', 'done'):
+        assert f'    {name} = "!\\"{script}\\" {name}"' in lines
 
 
 def test_start_branches_from_freshly_pulled_main(
