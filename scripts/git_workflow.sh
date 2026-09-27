@@ -4,13 +4,14 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.4.0"
+readonly VERSION="1.5.0"
 
 usage() {
     cat <<'EOF'
 Usage: git <command> [args...]
 
   git start <topic>    Go to the base branch, pull, make branch <topic> (carries uncommitted changes)
+                       On the base with local commits: move them to <topic>
   git start -s <topic> Stack: make branch <topic> on top of the current branch
   git ship [--no-done] Push, open a PR, turn on auto-merge, watch CI, then git done
                        Stacked: the PR targets the parent branch, no auto-merge
@@ -131,9 +132,30 @@ cmd_start() {
     [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" "${usage}"
     if [[ "${stack}" == 1 ]]; then
         stack_on_current "${topic}"
+        return
+    fi
+    git fetch origin "${BASE}"
+    if [[ "$(git branch --show-current)" == "${BASE}" ]] && base_has_own_commits; then
+        move_base_commits "${topic}"
     else
         with_carried_changes "git start ${topic}" branch_from_base "${topic}"
     fi
+}
+
+base_has_own_commits() {
+    ! git merge-base --is-ancestor "${BASE}" "origin/${BASE}" &&
+        ! git diff --quiet "${BASE}" "origin/${BASE}"
+}
+
+# Commits made on the base by mistake: the topic keeps them, the base goes
+# back to origin. The base moves first, so a conflict leaves only the rebase.
+move_base_commits() {
+    local topic="$1" remote="origin/${BASE}"
+    git switch -c "${topic}"
+    git branch -f "${BASE}" "${remote}"
+    git rebase --autostash "${remote}" ||
+        fail 1 'fix the conflicts, git rebase --continue'
+    echo "moved commits made on ${BASE} to ${topic}" >&2
 }
 
 stack_on_current() {
@@ -235,7 +257,6 @@ cmd_rescue() {
 # stale base (file watchers like ahk/main.ahk reload on every change).
 update_base() {
     local remote="origin/${BASE}"
-    git fetch origin "${BASE}" || return 1
     if ! git rev-parse --verify --quiet "${BASE}" >/dev/null; then
         git branch --track "${BASE}" "${remote}" >/dev/null
     elif ! git merge-base --is-ancestor "${BASE}" "${remote}"; then
@@ -253,7 +274,7 @@ update_base() {
 }
 
 sync_base() {
-    update_base && git switch "${BASE}"
+    git fetch origin "${BASE}" && update_base && git switch "${BASE}"
 }
 
 branch_from_base() {
