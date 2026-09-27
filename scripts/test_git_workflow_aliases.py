@@ -14,9 +14,15 @@ REPO = Path(__file__).parent.parent
 GITCONFIG = REPO / 'config' / '.gitconfig'
 SCRIPT = REPO / 'scripts' / 'git_workflow.sh'
 FIVE_LINES = 'a\nb\nc\nd\ne\n'
+EDGES_EDITED = 'A\nb\nc\nd\nE\n'
 EXIT_USAGE = 2
 GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
+if [ "$1 $2" = 'pr view' ] && [ -n "${3:-}" ] && [ "${3#-}" = "$3" ]; then
+    [ -n "${GH_PARENT_STATE:-}" ] || exit 1
+    echo "${GH_PARENT_STATE}"
+    exit 0
+fi
 if [ "$1 $2" = 'pr view' ]; then
     if [ -e "${GH_CALLS_FILE}.watched" ] \\
         && [ -n "${GH_PR_STATE_AFTER_WATCH:-}" ]; then
@@ -244,14 +250,19 @@ def test_start_with_clean_tree_leaves_older_stashes_alone(
     assert git(clone, 'stash', 'list', env=env).stdout.count('\n') == 1
 
 
-def test_start_without_topic_prints_usage(
+@pytest.mark.parametrize(
+    'args',
+    [(), ('-s',), ('a', 'b'), ('--bogus', 'a')],
+)
+def test_start_rejects_bad_arguments_with_usage(
     clone: Path,
     env: dict[str, str],
+    args: tuple[str, ...],
 ) -> None:
-    result = git(clone, 'start', env=env)
+    result = git(clone, 'start', *args, env=env)
 
-    assert result.returncode != 0
-    assert 'usage: git start <topic>' in result.stderr
+    assert result.returncode == EXIT_USAGE
+    assert 'usage: git start [-s] <topic>' in result.stderr
 
 
 @pytest.mark.parametrize(
@@ -831,3 +842,218 @@ def test_rescue_rebases_onto_remote_default_branch(
     ).stdout.splitlines()
     assert subjects == ['fix: late']
     assert subject_of(clone, env, 'HEAD~1') == 'upstream'
+
+
+def stack_config(clone: Path, env: dict[str, str], key: str) -> str:
+    return git(
+        clone,
+        'config',
+        '--get',
+        f'branch.{key}',
+        env=env,
+    ).stdout.strip()
+
+
+def stacked(clone: Path, env: dict[str, str]) -> None:
+    git(clone, 'start', 'parent', env=env)
+    (clone / 'f.txt').write_text(FIVE_LINES.replace('a', 'A'))
+    git(clone, 'commit', '-am', 'feat: parent', env=env)
+    git(clone, 'push', '-u', 'origin', 'parent', env=env)
+    git(clone, 'start', '-s', 'child', env=env)
+    (clone / 'f.txt').write_text(EDGES_EDITED)
+    git(clone, 'commit', '-am', 'feat: child', env=env)
+
+
+def squash_merge_parent(clone: Path, env: dict[str, str], text: str) -> None:
+    seed = clone.parent / 'seed'
+    git(seed, 'pull', '--quiet', env=env)
+    (seed / 'f.txt').write_text(text)
+    git(seed, 'commit', '-am', 'feat: parent (#1)', env=env)
+    git(seed, 'push', 'origin', 'HEAD:main', ':parent', env=env)
+    env['GH_PARENT_STATE'] = 'MERGED'
+
+
+def own_subjects(clone: Path, env: dict[str, str], since: str) -> list[str]:
+    log = git(clone, 'log', '--format=%s', f'{since}..HEAD', env=env)
+    return log.stdout.splitlines()
+
+
+@pytest.mark.parametrize(
+    'args',
+    [('-s', 'child'), ('--stack', 'child'), ('child', '-s')],
+)
+def test_start_stack_branches_from_current_branch(
+    clone: Path,
+    env: dict[str, str],
+    args: tuple[str, ...],
+) -> None:
+    on_branch_with_committed_edit(clone, env)
+    parent_head = head(clone, env)
+    (clone / 'f.txt').write_text(EDGES_EDITED)
+
+    result = git(clone, 'start', *args, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert (current_branch(clone, env), head(clone, env)) == (
+        'child',
+        parent_head,
+    )
+    assert stack_config(clone, env, 'child.stackParent') == 'old-topic'
+    assert stack_config(clone, env, 'child.stackBase') == parent_head
+    assert (clone / 'f.txt').read_text() == EDGES_EDITED
+
+
+def test_start_stack_refuses_on_base(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    result = git(clone, 'start', '-s', 'child', env=env)
+
+    assert result.returncode == EXIT_USAGE
+    assert 'on main: nothing to stack on' in result.stderr
+    assert current_branch(clone, env) == 'main'
+
+
+def test_ship_stacked_targets_parent_without_auto_merge(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert Path(env['GH_CALLS_FILE']).read_text().splitlines() == [
+        'gh pr view parent --json state -q .state',
+        'gh pr view --json state -q .state',
+        'gh pr create --base parent --title feat: child --body - feat: child',
+        'gh pr checks',
+        'gh pr checks --watch',
+    ]
+    assert current_branch(clone, env) == 'child'
+    assert 'once parent merges, run git done' in result.stderr
+
+
+def test_ship_stacked_lists_only_own_commits_after_rebase_on_parent(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+    git(clone, 'switch', 'parent', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: review', env=env)
+    git(clone, 'push', 'origin', 'parent', env=env)
+    git(clone, 'switch', 'child', env=env)
+    git(clone, 'rebase', 'parent', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert (
+        'gh pr create --base parent --title feat: child --body - feat: child'
+        in calls
+    )
+
+
+@pytest.mark.parametrize(
+    ('before_ship', 'parent_state', 'message'),
+    [
+        (
+            ('push', 'origin', ':parent'),
+            '',
+            'parent is not on origin: git ship it first',
+        ),
+        (
+            (),
+            'MERGED',
+            'parent already merged: run git done first',
+        ),
+    ],
+    ids=['parent-not-pushed', 'parent-merged'],
+)
+def test_ship_stacked_refuses_without_open_parent(
+    clone: Path,
+    env: dict[str, str],
+    before_ship: tuple[str, ...],
+    parent_state: str,
+    message: str,
+) -> None:
+    stacked(clone, env)
+    if before_ship:
+        git(clone, *before_ship, env=env)
+    env['GH_PARENT_STATE'] = parent_state
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == EXIT_USAGE
+    assert message in result.stderr
+    assert git(clone, 'ls-remote', 'origin', 'child', env=env).stdout == ''
+    calls = Path(env['GH_CALLS_FILE'])
+    assert not calls.exists() or 'pr create' not in calls.read_text()
+
+
+def test_done_moves_stacked_branch_onto_base_after_parent_merges(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+    git(clone, 'push', '-u', 'origin', 'child', env=env)
+    env['GH_PR_STATE'] = 'OPEN'
+    squash_merge_parent(clone, env, FIVE_LINES.replace('a', 'A'))
+    (clone / 'f.txt').write_text('A\nb\nC\nd\nE\n')
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert current_branch(clone, env) == 'child'
+    assert own_subjects(clone, env, 'origin/main') == ['feat: child']
+    assert (clone / 'f.txt').read_text() == 'A\nb\nC\nd\nE\n'
+    assert stack_config(clone, env, 'child.stackParent') == ''
+    assert stack_config(clone, env, 'child.stackBase') == ''
+    remote = git(clone, 'ls-remote', 'origin', 'child', env=env).stdout
+    assert remote.startswith(head(clone, env))
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert 'gh pr edit --base main' in calls
+
+
+def test_done_restacks_grandchild_onto_moved_parent(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+    git(clone, 'start', '-s', 'grandchild', env=env)
+    (clone / 'g.txt').write_text('g\n')
+    git(clone, 'add', 'g.txt', env=env)
+    git(clone, 'commit', '-m', 'feat: grandchild', env=env)
+    squash_merge_parent(clone, env, FIVE_LINES.replace('a', 'A'))
+    git(clone, 'switch', 'child', env=env)
+    git(clone, 'done', env=env)
+    git(clone, 'switch', 'grandchild', env=env)
+    env['GH_PARENT_STATE'] = 'OPEN'
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert own_subjects(clone, env, 'child') == ['feat: grandchild']
+    assert own_subjects(clone, env, 'origin/main') == [
+        'feat: grandchild',
+        'feat: child',
+    ]
+    child_head = git(clone, 'rev-parse', 'child', env=env).stdout.strip()
+    assert stack_config(clone, env, 'grandchild.stackParent') == 'child'
+    assert stack_config(clone, env, 'grandchild.stackBase') == child_head
+
+
+def test_done_stacked_waits_for_unmerged_unmoved_parent(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+    before = head(clone, env)
+    env['GH_PARENT_STATE'] = 'OPEN'
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert 'parent not merged yet' in result.stderr
+    assert (current_branch(clone, env), head(clone, env)) == ('child', before)

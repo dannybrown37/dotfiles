@@ -38,14 +38,22 @@ Between `start` and `ship`: make commits as usual.
 
 ## Stacked PRs
 
-PRs that build on each other: `main <- a <- b <- c`. Uses `gh stack` (`stack setup` once).
+For work that waits on review (auto-merge off): keep going on top of an open PR.
 
-| Command | What it does |
+```
+git start a      git start -s b     (a merges)      git done (on b)
+main ─●──────────────────────────────────●──────────────●── main
+       \                                              \
+        a1 ── a2   PR a → main                         b1   PR b → main
+                \
+                 b1   PR b → a
+```
+
+| Command | On a stacked branch |
 |---|---|
-| `stack start <name>` | Start a stack, first branch |
-| `stack next <name>` | New branch on top of the current one |
-| `stack ship` | Push all, open a PR per branch |
-| `stack sync` | Rebase the stack after a lower PR changes or merges |
-| `stack land` | Merge the stack (all or nothing) |
+| `git start -s <topic>` | New branch `<topic>` on top of the current branch (its parent) |
+| `git ship` | PR targets the parent, lists only this branch's commits, no auto-merge |
+| `git done` | Parent merged: rebase onto the base branch, retarget the PR, force-push. Parent moved: rebase onto it. Else: nothing to do |
 
-`stack help` for all commands.
+Stacks go deeper (`a <- b <- c`): after `a` merges, `git done` on `b`, then on `c`.
+Rebase conflict: fix, `git rebase --continue`, `git push --force-with-lease`.
