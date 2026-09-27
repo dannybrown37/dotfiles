@@ -30,6 +30,10 @@ Between `start` and `ship`: make commits as usual.
   Branch `main-branch-protection` + commits `ci:` and `feat:` -> `feat: main branch protection`.
   Rank: feat > fix > perf > refactor > revert > build > ci > docs > test > style > chore.
 - Auto-merge waits for CI. Red CI = no merge. Fix, commit, `git push`. PR updates itself.
+- `git ship` again is safe: it pushes, reuses the open PR, and watches CI.
+  If the PR already merged, it stops and tells you to run `git done`.
+- Committed more after the PR merged? `git rescue <topic>` moves those commits
+  to a new branch `<topic>` off the latest `main`. Then `git ship`.
 
 ## Plain-English git words
 
