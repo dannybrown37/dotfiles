@@ -22,7 +22,7 @@ Between `start` and `ship`: make commits as usual.
 
 ## Rules
 
-- Never commit on `main`. `git ship` refuses to run there.
+- Never commit on `main`. A pre-commit hook refuses it, and `git ship` refuses to run there.
 - Every commit starts with a prefix: `feat:`, `fix:`, `docs:`, `ci:`, `chore:`, ...
   A hook checks this when you commit.
 - Name the branch so it reads like a title: `main-branch-protection`, not `stuff`.
@@ -34,6 +34,9 @@ Between `start` and `ship`: make commits as usual.
   If the PR already merged, it stops and tells you to run `git done`.
 - Committed more after the PR merged? `git rescue <topic>` moves those commits
   to a new branch `<topic>` off the latest `main`. Then `git ship`.
+- Committed on `main` by mistake, then shipped it from a branch? `git done` sees
+  that the squash on GitHub holds the same files and resets `main` to it.
+  If the files differ, it stops and tells you how to save the commits.
 
 ## Plain-English git words
 

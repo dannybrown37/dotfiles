@@ -427,3 +427,48 @@ def test_done_returns_to_updated_main(
     branch = git(clone, 'branch', '--show-current', env=env).stdout.strip()
     subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
     assert (branch, subject) == ('main', 'upstream')
+
+
+def main_diverged_from_origin(
+    clone: Path,
+    env: dict[str, str],
+    upstream_text: str,
+) -> None:
+    """Local main gets a direct commit; origin gets a squash of its own."""
+    (clone / 'f.txt').write_text('squashed\n')
+    git(clone, 'commit', '-am', 'fix: direct on main', env=env)
+    seed = clone.parent / 'seed'
+    git(seed, 'pull', '--quiet', env=env)
+    (seed / 'f.txt').write_text(upstream_text)
+    git(seed, 'commit', '-am', 'fix: squash (#1)', env=env)
+    git(seed, 'push', 'origin', 'HEAD:main', env=env)
+    git(clone, 'switch', '-c', 'my-topic', env=env)
+
+
+def test_done_resets_main_already_squash_merged(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    main_diverged_from_origin(clone, env, upstream_text='squashed\n')
+    (clone / 'untracked.txt').write_text('keep me\n')
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
+    assert subject == 'fix: squash (#1)'
+    assert (clone / 'untracked.txt').read_text() == 'keep me\n'
+
+
+def test_done_refuses_when_local_main_has_unmerged_work(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    main_diverged_from_origin(clone, env, upstream_text='other\n')
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode != 0
+    assert 'local main has commits not on origin/main' in result.stderr
+    subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
+    assert subject == 'fix: direct on main'

@@ -246,6 +246,7 @@ def test_main_forwards_changed_paths_and_skips_to_prek(
         'tracked.py',
     ]
     assert seen['skip_ids'] == [
+        'no-commit-to-branch',
         'ruff-check',
         'ruff-format',
         'sync-readme-make',

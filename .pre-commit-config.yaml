@@ -53,6 +53,10 @@ repos:
       - id: check-yaml
       - id: destroyed-symlinks
       - id: mixed-line-ending
+      # Work goes on a branch via `git start`; `git done` only fast-forwards or
+      # resets main, so it never trips this.
+      - id: no-commit-to-branch
+        args: [--branch, main]
 
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: v3.13.1-1
