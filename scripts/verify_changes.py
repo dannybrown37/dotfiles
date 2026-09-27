@@ -33,6 +33,10 @@ EXTERNAL_STAGING_HOOK_IDS = frozenset(
     {'ruff-check', 'ruff-format', 'embed-command'},
 )
 
+# The Stop hook checks files, not commits: no-commit-to-branch fails on main
+# whatever the files say, which would block every turn there.
+ALWAYS_SKIP_HOOK_IDS = ('no-commit-to-branch',)
+
 HOOK_ID_PATTERN = re.compile(r'^\s*-\s*id:\s*(\S+)')
 
 FAILURE_HEADER = (
@@ -165,7 +169,7 @@ def main(raw_payload: str) -> int:
         result = run_prek(
             repo_root,
             paths,
-            staging_hook_ids(config.read_text()),
+            [*ALWAYS_SKIP_HOOK_IDS, *staging_hook_ids(config.read_text())],
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return 0

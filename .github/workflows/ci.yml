@@ -50,10 +50,12 @@ jobs:
           key: prek-${{ hashFiles('.pre-commit-config.yaml', 'install/versions.sh') }}
 
       # The pytest hook duplicates the `test` job below; skip it by hook id.
+      # no-commit-to-branch guards local commits, and a push to main checks
+      # out branch main here, so it would always fail.
       - name: Run prek hooks
         run: prek run --all-files
         env:
-          SKIP: pytest
+          SKIP: pytest,no-commit-to-branch
 
   changes:
     runs-on: ubuntu-latest

@@ -16,6 +16,13 @@ Invoke the relevant skill before writing or debugging code in that language/doma
 
 - Read directly for this repo's (`dotfiles`) layout, conventions, prek hooks, or shell startup performance: `.claude/references/dotfiles-repo.md`
 
+## Git Workflow
+
+This repo uses the `start`/`ship`/`done` aliases in `docs/git-workflow.md`. This rule overrides the global "no git writes" default for `git start` only.
+
+- Before editing files while on `main`, run `git start <topic>` to branch off (it carries uncommitted changes along). A pre-commit hook refuses commits on `main`.
+- Never run `git ship`, `git done`, or `git rescue`. They push, merge, or move branches, so they are always human-operated. Tell the user when one is the next step.
+
 ## Code Review
 
 - A `Stop` hook (`scripts/verify_changes.py`, wired in `.claude/settings.json`) runs `prek` against every changed file before a turn can end, and blocks the turn with the output if it fails. Fix what it reports. Hooks that `git add` are skipped, so formatting is still settled at commit time. `VERIFY_CHANGES_SKIP=1` disables it.
