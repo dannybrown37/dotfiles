@@ -23,3 +23,7 @@ Great, tangible advice and examples for writing effective design docs.
 ## Stop being skeptical about AI for development with Charity Majors
 Really nuanced takes on AI development and how developers should be using it.
 [Interview and summary](https://newsletter.pragmaticengineer.com/p/stop-being-skeptical-about-ai-for)
+
+## AI Skills with Matt Pocock
+Great overview of AI skills in real engineering contexts.
+[AI Skills with Matt Pocock — The Pragmatic Engineer](https://newsletter.pragmaticengineer.com/p/ai-skills-with-matt-pocock)
