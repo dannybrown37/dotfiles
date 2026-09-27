@@ -193,7 +193,7 @@ def test_ship_titles_pr_with_top_prefix_and_branch_name(
     body = '\n'.join(f'- {s}' for s in subjects)
     assert Path(env['GH_CALLS_FILE']).read_text() == (
         f'gh pr create --title {title} --body {body}\n'
-        'gh pr merge --auto --rebase --delete-branch\n'
+        'gh pr merge --auto --squash --delete-branch\n'
         'gh pr checks --watch\n'
     )
 

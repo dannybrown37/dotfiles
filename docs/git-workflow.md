@@ -26,7 +26,7 @@ Between `start` and `ship`: make commits as usual.
 - Every commit starts with a prefix: `feat:`, `fix:`, `docs:`, `ci:`, `chore:`, ...
   A hook checks this when you commit.
 - Name the branch so it reads like a title: `main-branch-protection`, not `stuff`.
-- PR title is made for you: `<top prefix>: <branch name>`.
+- PR title is made for you: `<top prefix>: <branch name>`. The PR is squashed into one commit on `main` with that title.
   Branch `main-branch-protection` + commits `ci:` and `feat:` -> `feat: main branch protection`.
   Rank: feat > fix > perf > refactor > revert > build > ci > docs > test > style > chore.
 - Auto-merge waits for CI. Red CI = no merge. Fix, commit, `git push`. PR updates itself.
