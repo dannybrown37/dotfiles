@@ -35,7 +35,7 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 ## CLIs
 
 - Every versioned CLI must expose `--version` — prints the version, exits 0, works with no config and no credentials.
-- Before writing or extending any command-line entrypoint a human runs, invoke the `skill-tree:cli-ergonomics` skill.
+- Invoke `skill-tree:cli-ergonomics` when creating a new CLI or a new subcommand a human runs, or when the user asks for it — not for edits to existing commands.
 
 ## Code Style (General)
 
