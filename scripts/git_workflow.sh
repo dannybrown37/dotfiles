@@ -4,7 +4,7 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.6.0"
+readonly VERSION="1.7.0"
 
 usage() {
     cat <<'EOF'
@@ -72,6 +72,17 @@ wait_for_checks() {
         [[ "${polls}" != 1 ]] || echo 'waiting for CI to start...' >&2
         sleep "${GIT_SHIP_POLL_SECS:-2}"
     done
+}
+
+# gh's watch table cuts links to fit the pane, which breaks them. gh's
+# hyperlink emits escape codes even when piped, so full URLs off a terminal.
+print_check_links() {
+    if [[ -t 1 ]]; then
+        gh pr checks --json name,link \
+            --template '{{range .}}{{hyperlink .link .name}}{{"\n"}}{{end}}' || true
+    else
+        gh pr checks --json name,link -q '.[] | .name + "\n" + .link' || true
+    fi
 }
 
 merged_head() {
@@ -198,7 +209,7 @@ require_open_parent() {
 }
 
 cmd_ship() {
-    local arg branch parent since prefix state auto=1 run_done=1
+    local arg branch parent since prefix state auto=1 run_done=1 ci=0
     for arg in "$@"; do
         case "${arg}" in
         --no-auto) auto=0 ;;
@@ -233,7 +244,9 @@ cmd_ship() {
         echo 'auto-merge is off: watching CI, then merge by hand' >&2
     fi
     wait_for_checks
-    gh pr checks --watch
+    gh pr checks --watch || ci=$?
+    print_check_links
+    [[ "${ci}" == 0 ]] || exit "${ci}"
     if [[ -n "${parent}" ]]; then
         echo "CI green: once ${parent} merges, run git done here" >&2
     elif [[ "${auto}" == 0 ]]; then

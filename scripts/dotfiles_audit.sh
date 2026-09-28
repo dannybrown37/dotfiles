@@ -107,6 +107,10 @@ source "${DOTFILES_DIR}/install/apt_packages.sh"
 for pkg in "${apt_packages[@]}"; do
     check_apt "$pkg"
 done
+TMUX_VER=$(tmux -V 2>/dev/null | awk '{print $2}')
+if [[ -n "${TMUX_VER}" && "$(printf '%s\n' 3.4 "${TMUX_VER}" | sort -V | head -1)" != 3.4 ]]; then
+    warn "tmux hyperlinks" "tmux ${TMUX_VER} < 3.4: sudo apt install -t <codename>-backports tmux"
+fi
 
 # ── Core CLI Tools ────────────────────────────────────────────────────────────
 

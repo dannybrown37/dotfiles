@@ -16,6 +16,7 @@ SCRIPT = REPO / 'scripts' / 'git_workflow.sh'
 FIVE_LINES = 'a\nb\nc\nd\ne\n'
 EDGES_EDITED = 'A\nb\nc\nd\nE\n'
 EXIT_USAGE = 2
+CHECK_LINK = 'https://github.com/o/r/actions/runs/12345678901/job/34567890123'
 GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
 if [ "$1 $2" = 'pr view' ] && [ -n "${3:-}" ] && [ "${3#-}" = "$3" ]; then
@@ -41,6 +42,10 @@ fi
 if [ "$*" = 'pr checks --watch' ]; then
     touch "${GH_CALLS_FILE}.watched"
     [ -z "${GH_WATCH_FAILS:-}" ] || exit 1
+fi
+if [ "$1 $2 $3" = 'pr checks --json' ]; then
+    echo "build"
+    echo "${CHECK_LINK}"
 fi
 if [ "$*" = 'pr checks' ]; then
     n=$(( $(cat "${GH_CALLS_FILE}.polls" 2>/dev/null || echo 0) + 1 ))
@@ -88,6 +93,7 @@ def env(tmp_path: Path) -> dict[str, str]:
         'GIT_COMMITTER_EMAIL': 't@example.com',
         'GH_CALLS_FILE': str(tmp_path / 'gh_calls'),
         'GIT_SHIP_POLL_SECS': '0',
+        'CHECK_LINK': CHECK_LINK,
     }
 
 
@@ -419,7 +425,7 @@ def test_ship_watches_ci_when_auto_merge_not_allowed(
 
     assert result.returncode == 0, result.stderr
     calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
-    assert calls[-2:] == ['gh pr checks', 'gh pr checks --watch']
+    assert calls[-3:-1] == ['gh pr checks', 'gh pr checks --watch']
     assert 'Auto merge is not allowed' in result.stderr
     assert 'gh pr merge --squash --delete-branch' in result.stderr
 
@@ -546,9 +552,48 @@ def test_ship_no_auto_skips_auto_merge_and_stays_on_branch(
     assert result.returncode == 0, result.stderr
     calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
     assert not [call for call in calls if call.startswith('gh pr merge')]
-    assert calls[-2:] == ['gh pr checks', 'gh pr checks --watch']
+    assert calls[-3:-1] == ['gh pr checks', 'gh pr checks --watch']
     assert current_branch(clone, env) == 'topic'
     assert 'CI green: gh pr merge --squash --delete-branch' in result.stderr
+
+
+@pytest.mark.parametrize(('watch_fails', 'returncode'), [('', 0), ('1', 1)])
+def test_ship_prints_full_check_links_after_watch(
+    clone: Path,
+    env: dict[str, str],
+    watch_fails: str,
+    returncode: int,
+) -> None:
+    ready_to_ship(clone, env)
+    env['GH_WATCH_FAILS'] = watch_fails
+
+    result = git(clone, 'ship', '--no-done', env=env)
+
+    assert result.returncode == returncode, result.stderr
+    assert f'build\n{CHECK_LINK}\n' in result.stdout
+
+
+def test_ship_links_check_names_on_a_terminal(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = subprocess.run(
+        ['script', '-qec', 'git ship --no-done', '/dev/null'],  # noqa: S607
+        cwd=clone,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert calls[-1] == (
+        'gh pr checks --json name,link --template '
+        '{{range .}}{{hyperlink .link .name}}{{"\\n"}}{{end}}'
+    )
 
 
 def test_ship_stays_on_branch_when_ci_fails(
@@ -996,6 +1041,7 @@ def test_ship_stacked_targets_parent_without_auto_merge(
         'gh pr create --base parent --title feat: child --body - feat: child',
         'gh pr checks',
         'gh pr checks --watch',
+        'gh pr checks --json name,link -q .[] | .name + "\\n" + .link',
     ]
     assert current_branch(clone, env) == 'child'
     assert 'once parent merges, run git done' in result.stderr
