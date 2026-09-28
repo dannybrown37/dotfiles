@@ -118,7 +118,22 @@ alias glo='git log -1 --pretty=%B'  # @doc Show last commit message (Git Log One
 alias gss='git stash'  # @doc Git stash save
 alias gsp='git stash pop'  # @doc Git stash pop
 alias gsl='git stash list'  # @doc Git stash list
-alias gp='git push'
+unalias gp 2>/dev/null || true
+gp() { # @doc Git push; if remote is ahead, pull --rebase and push again
+    local err status
+    err=$(mktemp)
+    git push "$@" 2> >(tee "$err" >&2)
+    status=$?
+    wait $!
+    # "fetch first" means the remote has commits we lack; plain "non-fast-forward" means we rewrote history, so leave that alone
+    if [[ $status -ne 0 ]] && grep -q '(fetch first)' "$err"; then
+        echo "gp: remote is ahead, running git pull --rebase" >&2
+        git pull --rebase && git push "$@"
+        status=$?
+    fi
+    rm -f "$err"
+    return "$status"
+}
 alias gpf='git push -f'
 alias gpo='git push -u origin'
 alias gpup='git push -u origin HEAD && git open' # @doc Push new branch and open PR in browser

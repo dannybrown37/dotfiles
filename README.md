@@ -118,6 +118,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
 | `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
+| `gp` | Git push; if remote is ahead, pull --rebase and push again | `config/.bash_aliases` |
 | `grl` | List recent CI runs on current branch | `config/.bash_aliases` |
 | `grw` | Watch CI run for current branch live | grw | `config/.bash_aliases` |
 | `gsl` | Git stash list | `config/.bash_aliases` |
