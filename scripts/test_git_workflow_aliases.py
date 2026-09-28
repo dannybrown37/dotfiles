@@ -19,6 +19,7 @@ EXIT_USAGE = 2
 CHECK_LINK = 'https://github.com/o/r/actions/runs/12345678901/job/34567890123'
 GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
+echo "${GH_TOKEN:-<unset>}" >> "${GH_CALLS_FILE}.tokens"
 if [ "$1 $2" = 'pr view' ] && [ -n "${3:-}" ] && [ "${3#-}" = "$3" ]; then
     [ -n "${GH_PARENT_STATE:-}" ] || exit 1
     echo "${GH_PARENT_STATE}"
@@ -620,6 +621,54 @@ def test_ship_rejects_unknown_argument(
     assert result.returncode == EXIT_USAGE
     assert 'usage: git ship [--no-auto] [--no-done]' in result.stderr
     assert not Path(env['GH_CALLS_FILE']).exists()
+
+
+@pytest.mark.parametrize(
+    ('origin_url', 'expected_token'),
+    [
+        ('https://github.com/o/r.git', 'push-token'),
+        (None, 'work-token'),
+    ],
+)
+def test_ship_runs_gh_with_the_token_git_pushes_with(
+    clone: Path,
+    env: dict[str, str],
+    origin_url: str | None,
+    expected_token: str,
+) -> None:
+    env['GH_TOKEN'] = 'work-token'  # noqa: S105
+    if origin_url:
+        local_origin = git(clone, 'remote', 'get-url', 'origin', env=env)
+        git(
+            clone,
+            'config',
+            f'url.{local_origin.stdout.strip()}.insteadOf',
+            origin_url,
+            env=env,
+        )
+        git(clone, 'remote', 'set-url', 'origin', origin_url, env=env)
+        git(
+            clone,
+            'config',
+            'credential.https://github.com.helper',
+            '',
+            env=env,
+        )
+        git(
+            clone,
+            'config',
+            '--add',
+            'credential.https://github.com.helper',
+            '!f() { echo username=me; echo password=push-token; }; f',
+            env=env,
+        )
+    ready_to_ship(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    tokens = Path(f'{env["GH_CALLS_FILE"]}.tokens').read_text().splitlines()
+    assert set(tokens) == {expected_token}
 
 
 def on_merged_branch(clone: Path, env: dict[str, str]) -> None:
