@@ -36,6 +36,9 @@ if [ "$1 $2" = 'pr view' ]; then
         *) echo "${GH_PR_STATE}" ;;
     esac
 fi
+if [ "$1" = api ]; then
+    echo "${GH_AUTO_MERGE_ALLOWED:-true}"
+fi
 if [ "$1 $2" = 'pr merge' ] && [ -n "${GH_MERGE_FAILS:-}" ]; then
     echo "${GH_MERGE_FAILS}" >&2
     exit 1
@@ -353,6 +356,7 @@ def test_ship_titles_pr_with_top_prefix_and_branch_name(
         .read_text()
         .startswith(
             'gh pr view --json state -q .state\n'
+            'gh api repos/{owner}/{repo} -q .allow_auto_merge\n'
             f'gh pr create --base main --title {title} --body {body}\n'
             'gh pr merge --auto --squash --delete-branch\n'
             'gh pr checks\n'
@@ -414,7 +418,7 @@ def test_ship_reuses_open_pr(
     ]
 
 
-def test_ship_watches_ci_when_auto_merge_not_allowed(
+def test_ship_skips_ci_watch_when_auto_merge_not_allowed(
     clone: Path,
     env: dict[str, str],
 ) -> None:
@@ -426,9 +430,9 @@ def test_ship_watches_ci_when_auto_merge_not_allowed(
 
     assert result.returncode == 0, result.stderr
     calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
-    assert calls[-3:-1] == ['gh pr checks', 'gh pr checks --watch']
+    assert calls[-1] == 'gh pr merge --auto --squash --delete-branch'
     assert 'Auto merge is not allowed' in result.stderr
-    assert 'gh pr merge --squash --delete-branch' in result.stderr
+    assert 'after CI: gh pr merge --squash --delete-branch' in result.stderr
 
 
 def test_ship_refuses_when_pr_already_merged(
@@ -515,7 +519,7 @@ def test_ship_runs_done_after_auto_merge(
         (
             (),
             {'GH_MERGE_FAILS': 'Auto merge is not allowed'},
-            'gh pr merge --squash --delete-branch',
+            'after CI: gh pr merge --squash --delete-branch',
         ),
     ],
     ids=['commits-after-ship', 'never-merged', 'no-done', 'auto-merge-off'],
@@ -541,7 +545,7 @@ def test_ship_stays_on_branch_when_done_is_unsafe(
     'args',
     [('--no-auto',), ('--no-auto', '--no-done'), ('--no-done', '--no-auto')],
 )
-def test_ship_no_auto_skips_auto_merge_and_stays_on_branch(
+def test_ship_no_auto_skips_auto_merge_and_ci_watch(
     clone: Path,
     env: dict[str, str],
     args: tuple[str, ...],
@@ -552,10 +556,11 @@ def test_ship_no_auto_skips_auto_merge_and_stays_on_branch(
 
     assert result.returncode == 0, result.stderr
     calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
-    assert not [call for call in calls if call.startswith('gh pr merge')]
-    assert calls[-3:-1] == ['gh pr checks', 'gh pr checks --watch']
+    assert not [
+        c for c in calls if c.startswith(('gh pr merge', 'gh pr checks'))
+    ]
     assert current_branch(clone, env) == 'topic'
-    assert 'CI green: gh pr merge --squash --delete-branch' in result.stderr
+    assert 'after CI: gh pr merge --squash --delete-branch' in result.stderr
 
 
 @pytest.mark.parametrize(('watch_fails', 'returncode'), [('', 0), ('1', 1)])
@@ -608,6 +613,37 @@ def test_ship_stays_on_branch_when_ci_fails(
 
     assert result.returncode != 0
     assert current_branch(clone, env) == 'topic'
+
+
+WORK_BODY = (
+    '## Why These Changes and What They Are\n\n'
+    '- feat: one\n- fix: two\n\n'
+    '## Evidence of Testing\n\n'
+    '## QA Testing Instructions'
+)
+
+
+@pytest.mark.parametrize(
+    ('auto_merge_allowed', 'body'),
+    [('true', '- feat: one\n- fix: two'), ('false', WORK_BODY)],
+    ids=['auto-merge-on', 'auto-merge-off'],
+)
+def test_ship_pr_body_uses_work_template_without_auto_merge(
+    clone: Path,
+    env: dict[str, str],
+    auto_merge_allowed: str,
+    body: str,
+) -> None:
+    env['GH_AUTO_MERGE_ALLOWED'] = auto_merge_allowed
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: one', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: two', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text()
+    assert f'--title feat: topic --body {body}\n' in calls
 
 
 def test_ship_rejects_unknown_argument(
@@ -1087,10 +1123,8 @@ def test_ship_stacked_targets_parent_without_auto_merge(
     assert Path(env['GH_CALLS_FILE']).read_text().splitlines() == [
         'gh pr view parent --json state -q .state',
         'gh pr view --json state -q .state',
+        'gh api repos/{owner}/{repo} -q .allow_auto_merge',
         'gh pr create --base parent --title feat: child --body - feat: child',
-        'gh pr checks',
-        'gh pr checks --watch',
-        'gh pr checks --json name,link -q .[] | .name + "\\n" + .link',
     ]
     assert current_branch(clone, env) == 'child'
     assert 'once parent merges, run git done' in result.stderr

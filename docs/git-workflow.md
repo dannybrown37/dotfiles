@@ -21,7 +21,9 @@ main ─●─────────────────────┼─
 
 - Committed on `main` by mistake? `git start <topic>` moves the commits.
 - Committed while CI ran? `git rescue <topic>`, then `git ship`.
-- `git ship` skips `git done` on `--no-done`, `--no-auto`, or no merge.
+- No auto-merge (`--no-auto`, repo off, or stacked)? `git ship` skips the CI watch. Merge by hand.
+- Repo without auto-merge? PR body uses the work template (Why/What, Evidence of Testing, QA Testing Instructions).
+- `git ship` skips `git done` on `--no-done`, no auto-merge, or no merge.
 - PR title = top commit prefix + branch: `feat:` + `a-b` -> `feat: a b`.
 - Prefix rank: feat>fix>perf>refactor>revert>build>ci>docs>test>style>chore
 
