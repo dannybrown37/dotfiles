@@ -573,6 +573,29 @@ def test_ship_prints_full_check_links_after_watch(
     assert f'build\n{CHECK_LINK}\n' in result.stdout
 
 
+def test_ship_links_check_names_on_a_terminal(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = subprocess.run(
+        ['script', '-qec', 'git ship --no-done', '/dev/null'],  # noqa: S607
+        cwd=clone,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert calls[-1] == (
+        'gh pr checks --json name,link --template '
+        '{{range .}}{{hyperlink .link .name}}{{"\\n"}}{{end}}'
+    )
+
+
 def test_ship_stays_on_branch_when_ci_fails(
     clone: Path,
     env: dict[str, str],

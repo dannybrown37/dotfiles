@@ -74,10 +74,15 @@ wait_for_checks() {
     done
 }
 
-# gh's watch table cuts links to fit the pane, which breaks them; a full URL
-# on its own line stays clickable.
+# gh's watch table cuts links to fit the pane, which breaks them. gh's
+# hyperlink emits escape codes even when piped, so full URLs off a terminal.
 print_check_links() {
-    gh pr checks --json name,link -q '.[] | .name + "\n" + .link' || true
+    if [[ -t 1 ]]; then
+        gh pr checks --json name,link \
+            --template '{{range .}}{{hyperlink .link .name}}{{"\n"}}{{end}}' || true
+    else
+        gh pr checks --json name,link -q '.[] | .name + "\n" + .link' || true
+    fi
 }
 
 merged_head() {

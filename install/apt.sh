@@ -36,3 +36,15 @@ for package in "${apt_packages[@]}"; do
         sudo apt install -y "${package}"
     fi
 done
+
+## Debian stable's tmux predates 3.4, the first to pass OSC 8 hyperlinks through
+## (git ship's clickable check names), so take it from backports. Ubuntu ships 3.4+.
+if [[ "$(. /etc/os-release && echo "${ID}")" == debian ]]; then
+    backports="$(. /etc/os-release && echo "${VERSION_CODENAME}")-backports"
+    if ! apt-cache policy | grep -q " ${backports}/"; then
+        echo "deb http://deb.debian.org/debian ${backports} main" |
+            sudo tee "/etc/apt/sources.list.d/${backports}.list" >/dev/null
+        sudo apt -y update
+    fi
+    sudo apt install -y -t "${backports}" tmux
+fi
