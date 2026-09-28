@@ -142,7 +142,6 @@ fi
 
 section "GitHub & Auth"
 check "gh" "gh --version | head -1 | awk '{print \$3}'" "sudo apt install gh"
-check "ghstack" "gh extension list | awk -F '\\t' '\$1==\"gh stack\"{print \$3; exit}'" "just git-tools"
 check "gh-dash" "gh extension list | awk -F '\\t' '\$1==\"gh dash\"{print \$3; exit}'" "just git-tools"
 
 GH_AUTH=$(gh auth status 2>&1)
