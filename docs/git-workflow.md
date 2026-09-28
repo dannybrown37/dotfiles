@@ -14,6 +14,7 @@ main ─●─────────────────────┼─
 | Command | What it does |
 |---|---|
 | `git start <topic>` | Pull base, make branch `<topic>` |
+| `gab` | Before ship: fold staged fixes into commits |
 | `git ship` | Push, PR, auto-merge, watch CI, then `git done` |
 | `git done` | Back to base, pull (keeps uncommitted changes) |
 | `git rescue <topic>` | Move commits made after the merge to `<topic>` |

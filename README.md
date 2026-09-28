@@ -98,6 +98,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `eza` | Modern ls replacement with git status and icons | `bin/stubs.sh` |
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
+| `gab` | Fold staged fixes into the commits they belong to | `config/.bash_aliases` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
