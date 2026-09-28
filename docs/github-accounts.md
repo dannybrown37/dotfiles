@@ -22,6 +22,9 @@ Personal repos get their token from `scripts/git-credential-personal.sh`, which 
 `$MY_GITHUB_TOKEN` and falls back to `gh` when unset. No token is stored in the repo — the
 helper only reads the environment. The dotfiles audit verifies the whole wiring.
 
+`gh` itself ignores these helpers, so `git start/ship/rescue/done` export `GH_TOKEN` from
+`git credential fill` for origin — the PR is opened by the same account that pushed.
+
 When a push is refused, run `gitdoctor` in the offending repo. It walks the chain end to end —
 git version, which includes resolved, helper order, whether the token is actually exported into
 git's subprocess environment, what `git credential fill` hands back, and whether the account

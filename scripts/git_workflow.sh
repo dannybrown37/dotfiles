@@ -42,6 +42,19 @@ fail() {
     exit "${code}"
 }
 
+# gh ignores git's per-remote credential helpers, so without this it acts as
+# whichever account gh/GITHUB_TOKEN holds -- not the one git pushes as.
+use_push_token_for_gh() {
+    local url token
+    url="$(git config --get remote.origin.url)" || return 0
+    [[ "${url}" == https://github.com/* ]] || return 0
+    token="$(printf 'url=%s\n\n' "${url}" |
+        GIT_TERMINAL_PROMPT=0 git credential fill 2>/dev/null |
+        sed -n 's/^password=//p')" || return 0
+    [[ -n "${token}" ]] && export GH_TOKEN="${token}"
+    return 0
+}
+
 top_prefix() {
     awk '
         BEGIN {
@@ -347,7 +360,10 @@ main() {
     local cmd="$1"
     shift
     case "${cmd}" in
-    start | ship | rescue | done) BASE="$(base_branch)" ;;
+    start | ship | rescue | done)
+        BASE="$(base_branch)"
+        use_push_token_for_gh
+        ;;
     esac
     case "${cmd}" in
     -h | --help | help) usage ;;
