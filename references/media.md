@@ -27,3 +27,11 @@ Really nuanced takes on AI development and how developers should be using it.
 ## AI Skills with Matt Pocock
 Great overview of AI skills in real engineering contexts.
 [AI Skills with Matt Pocock — The Pragmatic Engineer](https://newsletter.pragmaticengineer.com/p/ai-skills-with-matt-pocock)
+
+## Counting Things in Dynamo
+Jason Hunter runthrough of seven strategies for counting things, accurately and less so.
+[Implement resource counters with Amazon DynamoDB](https://aws.amazon.com/blogs/database/implement-resource-counters-with-amazon-dynamodb/)
+
+## Advanced DynamoDB Data Modeling
+I was at this talk. Great overview going from basic to advanced data modeling.
+[Advanced DynamoDB Data Modeling by Alex DeBrie](https://www.youtube.com/watch?v=PGfyJX8eS48)

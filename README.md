@@ -132,8 +132,8 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
 | `lazygit` | TUI git client | lg (alias) | `bin/stubs.sh` |
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
-| `media` | Open educational media reference | `config/.bash_aliases` |
-| `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
+| `media` | Read educational media in glow (links: refs links media) | `config/.bash_aliases` |
+| `mentalmodels` | Read mental models in glow (links: refs links mental-models) | `config/.bash_aliases` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
 | `mk` | Create a directory and cd into it | `bin/mk.sh` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
@@ -144,6 +144,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `bin/ntfy.sh` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
 | `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
+| `refs` | Read link references in glow (bare: pick one) | refs [links] [media|mental-models] | `config/.bash_aliases` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `selection` | Alt+T - transform selected text (case, JSON, URL) from a keyboard menu; Alt+G - open selection (or clipboard) as URL / Jira key / Google search | `ahk/selection.ahk` |

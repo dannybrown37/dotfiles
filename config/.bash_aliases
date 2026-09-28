@@ -220,6 +220,7 @@ alias tml='tmux ls'
 alias tmconf='tmux source-file ~/.tmux.conf'  # @doc Reload tmux config
 
 # Mental Models
-alias mentalmodels='nvim -c "setlocal wrap linebreak" ~/projects/dotfiles/references/mental-models.md'  # @doc Open mental models reference
-alias media='nvim -c "setlocal wrap linebreak" ~/projects/dotfiles/references/media.md'  # @doc Open educational media reference
+alias refs='"${DOTFILES_DIR}/scripts/refs.sh"'  # @doc Read link references in glow (bare: pick one) | refs [links] [media|mental-models]
+alias mentalmodels='refs mental-models'  # @doc Read mental models in glow (links: refs links mental-models)
+alias media='refs media'  # @doc Read educational media in glow (links: refs links media)
 # alias fixhashicorppublickey='wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg'

@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly EXIT_USAGE=2
+readonly REFS_VERSION="0.3.0"
+readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
+readonly DOTFILES_ROOT="$(dirname "$(dirname "${SELF}")")"
+readonly REFS_DIR="${REFS_DIR:-${DOTFILES_ROOT}/references}"
+
+usage() {
+    cat >&2 <<EOF
+Usage: refs                     Pick a reference, then read it in glow
+       refs <ref>               Read a reference in glow
+       refs links <ref>         Pick a link (enter: open, ctrl-y: copy URL)
+       refs edit <ref>          Open a reference in \$EDITOR
+       refs add <ref> [<title> <description> <url>]
+                                Append an entry (prompts for missing fields)
+       refs files               Print the available <ref> names
+       refs list <ref>          Print "index<TAB>title" per ## entry
+       refs url <ref> <n>       Print the first link URL in entry n
+       refs --version
+
+<ref> is a path to a .md file, or one of: $(list_files | paste -sd ' ')
+EOF
+    exit "${EXIT_USAGE}"
+}
+
+list_files() {
+    local file
+    for file in "${REFS_DIR}"/*.md; do
+        if grep -qE '^\[[^]]*\]\(https?://' "${file}" 2>/dev/null; then
+            basename "${file}" .md
+        fi
+    done
+}
+
+resolve_file() {
+    if [[ -f "$1" ]]; then
+        echo "$1"
+    elif list_files | grep -qxF -- "$1"; then
+        echo "${REFS_DIR}/$1.md"
+    else
+        usage
+    fi
+}
+
+list_entries() {
+    awk '/^## / { n++; printf "%d\t%s\n", n, substr($0, 4) }' "$1"
+}
+
+entry_url() {
+    awk -v want="$2" '/^## / { n++ } n == want' "$1" \
+        | grep -oP '\]\(\Khttps?://[^)]+' | head -n1 || true
+}
+
+copy_to_clipboard() {
+    if command -v clip.exe &>/dev/null; then
+        clip.exe
+    else
+        xclip -selection clipboard
+    fi
+}
+
+open_entry() {
+    local url
+    url="$(entry_url "$1" "$2")"
+    [[ -n "${url}" ]] || return 0
+    # shellcheck source=../bin/browser.sh
+    . "${DOTFILES_ROOT}/bin/browser.sh"
+    open_url_in_browser "${url}" &>/dev/null
+}
+
+add_entry() {
+    local file="$1" title="${2:-}" desc="${3:-}" url="${4:-}"
+    if [[ $# -eq 1 ]]; then
+        [[ -t 0 ]] || usage
+        read -rp 'Title: ' title
+        read -rp 'Description: ' desc
+        read -rp 'URL: ' url
+    fi
+    [[ -n "${title}" && "${url}" =~ ^https?:// ]] || usage
+    printf '\n## %s\n%s\n[%s](%s)\n' "${title}" "${desc}" "${title}" "${url}" >>"${file}"
+    echo "Added \"${title}\" to ${file}"
+}
+
+view() {
+    if [[ -t 1 ]] && command -v glow &>/dev/null; then
+        glow -p "$1"
+    else
+        cat "$1"
+    fi
+}
+
+pick_link() {
+    local file="$1"
+    list_entries "${file}" | fzf \
+        --prompt="$(basename "${file}" .md) links> " \
+        --delimiter=$'\t' --with-nth=2 \
+        --reverse --height=40% \
+        --header='enter: open · ctrl-y: copy URL · esc: quit' \
+        --bind="enter:execute-silent('${SELF}' open '${file}' {1})" \
+        --bind="ctrl-y:execute-silent('${SELF}' url '${file}' {1} | tr -d '\n' | '${SELF}' copy)" \
+        || true
+}
+
+main() {
+    local cmd="${1:-}"
+    case "${cmd}" in
+    --version) echo "refs ${REFS_VERSION}"; return 0 ;;
+    copy) copy_to_clipboard; return 0 ;;
+    files) list_files; return 0 ;;
+    links | list | url | open | edit | add) shift ;;
+    -h | --help) usage ;;
+    "")
+        [[ -t 0 && -t 1 ]] || usage
+        local ref
+        ref="$(list_files | fzf --prompt='refs> ' --reverse --height=40%)" || return 0
+        view "$(resolve_file "${ref}")"
+        echo "Run again with: refs ${ref}"
+        return 0
+        ;;
+    *) [[ $# -eq 1 ]] || usage; cmd=view ;;
+    esac
+
+    local file
+    file="$(resolve_file "${1:-}")"
+    case "${cmd}" in
+    view) view "${file}" ;;
+    list) list_entries "${file}" ;;
+    edit)
+        [[ -t 0 && -t 1 ]] || usage
+        "${EDITOR:-nvim}" "${file}"
+        ;;
+    add)
+        [[ $# -eq 1 || $# -eq 4 ]] || usage
+        add_entry "${file}" "${@:2}"
+        ;;
+    links)
+        [[ -t 0 && -t 1 ]] || usage
+        pick_link "${file}"
+        ;;
+    url | open)
+        [[ "${2:-}" =~ ^[0-9]+$ ]] || usage
+        if [[ "${cmd}" == url ]]; then
+            entry_url "${file}" "$2"
+        else
+            open_entry "${file}" "$2"
+        fi
+        ;;
+    esac
+}
+
+main "$@"
