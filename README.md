@@ -102,6 +102,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
 | `gh-dash` | Terminal GitHub dashboard -- PRs, issues, notifications | gh-dash | `bin/stubs.sh` |
+| `ghautomerge` | Enable auto-merge + auto-delete head branches: ghautomerge [owner/repo] | `bin/ghautomerge.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
 | `ghstack` | GitHub stacked PRs extension (fast passthrough) | ghstack view | `bin/stubs.sh` |
