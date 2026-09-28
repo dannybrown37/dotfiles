@@ -4,7 +4,7 @@ repos:
   # ruff and pytest live in git-a-grip so every repo shares one copy, rather
   # than each keeping its own `bash -c '... && git add "$@"'` wrapper.
   - repo: https://github.com/dannybrown37/git-a-grip
-    rev: v0.14.1
+    rev: v0.15.1
     hooks:
       # git-a-grip only floors commitizen (>=4.0); match the commit-msg hook's rev.
       - id: commitizen-early
