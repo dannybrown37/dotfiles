@@ -83,6 +83,7 @@ alias newdotenv='echo "source .venv/bin/activate" >> .env && echo "echo \"$(base
 # Git
 alias ga='git add'
 alias gaa='git add .'
+alias gab='git absorb --and-rebase' # @doc Fold staged fixes into the commits they belong to
 alias gap='git add -p'
 alias gb='git branch --sort=-committerdate | fzf | xargs git checkout' # @doc Fuzzy-find and checkout a git branch
 alias gc='git commit -m'
