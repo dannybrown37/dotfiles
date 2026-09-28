@@ -4,7 +4,7 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.7.0"
+readonly VERSION="1.8.0"
 
 usage() {
     cat <<'EOF'
@@ -15,7 +15,9 @@ Usage: git <command> [args...]
   git start -s <topic> Stack: make branch <topic> on top of the current branch
   git ship [--no-auto] [--no-done]
                        Push, open a PR, turn on auto-merge, watch CI, then git done
-                       --no-auto: leave auto-merge off, merge by hand after CI
+                       No auto-merge: skip the CI watch, merge by hand after CI
+                       --no-auto: leave auto-merge off
+                       Repo without auto-merge: PR body uses the work template
                        Stacked: the PR targets the parent branch, no auto-merge
   git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
                        Stacked: once the parent merges or moves, rebase onto it and stay
@@ -221,6 +223,22 @@ require_open_parent() {
     [[ "${state}" != MERGED ]] || fail "${EXIT_USAGE}" "${parent} already merged: run git done first"
 }
 
+repo_allows_auto_merge() {
+    [[ "$(gh api 'repos/{owner}/{repo}' -q .allow_auto_merge 2>/dev/null)" != false ]]
+}
+
+pr_body() {
+    local since="$1" commits
+    commits="$(git log --reverse --format='- %s' "${since}..HEAD")"
+    if repo_allows_auto_merge; then
+        echo "${commits}"
+        return
+    fi
+    printf '%s\n\n%s\n\n%s\n\n%s\n' \
+        '## Why These Changes and What They Are' "${commits}" \
+        '## Evidence of Testing' '## QA Testing Instructions'
+}
+
 cmd_ship() {
     local arg branch parent since prefix state auto=1 run_done=1 ci=0
     for arg in "$@"; do
@@ -248,25 +266,21 @@ cmd_ship() {
         gh pr create \
             --base "${parent:-${BASE}}" \
             --title "${prefix}: $(tr '_-' '  ' <<<"${branch}")" \
-            --body "$(git log --reverse --format='- %s' "${since}..HEAD")"
+            --body "$(pr_body "${since}")"
     fi
     if [[ -n "${parent}" ]]; then
-        auto=0
-    elif [[ "${auto}" == 1 ]] && ! gh pr merge --auto --squash --delete-branch; then
-        auto=0
-        echo 'auto-merge is off: watching CI, then merge by hand' >&2
+        echo "stacked PR: once ${parent} merges, run git done here" >&2
+        return
+    fi
+    if [[ "${auto}" == 0 ]] || ! gh pr merge --auto --squash --delete-branch; then
+        echo 'auto-merge is off: after CI: gh pr merge --squash --delete-branch' >&2
+        return
     fi
     wait_for_checks
     gh pr checks --watch || ci=$?
     print_check_links
     [[ "${ci}" == 0 ]] || exit "${ci}"
-    if [[ -n "${parent}" ]]; then
-        echo "CI green: once ${parent} merges, run git done here" >&2
-    elif [[ "${auto}" == 0 ]]; then
-        echo 'CI green: gh pr merge --squash --delete-branch' >&2
-    elif [[ "${run_done}" == 1 ]]; then
-        done_after_merge
-    fi
+    [[ "${run_done}" == 0 ]] || done_after_merge
 }
 
 cmd_rescue() {
