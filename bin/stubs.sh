@@ -14,7 +14,6 @@ fd() { command fdfind "$@"; }           # @doc Fast find that respects .gitignor
 fzf() { command fzf "$@"; }             # @doc Interactive fuzzy finder for any list
 gh() { command gh "$@"; }                  # @doc GitHub CLI -- PRs, issues, workflows, and more
 gh-dash() { command gh dash "$@"; }           # @doc Terminal GitHub dashboard -- PRs, issues, notifications | gh-dash
-ghstack() { command gh stack "$@"; }       # @doc GitHub stacked PRs extension (fast passthrough) | ghstack view
 git-absorb() { command git-absorb "$@"; } # @doc Auto-fixup commits by matching hunks to the right commit | git-absorb
 git-open() { command git-open "$@"; }   # @doc Open current repo/branch in browser | git-open [remote] [branch]
 glow() { command glow "$@"; }           # @doc Render markdown in the terminal | glow <file>
