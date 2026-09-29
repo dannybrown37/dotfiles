@@ -3,6 +3,7 @@
 alias awsconfig='nvim ~/.aws/config'  # @doc Edit AWS config file in Neovim
 alias bl='backlog'  # @doc Alias for backlog command from skill-tree
 alias cb='tee >(~/projects/dotfiles/scripts/tmux-copy-to-clipboard.sh)' # @doc Copy stdin to clipboard. <command> | cb
+alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 alias du='du -h | sort -h'  # @doc Disk usage sorted and human-readable
 alias pcb='~/projects/dotfiles/scripts/tmux-paste-from-clipboard.sh' # @doc Print clipboard contents
 alias shot='screenshot'  # @doc Alias for screenshot
@@ -16,9 +17,12 @@ vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
     )
     [[ ${#files[@]} -gt 0 ]] && nvim "${files[@]}"
 }
+
+alias praf='pre-commit run --all-files'
+
 alias lg='lazygit'  # @doc Open lazygit TUI
-alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 alias gitdoctor='~/projects/dotfiles/scripts/git_auth_doctor.sh'  # @doc Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir]
+
 alias screenshot='~/projects/dotfiles/scripts/screenshot.sh'  # @doc Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest]
 mystats() { # @doc Top commands I typed, excluding Claude Code's atuin entries | mystats [count]
     atuin history list --format "{author}\t{command}" \
@@ -27,11 +31,6 @@ mystats() { # @doc Top commands I typed, excluding Claude Code's atuin entries |
 }
 alias song='spotify_copy_playing_link'  # @doc Copy the Spotify link for the currently playing track: song
 alias sorn='spotify_now_playing_markdown'  # @doc Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn
-
-# Tools I'm trying out
-
-alias cinrec='asciinema rec session.cast'  # @doc Record terminal session to session.cast
-alias cinplay='asciinema play session.cast'  # @doc Replay session.cast recording
 
 # Cargo package aliases
 
