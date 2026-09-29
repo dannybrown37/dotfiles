@@ -79,8 +79,6 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `chrome` | Alt+C in Chrome - copy the current tab as a markdown link, tracking params stripped | `ahk/chrome.ahk` |
 | `chrome` | Google Chrome browser | chrome <url> | `bin/stubs.sh` |
 | `cht` | Query cht.sh for info on many technologies | `bin/chtsh.sh` |
-| `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
-| `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
 | `claude` | Claude Code coding agent | claude | `bin/stubs.sh` |
 | `clip` | Copy a screen recording to OneDrive with fzf selection: clip [--reset] | `bin/clip.sh` |
 | `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
