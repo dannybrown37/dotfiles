@@ -129,10 +129,13 @@ load_entry() {
     pass show "${name}" >"${tmp}"
     if [[ -f "${file}" ]] && ! cmp -s "${tmp}" "${file}"; then
         cp "${file}" "${file}.bak"
+        chmod 600 "${file}.bak"
     fi
     mkdir -p "$(dirname "${file}")"
 
+    # cp keeps an existing file's mode, so a 644 copy would stay world-readable.
     cp "${tmp}" "${file}"
+    chmod 600 "${file}"
     echo "  loaded $2"
 }
 
