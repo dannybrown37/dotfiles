@@ -55,6 +55,7 @@ if [[ ! -d "${HOME}/.tmux/plugins/tpm" ]]; then
 else
     echo "tmux plugin manager is already installed on this system"
 fi
+"${HOME}/.tmux/plugins/tpm/bin/install_plugins"
 
 ##
 ## gh-dash, a gh extension rather than a standalone binary. `gh extension
