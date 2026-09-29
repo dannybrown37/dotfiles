@@ -52,15 +52,21 @@ jobs:
         extra: ${{ fromJSON(needs.list.outputs.extras) }}
     name: ${{ matrix.extra.name }}
     steps:
-      - name: Install what bootstrap would have
-        run: |
-          apt-get update -qq
-          apt-get install -y -qq sudo curl git ca-certificates unzip jq gh xz-utils >/dev/null
-          printf '%s\n' "${HOME}/.local/bin" "${HOME}/.deno/bin" /usr/games >> "$GITHUB_PATH"
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+
+      # The real apt list, not a hand-picked subset: chrome.sh needed wget,
+      # which bootstrap installs and a guessed list left out.
+      - name: Install what bootstrap would have
+        run: |
+          source install/apt_packages.sh
+          apt-get update -qq
+          apt-get install -y -qq sudo xz-utils "${apt_packages[@]}" >/dev/null
+          printf '%s\n' "${HOME}/.local/bin" "${HOME}/.deno/bin" /usr/games >> "$GITHUB_PATH"
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
 
       - name: Install ${{ matrix.extra.name }}
         run: bash "install/extras/${EXTRA}.sh"
