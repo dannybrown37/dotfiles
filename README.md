@@ -95,6 +95,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
 | `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `bin/timestamps.sh` |
 | `eza` | Modern ls replacement with git status and icons | `bin/stubs.sh` |
+| `fastfetch` | System info summary (neofetch successor) | fastfetch | `bin/stubs.sh` |
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
 | `gab` | Fold staged fixes into the commits they belong to | `config/.bash_aliases` |
