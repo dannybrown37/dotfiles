@@ -5,11 +5,11 @@ set -euo pipefail
 if command -v google-chrome >/dev/null 2>&1; then
     echo "Google Chrome is already installed on this system"
 else
-    tmp_deb=$(mktemp --suffix=.deb)
-    wget -qO "${tmp_deb}" \
+    tmp_dir=$(mktemp -d)
+    trap 'rm -rf "${tmp_dir}"' EXIT
+    curl -fsSLo "${tmp_dir}/chrome.deb" \
         https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-    sudo dpkg -i "${tmp_deb}"
-    # Chrome's .deb declares deps dpkg will not resolve on its own
-    sudo apt-get -y install -f
-    rm "${tmp_deb}"
+    # apt, not dpkg -i: the .deb declares deps dpkg won't fetch, and dpkg's
+    # failure on them stopped the script before any `apt-get -f` could run.
+    sudo apt-get install -y "${tmp_dir}/chrome.deb"
 fi
