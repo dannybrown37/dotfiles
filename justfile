@@ -31,9 +31,6 @@ python:
 node:
     bash -c ". {{root_dir}}/install/node.sh"
 
-deno:
-    bash -c ". {{root_dir}}/install/deno.sh"
-
 golang:
     bash -c ". {{root_dir}}/install/golang.sh"
 
@@ -46,18 +43,6 @@ nvim:
 _lazygit:
     bash -c ". {{root_dir}}/install/lazygit.sh"
 
-_cartoon:
-    bash -c ". {{root_dir}}/install/cartoon.sh"
-
-spotify:
-    bash -c ". {{root_dir}}/install/spotify.sh"
-
-terraform:
-    bash -c ". {{root_dir}}/install/terraform.sh"
-
-rust-tools:
-    bash -c ". {{root_dir}}/install/rust-tools.sh"
-
 gnome:
     bash -c ". {{root_dir}}/install/gnome.sh"
 
@@ -67,7 +52,7 @@ _select-nerdfont:
 _wsl-fonts:
     bash -c ". {{root_dir}}/install/wsl-fonts.sh"
 
-komo:
+_komo:
     powershell.exe -ExecutionPolicy Bypass -File "{{root_dir}}/install/komo.ps1"
 
 _win-dev:
@@ -85,8 +70,7 @@ _gtd:
 _git-a-grip:
     bash -c ". {{root_dir}}/install/git-a-grip.sh"
 
-## @just 30 Developer Tools | Install git workflow tools (lazygit, git-absorb, gh-dash)
-git-tools: _lazygit
+_git-tools: _lazygit
     bash -c ". {{root_dir}}/install/git-absorb.sh"
     bash -c ". {{root_dir}}/install/gh-dash.sh"
 
@@ -95,7 +79,11 @@ git-tools: _lazygit
 # assumes, and rust delivers the cargo that cli-tools needs for eza.
 
 ## @just 10 Start Here | Full machine setup (apt, rust, bash, cli-tools, chrome, git-tools, password-store)
-bootstrap: _apt rust _bash _cli-tools _chrome git-tools _password-store
+bootstrap: _apt rust _bash _cli-tools _chrome _git-tools _password-store
+
+## @just 11 Start Here | Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
+extras *names:
+    @bash "{{root_dir}}/scripts/extras.sh" {{names}}
 
 # CI-safe subset: no bash/chrome/password-store (needs GPG), no symlinks (needs $HOME layout)
 _ci: _apt rust symlinks _cli-tools _lazygit
@@ -104,9 +92,6 @@ _ci: _apt rust symlinks _cli-tools _lazygit
 vscode:
     bash -c ". {{root_dir}}/.vscode/vsc_extensions.sh"
     bash -c ". {{root_dir}}/.vscode/sync_vsc_settings.sh"
-
-## @just 33 Developer Tools | Install AI coding tools (cartoon)
-ai: _cartoon
 
 ## @just 50 Secrets (requires GPG keys) | Save local secrets to password-store, push to private repo
 secrets-save:

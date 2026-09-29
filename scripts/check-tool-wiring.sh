@@ -9,11 +9,12 @@
 ## --no-stub      for language runtimes and action-only just recipes that
 ##                deliberately have no passthrough stub
 ##
-## Tools arrive three ways, and they need different wiring:
+## Tools arrive four ways, and they need different wiring:
 ##   dedicated  install/<tool>.sh carrying a '## @just' header
+##   extra      install/extras/<tool>.sh carrying a '## @extra' header
 ##   apt        listed in install/apt_packages.sh, no target of its own
 ##   bundled    built by a shared script (eza via install/cli-tools.sh)
-## All three still need a stub in bin/stubs.sh and audit coverage.
+## All four still need a stub in bin/stubs.sh and audit coverage.
 ##
 
 set -euo pipefail
@@ -85,6 +86,7 @@ readonly stubs="${root}/bin/stubs.sh"
 readonly audit="${root}/scripts/dotfiles_audit.sh"
 readonly apt_list="${root}/install/apt_packages.sh"
 readonly install_script="${root}/install/${tool}.sh"
+readonly extra_script="${root}/install/extras/${tool}.sh"
 
 # The apt package name often differs from the command (fd-find -> fd), so
 # callers pass it explicitly rather than us guessing.
@@ -115,6 +117,8 @@ bundled_by=""
 
 if [[ -f "${install_script}" ]]; then
     mode="dedicated"
+elif [[ -f "${extra_script}" ]]; then
+    mode="extra"
 elif in_apt_list; then
     mode="apt"
 elif bundled_by="$(find_bundling_script)"; then
@@ -130,6 +134,9 @@ echo ""
 case "${mode}" in
 dedicated)
     pass "install path" "install/${tool}.sh"
+    ;;
+extra)
+    pass "install path" "install/extras/${tool}.sh"
     ;;
 apt)
     pass "install path" "apt_packages.sh (${apt_name})"
@@ -147,7 +154,14 @@ esac
 # the recipe from it, the help script renders it, and the
 # embed-command hook copies that help into the README. A dedicated install
 # script without one is invisible to all four.
-if [[ "${mode}" != "dedicated" ]]; then
+if [[ "${mode}" == "extra" ]]; then
+    if grep -qE '^## @extra [^ ]+ \| ' "${extra_script}"; then
+        pass "@extra header" "registered"
+    else
+        fail "@extra header" \
+            "add '## @extra <binary> | <desc>' to install/extras/${tool}.sh"
+    fi
+elif [[ "${mode}" != "dedicated" ]]; then
     skip "@just header" "installed without a dedicated target"
 elif grep -q '^## @just ' "${install_script}"; then
     pass "@just header" "registered"
@@ -164,9 +178,11 @@ else
     fail "stubs.sh stub" "add '${tool}() { command ${tool} \"\$@\"; }'"
 fi
 
-# apt packages are audited in bulk by iterating apt_packages.sh, so being on
-# that list already counts as coverage.
-if in_apt_list; then
+# apt packages and extras are audited in bulk by iterating their lists, so
+# being on one already counts as coverage.
+if [[ "${mode}" == "extra" ]]; then
+    pass "audit entry" "covered via extras.sh --list"
+elif in_apt_list; then
     pass "audit entry" "covered via apt_packages.sh"
 elif [[ -f "${audit}" ]] && grep -qE "(check|check_apt)[[:space:]]+\"?${tool}\"?" "${audit}"; then
     pass "audit entry" "explicit check"

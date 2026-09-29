@@ -47,9 +47,9 @@ justfile_headers() {
     awk "${parse_header}"'
         /^## @just / { meta = substr($0, 10); next }
         meta != "" {
-            if ($0 ~ /^[a-zA-Z0-9_-]+:/) {
+            if ($0 ~ /^[a-zA-Z0-9_-]+( [^:]*)?:/) {
                 name = $0
-                sub(/:.*/, "", name)
+                sub(/[ :].*/, "", name)
                 emit(meta, name)
             }
             meta = ""

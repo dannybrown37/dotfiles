@@ -21,28 +21,22 @@ Usage: just [option]
 
 Start Here:
   bootstrap       Full machine setup (apt, rust, bash, cli-tools, chrome, git-tools, password-store)
+  extras          Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
   symlinks        Symlink every tracked config into $HOME (idempotent, no network)
 
 Languages & Runtimes:
   python          Install Python environment (uv, select uv tools)
   node            Install Node.js environment (n, Node 22, select global packages)
-  deno            Install Deno 2
   golang          Install Go environment (latest Golang version)
   rust            Install the Rust toolchain (rustup, latest stable)
 
 Developer Tools:
-  git-tools       Install git workflow tools (lazygit, git-absorb, gh-dash)
   nvim            Install Neovim
   vscode          Install VS Code extensions and settings
-  ai              Install AI coding tools (cartoon)
-  rust-tools      Install optional cargo utilities (htmlq, jless, difftastic, mprocs)
-  terraform       Install Terraform (latest release)
-  spotify         Install spotify_player TUI (remote control, no audio)
 
 Environment-Specific:
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
   windows         Install Windows-side tooling (win-dev, win32yank)
-  komo            Reset komorebi/whkd: install if needed, clear phantom windows, restart
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
@@ -56,6 +50,7 @@ Verification:
   test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
+  bench-shell     Benchmark interactive shell startup time (10 runs default, pass N to override)
 ```
 
 <!-- make:end -->
@@ -85,10 +80,14 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `cht` | Query cht.sh for info on many technologies | `bin/chtsh.sh` |
 | `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
 | `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
+| `claude` | Claude Code coding agent | claude | `bin/stubs.sh` |
 | `clip` | Copy a screen recording to OneDrive with fzf selection: clip [--reset] | `bin/clip.sh` |
 | `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
+| `copilot` | GitHub Copilot CLI coding agent | copilot | `bin/stubs.sh` |
 | `croc` | Send files between machines securely | croc send <file> | `bin/stubs.sh` |
 | `delta` | Syntax-highlighting pager for git diffs (replaces less) | `bin/stubs.sh` |
+| `deno` | Deno JavaScript/TypeScript runtime | deno run <file> | `bin/stubs.sh` |
+| `difftastic` | Diff that understands syntax | difft <old> <new> | `bin/stubs.sh` |
 | `docker-doctor` | Diagnose why the docker CLI can't reach a daemon under WSL | docker-doctor | `bin/docker.sh` |
 | `docker-up` | Start Docker Desktop from WSL and block until the daemon answers | docker-up [timeout_seconds] | `bin/docker.sh` |
 | `docker` | Containers -- via Docker Desktop on the Windows host | docker-up to start it | `bin/stubs.sh` |
@@ -126,7 +125,9 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gsp` | Git stash pop | `config/.bash_aliases` |
 | `gss` | Git stash save | `config/.bash_aliases` |
 | `gwt` | git-worktree: gwt <add|list|rm|cd> [branch] [options] | `bin/gwt.sh` |
+| `htmlq` | jq for HTML | htmlq <selector> < page.html | `bin/stubs.sh` |
 | `hyperfine` | Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2' | `bin/stubs.sh` |
+| `jless` | Pager for JSON | jless <file.json> | `bin/stubs.sh` |
 | `just` | Command runner (modern Make alternative) | just <recipe> | `bin/stubs.sh` |
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
 | `lazygit` | TUI git client | lg (alias) | `bin/stubs.sh` |
@@ -135,6 +136,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `mentalmodels` | Read mental models in glow (links: refs links mental-models) | `config/.bash_aliases` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
 | `mk` | Create a directory and cd into it | `bin/mk.sh` |
+| `mprocs` | Run several commands side by side | mprocs 'cmd1' 'cmd2' | `bin/stubs.sh` |
 | `mystats` | Top commands I typed, excluding Claude Code's atuin entries | mystats [count] | `config/.bash_aliases` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |

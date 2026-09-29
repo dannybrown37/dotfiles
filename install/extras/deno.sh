@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
+## @extra deno | Deno 2 JavaScript/TypeScript runtime
 set -euo pipefail
-## @just 22 Languages & Runtimes | Install Deno 2
 
 curl -fsSL https://deno.land/install.sh | sh
