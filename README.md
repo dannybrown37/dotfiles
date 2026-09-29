@@ -113,9 +113,8 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
-| `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
 | `gitwf` | Show the git workflow cheat sheet (git start / ship / done) | `config/.bash_aliases` |
-| `git_workflow` | Backs the git start/ship/rescue/done aliases in config/.gitconfig | git_workflow.sh help | `scripts/git_workflow.sh` |
+| `git_workflow` | Backs the git start/ship/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help | `scripts/git_workflow.sh` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |
 | `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |

@@ -48,6 +48,7 @@
     ship = "!\"${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh\" ship"
     rescue = "!\"${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh\" rescue"
     done = "!\"${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh\" done"
+    purge = "!\"${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh\" purge"
 [column]
     ui = auto
 [help]

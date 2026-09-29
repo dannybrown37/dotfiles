@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# @doc Backs the git start/ship/rescue/done aliases in config/.gitconfig | git_workflow.sh help
+# @doc Backs the git start/ship/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help
 
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.8.1"
+readonly VERSION="1.9.0"
 
 usage() {
     cat <<'EOF'
@@ -22,6 +22,10 @@ Usage: git <command> [args...]
   git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
                        Stacked: once the parent merges or moves, rebase onto it and stay
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
+  git purge [--all] [-y]
+                       Delete local branches whose origin branch is gone (merged PRs)
+                       --all: every branch but the base, main/master/develop, and worktrees; asks first
+                       -y: with --all, don't ask
 
 The base branch is origin's default branch (main, master, develop, ...).
 See docs/git-workflow.md.
@@ -381,6 +385,41 @@ cmd_done() {
     [[ -z "${dirty}" ]] || echo "carried uncommitted changes to ${BASE}: git start <topic> to keep working" >&2
 }
 
+purgeable() {
+    local all="$1" branch track worktree
+    while IFS='|' read -r branch track worktree; do
+        case "${branch}" in
+        "${BASE}" | main | master | develop) continue ;;
+        esac
+        [[ -z "${worktree}" ]] || continue
+        [[ "${all}" == 1 || "${track}" == '[gone]' ]] && echo "${branch}"
+    done < <(git for-each-ref --format='%(refname:short)|%(upstream:track)|%(worktreepath)' refs/heads)
+    return 0
+}
+
+cmd_purge() {
+    local arg all=0 yes=0 answer branches
+    for arg in "$@"; do
+        case "${arg}" in
+        --all) all=1 ;;
+        -y | --yes) yes=1 ;;
+        *) fail "${EXIT_USAGE}" 'usage: git purge [--all] [-y]' ;;
+        esac
+    done
+    git fetch --prune --quiet origin
+    branches="$(purgeable "${all}")"
+    if [[ -z "${branches}" ]]; then
+        echo 'nothing to purge' >&2
+        return
+    fi
+    if [[ "${all}" == 1 && "${yes}" == 0 ]]; then
+        echo "${branches}" >&2
+        read -r -p "delete $(wc -l <<<"${branches}") branches, merged or not? [y/N] " answer || true
+        [[ "${answer}" == [yY] ]] || fail 1 'nothing deleted'
+    fi
+    xargs git branch -D <<<"${branches}"
+}
+
 main() {
     if [[ $# -eq 0 ]]; then
         usage >&2
@@ -390,6 +429,7 @@ main() {
     local cmd="$1"
     shift
     case "${cmd}" in
+    purge) BASE="$(base_branch)" ;;
     start | ship | rescue | done)
         BASE="$(base_branch)"
         use_push_token_for_gh
@@ -402,6 +442,7 @@ main() {
     ship) cmd_ship "$@" ;;
     rescue) cmd_rescue "$@" ;;
     done) cmd_done "$@" ;;
+    purge) cmd_purge "$@" ;;
     *)
         echo "unknown command: ${cmd}" >&2
         usage >&2

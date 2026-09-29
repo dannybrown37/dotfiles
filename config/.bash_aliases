@@ -105,17 +105,6 @@ __git_complete gcb _git_checkout
 alias gcr='git commit --amend --no-edit'
 alias gcuemail='git config --global user.email "dannybrown37@gmail.com"'
 alias gcuname='git config --global user.name "Danny Brown"'
-unalias gitpurge 2>/dev/null
-gitpurge() {  # @doc Delete all local branches except main, develop, and the current branch
-    local current
-    current=$(git rev-parse --abbrev-ref HEAD)
-    git branch | sed 's/^[*+ ]*//' | while IFS= read -r branch; do
-        case "$branch" in
-            main|develop|bonfire|"$current") ;;
-            *) git branch -D "$branch" ;;
-        esac
-    done
-}
 alias gl='git log'
 alias glog='git log --oneline --graph --decorate --all'  # @doc Graph log of all branches
 alias gitlines='git ls-files | xargs wc -l'  # @doc Count lines of code in all files from curren branch
