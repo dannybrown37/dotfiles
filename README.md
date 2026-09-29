@@ -135,6 +135,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `mentalmodels` | Read mental models in glow (links: refs links mental-models) | `config/.bash_aliases` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
 | `mk` | Create a directory and cd into it | `bin/mk.sh` |
+| `mystats` | Top commands I typed, excluding Claude Code's atuin entries | mystats [count] | `config/.bash_aliases` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
