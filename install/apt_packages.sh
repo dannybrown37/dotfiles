@@ -6,22 +6,16 @@
 ## Sourced by install/apt.sh (to install) and scripts/dotfiles_audit.sh (to check).
 ##
 apt_packages=(
-    asciinema
     bash-completion
     bat
-    chafa
-    cowsay
     curl
-    faker
     fd-find
     fzf
     git
     gh
-    httpie
     jq
     make
     man-db
-    lolcat
     openssh-server
     pass
     pipx
@@ -29,7 +23,6 @@ apt_packages=(
     ripgrep
     shellcheck
     shfmt
-    tldr
     tmux
     unzip
     wget

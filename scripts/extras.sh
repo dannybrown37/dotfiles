@@ -39,11 +39,19 @@ extras() {
     ' "${extras_dir}"/*.sh
 }
 
+# gh extensions live under gh's data dir, not PATH, so ask gh for gh-* binaries
+installed() {
+    local binary=$1
+    command -v "${binary}" &>/dev/null && return 0
+    [[ "${binary}" == gh-* ]] || return 1
+    gh extension list 2>/dev/null | cut -f1 | grep -qxF "gh ${binary#gh-}"
+}
+
 list() {
     local name binary desc mark
     while IFS=$'\t' read -r name binary desc; do
         mark="·"
-        command -v "${binary}" &>/dev/null && mark="✓"
+        installed "${binary}" && mark="✓"
         printf "%s %-12s %s\n" "${mark}" "${name}" "${desc}"
     done < <(extras)
 }

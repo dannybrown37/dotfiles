@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## Install gh-dash (terminal GitHub dashboard)
+## @extra gh-dash | Terminal GitHub dashboard (gh extension)
 
 set -euo pipefail
 
