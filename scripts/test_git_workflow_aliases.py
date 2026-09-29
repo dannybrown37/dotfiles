@@ -169,7 +169,7 @@ def test_script_prints_usage(
 def test_gitconfig_aliases_only_delegate_to_script() -> None:
     lines = GITCONFIG.read_text().splitlines()
     script = '${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh'
-    for name in ('start', 'ship', 'rescue', 'done'):
+    for name in ('start', 'ship', 'rescue', 'done', 'purge'):
         assert f'    {name} = "!\\"{script}\\" {name}"' in lines
 
 
@@ -1295,3 +1295,91 @@ def test_done_stacked_waits_for_unmerged_unmoved_parent(
     assert result.returncode == 0, result.stderr
     assert 'parent not merged yet' in result.stderr
     assert (current_branch(clone, env), head(clone, env)) == ('child', before)
+
+
+ALL = frozenset({'main', 'merged', 'open', 'local', 'tree', 'develop'})
+
+
+def branches(clone: Path, env: dict[str, str]) -> set[str]:
+    out = git(clone, 'branch', '--format=%(refname:short)', env=env).stdout
+    return set(out.split())
+
+
+@pytest.fixture
+def purge_clone(clone: Path, env: dict[str, str]) -> Path:
+    """Branches covering every purge case; ends on `open`.
+
+    merged: deleted on origin. open: on origin. local: never pushed.
+    tree: in a worktree. develop: protected.
+    """
+    for name in ('merged', 'open', 'local', 'tree', 'develop'):
+        git(clone, 'branch', name, env=env)
+    for name in ('merged', 'open', 'tree'):
+        git(clone, 'push', '-u', 'origin', name, env=env)
+    seed = clone.parent / 'seed'
+    git(seed, 'push', 'origin', '--delete', 'merged', 'tree', env=env)
+    git(clone, 'worktree', 'add', str(clone.parent / 'wt'), 'tree', env=env)
+    git(clone, 'switch', 'open', env=env)
+    return clone
+
+
+def run_purge(
+    clone: Path,
+    env: dict[str, str],
+    *args: str,
+    answer: str = '',
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        ['git', 'purge', *args],  # noqa: S607
+        cwd=clone,
+        env=env,
+        input=answer,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize(
+    ('args', 'answer', 'returncode', 'deleted'),
+    [
+        ([], '', 0, {'merged'}),
+        (['--all'], 'y\n', 0, {'merged', 'local'}),
+        (['--all', '-y'], '', 0, {'merged', 'local'}),
+        (['--all'], 'n\n', 1, set()),
+        (['--all'], '', 1, set()),
+    ],
+)
+def test_purge_deletes_only_what_it_should(
+    purge_clone: Path,
+    env: dict[str, str],
+    *,
+    args: list[str],
+    answer: str,
+    returncode: int,
+    deleted: set[str],
+) -> None:
+    result = run_purge(purge_clone, env, *args, answer=answer)
+
+    assert result.returncode == returncode, result.stderr
+    assert branches(purge_clone, env) == ALL - deleted
+
+
+def test_purge_with_nothing_gone_says_so(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    result = run_purge(clone, env)
+
+    assert result.returncode == 0, result.stderr
+    assert 'nothing to purge' in result.stderr
+
+
+def test_purge_rejects_unknown_argument(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    result = run_purge(clone, env, '--bogus')
+
+    assert result.returncode == EXIT_USAGE
+    assert 'usage: git purge' in result.stderr

@@ -18,6 +18,7 @@ main ─●─────────────────────┼─
 | `git ship` | Push, PR, auto-merge, watch CI, then `git done` |
 | `git done` | Back to base, pull (keeps uncommitted changes) |
 | `git rescue <topic>` | Move commits made after the merge to `<topic>` |
+| `git purge` | Delete local branches whose origin branch is gone. `--all`: every branch but base/main/master/develop and worktrees (asks) |
 
 - Committed on `main` by mistake? `git start <topic>` moves the commits.
 - Committed while CI ran? `git rescue <topic>`, then `git ship`.
