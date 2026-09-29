@@ -1,4 +1,5 @@
-## @just 42 Environment-Specific | Reset komorebi/whkd: install if needed, clear phantom windows, restart
+# Reset komorebi/whkd: install if needed, clear phantom windows, restart.
+# Hidden recipe `just _komo`; run it via the `komo` alias in config/.bash_aliases.
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
 if (-not (Get-Command komorebic -ErrorAction SilentlyContinue)) {

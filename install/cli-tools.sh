@@ -39,49 +39,6 @@ for cargo_tool in eza just; do
 done
 
 ##
-## Install tokei (code stats) -- v12 is last release with pre-built binaries
-##
-
-if ! command -v tokei &>/dev/null; then
-    tmp_dir=$(mktemp -d)
-    curl -sLo "${tmp_dir}/tokei.tar.gz" \
-        "https://github.com/XAMPPRocky/tokei/releases/download/v${TOKEI_VERSION}/tokei-x86_64-unknown-linux-gnu.tar.gz"
-    tar -xf "${tmp_dir}/tokei.tar.gz" -C "${tmp_dir}"
-    sudo install "${tmp_dir}/tokei" /usr/local/bin/tokei
-    rm -rf "${tmp_dir}"
-else
-    echo "tokei is already installed on this system"
-fi
-
-##
-## Install hyperfine (benchmarking tool)
-##
-
-if ! command -v hyperfine &>/dev/null; then
-    tmp_deb=$(mktemp --suffix=.deb)
-    curl -sLo "${tmp_deb}" \
-        "https://github.com/sharkdp/hyperfine/releases/download/v${HYPERFINE_VERSION}/hyperfine_${HYPERFINE_VERSION}_amd64.deb"
-    sudo dpkg -i "${tmp_deb}"
-    rm "${tmp_deb}"
-else
-    echo "hyperfine is already installed on this system"
-fi
-
-##
-## Install glow (markdown renderer)
-##
-
-if ! command -v glow &>/dev/null; then
-    tmp_deb=$(mktemp --suffix=.deb)
-    curl -sLo "${tmp_deb}" \
-        "https://github.com/charmbracelet/glow/releases/download/v${GLOW_VERSION}/glow_${GLOW_VERSION}_amd64.deb"
-    sudo dpkg -i "${tmp_deb}"
-    rm "${tmp_deb}"
-else
-    echo "glow is already installed on this system"
-fi
-
-##
 ## Install zoxide, per creator, Debian/Ubuntu have old versions in apt
 ## https://github.com/ajeetdsouza/zoxide/issues/694#issuecomment-1946069618
 ##
@@ -104,14 +61,4 @@ if ! command -v delta &>/dev/null; then
     rm "${tmp_deb}"
 else
     echo "delta already installed: $(delta --version)"
-fi
-
-##
-## Install croc file sharing tool
-##
-
-if [[ ! -f "${HOME}/.local/bin/croc" ]]; then
-    curl https://getcroc.schollz.com | bash
-else
-    echo "croc is already installed on this system"
 fi

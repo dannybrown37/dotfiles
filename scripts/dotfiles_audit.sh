@@ -117,18 +117,12 @@ fi
 section "Core CLI Tools"
 check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: just _cli-tools)"
 check "just"       "just --version | awk '{print \$2}'"                             "cargo install just  (or: just _cli-tools)"
-check "tokei"      "tokei --version | awk '{print \$2}'"                    "just _cli-tools"
-check "hyperfine"  "hyperfine --version | awk '{print \$2}'"                "just _cli-tools"
-check "glow"       "glow --version | awk '{print \$3}'"                     "just _cli-tools"
 check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "just _cli-tools  (installs to ~/.local/bin)"
 check "delta"      "delta --version | awk '{print \$2}'"                    "just _cli-tools"
 check "atuin"      "atuin --version | awk '{print \$2}'"                    "just _bash"
-check "croc"       "croc --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'" "just _cli-tools  (installs to ~/.local/bin)"
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "just _wsl-fonts"
-check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "just git-tools"
+check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "just _git-tools"
 check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "just nvim"
-check "cartoon"    "cartoon --version | awk '{print \$2}'"                  "just ai"
-check "terraform"  "terraform version -json | jq -r '.terraform_version'"   "just terraform"
 
 # ── WSL Clipboard ────────────────────────────────────────────────────────────
 
@@ -142,7 +136,7 @@ fi
 
 section "GitHub & Auth"
 check "gh" "gh --version | head -1 | awk '{print \$3}'" "sudo apt install gh"
-check "gh-dash" "gh extension list | awk -F '\\t' '\$1==\"gh dash\"{print \$3; exit}'" "just git-tools"
+check "gh-dash" "gh extension list | awk -F '\\t' '\$1==\"gh dash\"{print \$3; exit}'" "just _git-tools"
 
 GH_AUTH=$(gh auth status 2>&1)
 if echo "$GH_AUTH" | grep -q "Logged in to"; then
@@ -277,17 +271,19 @@ check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "just rus
 check "cargo"   "cargo --version | awk '{print \$2}'"         "just rust"
 check "rustc"   "rustc --version | awk '{print \$2}'"         "just rust"
 
-cargo_tools=(htmlq jless mprocs)
-for tool in "${cargo_tools[@]}"; do
-    if command -v "$tool" &>/dev/null; then
-        ver=$("$tool" --version 2>/dev/null | head -1 | awk '{print $NF}' || echo "installed")
-        ok "cargo: $tool" "$ver"
-    else
-        fail "cargo: $tool" "cargo install $tool"
-    fi
-done
+check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: just _git-tools)"
 
-check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: just git-tools)"
+# ── Extras ────────────────────────────────────────────────────────────────────
+
+# Opt-in, so a missing extra warns instead of failing the audit.
+section "Extras (opt-in)"
+while read -r mark name desc; do
+    if [[ "${mark}" == "✓" ]]; then
+        ok "${name}" "${desc}"
+    else
+        warn "${name}" "not installed  →  just extras ${name}"
+    fi
+done < <(DOTFILES_ROOT="${DOTFILES_DIR}" bash "${DOTFILES_DIR}/scripts/extras.sh" --list)
 
 # ── Dev Tooling ───────────────────────────────────────────────────────────────
 
