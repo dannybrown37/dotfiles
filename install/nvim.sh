@@ -2,6 +2,9 @@
 set -euo pipefail
 ## @just 31 Developer Tools | Install Neovim
 
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+
 ##
 ## make and gcc build telescope-fzf-native and LuaSnip's jsregexp; without them
 ## both plugins skip their build silently.
@@ -10,25 +13,26 @@ set -euo pipefail
 sudo apt install -y build-essential
 
 ##
-## Install Neovim from appimage
+## Install Neovim from the release tarball into /opt/nvim. Older installs
+## extracted the AppImage to /squashfs-root; replace those.
 ##
 
-if command -v nvim &>/dev/null; then
-    echo "Neovim is already installed on this system"
+current_version=$(nvim --version 2>/dev/null | head -1 | awk '{print $2}' || true)
+
+if [[ "${current_version}" == "v${NVIM_VERSION}" ]]; then
+    echo "Neovim ${current_version} already installed"
 else
-    if [[ -n $WSL_DISTRO_NAME ]]; then
-        echo "Installing Neovim for WSL"
-        file_name="nvim.appimage"
-    else
-        file_name="nvim-linux-x86_64.appimage"
+    echo "Installing Neovim ${current_version:-none} → v${NVIM_VERSION}"
+    tmp_dir=$(mktemp -d)
+    trap 'rm -rf "${tmp_dir}"' EXIT
+    curl -fsSLo "${tmp_dir}/nvim.tar.gz" \
+        "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
+    sudo rm -rf /opt/nvim /squashfs-root
+    if [[ "$(readlink /usr/bin/nvim || true)" == /squashfs-root/* ]]; then
+        sudo rm /usr/bin/nvim
     fi
-    curl -LO https://github.com/neovim/neovim/releases/latest/download/$file_name
-    chmod u+x $file_name
-    ./$file_name
-    ./$file_name --appimage-extract
-    ./squashfs-root/AppRun --version
-    sudo mv squashfs-root /
-    sudo ln -s /squashfs-root/AppRun /usr/bin/nvim # allow-raw-symlink: root-owned PATH entry, not a config link
-    nvim --version
-    rm $file_name
+    sudo mkdir -p /opt/nvim
+    sudo tar -xzf "${tmp_dir}/nvim.tar.gz" -C /opt/nvim --strip-components=1
+    sudo ln -sfn /opt/nvim/bin/nvim /usr/local/bin/nvim # allow-raw-symlink: root-owned PATH entry, not a config link
+    nvim --version | head -1
 fi

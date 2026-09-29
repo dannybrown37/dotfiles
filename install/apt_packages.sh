@@ -10,7 +10,6 @@ apt_packages=(
     bat
     curl
     fd-find
-    fzf
     git
     gh
     jq

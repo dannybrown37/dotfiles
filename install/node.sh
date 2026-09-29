@@ -8,9 +8,12 @@ set -euo pipefail
 
 readonly node_major=22
 
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+
 if ! command -v n &>/dev/null; then
-    curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n | sudo bash -s "${node_major}"
-    sudo npm install --global n
+    curl -fsSL "https://raw.githubusercontent.com/tj/n/v${N_VERSION}/bin/n" | sudo bash -s "${node_major}"
+    sudo npm install --global "n@${N_VERSION}"
 fi
 
 if ! node --version 2>/dev/null | grep -q "^v${node_major}"; then

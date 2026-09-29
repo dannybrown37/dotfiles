@@ -36,6 +36,17 @@ install_release_binary zoxide \
     "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide-${ZOXIDE_VERSION}-x86_64-unknown-linux-musl.tar.gz"
 
 ##
+## Install fzf. Bookworm's apt has 0.38, too old for `fzf --bash` and many
+## newer flags; drop it so the release binary is the one on PATH.
+##
+
+if dpkg -s fzf &>/dev/null; then
+    sudo apt-get remove -y fzf
+fi
+install_release_binary fzf \
+    "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz"
+
+##
 ## Install delta (syntax-highlighting git pager)
 ##
 

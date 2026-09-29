@@ -1,29 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 23 Languages & Runtimes | Install Go environment (latest Golang version)
+## @just 23 Languages & Runtimes | Install Go environment (pinned Golang version)
 
-##
-## Install latest version of golang (skips if already current)
-##
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
 
-sudo apt-get update -qq
-sudo apt-get install -y -qq jq
+target_version="go${GOLANG_VERSION}"
+current_version=$(go version 2>/dev/null | awk '{print $3}' || true)
 
-latest_version=$(wget -qO- https://golang.org/dl/?mode=json | jq -r '.[0].version')
-current_version=$(go version 2>/dev/null | awk '{print $3}')
-
-if [[ "${current_version}" == "${latest_version}" ]]; then
-    echo "Go ${latest_version} already installed"
+if [[ "${current_version}" == "${target_version}" ]]; then
+    echo "Go ${target_version} already installed"
     exit 0
 fi
 
-echo "Upgrading Go: ${current_version:-none} → ${latest_version}"
-file_name="${latest_version}.linux-amd64.tar.gz"
-download_url="https://golang.org/dl/${file_name}"
-
-wget -q "${download_url}"
+echo "Installing Go: ${current_version:-none} → ${target_version}"
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "${tmp_dir}"' EXIT
+curl -fsSLo "${tmp_dir}/go.tar.gz" "https://go.dev/dl/${target_version}.linux-amd64.tar.gz"
 sudo rm -rf /usr/local/go
-sudo tar -xf "${file_name}" -C /usr/local
-rm "${file_name}"
-
-source "${HOME}/.bashrc"
+sudo tar -xzf "${tmp_dir}/go.tar.gz" -C /usr/local
+/usr/local/go/bin/go version
