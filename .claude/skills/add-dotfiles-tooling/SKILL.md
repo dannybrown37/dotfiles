@@ -31,7 +31,7 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
    That one line is the entire registration. The help script renders it under `<Section>`
    sorted by `<order>`, and the `embed-command` hook copies that help into the README.
    A script without the header is not discoverable — which is how helpers like
-   `apt_packages.sh`, `versions.sh`, and `this_repo.sh` stay out of the listing.
+   `apt_packages.sh`, `versions.sh`, and `bootstrap.sh` stay out of the listing.
 
    You must also add a corresponding recipe to the `justfile` (one line calling
    `bash -c ". install/<tool>.sh"`).

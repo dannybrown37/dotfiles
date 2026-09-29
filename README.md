@@ -7,7 +7,7 @@ Debian dotfiles for a WSL2-based setup.
 In WSL, install `apt` packages and basic Bash profile in one command:
 
 ```bash
-curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
+curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/bootstrap.sh | bash
 ```
 
 ## Install Options
