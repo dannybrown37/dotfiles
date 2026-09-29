@@ -1,9 +1,12 @@
 """Tests for install/release_binary.sh.
 
-curl and sudo are stubbed on PATH: curl serves a tarball built here, sudo runs
-its command as-is so the install lands in a temp dir.
+curl and sudo are stubbed on PATH: curl serves a tarball built here, or for
+the GitHub API a release whose asset digest is $DIGEST. sudo runs its command
+as-is, so the install lands in a temp dir.
 """
 
+import hashlib
+import json
 import os
 import subprocess
 import tarfile
@@ -13,9 +16,19 @@ import pytest
 
 HELPER = Path(__file__).parent.parent / 'install' / 'release_binary.sh'
 URL = 'https://example.com/tool.tar.gz'
+GH_URL = 'https://github.com/o/r/releases/download/v2.0.0/tool.tar.gz'
 CURL_STUB = """#!/usr/bin/env bash
+if [[ "$*" == *api.github.com/repos/o/r/releases/tags/v2.0.0* ]]; then
+    echo "${RELEASE_JSON}"
+    exit 0
+fi
 echo "curl $*" >> "${CALL_LOG}"
-cat "${TARBALL}"
+out=''
+while [[ $# -gt 0 ]]; do
+    [[ "$1" == -*o ]] && { out="$2"; shift; }
+    shift
+done
+if [[ -n "${out}" ]]; then cp "${TARBALL}" "${out}"; else cat "${TARBALL}"; fi
 """
 SUDO_STUB = '#!/usr/bin/env bash\n"$@"\n'
 
@@ -48,8 +61,11 @@ def env(tmp_path: Path) -> dict[str, str]:
     }
 
 
-def install(env: dict[str, str], *args: str) -> str:
-    result = subprocess.run(  # noqa: S603
+def run_install(
+    env: dict[str, str],
+    *args: str,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
         [  # noqa: S607
             'bash',
             '-c',
@@ -62,6 +78,10 @@ def install(env: dict[str, str], *args: str) -> str:
         text=True,
         check=False,
     )
+
+
+def install(env: dict[str, str], *args: str) -> str:
+    result = run_install(env, *args)
     assert result.returncode == 0, result.stderr
     return subprocess.run(
         ['tool'],  # noqa: S607
@@ -94,3 +114,40 @@ def test_installs_or_upgrades_only_when_needed(
 
     assert install(env, 'tool', URL, *args) == expected
     assert Path(env['CALL_LOG']).exists() == downloads
+
+
+def release_json(digest: str | None) -> str:
+    asset = {'name': 'tool.tar.gz'}
+    if digest:
+        asset['digest'] = digest
+    return json.dumps({'assets': [asset, {'name': 'other.zip'}]})
+
+
+def sha256_of(path: str) -> str:
+    return 'sha256:' + hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+@pytest.mark.parametrize(
+    ('digest', 'returncode', 'message'),
+    [
+        ('match', 0, ''),
+        ('sha256:' + '0' * 64, 1, 'sha256 mismatch'),
+        (None, 0, 'no sha256 published'),
+    ],
+)
+def test_verifies_github_asset_digest(
+    env: dict[str, str],
+    digest: str | None,
+    returncode: int,
+    message: str,
+) -> None:
+    if digest == 'match':
+        digest = sha256_of(env['TARBALL'])
+    env['RELEASE_JSON'] = release_json(digest)
+
+    result = run_install(env, 'tool', GH_URL)
+
+    assert result.returncode == returncode, result.stderr
+    assert message in result.stderr
+    installed = (Path(env['RELEASE_BIN_DIR']) / 'tool').exists()
+    assert installed == (returncode == 0)
