@@ -116,9 +116,9 @@ unalias gp 2>/dev/null || true
 gp() { # @doc Git push; if remote is ahead, pull --rebase and push again
     local err status
     err=$(mktemp)
-    git push "$@" 2> >(tee "$err" >&2)
+    git push "$@" 2>"$err"
     status=$?
-    wait $!
+    cat "$err" >&2
     # "fetch first" means the remote has commits we lack; plain "non-fast-forward" means we rewrote history, so leave that alone
     if [[ $status -ne 0 ]] && grep -q '(fetch first)' "$err"; then
         echo "gp: remote is ahead, running git pull --rebase" >&2
