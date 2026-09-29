@@ -67,6 +67,21 @@ check_symlink() {
     fi
 }
 
+check_ahk_v2() {
+    local machine_path="/mnt/c/Program Files/AutoHotkey/v2/AutoHotkey64.exe"
+    # shellcheck disable=SC2016  # $env:UserName is PowerShell's, not bash's
+    local windows_user="${WINDOWS_USERNAME:-$(powershell.exe '$env:UserName' 2>/dev/null | tr -d '\r\n')}"
+    local user_path="/mnt/c/Users/${windows_user}/AppData/Local/Programs/AutoHotkey/v2/AutoHotkey64.exe"
+
+    if [[ -x "$machine_path" ]]; then
+        ok "AutoHotkey v2" "installed (${machine_path})"
+    elif [[ -x "$user_path" ]]; then
+        ok "AutoHotkey v2" "installed (${user_path})"
+    else
+        fail "AutoHotkey v2" "just windows  (or install from https://www.autohotkey.com/download/)"
+    fi
+}
+
 section() {
     echo ""
     echo "  $1"
@@ -128,7 +143,7 @@ check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "jus
 
 if [[ -n "${ON_WINDOWS:-}" ]]; then
     check "win32yank.exe" "command -v win32yank.exe" "just windows"
-    check "AutoHotkey v2" "test -x '/mnt/c/Program Files/AutoHotkey/v2/AutoHotkey64.exe' && echo installed" "https://www.autohotkey.com/download/"
+    check_ahk_v2
     check "AHK autocorrect list" "test -s '${DOTFILES_DIR}/ahk/vendor/AutoCorrectHotstrings.ahk' && echo present" "ahk"
 fi
 
