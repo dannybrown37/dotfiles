@@ -9,19 +9,13 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / 'bootstrap.sh'
 
-FAKE_RUST_SH = """\
-echo rust.sh >> "${CALL_LOG}"
-mkdir -p "${HOME}/.cargo/bin"
-echo 'export PATH="${HOME}/.cargo/bin:${PATH}"' > "${HOME}/.cargo/env"
-"""
-
 FAKE_CLI_TOOLS_SH = """\
 echo cli-tools.sh >> "${CALL_LOG}"
-cat > "${HOME}/.cargo/bin/just" <<'EOF'
+cat > "${INSTALL_BIN}/just" <<'EOF'
 #!/usr/bin/env bash
 echo "just $*" >> "${CALL_LOG}"
 EOF
-chmod +x "${HOME}/.cargo/bin/just"
+chmod +x "${INSTALL_BIN}/just"
 """
 
 
@@ -32,12 +26,17 @@ def write_executable(path: Path, body: str) -> None:
 
 
 class Machine:
-    """Fake fresh machine: stubbed sudo/git, empty $HOME, no `just` on PATH."""
+    """Fake fresh machine: stubbed sudo/git, empty $HOME, no `just` on PATH.
+
+    install_bin stands in for /usr/local/bin: on PATH, empty until cli-tools.
+    """
 
     def __init__(self, tmp_path: Path) -> None:
         self.home = tmp_path / 'home'
         self.home.mkdir()
         self.stub_bin = tmp_path / 'stub_bin'
+        self.install_bin = tmp_path / 'install_bin'
+        self.install_bin.mkdir()
         self.call_log = tmp_path / 'calls.log'
         self.call_log.touch()
         self.dotfiles_dir = self.home / 'projects' / 'dotfiles'
@@ -60,18 +59,17 @@ class Machine:
         install = self.upstream / 'install'
         install.mkdir(parents=True)
         (self.upstream / '.git').mkdir()
-        shutil.copy(REPO_ROOT / 'install' / 'cargo_env.sh', install)
         write_executable(
             install / 'apt.sh',
             f'echo apt.sh >> "${{CALL_LOG}}"\n{apt_sh_extra}',
         )
-        write_executable(install / 'rust.sh', FAKE_RUST_SH)
         write_executable(install / 'cli-tools.sh', FAKE_CLI_TOOLS_SH)
 
     def env(self, **extra: str) -> dict[str, str]:
         return {
             'HOME': str(self.home),
-            'PATH': f'{self.stub_bin}:/usr/bin:/bin',
+            'PATH': f'{self.stub_bin}:{self.install_bin}:/usr/bin:/bin',
+            'INSTALL_BIN': str(self.install_bin),
             'CALL_LOG': str(self.call_log),
             'UPSTREAM': str(self.upstream),
             **extra,
@@ -119,7 +117,6 @@ def test_fresh_machine_installs_just_before_running_bootstrap(
     assert 'git clone' in calls
     assert calls[calls.index('git clone') + 1 :] == [
         'apt.sh',
-        'rust.sh',
         'cli-tools.sh',
         'just bootstrap',
         'just ',
@@ -151,7 +148,7 @@ def test_skips_just_prerequisites_when_just_is_already_installed(
 
     assert result.returncode == 0, result.stderr
     calls = machine.calls()
-    assert not {'apt.sh', 'rust.sh', 'cli-tools.sh'} & set(calls)
+    assert not {'apt.sh', 'cli-tools.sh'} & set(calls)
     assert 'just bootstrap' in calls
 
 
