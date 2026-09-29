@@ -2,12 +2,10 @@
 ## @extra difft | Diff that understands syntax
 set -euo pipefail
 
-# shellcheck source=install/cargo_env.sh
-source "$(dirname "${BASH_SOURCE[0]}")/../cargo_env.sh"
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
+# shellcheck source=install/release_binary.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../release_binary.sh"
 
-if ! command -v cargo &>/dev/null; then
-    echo "difftastic needs cargo -- run 'just rust' first" >&2
-    exit 1
-fi
-
-cargo install --locked difftastic
+install_release_binary difft \
+    "https://github.com/Wilfred/difftastic/releases/download/${DIFFTASTIC_VERSION}/difft-${DIFFTASTIC_VERSION}-x86_64-unknown-linux-musl.tar.gz"

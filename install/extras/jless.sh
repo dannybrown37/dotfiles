@@ -2,15 +2,22 @@
 ## @extra jless | Pager for JSON
 set -euo pipefail
 
-# shellcheck source=install/cargo_env.sh
-source "$(dirname "${BASH_SOURCE[0]}")/../cargo_env.sh"
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
 
-if ! command -v cargo &>/dev/null; then
-    echo "jless needs cargo -- run 'just rust' first" >&2
-    exit 1
+if command -v jless &>/dev/null; then
+    echo "jless is already installed on this system"
+    exit 0
 fi
 
-# jless links against libxcb for clipboard support
-sudo apt install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+# The release binary links libxcb for clipboard support.
+sudo apt install -y libxcb-render0 libxcb-shape0 libxcb-xfixes0
 
-cargo install --locked jless
+# Shipped as a zip, which install_release_binary cannot unpack.
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "${tmp_dir}"' EXIT
+curl -fsSLo "${tmp_dir}/jless.zip" \
+    "https://github.com/PaulJuliusMartinez/jless/releases/download/v${JLESS_VERSION}/jless-v${JLESS_VERSION}-x86_64-unknown-linux-gnu.zip"
+unzip -q "${tmp_dir}/jless.zip" -d "${tmp_dir}"
+sudo install "${tmp_dir}/jless" /usr/local/bin/jless
+echo "jless installed at $(command -v jless)"

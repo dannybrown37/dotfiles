@@ -2,12 +2,10 @@
 ## @extra htmlq | jq for HTML
 set -euo pipefail
 
-# shellcheck source=install/cargo_env.sh
-source "$(dirname "${BASH_SOURCE[0]}")/../cargo_env.sh"
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
+# shellcheck source=install/release_binary.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../release_binary.sh"
 
-if ! command -v cargo &>/dev/null; then
-    echo "htmlq needs cargo -- run 'just rust' first" >&2
-    exit 1
-fi
-
-cargo install --locked htmlq
+install_release_binary htmlq \
+    "https://github.com/mgdm/htmlq/releases/download/v${HTMLQ_VERSION}/htmlq-x86_64-linux.tar.gz"
