@@ -2,11 +2,14 @@
 set -euo pipefail
 ## @just 20 Languages & Runtimes | Install Python environment (uv, select uv tools)
 
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+
 ##
 ## Install uv
 ##
 
-curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
 
 ##
 ## Install the pinned Python and make it this machine's python3
@@ -35,8 +38,5 @@ done
 # Pinned (not left to float) so CI and local dev always run the same versions.
 # Both the pin and the reasoning live in install/versions.sh; ci.yml reads the
 # same file.
-# shellcheck source=install/versions.sh
-source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
-
 uv tool install "ruff==${RUFF_VERSION}"
 uv tool install "prek==${PREK_VERSION}"

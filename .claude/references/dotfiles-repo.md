@@ -39,6 +39,7 @@ Managed via `.pre-commit-config.yaml` (prek reads this natively). Active hooks:
 - **ruff check + format** — Python linting and formatting
 - **commitizen-early** (git-a-grip) + **commitizen** — conventional commit messages. `-early` rejects a bad `-m` message before the slow hooks run; the commit-msg stage (via `githooks/commit-msg`) catches editor/rebase messages. `pr-title.yml` applies the same hook to PR titles, which become the squash-merge commit on `main`.
 - **pytest** (git-a-grip) — pre-push stage only (via `githooks/pre-push`), since the suite is slow and CI's `test` job gates merges. The Claude `Stop` hook runs pre-commit hooks, so it skips this too: run `uv run pytest scripts/` after touching `scripts/`.
+- **actionlint** — workflow linting (correctness; zizmor covers security). Upstream golang hook, so prek builds it once and caches it
 - **embed-command** (git-a-grip) — keeps README install options in sync with `just` help output, which is itself generated from the `## @just` headers
 - Standard pre-commit-hooks repo (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
 

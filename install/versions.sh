@@ -48,4 +48,15 @@ DIFFTASTIC_VERSION=0.71.0
 HTMLQ_VERSION=0.4.0
 # renovate: datasource=github-releases depName=PaulJuliusMartinez/jless
 JLESS_VERSION=0.9.0
+# renovate: datasource=github-releases depName=junegunn/fzf
+FZF_VERSION=0.74.4
+# renovate: datasource=github-releases depName=neovim/neovim
+NVIM_VERSION=0.12.5
+# GOLANG, not GO: CI exports these, and GO_VERSION is a name Go tooling claims.
+# renovate: datasource=golang-version depName=go
+GOLANG_VERSION=1.27.1
+# renovate: datasource=github-releases depName=tj/n
+N_VERSION=10.2.0
+# renovate: datasource=github-releases depName=astral-sh/uv
+UV_VERSION=0.12.20
 AHK_AUTOCORRECT_SHA=3a174b6182a246a648f82da02735702b8714ff24

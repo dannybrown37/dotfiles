@@ -121,6 +121,7 @@ check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "jus
 check "delta"      "delta --version | awk '{print \$2}'"                    "just _cli-tools"
 check "atuin"      "atuin --version | awk '{print \$2}'"                    "just _bash"
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "just _wsl-fonts"
+check "fzf"        "fzf --version | awk '{print \$1}'"                      "just _cli-tools"
 check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "just nvim"
 
 # ── WSL Clipboard ────────────────────────────────────────────────────────────
@@ -203,7 +204,7 @@ fi
 # ── Node / NPM ────────────────────────────────────────────────────────────────
 
 section "Node / NPM"
-check "n"    "n --version"                          "curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n | sudo bash -s 22"
+check "n"    "n --version"                          "just node"
 check "node" "node --version | sed 's/v//'"         "just node"
 check "npm"  "npm --version"                         "comes with node"
 
@@ -237,7 +238,7 @@ done
 # ── Python / uv ───────────────────────────────────────────────────────────────
 
 section "Python / uv"
-check "uv"    "uv --version | awk '{print \$2}'"    "curl -LsSf https://astral.sh/uv/install.sh | sh"
+check "uv"    "uv --version | awk '{print \$2}'"    "just python"
 check "python" "python3 --version | awk '{print \$2}'" "uv python install"
 
 uv_tools=(prek cookiecutter ruff bashate)

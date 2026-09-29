@@ -28,7 +28,7 @@ jobs:
       # $GITHUB_ENV takes -- so the pins transfer with a grep, no parsing and no
       # second copy of the versions in this file.
       - name: Load pinned tool versions
-        run: grep -E '^[A-Z_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
+        run: grep -E '^[A-Z0-9_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
 
       - name: Install ruff and prek
         run: |
