@@ -115,9 +115,9 @@ fi
 # ── Core CLI Tools ────────────────────────────────────────────────────────────
 
 section "Core CLI Tools"
-check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: just _cli-tools)"
-check "just"       "just --version | awk '{print \$2}'"                             "cargo install just  (or: just _cli-tools)"
-check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "just _cli-tools  (installs to ~/.local/bin)"
+check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "just _cli-tools"
+check "just"       "just --version | awk '{print \$2}'"                             "just _cli-tools"
+check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "just _cli-tools"
 check "delta"      "delta --version | awk '{print \$2}'"                    "just _cli-tools"
 check "atuin"      "atuin --version | awk '{print \$2}'"                    "just _bash"
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "just _wsl-fonts"
@@ -270,7 +270,7 @@ check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "just rus
 check "cargo"   "cargo --version | awk '{print \$2}'"         "just rust"
 check "rustc"   "rustc --version | awk '{print \$2}'"         "just rust"
 
-check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: just _git-tools)"
+check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "just _git-tools"
 
 # ── Extras ────────────────────────────────────────────────────────────────────
 

@@ -3,18 +3,10 @@
 
 set -euo pipefail
 
-# shellcheck source=install/cargo_env.sh
-source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
+# shellcheck source=install/versions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+# shellcheck source=install/release_binary.sh
+source "$(dirname "${BASH_SOURCE[0]}")/release_binary.sh"
 
-if ! command -v cargo &>/dev/null; then
-    echo "git-absorb needs cargo -- run 'just rust' first" >&2
-    # shellcheck disable=SC2317  # reachable when executed rather than sourced
-    return 1 2>/dev/null || exit 1
-fi
-
-if command -v git-absorb &>/dev/null; then
-    echo "git-absorb already installed: $(git-absorb --version)"
-else
-    cargo install git-absorb
-    echo "git-absorb installed: $(git-absorb --version)"
-fi
+install_release_binary git-absorb \
+    "https://github.com/tummychow/git-absorb/releases/download/${GIT_ABSORB_VERSION}/git-absorb-${GIT_ABSORB_VERSION}-x86_64-unknown-linux-musl.tar.gz"

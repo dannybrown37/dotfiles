@@ -91,18 +91,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # Skips compiling eza and just (~2.5 min). A hit puts `just` on PATH, so
-      # bootstrap.sh skips its pre-just steps -- but the key covers those
-      # scripts, so touching them runs cold, and the weekly run is always cold.
-      - name: Cache cargo-installed binaries
-        if: github.event_name != 'schedule'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: |
-            ~/.cargo/bin/eza
-            ~/.cargo/bin/just
-          key: cargo-bins-${{ runner.os }}-${{ hashFiles('bootstrap.sh', 'install/apt.sh', 'install/rust.sh', 'install/cli-tools.sh', 'install/versions.sh') }}
-
       - name: Syntax-check all install scripts
         run: |
           failed=0

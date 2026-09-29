@@ -10,44 +10,30 @@ set -euo pipefail
 ## apt_packages entries is the same in each case -- Debian/Ubuntu either has no
 ## package or has one too old to be worth using.
 ##
-## Needs apt.sh to have run: jq resolves the release tags, curl fetches them.
-## eza needs cargo, so `just bootstrap` runs `rust` before this -- and cargo_env.sh
-## is what actually makes that ordering count, since PATH does not cross a Make
-## target boundary.
+## Needs apt.sh to have run: curl fetches the releases.
 ##
-# shellcheck source=install/cargo_env.sh
-source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
 # shellcheck source=install/versions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+# shellcheck source=install/release_binary.sh
+source "$(dirname "${BASH_SOURCE[0]}")/release_binary.sh"
 
 ##
-## Install eza (modern ls replacement, community fork of exa)
-## Not in default Debian/Ubuntu repos, and the packaged builds lag badly --
-## install from crates.io so it tracks upstream.
+## Install just and eza (modern ls replacement) from prebuilt musl releases.
+## Not in bookworm's apt.
 ##
 
-for cargo_tool in eza just; do
-    if ! command -v "${cargo_tool}" &>/dev/null; then
-        if command -v cargo &>/dev/null; then
-            cargo install --locked "${cargo_tool}"
-        else
-            echo "${cargo_tool} needs cargo -- run 'just rust' then 'just _cli-tools'" >&2
-        fi
-    else
-        echo "${cargo_tool} is already installed on this system"
-    fi
-done
+install_release_binary just \
+    "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+install_release_binary eza \
+    "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_x86_64-unknown-linux-musl.tar.gz"
 
 ##
 ## Install zoxide, per creator, Debian/Ubuntu have old versions in apt
 ## https://github.com/ajeetdsouza/zoxide/issues/694#issuecomment-1946069618
 ##
 
-if [[ ! -f "${HOME}/.local/bin/zoxide" ]]; then
-    curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
-else
-    echo "zoxide is already installed on this system"
-fi
+install_release_binary zoxide \
+    "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide-${ZOXIDE_VERSION}-x86_64-unknown-linux-musl.tar.gz"
 
 ##
 ## Install delta (syntax-highlighting git pager)

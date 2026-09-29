@@ -72,17 +72,17 @@ _git-tools: _lazygit
 
 # ── Composite targets ────────────────────────────────────────────────────────
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else
-# assumes, and rust delivers the cargo that cli-tools needs for eza.
+# assumes.
 
-## @just 10 Start Here | Full machine setup (apt, rust, bash, cli-tools, git-tools, password-store)
-bootstrap: _apt rust _bash _cli-tools _git-tools _password-store
+## @just 10 Start Here | Full machine setup (apt, bash, cli-tools, git-tools, password-store)
+bootstrap: _apt _bash _cli-tools _git-tools _password-store
 
 ## @just 11 Start Here | Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
 extras *names:
     @bash "{{root_dir}}/scripts/extras.sh" {{names}}
 
 # CI-safe subset: no bash/chrome/password-store (needs GPG), no symlinks (needs $HOME layout)
-_ci: _apt rust symlinks _cli-tools _lazygit
+_ci: _apt symlinks _cli-tools _lazygit
 
 ## @just 32 Developer Tools | Install VS Code extensions and settings
 vscode:
