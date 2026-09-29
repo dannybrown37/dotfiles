@@ -27,7 +27,7 @@ Start Here:
 Languages & Runtimes:
   python          Install Python environment (uv, select uv tools)
   node            Install Node.js environment (n, Node 22, select global packages)
-  golang          Install Go environment (latest Golang version)
+  golang          Install Go environment (pinned Golang version)
   rust            Install the Rust toolchain (rustup, latest stable)
 
 Developer Tools:
@@ -112,7 +112,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `git-absorb` | Auto-fixup commits by matching hunks to the right commit | git-absorb | `bin/stubs.sh` |
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
-| `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
+| `gitlines` | Count lines of code in all files from current branch | `config/.bash_aliases` |
 | `gitwf` | Show the git workflow cheat sheet (git start / ship / done) | `config/.bash_aliases` |
 | `git_workflow` | Backs the git start/ship/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help | `scripts/git_workflow.sh` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |

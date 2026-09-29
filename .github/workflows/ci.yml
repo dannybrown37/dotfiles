@@ -117,6 +117,14 @@ jobs:
           DOTFILES_DIR: ${{ github.workspace }}
           DOTFILES_BOOTSTRAP_RECIPE: _ci
 
+      # Local median is ~40ms; the slack is for runner noise, so a failure
+      # means something eager landed in .bashrc, not a slow runner.
+      - name: Shell startup within budget
+        run: bash scripts/bench-shell.sh 10
+        env:
+          DOTFILES_DIR: ${{ github.workspace }}
+          SHELL_BUDGET_MS: 250
+
   test:
     runs-on: ubuntu-latest
     steps:

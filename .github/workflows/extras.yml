@@ -1,0 +1,89 @@
+name: Extras
+
+# Extras are opt-in, so bootstrap never installs them and nothing notices when
+# a release URL dies or a binary outgrows bookworm's glibc (cartoon's did).
+# Weekly, plus any PR that touches how extras install. Not a required check.
+
+on:
+  pull_request:
+    paths:
+      - install/extras/**
+      - install/release_binary.sh
+      - install/versions.sh
+      - .github/workflows/extras.yml
+  workflow_dispatch:
+  schedule:
+    - cron: "0 10 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      extras: ${{ steps.list.outputs.extras }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      # cartoon, mprocs and spotify_player build with cargo: minutes each, and
+      # a crates.io build doesn't rot the way a release URL does.
+      - name: List extras from their headers
+        id: list
+        run: |
+          extras="$(
+              grep -H '^## @extra ' install/extras/*.sh |
+                  grep -vE '/(cartoon|mprocs|spotify)\.sh:' |
+                  sed -E 's|^install/extras/([^.]+)\.sh:## @extra ([^ ]+) .*|{"name":"\1","binary":"\2"}|' |
+                  jq -sc .
+          )"
+          echo "extras=${extras}" >> "$GITHUB_OUTPUT"
+
+  install:
+    needs: list
+    runs-on: ubuntu-latest
+    # Bookworm, not the runner's newer Ubuntu: the glibc the machines run.
+    container: debian:bookworm
+    strategy:
+      fail-fast: false
+      matrix:
+        extra: ${{ fromJSON(needs.list.outputs.extras) }}
+    name: ${{ matrix.extra.name }}
+    steps:
+      - name: Install what bootstrap would have
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq sudo curl git ca-certificates unzip jq gh xz-utils >/dev/null
+          printf '%s\n' "${HOME}/.local/bin" "${HOME}/.deno/bin" /usr/games >> "$GITHUB_PATH"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install ${{ matrix.extra.name }}
+        run: bash "install/extras/${EXTRA}.sh"
+        env:
+          EXTRA: ${{ matrix.extra.name }}
+          GH_TOKEN: ${{ github.token }}
+
+      # Not every binary has --version, so only a binary that can't run fails:
+      # missing (127), not executable (126), or a glibc too old for it.
+      - name: Run ${{ matrix.extra.binary }}
+        run: |
+          if [[ "${BINARY}" == gh-* ]]; then
+              gh extension list | grep -F "${BINARY}"
+              exit 0
+          fi
+          command -v "${BINARY}"
+          rc=0
+          out="$(timeout 20 "${BINARY}" --version 2>&1 </dev/null)" || rc=$?
+          echo "${out}"
+          if [[ "${rc}" == 126 || "${rc}" == 127 || "${out}" == *GLIBC_* ]]; then
+              exit 1
+          fi
+        shell: bash
+        env:
+          BINARY: ${{ matrix.extra.binary }}
+          GH_TOKEN: ${{ github.token }}

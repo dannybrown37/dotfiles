@@ -8,4 +8,5 @@ source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/../release_binary.sh"
 
 install_release_binary htmlq \
-    "https://github.com/mgdm/htmlq/releases/download/v${HTMLQ_VERSION}/htmlq-x86_64-linux.tar.gz"
+    "https://github.com/mgdm/htmlq/releases/download/v${HTMLQ_VERSION}/htmlq-x86_64-linux.tar.gz" \
+    "${HTMLQ_VERSION}"
