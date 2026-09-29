@@ -14,6 +14,7 @@ delta() { command delta "$@"; }         # @doc Syntax-highlighting pager for git
 difftastic() { command difft "$@"; }    # @doc Diff that understands syntax | difft <old> <new>
 docker() { command docker "$@"; }       # @doc Containers -- via Docker Desktop on the Windows host | docker-up to start it
 eza() { command eza "$@"; }             # @doc Modern ls replacement with git status and icons
+fastfetch() { command fastfetch "$@"; } # @doc System info summary (neofetch successor) | fastfetch
 fd() { command fdfind "$@"; }           # @doc Fast find that respects .gitignore | fd <pattern>
 fzf() { command fzf "$@"; }             # @doc Interactive fuzzy finder for any list
 gh() { command gh "$@"; }                  # @doc GitHub CLI -- PRs, issues, workflows, and more

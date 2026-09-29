@@ -22,7 +22,6 @@ apt_packages=(
     make
     man-db
     lolcat
-    neofetch
     openssh-server
     pass
     pipx
