@@ -74,6 +74,14 @@ repos:
     hooks:
       - id: actionlint
 
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.50.3
+    hooks:
+      # Report, don't rewrite: a "fix" to a name or a quoted string can break
+      # code, so a human picks the change or adds the word to _typos.toml.
+      - id: typos
+        args: [--force-exclude]
+
   - repo: https://github.com/gitleaks/gitleaks
     # autoupdate resolves this repo one tag low; v8.30.1 is the latest release.
     rev: v8.30.1

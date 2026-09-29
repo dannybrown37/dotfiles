@@ -23,9 +23,11 @@ source "$(dirname "${BASH_SOURCE[0]}")/release_binary.sh"
 ##
 
 install_release_binary just \
-    "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+    "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+    "${JUST_VERSION}"
 install_release_binary eza \
-    "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_x86_64-unknown-linux-musl.tar.gz"
+    "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_x86_64-unknown-linux-musl.tar.gz" \
+    "${EZA_VERSION}"
 
 ##
 ## Install zoxide, per creator, Debian/Ubuntu have old versions in apt
@@ -33,7 +35,8 @@ install_release_binary eza \
 ##
 
 install_release_binary zoxide \
-    "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide-${ZOXIDE_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+    "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide-${ZOXIDE_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+    "${ZOXIDE_VERSION}"
 
 ##
 ## Install fzf. Bookworm's apt has 0.38, too old for `fzf --bash` and many
@@ -44,7 +47,8 @@ if dpkg -s fzf &>/dev/null; then
     sudo apt-get remove -y fzf
 fi
 install_release_binary fzf \
-    "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz"
+    "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz" \
+    "${FZF_VERSION}"
 
 ##
 ## Install delta (syntax-highlighting git pager)

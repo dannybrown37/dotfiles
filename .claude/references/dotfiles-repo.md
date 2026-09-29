@@ -40,12 +40,15 @@ Managed via `.pre-commit-config.yaml` (prek reads this natively). Active hooks:
 - **commitizen-early** (git-a-grip) + **commitizen** — conventional commit messages. `-early` rejects a bad `-m` message before the slow hooks run; the commit-msg stage (via `githooks/commit-msg`) catches editor/rebase messages. `pr-title.yml` applies the same hook to PR titles, which become the squash-merge commit on `main`.
 - **pytest** (git-a-grip) — pre-push stage only (via `githooks/pre-push`), since the suite is slow and CI's `test` job gates merges. The Claude `Stop` hook runs pre-commit hooks, so it skips this too: run `uv run pytest scripts/` after touching `scripts/`.
 - **actionlint** — workflow linting (correctness; zizmor covers security). Upstream golang hook, so prek builds it once and caches it
+- **typos** — spell check, report-only (no auto-rewrite). Exceptions live in `_typos.toml`
 - **embed-command** (git-a-grip) — keeps README install options in sync with `just` help output, which is itself generated from the `## @just` headers
 - Standard pre-commit-hooks repo (EOF fixer, shebangs, JSON/YAML/TOML checks, symlinks)
 
 ## CI
 
 - `.github/workflows/ci.yml` runs `lint`, `test` and `bootstrap`, all required checks on `main`.
+- `bootstrap` also fails if `scripts/bench-shell.sh` measures a median shell startup over `SHELL_BUDGET_MS` (250ms).
+- `extras.yml` installs every non-cargo extra in a `debian:bookworm` container, weekly and on PRs touching `install/extras/`, `release_binary.sh` or `versions.sh`. Not a required check.
 - `bootstrap` (~5 min cold) runs only when `scripts/ci_needs_bootstrap.sh` sees a bootstrap path change (`install/`, `ci.yml`, or a file added/removed/renamed under `config/` -- edits there cannot break a symlink), plus a weekly cold run and on `workflow_dispatch`. Otherwise it is skipped, which counts as passing. The `justfile` is left out on purpose: lint's `embed-command` hook already runs `just`, and the weekly run catches a broken `_ci` recipe. Add a path there if a new file changes what `just _ci` does.
 
 ## Shell Startup Performance

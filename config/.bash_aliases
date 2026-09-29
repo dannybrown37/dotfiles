@@ -107,7 +107,7 @@ alias gcuemail='git config --global user.email "dannybrown37@gmail.com"'
 alias gcuname='git config --global user.name "Danny Brown"'
 alias gl='git log'
 alias glog='git log --oneline --graph --decorate --all'  # @doc Graph log of all branches
-alias gitlines='git ls-files | xargs wc -l'  # @doc Count lines of code in all files from curren branch
+alias gitlines='git ls-files | xargs wc -l'  # @doc Count lines of code in all files from current branch
 alias glo='git log -1 --pretty=%B'  # @doc Show last commit message (Git Log One-Line)
 alias gss='git stash'  # @doc Git stash save
 alias gsp='git stash pop'  # @doc Git stash pop

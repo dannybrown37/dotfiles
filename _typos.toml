@@ -1,0 +1,15 @@
+[default]
+extend-ignore-re = [
+    # Keymap mnemonics split words: "[S]earch" reads to typos as "earch".
+    '\[[^\]]+\]\w+',
+    # sed's `$!ba` loop label.
+    '\$!ba',
+]
+
+[default.extend-words]
+# vim's :enew
+enew = "enew"
+
+[files]
+# Deliberate misspellings: the fixtures for AHK autocorrect hotstrings.
+extend-exclude = ["ahk/tests/"]
