@@ -21,7 +21,7 @@ Copy-Item -Path (Join-Path $wslDir "whkdrc") -Destination (Join-Path $whkdConfig
 
 if (-not (Test-Path "$env:USERPROFILE\applications.json")) {
     Write-Host "applications.json not found, fetching application-specific configuration..."
-    komorebic fetch-application-specific-configuration
+    komorebic fetch-app-specific-configuration
 }
 
 # --- phantom window reset -------------------------------------------------
