@@ -14,7 +14,7 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
 **Core or extra?** `just bootstrap` installs core tools only — ones a fresh machine is
 broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-an-extra).
 
-1. Create `install/<tool>.sh` — idempotent, sources cleanly. Copy `install/lazygit.sh`
+1. Create `install/<tool>.sh` — idempotent, sources cleanly. Copy `install/extras/lazygit.sh`
    as the reference implementation: version check, skip-if-current, `mktemp -d` + `trap`
    cleanup, install, confirm, optional config symlink.
 

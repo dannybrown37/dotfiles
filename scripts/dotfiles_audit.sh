@@ -115,13 +115,12 @@ fi
 # ── Core CLI Tools ────────────────────────────────────────────────────────────
 
 section "Core CLI Tools"
-check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: just _cli-tools)"
-check "just"       "just --version | awk '{print \$2}'"                             "cargo install just  (or: just _cli-tools)"
-check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "just _cli-tools  (installs to ~/.local/bin)"
+check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "just _cli-tools"
+check "just"       "just --version | awk '{print \$2}'"                             "just _cli-tools"
+check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "just _cli-tools"
 check "delta"      "delta --version | awk '{print \$2}'"                    "just _cli-tools"
 check "atuin"      "atuin --version | awk '{print \$2}'"                    "just _bash"
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "just _wsl-fonts"
-check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "just _git-tools"
 check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "just nvim"
 
 # ── WSL Clipboard ────────────────────────────────────────────────────────────
@@ -184,7 +183,9 @@ check_symlink ".eslintrc"          "$HOME/.eslintrc"            "$DOTFILES_DIR/c
 check_symlink ".inputrc"           "$HOME/.inputrc"             "$DOTFILES_DIR/config/.inputrc"
 check_symlink ".tmux.conf"         "$HOME/.tmux.conf"           "$DOTFILES_DIR/config/.tmux.conf"
 check_symlink "starship.toml"      "$HOME/.config/starship.toml" "$DOTFILES_DIR/config/starship.toml"
-check_symlink "lazygit config"     "$HOME/.config/lazygit/config.yml" "$DOTFILES_DIR/config/lazygit.yml"
+if command -v lazygit &>/dev/null; then
+    check_symlink "lazygit config" "$HOME/.config/lazygit/config.yml" "$DOTFILES_DIR/config/lazygit.yml"
+fi
 check_symlink "nvim config"        "$HOME/.config/nvim"         "$DOTFILES_DIR/nvim"
 check_symlink ".gitconfig-personal" "$HOME/.gitconfig-personal"  "$DOTFILES_DIR/config/.gitconfig-personal"
 if [[ -e "$HOME/.gitconfig-private" ]]; then
@@ -269,8 +270,6 @@ section "Rust"
 check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "just rust"
 check "cargo"   "cargo --version | awk '{print \$2}'"         "just rust"
 check "rustc"   "rustc --version | awk '{print \$2}'"         "just rust"
-
-check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: just _git-tools)"
 
 # ── Extras ────────────────────────────────────────────────────────────────────
 

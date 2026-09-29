@@ -14,11 +14,9 @@ apt_packages=(
     git
     gh
     jq
-    make
     man-db
     openssh-server
     pass
-    pipx
     rename
     ripgrep
     shellcheck

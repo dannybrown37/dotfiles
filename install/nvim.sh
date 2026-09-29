@@ -3,6 +3,13 @@ set -euo pipefail
 ## @just 31 Developer Tools | Install Neovim
 
 ##
+## make and gcc build telescope-fzf-native and LuaSnip's jsregexp; without them
+## both plugins skip their build silently.
+##
+
+sudo apt install -y build-essential
+
+##
 ## Install Neovim from appimage
 ##
 

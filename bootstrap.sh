@@ -6,9 +6,9 @@ set -euo pipefail
 ## to `just bootstrap`. Library-free and header-free on purpose -- it runs
 ## before the repo exists, so it is not a recipe.
 ##
-## `just` is not in Debian bookworm's apt, and cli-tools.sh installs it from
-## crates.io, so on a fresh machine the three scripts that deliver it run here
-## first. All three are idempotent, so bootstrap re-running them costs little.
+## `just` is not in Debian bookworm's apt, and cli-tools.sh installs it from its
+## GitHub release, so on a fresh machine the two scripts that deliver it run here
+## first. Both are idempotent, so bootstrap re-running them costs little.
 ##
 ## DOTFILES_DIR overrides the clone location; DOTFILES_BOOTSTRAP_RECIPE lets CI
 ## run its `_ci` subset through this same path.
@@ -39,11 +39,8 @@ main() {
 
     if ! command -v just &>/dev/null; then
         bash install/apt.sh
-        bash install/rust.sh
         bash install/cli-tools.sh
     fi
-    # shellcheck source=install/cargo_env.sh
-    source install/cargo_env.sh
 
     just "${bootstrap_recipe}"
     just
