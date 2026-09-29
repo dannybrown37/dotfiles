@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
+## @extra google-chrome | Google Chrome browser
 set -euo pipefail
-## Install Google Chrome
-
-##
-## Split out of the old install/bash.sh, where a GUI browser sat between zoxide
-## and the tmux plugin manager. Nothing else here needs it and it needs nothing
-## else, so it is its own target.
-##
 
 if command -v google-chrome >/dev/null 2>&1; then
     echo "Google Chrome is already installed on this system"

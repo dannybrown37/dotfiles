@@ -20,7 +20,7 @@ The output of `just` in the root directory:
 Usage: just [option]
 
 Start Here:
-  bootstrap       Full machine setup (apt, rust, bash, cli-tools, chrome, git-tools, password-store)
+  bootstrap       Full machine setup (apt, rust, bash, cli-tools, git-tools, password-store)
   extras          Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
   symlinks        Symlink every tracked config into $HOME (idempotent, no network)
 
@@ -77,6 +77,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
 | `chafa` | Render an image as terminal ANSI art -- powers `screenshot pick` previews | chafa <image> | `bin/stubs.sh` |
 | `chrome` | Alt+C in Chrome - copy the current tab as a markdown link, tracking params stripped | `ahk/chrome.ahk` |
+| `chrome` | Google Chrome browser | chrome <url> | `bin/stubs.sh` |
 | `cht` | Query cht.sh for info on many technologies | `bin/chtsh.sh` |
 | `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
 | `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
@@ -84,6 +85,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `clip` | Copy a screen recording to OneDrive with fzf selection: clip [--reset] | `bin/clip.sh` |
 | `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
 | `copilot` | GitHub Copilot CLI coding agent | copilot | `bin/stubs.sh` |
+| `cowsay` | ASCII cow speech bubbles | echo hi | cowsay | `bin/stubs.sh` |
 | `croc` | Send files between machines securely | croc send <file> | `bin/stubs.sh` |
 | `delta` | Syntax-highlighting pager for git diffs (replaces less) | `bin/stubs.sh` |
 | `deno` | Deno JavaScript/TypeScript runtime | deno run <file> | `bin/stubs.sh` |
@@ -95,6 +97,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
 | `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `bin/timestamps.sh` |
 | `eza` | Modern ls replacement with git status and icons | `bin/stubs.sh` |
+| `faker` | Generate fake test data | faker name | `bin/stubs.sh` |
 | `fastfetch` | System info summary (neofetch successor) | fastfetch | `bin/stubs.sh` |
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
@@ -127,18 +130,21 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gss` | Git stash save | `config/.bash_aliases` |
 | `gwt` | git-worktree: gwt <add|list|rm|cd> [branch] [options] | `bin/gwt.sh` |
 | `htmlq` | jq for HTML | htmlq <selector> < page.html | `bin/stubs.sh` |
+| `httpie` | Friendly HTTP client (httpie) | http GET <url> | `bin/stubs.sh` |
 | `hyperfine` | Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2' | `bin/stubs.sh` |
 | `jless` | Pager for JSON | jless <file.json> | `bin/stubs.sh` |
 | `just` | Command runner (modern Make alternative) | just <recipe> | `bin/stubs.sh` |
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
 | `lazygit` | TUI git client | lg (alias) | `bin/stubs.sh` |
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
+| `lolcat` | Rainbow text | echo hi | lolcat | `bin/stubs.sh` |
 | `media` | Read educational media in glow (links: refs links media) | `config/.bash_aliases` |
 | `mentalmodels` | Read mental models in glow (links: refs links mental-models) | `config/.bash_aliases` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
 | `mk` | Create a directory and cd into it | `bin/mk.sh` |
 | `mprocs` | Run several commands side by side | mprocs 'cmd1' 'cmd2' | `bin/stubs.sh` |
 | `mystats` | Top commands I typed, excluding Claude Code's atuin entries | mystats [count] | `config/.bash_aliases` |
+| `neofetch` | Alias for fastfetch, for muscle memory | neofetch | `bin/stubs.sh` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |

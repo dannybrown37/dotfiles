@@ -37,8 +37,17 @@ word after the colon, make the acronym that word. Otherwise follow the instructi
 if any:'
     _pokemon_prompt="${_lgtm_prompt} Choose a random number between 1 and 151 and make the acronym the corresponding pokemon!"
 
-    lgtm()    { ask_gemini_a_question "${_lgtm_prompt} $1" | cowsay | lolcat | cb; }
-    pokemon() { ask_gemini_a_question "${_pokemon_prompt}" | cowsay | lolcat | cb; }
+    # cowsay and lolcat are extras, so fall back to plain text without them
+    _gem_decorate() {
+        if command -v cowsay &>/dev/null && command -v lolcat &>/dev/null; then
+            cowsay | lolcat
+        else
+            cat
+        fi
+    }
+
+    lgtm()    { ask_gemini_a_question "${_lgtm_prompt} $1" | _gem_decorate | cb; }
+    pokemon() { ask_gemini_a_question "${_pokemon_prompt}" | _gem_decorate | cb; }
 }
 
 gem()                   { _load_gem; gem "$@"; }

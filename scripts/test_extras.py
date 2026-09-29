@@ -103,6 +103,40 @@ def test_list_marks_installed_by_binary(
     assert rows == expected
 
 
+@pytest.mark.parametrize(
+    ('gh_extensions', 'expected'),
+    [
+        ('', '·'),
+        ('gh dash\tdlvhdr/gh-dash\tv4.26.0\n', '✓'),
+        ('gh dashboard\tother/gh-dashboard\tv1.0.0\n', '·'),
+    ],
+)
+def test_list_marks_gh_extension_installed_via_gh(
+    root: Path,
+    stub_bin: Path,
+    gh_extensions: str,
+    expected: str,
+) -> None:
+    (root / 'install' / 'extras' / 'gh-dash.sh').write_text(
+        EXTRA_SCRIPT.format(
+            name='gh-dash',
+            binary='gh-dash',
+            desc='Dashboard',
+        ),
+    )
+    _write_executable(
+        stub_bin / 'gh',
+        f"#!/bin/sh\nprintf '{gh_extensions}'\n",
+    )
+
+    result = run_extras(root, stub_bin, '--list')
+
+    rows = {
+        line.split()[1]: line.split()[0] for line in result.stdout.splitlines()
+    }
+    assert rows['gh-dash'] == expected
+
+
 def test_list_skips_scripts_without_header(root: Path, stub_bin: Path) -> None:
     result = run_extras(root, stub_bin, '--list')
 

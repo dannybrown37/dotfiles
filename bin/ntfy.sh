@@ -1,5 +1,5 @@
 function push() {  # @doc Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message>
-    http POST ntfy.sh/"${PERSONAL_ALERT_TOPIC}" alert="$*"
+    curl -fsS -d "$*" ntfy.sh/"${PERSONAL_ALERT_TOPIC}" >/dev/null
 }
 
 function push_to_topic() {  # @doc Push a message to ntfy.sh at a topic | push_to_topic <topic> <message>
@@ -7,5 +7,5 @@ function push_to_topic() {  # @doc Push a message to ntfy.sh at a topic | push_t
     shift
     local message=$*
 
-    http POST ntfy.sh/"${topic}" alert="${message}"
+    curl -fsS -d "${message}" ntfy.sh/"${topic}" >/dev/null
 }

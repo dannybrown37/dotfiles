@@ -46,8 +46,8 @@ _notify_if_long_running() {
         short_cmd=$(echo "$__preexec_last_cmd" | head -c 50)
 
         # Send to ntfy.sh (phone notification)
-        if [[ -n "${PERSONAL_ALERT_TOPIC:-}" ]] && command -v http &>/dev/null; then
-            echo "Command finished: ${short_cmd} (${duration}s)" | http POST ntfy.sh/"${PERSONAL_ALERT_TOPIC}" > /dev/null 2>&1 &
+        if [[ -n "${PERSONAL_ALERT_TOPIC:-}" ]] && command -v curl &>/dev/null; then
+            curl -fsS -d "Command finished: ${short_cmd} (${duration}s)" ntfy.sh/"${PERSONAL_ALERT_TOPIC}" > /dev/null 2>&1 &
             disown
         fi
     fi

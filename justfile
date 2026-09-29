@@ -19,9 +19,6 @@ symlinks:
 _cli-tools:
     bash -c ". {{root_dir}}/install/cli-tools.sh"
 
-_chrome:
-    bash -c ". {{root_dir}}/install/chrome.sh"
-
 _password-store:
     bash -c ". {{root_dir}}/install/password-store.sh"
 
@@ -72,14 +69,13 @@ _git-a-grip:
 
 _git-tools: _lazygit
     bash -c ". {{root_dir}}/install/git-absorb.sh"
-    bash -c ". {{root_dir}}/install/gh-dash.sh"
 
 # ── Composite targets ────────────────────────────────────────────────────────
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else
 # assumes, and rust delivers the cargo that cli-tools needs for eza.
 
-## @just 10 Start Here | Full machine setup (apt, rust, bash, cli-tools, chrome, git-tools, password-store)
-bootstrap: _apt rust _bash _cli-tools _chrome _git-tools _password-store
+## @just 10 Start Here | Full machine setup (apt, rust, bash, cli-tools, git-tools, password-store)
+bootstrap: _apt rust _bash _cli-tools _git-tools _password-store
 
 ## @just 11 Start Here | Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
 extras *names:
