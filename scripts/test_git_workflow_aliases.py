@@ -211,6 +211,48 @@ def test_start_carries_uncommitted_changes_to_new_branch(
     assert git(clone, 'stash', 'list', env=env).stdout == ''
 
 
+@pytest.mark.parametrize('on_main_with_commits', [False, True])
+def test_start_keeps_staged_changes_staged(
+    clone: Path,
+    env: dict[str, str],
+    on_main_with_commits: bool,  # noqa: FBT001
+) -> None:
+    if on_main_with_commits:
+        commit_on_main(clone, env, FIVE_LINES.replace('a', 'A'))
+    else:
+        git(clone, 'switch', '-c', 'old-topic', env=env)
+        (clone / 'other.txt').write_text('other\n')
+        git(clone, 'add', 'other.txt', env=env)
+        git(clone, 'commit', '-m', 'feat: other', env=env)
+    f = clone / 'f.txt'
+    f.write_text(f.read_text().replace('c', 'C'))
+    git(clone, 'add', 'f.txt', env=env)
+    (clone / 'unstaged.txt').write_text('unstaged\n')
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    staged = git(clone, 'diff', '--cached', '--name-only', env=env).stdout
+    assert staged.split() == ['f.txt']
+    assert (clone / 'unstaged.txt').read_text() == 'unstaged\n'
+
+
+def test_start_unstages_changes_that_only_apply_as_a_merge(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    on_branch_with_committed_edit(clone, env)
+    (clone / 'f.txt').write_text(FIVE_LINES.replace('e', 'E'))
+    git(clone, 'add', 'f.txt', env=env)
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert 'carrying them unstaged' in result.stderr
+    assert (clone / 'f.txt').read_text() == FIVE_LINES.replace('e', 'E')
+    assert git(clone, 'stash', 'list', env=env).stdout == ''
+
+
 def test_start_keeps_stash_and_explains_when_carry_conflicts(
     clone: Path,
     env: dict[str, str],

@@ -4,7 +4,7 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.8.0"
+readonly VERSION="1.8.1"
 
 usage() {
     cat <<'EOF'
@@ -125,6 +125,12 @@ done_after_merge() {
     fi
 }
 
+pop_carried() {
+    git stash pop --index 2>/dev/null && return
+    echo 'staged changes did not apply to the new base: carrying them unstaged' >&2
+    git stash pop
+}
+
 with_carried_changes() {
     local label="$1" from stashed=0
     shift
@@ -136,11 +142,11 @@ with_carried_changes() {
     if ! "$@"; then
         if [[ "${stashed}" == 1 ]]; then
             git switch "${from}" >/dev/null 2>&1 || true
-            git stash pop
+            pop_carried
         fi
         exit 1
     fi
-    if [[ "${stashed}" == 1 ]] && ! git stash pop; then
+    if [[ "${stashed}" == 1 ]] && ! pop_carried; then
         fail 1 'carried changes conflict: fix the files, git add them, then git stash drop'
     fi
 }
@@ -178,11 +184,21 @@ base_has_own_commits() {
 # Commits made on the base by mistake: the topic keeps them, the base goes
 # back to origin. The base moves first, so a conflict leaves only the rebase.
 move_base_commits() {
-    local topic="$1" remote="origin/${BASE}"
+    local topic="$1" remote="origin/${BASE}" stashed=0
     git switch -c "${topic}"
     git branch -f "${BASE}" "${remote}"
-    git rebase --autostash "${remote}" ||
+    # Not --autostash: it drops what was staged.
+    if [[ -n "$(git status --porcelain)" ]]; then
+        git stash push -u -m "git start ${topic}"
+        stashed=1
+    fi
+    if ! git rebase "${remote}"; then
+        [[ "${stashed}" == 0 ]] || fail 1 'fix the conflicts, git rebase --continue, then git stash pop --index'
         fail 1 'fix the conflicts, git rebase --continue'
+    fi
+    if [[ "${stashed}" == 1 ]] && ! pop_carried; then
+        fail 1 'carried changes conflict: fix the files, git add them, then git stash drop'
+    fi
     echo "moved commits made on ${BASE} to ${topic}" >&2
 }
 
