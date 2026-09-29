@@ -61,7 +61,7 @@ if command -v batcat &>/dev/null; then
 fi
 
 # dotfiles
-alias idf='sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash'
+alias idf='sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/bootstrap.sh | bash'
 alias cdf='code ~/projects/dotfiles'  # @doc Code Dot Files: Open the dotfiles repo in VSCode
 
 # npm

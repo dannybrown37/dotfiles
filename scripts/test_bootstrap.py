@@ -1,4 +1,4 @@
-"""Tests for install/this_repo.sh, the curl | bash fresh-machine entrypoint."""
+"""Tests for bootstrap.sh, the curl | bash fresh-machine entrypoint."""
 
 import shutil
 import subprocess
@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = REPO_ROOT / 'install' / 'this_repo.sh'
+SCRIPT = REPO_ROOT / 'bootstrap.sh'
 
 FAKE_RUST_SH = """\
 echo rust.sh >> "${CALL_LOG}"

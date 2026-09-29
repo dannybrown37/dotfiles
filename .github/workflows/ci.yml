@@ -92,7 +92,7 @@ jobs:
           persist-credentials: false
 
       # Skips compiling eza and just (~2.5 min). A hit puts `just` on PATH, so
-      # this_repo.sh skips its pre-just steps -- but the key covers those
+      # bootstrap.sh skips its pre-just steps -- but the key covers those
       # scripts, so touching them runs cold, and the weekly run is always cold.
       - name: Cache cargo-installed binaries
         if: github.event_name != 'schedule'
@@ -101,7 +101,7 @@ jobs:
           path: |
             ~/.cargo/bin/eza
             ~/.cargo/bin/just
-          key: cargo-bins-${{ runner.os }}-${{ hashFiles('install/this_repo.sh', 'install/apt.sh', 'install/rust.sh', 'install/cli-tools.sh', 'install/versions.sh') }}
+          key: cargo-bins-${{ runner.os }}-${{ hashFiles('bootstrap.sh', 'install/apt.sh', 'install/rust.sh', 'install/cli-tools.sh', 'install/versions.sh') }}
 
       - name: Syntax-check all install scripts
         run: |
@@ -117,14 +117,14 @@ jobs:
       # Through the README's curl | bash entrypoint rather than setup-just, so
       # CI proves a machine with no `just` can get one. DOTFILES_DIR points it
       # at this checkout instead of cloning main.
-      - name: Bootstrap via this_repo.sh (safe subset)
-        run: bash install/this_repo.sh
+      - name: Bootstrap via bootstrap.sh (safe subset)
+        run: bash bootstrap.sh
         env:
           DOTFILES_DIR: ${{ github.workspace }}
           DOTFILES_BOOTSTRAP_RECIPE: _ci
 
       - name: Idempotency — re-run the same entrypoint
-        run: bash install/this_repo.sh
+        run: bash bootstrap.sh
         env:
           DOTFILES_DIR: ${{ github.workspace }}
           DOTFILES_BOOTSTRAP_RECIPE: _ci
