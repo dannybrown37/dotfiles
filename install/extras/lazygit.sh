@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## Install lazygit TUI git client
+## @extra lazygit | TUI git client (with this repo's config)
 
 ##
 ## Install latest version of lazygit (skips if already current)
@@ -43,9 +43,9 @@ echo "lazygit ${latest_version} installed at $(command -v lazygit)"
 ##
 
 # shellcheck source=install/link_config.sh
-source "$(dirname "${BASH_SOURCE[0]}")/link_config.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../link_config.sh"
 
-dotfiles="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+dotfiles="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 link_config "${dotfiles}/config/lazygit.yml" \
     "${HOME}/.config/lazygit/config.yml"

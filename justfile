@@ -37,9 +37,6 @@ rust:
 nvim:
     bash -c ". {{root_dir}}/install/nvim.sh"
 
-_lazygit:
-    bash -c ". {{root_dir}}/install/lazygit.sh"
-
 gnome:
     bash -c ". {{root_dir}}/install/gnome.sh"
 
@@ -67,22 +64,19 @@ _gtd:
 _git-a-grip:
     bash -c ". {{root_dir}}/install/git-a-grip.sh"
 
-_git-tools: _lazygit
-    bash -c ". {{root_dir}}/install/git-absorb.sh"
-
 # ── Composite targets ────────────────────────────────────────────────────────
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else
 # assumes.
 
-## @just 10 Start Here | Full machine setup (apt, bash, cli-tools, git-tools, password-store)
-bootstrap: _apt _bash _cli-tools _git-tools _password-store
+## @just 10 Start Here | Full machine setup (apt, bash, cli-tools, password-store)
+bootstrap: _apt _bash _cli-tools _password-store
 
 ## @just 11 Start Here | Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
 extras *names:
     @bash "{{root_dir}}/scripts/extras.sh" {{names}}
 
 # CI-safe subset: no bash/chrome/password-store (needs GPG), no symlinks (needs $HOME layout)
-_ci: _apt symlinks _cli-tools _lazygit
+_ci: _apt symlinks _cli-tools
 
 ## @just 32 Developer Tools | Install VS Code extensions and settings
 vscode:
