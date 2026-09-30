@@ -68,7 +68,13 @@ def test_files_lists_every_markdown_file(refs_dir: Path) -> None:
 
 @pytest.mark.parametrize(
     'name',
-    ['media', 'mental-models', 'vim-notes', 'home-server-setup', 'git-workflow'],
+    [
+        'media',
+        'mental-models',
+        'vim-notes',
+        'home-server-setup',
+        'git-workflow',
+    ],
 )
 def test_default_refs_include_repo_docs(name: str) -> None:
     assert name in run('files').stdout.splitlines()
@@ -81,7 +87,10 @@ def test_default_refs_include_repo_docs(name: str) -> None:
         ('git-workflow', 'docs/git-workflow.md'),
     ],
 )
-def test_default_name_resolves_outside_references(name: str, path: str) -> None:
+def test_default_name_resolves_outside_references(
+    name: str,
+    path: str,
+) -> None:
     result = run(name)
     assert result.returncode == 0
     assert result.stdout == (REFS.parent.parent / path).read_text()
