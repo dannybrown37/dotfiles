@@ -1,6 +1,7 @@
 """Tests for the non-interactive paths of scripts/refs.sh."""
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import pytest
 
 REFS = Path(__file__).parent / 'refs.sh'
 EXIT_USAGE = 2
+ANSI = re.compile(r'\x1b\[[0-9;]*m')
 
 SAMPLE = """# Title
 
@@ -215,7 +217,7 @@ def test_add_by_name_writes_to_refs_dir(refs_dir: Path) -> None:
 def test_preview_renders_ref_by_name(refs_dir: Path) -> None:
     result = run('preview', 'notes', refs_dir=refs_dir)
     assert result.returncode == 0
-    assert 'no link lines' in result.stdout
+    assert 'no link lines' in ANSI.sub('', result.stdout)
 
 
 def test_preview_unknown_ref_is_usage_error(refs_dir: Path) -> None:
