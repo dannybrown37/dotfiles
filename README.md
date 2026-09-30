@@ -20,7 +20,7 @@ The output of `just` in the root directory:
 Usage: just [option]
 
 Start Here:
-  bootstrap       Full machine setup (apt, bash, cli-tools, password-store)
+  bootstrap       Full machine setup (apt, bash, cli-tools, python, password-store)
   extras          Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
   symlinks        Symlink every tracked config into $HOME (idempotent, no network)
 
@@ -150,7 +150,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `bin/ntfy.sh` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
 | `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
-| `refs` | Read link references in glow (bare: pick one) | refs [links] [media|mental-models] | `config/.bash_aliases` |
+| `refs` | Read references and repo guides in glow (bare: pick one) | refs [links] [media|mental-models] | `config/.bash_aliases` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `selection` | Alt+T - transform selected text (case, JSON, URL) from a keyboard menu; Alt+G - open selection (or clipboard) as URL / Jira key / Google search | `ahk/selection.ahk` |

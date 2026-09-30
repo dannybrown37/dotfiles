@@ -97,7 +97,7 @@ alias gcd='git checkout develop'
 alias gcdf='git clone https://www.github.com/dannybrown37/dotfiles'
 alias gcl='git checkout -'
 alias gds='git diff --staged'
-alias gitwf='glow "${DOTFILES_DIR}/docs/git-workflow.md" 2>/dev/null || cat "${DOTFILES_DIR}/docs/git-workflow.md"' # @doc Show the git workflow cheat sheet (git start / ship / done)
+alias gitwf='refs git-workflow' # @doc Show the git workflow cheat sheet (git start / ship / done)
 alias gcm='git checkout main'
 alias gco='git checkout'
 __git_complete gco _git_checkout
@@ -212,7 +212,7 @@ alias tml='tmux ls'
 alias tmconf='tmux source-file ~/.tmux.conf'  # @doc Reload tmux config
 
 # Mental Models
-alias refs='"${DOTFILES_DIR}/scripts/refs.sh"'  # @doc Read link references in glow (bare: pick one) | refs [links] [media|mental-models]
+alias refs='"${DOTFILES_DIR}/scripts/refs.sh"'  # @doc Read references and repo guides in glow (bare: pick one) | refs [links] [media|mental-models]
 alias mentalmodels='refs mental-models'  # @doc Read mental models in glow (links: refs links mental-models)
 alias media='refs media'  # @doc Read educational media in glow (links: refs links media)
 # alias fixhashicorppublickey='wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg'

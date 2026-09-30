@@ -68,8 +68,8 @@ _git-a-grip:
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else
 # assumes.
 
-## @just 10 Start Here | Full machine setup (apt, bash, cli-tools, password-store)
-bootstrap: _apt _bash _cli-tools _password-store
+## @just 10 Start Here | Full machine setup (apt, bash, cli-tools, python, password-store)
+bootstrap: _apt _bash _cli-tools python _password-store
 
 ## @just 11 Start Here | Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
 extras *names:

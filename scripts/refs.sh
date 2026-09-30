@@ -3,10 +3,9 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly REFS_VERSION="0.3.0"
+readonly REFS_VERSION="0.4.0"
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly DOTFILES_ROOT="$(dirname "$(dirname "${SELF}")")"
-readonly REFS_DIR="${REFS_DIR:-${DOTFILES_ROOT}/references}"
 
 usage() {
     cat >&2 <<EOF
@@ -26,23 +25,45 @@ EOF
     exit "${EXIT_USAGE}"
 }
 
+markdown_in() {
+    local file
+    for file in "$1"/*.md; do
+        [[ -f "${file}" ]] && echo "${file}"
+    done
+    return 0
+}
+
+# REFS_DIR narrows the search to one directory (used by the tests)
+ref_paths() {
+    if [[ -n "${REFS_DIR:-}" ]]; then
+        markdown_in "${REFS_DIR}"
+        return 0
+    fi
+    markdown_in "${DOTFILES_ROOT}/references"
+    markdown_in "${DOTFILES_ROOT}/wsl"
+    echo "${DOTFILES_ROOT}/docs/git-workflow.md"
+}
+
 list_files() {
     local file
-    for file in "${REFS_DIR}"/*.md; do
-        if grep -qE '^\[[^]]*\]\(https?://' "${file}" 2>/dev/null; then
-            basename "${file}" .md
-        fi
-    done
+    while IFS= read -r file; do
+        basename "${file}" .md
+    done < <(ref_paths)
 }
 
 resolve_file() {
+    local file
     if [[ -f "$1" ]]; then
         echo "$1"
-    elif list_files | grep -qxF -- "$1"; then
-        echo "${REFS_DIR}/$1.md"
-    else
-        usage
+        return 0
     fi
+    while IFS= read -r file; do
+        if [[ "$(basename "${file}" .md)" == "$1" ]]; then
+            echo "${file}"
+            return 0
+        fi
+    done < <(ref_paths)
+    usage
 }
 
 list_entries() {
