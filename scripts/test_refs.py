@@ -60,10 +60,31 @@ def refs_dir(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_files_lists_only_link_references(refs_dir: Path) -> None:
+def test_files_lists_every_markdown_file(refs_dir: Path) -> None:
     result = run('files', refs_dir=refs_dir)
     assert result.returncode == 0
-    assert result.stdout.splitlines() == ['alpha', 'beta']
+    assert result.stdout.splitlines() == ['alpha', 'beta', 'notes']
+
+
+@pytest.mark.parametrize(
+    'name',
+    ['media', 'mental-models', 'vim-notes', 'home-server-setup', 'git-workflow'],
+)
+def test_default_refs_include_repo_docs(name: str) -> None:
+    assert name in run('files').stdout.splitlines()
+
+
+@pytest.mark.parametrize(
+    ('name', 'path'),
+    [
+        ('home-server-setup', 'wsl/home-server-setup.md'),
+        ('git-workflow', 'docs/git-workflow.md'),
+    ],
+)
+def test_default_name_resolves_outside_references(name: str, path: str) -> None:
+    result = run(name)
+    assert result.returncode == 0
+    assert result.stdout == (REFS.parent.parent / path).read_text()
 
 
 def test_name_resolves_to_refs_dir_file(refs_dir: Path) -> None:
@@ -71,7 +92,7 @@ def test_name_resolves_to_refs_dir_file(refs_dir: Path) -> None:
     assert result.stdout == 'https://example.com/one\n'
 
 
-@pytest.mark.parametrize('name', ['notes', 'nope'])
+@pytest.mark.parametrize('name', ['nope', 'skip'])
 def test_unknown_name_shows_valid_names(refs_dir: Path, name: str) -> None:
     result = run(name, refs_dir=refs_dir)
     assert result.returncode == EXIT_USAGE
