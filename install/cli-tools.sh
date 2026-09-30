@@ -10,87 +10,45 @@ set -euo pipefail
 ## apt_packages entries is the same in each case -- Debian/Ubuntu either has no
 ## package or has one too old to be worth using.
 ##
-## Needs apt.sh to have run: jq resolves the release tags, curl fetches them.
-## eza needs cargo, so `just bootstrap` runs `rust` before this -- and cargo_env.sh
-## is what actually makes that ordering count, since PATH does not cross a Make
-## target boundary.
+## Needs apt.sh to have run: curl fetches the releases.
 ##
-# shellcheck source=install/cargo_env.sh
-source "$(dirname "${BASH_SOURCE[0]}")/cargo_env.sh"
 # shellcheck source=install/versions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+# shellcheck source=install/release_binary.sh
+source "$(dirname "${BASH_SOURCE[0]}")/release_binary.sh"
 
 ##
-## Install eza (modern ls replacement, community fork of exa)
-## Not in default Debian/Ubuntu repos, and the packaged builds lag badly --
-## install from crates.io so it tracks upstream.
+## Install just and eza (modern ls replacement) from prebuilt musl releases.
+## Not in bookworm's apt.
 ##
 
-for cargo_tool in eza just; do
-    if ! command -v "${cargo_tool}" &>/dev/null; then
-        if command -v cargo &>/dev/null; then
-            cargo install --locked "${cargo_tool}"
-        else
-            echo "${cargo_tool} needs cargo -- run 'just rust' then 'just _cli-tools'" >&2
-        fi
-    else
-        echo "${cargo_tool} is already installed on this system"
-    fi
-done
-
-##
-## Install tokei (code stats) -- v12 is last release with pre-built binaries
-##
-
-if ! command -v tokei &>/dev/null; then
-    tmp_dir=$(mktemp -d)
-    curl -sLo "${tmp_dir}/tokei.tar.gz" \
-        "https://github.com/XAMPPRocky/tokei/releases/download/v${TOKEI_VERSION}/tokei-x86_64-unknown-linux-gnu.tar.gz"
-    tar -xf "${tmp_dir}/tokei.tar.gz" -C "${tmp_dir}"
-    sudo install "${tmp_dir}/tokei" /usr/local/bin/tokei
-    rm -rf "${tmp_dir}"
-else
-    echo "tokei is already installed on this system"
-fi
-
-##
-## Install hyperfine (benchmarking tool)
-##
-
-if ! command -v hyperfine &>/dev/null; then
-    tmp_deb=$(mktemp --suffix=.deb)
-    curl -sLo "${tmp_deb}" \
-        "https://github.com/sharkdp/hyperfine/releases/download/v${HYPERFINE_VERSION}/hyperfine_${HYPERFINE_VERSION}_amd64.deb"
-    sudo dpkg -i "${tmp_deb}"
-    rm "${tmp_deb}"
-else
-    echo "hyperfine is already installed on this system"
-fi
-
-##
-## Install glow (markdown renderer)
-##
-
-if ! command -v glow &>/dev/null; then
-    tmp_deb=$(mktemp --suffix=.deb)
-    curl -sLo "${tmp_deb}" \
-        "https://github.com/charmbracelet/glow/releases/download/v${GLOW_VERSION}/glow_${GLOW_VERSION}_amd64.deb"
-    sudo dpkg -i "${tmp_deb}"
-    rm "${tmp_deb}"
-else
-    echo "glow is already installed on this system"
-fi
+install_release_binary just \
+    "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+    "${JUST_VERSION}"
+install_release_binary eza \
+    "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_x86_64-unknown-linux-musl.tar.gz" \
+    "${EZA_VERSION}"
 
 ##
 ## Install zoxide, per creator, Debian/Ubuntu have old versions in apt
 ## https://github.com/ajeetdsouza/zoxide/issues/694#issuecomment-1946069618
 ##
 
-if [[ ! -f "${HOME}/.local/bin/zoxide" ]]; then
-    curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
-else
-    echo "zoxide is already installed on this system"
+install_release_binary zoxide \
+    "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide-${ZOXIDE_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+    "${ZOXIDE_VERSION}"
+
+##
+## Install fzf. Bookworm's apt has 0.38, too old for `fzf --bash` and many
+## newer flags; drop it so the release binary is the one on PATH.
+##
+
+if dpkg -s fzf &>/dev/null; then
+    sudo apt-get remove -y fzf
 fi
+install_release_binary fzf \
+    "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz" \
+    "${FZF_VERSION}"
 
 ##
 ## Install delta (syntax-highlighting git pager)
@@ -104,14 +62,4 @@ if ! command -v delta &>/dev/null; then
     rm "${tmp_deb}"
 else
     echo "delta already installed: $(delta --version)"
-fi
-
-##
-## Install croc file sharing tool
-##
-
-if [[ ! -f "${HOME}/.local/bin/croc" ]]; then
-    curl https://getcroc.schollz.com | bash
-else
-    echo "croc is already installed on this system"
 fi

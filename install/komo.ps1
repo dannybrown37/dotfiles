@@ -1,4 +1,5 @@
-## @just 42 Environment-Specific | Reset komorebi/whkd: install if needed, clear phantom windows, restart
+# Reset komorebi/whkd: install if needed, clear phantom windows, restart.
+# Hidden recipe `just _komo`; run it via the `komo` alias in config/.bash_aliases.
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
 if (-not (Get-Command komorebic -ErrorAction SilentlyContinue)) {
@@ -20,7 +21,7 @@ Copy-Item -Path (Join-Path $wslDir "whkdrc") -Destination (Join-Path $whkdConfig
 
 if (-not (Test-Path "$env:USERPROFILE\applications.json")) {
     Write-Host "applications.json not found, fetching application-specific configuration..."
-    komorebic fetch-application-specific-configuration
+    komorebic fetch-app-specific-configuration
 }
 
 # --- phantom window reset -------------------------------------------------

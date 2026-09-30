@@ -7,7 +7,7 @@ Debian dotfiles for a WSL2-based setup.
 In WSL, install `apt` packages and basic Bash profile in one command:
 
 ```bash
-curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash
+curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/bootstrap.sh | bash
 ```
 
 ## Install Options
@@ -20,42 +20,24 @@ The output of `just` in the root directory:
 Usage: just [option]
 
 Start Here:
-  bootstrap       Full machine setup (apt, rust, bash, cli-tools, chrome, git-tools, password-store)
-  symlinks        Symlink every tracked config into $HOME (idempotent, no network)
-
-Languages & Runtimes:
-  python          Install Python environment (uv, select uv tools)
-  node            Install Node.js environment (n, Node 22, select global packages)
-  deno            Install Deno 2
-  golang          Install Go environment (latest Golang version)
-  rust            Install the Rust toolchain (rustup, latest stable)
-
-Developer Tools:
-  git-tools       Install git workflow tools (lazygit, ghstack, git-absorb, git-branchless, gh-dash)
-  nvim            Install Neovim
-  vscode          Install VS Code extensions and settings
-  ai              Install AI coding tools (cartoon)
-  rust-tools      Install optional cargo utilities (htmlq, jless, difftastic, mprocs)
-  terraform       Install Terraform (latest release)
-  spotify         Install spotify_player TUI (remote control, no audio)
+  bootstrap       Full machine setup (apt, bash, cli-tools, python, password-store)
+  extras          Languages, editors, and opt-in tools, with ✓ for installed
 
 Environment-Specific:
+  vscode          Link VS Code settings, then pick extensions (✓ = installed)
+  windows         Windows-side tools (winget, npm, uv, win32yank), with ✓ for installed
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
-  windows         Install Windows-side tooling (win-dev, win32yank)
-  komo            Reset komorebi/whkd: install if needed, clear phantom windows, restart
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
   secrets-load    Pull private repo, load secrets from password-store to local files
-
-My Dev Tooling:
-  my-dev-tools    Clone and install skill-tree, gtd, and git-a-grip
 
 Verification:
   check           Run every prek hook over the whole repo
   test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
+  bench-shell     Benchmark interactive shell startup time
 ```
 
 <!-- make:end -->
@@ -82,13 +64,17 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `cdp` | Cd to any project directory from anywhere (with tab autocomplete) | `bin/cdp.sh` |
 | `chafa` | Render an image as terminal ANSI art -- powers `screenshot pick` previews | chafa <image> | `bin/stubs.sh` |
 | `chrome` | Alt+C in Chrome - copy the current tab as a markdown link, tracking params stripped | `ahk/chrome.ahk` |
+| `chrome` | Google Chrome browser | chrome <url> | `bin/stubs.sh` |
 | `cht` | Query cht.sh for info on many technologies | `bin/chtsh.sh` |
-| `cinplay` | Replay session.cast recording | `config/.bash_aliases` |
-| `cinrec` | Record terminal session to session.cast | `config/.bash_aliases` |
+| `claude` | Claude Code coding agent | claude | `bin/stubs.sh` |
 | `clip` | Copy a screen recording to OneDrive with fzf selection: clip [--reset] | `bin/clip.sh` |
 | `cmds` | Search all commands, aliases, and AHK hotkeys via fzf | `bin/cmds.sh` |
+| `copilot` | GitHub Copilot CLI coding agent | copilot | `bin/stubs.sh` |
+| `cowsay` | ASCII cow speech bubbles | echo hi | cowsay | `bin/stubs.sh` |
 | `croc` | Send files between machines securely | croc send <file> | `bin/stubs.sh` |
 | `delta` | Syntax-highlighting pager for git diffs (replaces less) | `bin/stubs.sh` |
+| `deno` | Deno JavaScript/TypeScript runtime | deno run <file> | `bin/stubs.sh` |
+| `difftastic` | Diff that understands syntax | difft <old> <new> | `bin/stubs.sh` |
 | `docker-doctor` | Diagnose why the docker CLI can't reach a daemon under WSL | docker-doctor | `bin/docker.sh` |
 | `docker-up` | Start Docker Desktop from WSL and block until the daemon answers | docker-up [timeout_seconds] | `bin/docker.sh` |
 | `docker` | Containers -- via Docker Desktop on the Windows host | docker-up to start it | `bin/stubs.sh` |
@@ -96,45 +82,53 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
 | `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `bin/timestamps.sh` |
 | `eza` | Modern ls replacement with git status and icons | `bin/stubs.sh` |
+| `faker` | Generate fake test data | faker name | `bin/stubs.sh` |
+| `fastfetch` | System info summary (neofetch successor) | fastfetch | `bin/stubs.sh` |
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
+| `gab` | Fold staged fixes into the commits they belong to | `config/.bash_aliases` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
 | `gh-dash` | Terminal GitHub dashboard -- PRs, issues, notifications | gh-dash | `bin/stubs.sh` |
+| `ghautomerge` | Enable auto-merge + auto-delete head branches: ghautomerge [owner/repo] | `bin/ghautomerge.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
-| `ghstack` | GitHub stacked PRs extension (fast passthrough) | ghstack view | `bin/stubs.sh` |
 | `ghwatch` | github-action-watch: watch the current repo's in-progress CI | ghwatch [--any-branch] | `bin/ghwatch.sh` |
 | `gh` | GitHub CLI -- PRs, issues, workflows, and more | `bin/stubs.sh` |
 | `git-absorb` | Auto-fixup commits by matching hunks to the right commit | git-absorb | `bin/stubs.sh` |
-| `git-branchless` | Stacked-diff workflow + smartlog for git | git-branchless smartlog | `bin/stubs.sh` |
 | `git-open` | Open current repo/branch in browser | git-open [remote] [branch] | `bin/stubs.sh` |
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
-| `gitlines` | Count lines of code in all files from curren branch | `config/.bash_aliases` |
-| `gitpurge` | Delete all local branches except main, develop, and the current branch | `config/.bash_aliases` |
+| `gitlines` | Count lines of code in all files from current branch | `config/.bash_aliases` |
 | `gitwf` | Show the git workflow cheat sheet (git start / ship / done) | `config/.bash_aliases` |
-| `git_workflow` | Backs the git start/ship/rescue/done aliases in config/.gitconfig | git_workflow.sh help | `scripts/git_workflow.sh` |
+| `git_workflow` | Backs the git start/ship/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help | `scripts/git_workflow.sh` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |
 | `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
 | `gpup` | Push new branch and open PR in browser | `config/.bash_aliases` |
+| `gp` | Git push; if remote is ahead, pull --rebase and push again | `config/.bash_aliases` |
 | `grl` | List recent CI runs on current branch | `config/.bash_aliases` |
 | `grw` | Watch CI run for current branch live | grw | `config/.bash_aliases` |
 | `gsl` | Git stash list | `config/.bash_aliases` |
 | `gsp` | Git stash pop | `config/.bash_aliases` |
 | `gss` | Git stash save | `config/.bash_aliases` |
-| `gstk` | Short alias for stacked PR helper | `config/.bash_aliases` |
 | `gwt` | git-worktree: gwt <add|list|rm|cd> [branch] [options] | `bin/gwt.sh` |
+| `htmlq` | jq for HTML | htmlq <selector> < page.html | `bin/stubs.sh` |
+| `httpie` | Friendly HTTP client (httpie) | http GET <url> | `bin/stubs.sh` |
 | `hyperfine` | Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2' | `bin/stubs.sh` |
+| `jless` | Pager for JSON | jless <file.json> | `bin/stubs.sh` |
 | `just` | Command runner (modern Make alternative) | just <recipe> | `bin/stubs.sh` |
 | `komo` | Reset komorebi window manager (Windows only) | `config/.bash_aliases` |
 | `lazygit` | TUI git client | lg (alias) | `bin/stubs.sh` |
 | `lg` | Open lazygit TUI | `config/.bash_aliases` |
-| `media` | Open educational media reference | `config/.bash_aliases` |
-| `mentalmodels` | Open mental models reference | `config/.bash_aliases` |
+| `lolcat` | Rainbow text | echo hi | lolcat | `bin/stubs.sh` |
+| `media` | Read educational media in glow (links: refs links media) | `config/.bash_aliases` |
+| `mentalmodels` | Read mental models in glow (links: refs links mental-models) | `config/.bash_aliases` |
 | `mkwebapp` | Create a Chrome --app= shortcut on the Windows Desktop | mkwebapp <name> <url> [--taskbar] | `bin/mkwebapp.sh` |
 | `mk` | Create a directory and cd into it | `bin/mk.sh` |
+| `mprocs` | Run several commands side by side | mprocs 'cmd1' 'cmd2' | `bin/stubs.sh` |
+| `mystats` | Top commands I typed, excluding Claude Code's atuin entries | mystats [count] | `config/.bash_aliases` |
+| `neofetch` | Alias for fastfetch, for muscle memory | neofetch | `bin/stubs.sh` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
@@ -143,6 +137,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `bin/ntfy.sh` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
 | `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
+| `refs` | Read references and repo guides in glow (bare: pick one) | refs [links] [media|mental-models] | `config/.bash_aliases` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `selection` | Alt+T - transform selected text (case, JSON, URL) from a keyboard menu; Alt+G - open selection (or clipboard) as URL / Jira key / Google search | `ahk/selection.ahk` |
@@ -152,8 +147,6 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `sorn` | ,,sorn -- insert "Song On Right Now" markdown for the currently playing track | `ahk/hotstrings.ahk` |
 | `sorn` | Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn | `config/.bash_aliases` |
 | `src` | Reload bash configuration | `config/.bash_aliases` |
-| `stack` | Ergonomic wrapper for GitHub stacked PRs (gh stack) | stack help | `scripts/stack.sh` |
-| `stack` | Stacked PR helper wrapper | stack doctor | `config/.bash_aliases` |
 | `starship` | Cross-shell prompt with git/lang context | `bin/stubs.sh` |
 | `terraform` | Provision infrastructure as code | terraform plan | `bin/stubs.sh` |
 | `tldr` | Simplified man pages with practical examples | tldr <cmd> | `bin/stubs.sh` |
@@ -179,7 +172,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `bin/` | Sourced shell scripts loaded into the current session |
 | `config/` | Dotfiles (.bashrc, .gitconfig, .inputrc, .ruff.toml, .secrets) symlinked to ~ |
 | `docs/` | Long-form documentation extracted from the README |
-| `githooks/` | Tracked git hooks (core.hooksPath) -- forward pre-commit and commit-msg to prek |
+| `githooks/` | Tracked git hooks (core.hooksPath) -- forward pre-commit, commit-msg and pre-push to prek |
 | `install/` | Bootstrap install scripts invoked via justfile recipes |
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
@@ -210,14 +203,13 @@ Updated with `just bench-shell`:
 
 ## Initial Windows Setup Notes
 
-For when you're truly starting from scratch.
+For when you're truly starting from scratch. `just windows --all` installs Windows Terminal, VS Code, AutoHotkey v2, and the rest of the winget-managed toolchain (plain `just windows` picks items one by one); only Chrome and the WSL distro itself are manual.
 
 ### Downloads
 
 - [Google Chrome](https://www.google.com/search?q=google+chrome+download)
-- [Windows Terminal](https://www.google.com/search?q=windows+terminal+download)
-- [Visual Studio Code](https://www.google.com/search?q=vs+code+download)
-- [AutoHotKey](https://www.autohotkey.com/download/) (v2) -- then `ahk && ahk startup` from WSL
+
+After WSL is up and this repo is cloned, run `just windows --all`, then `ahk && ahk startup` from WSL.
 
 ### Set Up a WSL Debian Distro
 

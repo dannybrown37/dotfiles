@@ -2,7 +2,7 @@
 
 ##
 ## Single source of truth for creating one config symlink.
-## Sourced by install/symlinks.sh, install/lazygit.sh and install/spotify.sh.
+## Sourced by install/symlinks.sh, install/extras/lazygit.sh and install/extras/spotify.sh.
 ##
 ## Library only -- no `## @just` header, so it is not a Make target. The sweep
 ## that links every tracked config lives in install/symlinks.sh, which is a

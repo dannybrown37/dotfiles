@@ -61,9 +61,24 @@ check_symlink() {
             warn "$label" "exists but points to '$actual' (expected '$target')"
         fi
     elif [[ -f "$link" ]]; then
-        warn "$label" "$link is a real file, not a symlink — run: just symlinks"
+        warn "$label" "$link is a real file, not a symlink — run: just bootstrap"
     else
-        fail "$label" "run: just symlinks"
+        fail "$label" "run: just bootstrap"
+    fi
+}
+
+check_ahk_v2() {
+    local machine_path="/mnt/c/Program Files/AutoHotkey/v2/AutoHotkey64.exe"
+    # shellcheck disable=SC2016  # $env:UserName is PowerShell's, not bash's
+    local windows_user="${WINDOWS_USERNAME:-$(powershell.exe '$env:UserName' 2>/dev/null | tr -d '\r\n')}"
+    local user_path="/mnt/c/Users/${windows_user}/AppData/Local/Programs/AutoHotkey/v2/AutoHotkey64.exe"
+
+    if [[ -x "$machine_path" ]]; then
+        ok "AutoHotkey v2" "installed (${machine_path})"
+    elif [[ -x "$user_path" ]]; then
+        ok "AutoHotkey v2" "installed (${user_path})"
+    else
+        fail "AutoHotkey v2" "just windows autohotkey  (or install from https://www.autohotkey.com/download/)"
     fi
 }
 
@@ -107,30 +122,28 @@ source "${DOTFILES_DIR}/install/apt_packages.sh"
 for pkg in "${apt_packages[@]}"; do
     check_apt "$pkg"
 done
+TMUX_VER=$(tmux -V 2>/dev/null | awk '{print $2}')
+if [[ -n "${TMUX_VER}" && "$(printf '%s\n' 3.4 "${TMUX_VER}" | sort -V | head -1)" != 3.4 ]]; then
+    warn "tmux hyperlinks" "tmux ${TMUX_VER} < 3.4: sudo apt install -t <codename>-backports tmux"
+fi
 
 # ── Core CLI Tools ────────────────────────────────────────────────────────────
 
 section "Core CLI Tools"
-check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "cargo install eza  (or: just _cli-tools)"
-check "just"       "just --version | awk '{print \$2}'"                             "cargo install just  (or: just _cli-tools)"
-check "tokei"      "tokei --version | awk '{print \$2}'"                    "just _cli-tools"
-check "hyperfine"  "hyperfine --version | awk '{print \$2}'"                "just _cli-tools"
-check "glow"       "glow --version | awk '{print \$3}'"                     "just _cli-tools"
-check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "just _cli-tools  (installs to ~/.local/bin)"
+check "eza"        "eza --version | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"  "just _cli-tools"
+check "just"       "just --version | awk '{print \$2}'"                             "just _cli-tools"
+check "zoxide"     "zoxide --version | awk '{print \$2}'"                   "just _cli-tools"
 check "delta"      "delta --version | awk '{print \$2}'"                    "just _cli-tools"
 check "atuin"      "atuin --version | awk '{print \$2}'"                    "just _bash"
-check "croc"       "croc --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'" "just _cli-tools  (installs to ~/.local/bin)"
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "just _wsl-fonts"
-check "lazygit"    "lazygit --version 2>&1 | grep -oP '(?<!git )version=\K[^,]+'" "just git-tools"
-check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "just nvim"
-check "cartoon"    "cartoon --version | awk '{print \$2}'"                  "just ai"
-check "terraform"  "terraform version -json | jq -r '.terraform_version'"   "just terraform"
+check "fzf"        "fzf --version | awk '{print \$1}'"                      "just _cli-tools"
+check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "just extras nvim"
 
 # ── WSL Clipboard ────────────────────────────────────────────────────────────
 
 if [[ -n "${ON_WINDOWS:-}" ]]; then
-    check "win32yank.exe" "command -v win32yank.exe" "just windows"
-    check "AutoHotkey v2" "test -x '/mnt/c/Program Files/AutoHotkey/v2/AutoHotkey64.exe' && echo installed" "https://www.autohotkey.com/download/"
+    check "win32yank.exe" "command -v win32yank.exe" "just windows win32yank"
+    check_ahk_v2
     check "AHK autocorrect list" "test -s '${DOTFILES_DIR}/ahk/vendor/AutoCorrectHotstrings.ahk' && echo present" "ahk"
 fi
 
@@ -138,8 +151,6 @@ fi
 
 section "GitHub & Auth"
 check "gh" "gh --version | head -1 | awk '{print \$3}'" "sudo apt install gh"
-check "ghstack" "gh extension list | awk -F '\\t' '\$1==\"gh stack\"{print \$3; exit}'" "just git-tools"
-check "gh-dash" "gh extension list | awk -F '\\t' '\$1==\"gh dash\"{print \$3; exit}'" "just git-tools"
 
 GH_AUTH=$(gh auth status 2>&1)
 if echo "$GH_AUTH" | grep -q "Logged in to"; then
@@ -188,7 +199,9 @@ check_symlink ".eslintrc"          "$HOME/.eslintrc"            "$DOTFILES_DIR/c
 check_symlink ".inputrc"           "$HOME/.inputrc"             "$DOTFILES_DIR/config/.inputrc"
 check_symlink ".tmux.conf"         "$HOME/.tmux.conf"           "$DOTFILES_DIR/config/.tmux.conf"
 check_symlink "starship.toml"      "$HOME/.config/starship.toml" "$DOTFILES_DIR/config/starship.toml"
-check_symlink "lazygit config"     "$HOME/.config/lazygit/config.yml" "$DOTFILES_DIR/config/lazygit.yml"
+if command -v lazygit &>/dev/null; then
+    check_symlink "lazygit config" "$HOME/.config/lazygit/config.yml" "$DOTFILES_DIR/config/lazygit.yml"
+fi
 check_symlink "nvim config"        "$HOME/.config/nvim"         "$DOTFILES_DIR/nvim"
 check_symlink ".gitconfig-personal" "$HOME/.gitconfig-personal"  "$DOTFILES_DIR/config/.gitconfig-personal"
 if [[ -e "$HOME/.gitconfig-private" ]]; then
@@ -206,8 +219,8 @@ fi
 # ── Node / NPM ────────────────────────────────────────────────────────────────
 
 section "Node / NPM"
-check "n"    "n --version"                          "curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n | sudo bash -s 22"
-check "node" "node --version | sed 's/v//'"         "just node"
+check "n"    "n --version"                          "just extras node"
+check "node" "node --version | sed 's/v//'"         "just extras node"
 check "npm"  "npm --version"                         "comes with node"
 
 NODE_VER=$(node --version 2>/dev/null | sed 's/v//' | cut -d. -f1)
@@ -220,7 +233,7 @@ fi
 # shell, silently sending global npm installs to the wrong Node.
 NODE_PATH_RESOLVED=$(command -v node 2>/dev/null)
 if [[ "$NODE_PATH_RESOLVED" == *"/.nvm/"* ]]; then
-    fail "node source" "resolves to nvm ($NODE_PATH_RESOLVED) — remove ~/.nvm, then: just node"
+    fail "node source" "resolves to nvm ($NODE_PATH_RESOLVED) — remove ~/.nvm, then: just extras node"
 elif [[ -d "$HOME/.nvm" ]]; then
     warn "nvm leftover" "$HOME/.nvm still exists — this repo uses n; run: rm -rf ~/.nvm"
 else
@@ -240,7 +253,7 @@ done
 # ── Python / uv ───────────────────────────────────────────────────────────────
 
 section "Python / uv"
-check "uv"    "uv --version | awk '{print \$2}'"    "curl -LsSf https://astral.sh/uv/install.sh | sh"
+check "uv"    "uv --version | awk '{print \$2}'"    "just extras python"
 check "python" "python3 --version | awk '{print \$2}'" "uv python install"
 
 uv_tools=(prek cookiecutter ruff bashate)
@@ -259,33 +272,32 @@ done
 # ── Go ────────────────────────────────────────────────────────────────────────
 
 section "Go"
-check "go" "go version | awk '{print \$3}' | sed 's/go//'" "just golang"
+check "go" "go version | awk '{print \$3}' | sed 's/go//'" "just extras golang"
 
 if [[ -d "/usr/local/go" ]]; then
     ok "GOROOT" "/usr/local/go"
 else
-    fail "GOROOT" "/usr/local/go missing — run: just golang"
+    fail "GOROOT" "/usr/local/go missing — run: just extras golang"
 fi
 
 # ── Rust ──────────────────────────────────────────────────────────────────────
 
 section "Rust"
-check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "just rust"
-check "cargo"   "cargo --version | awk '{print \$2}'"         "just rust"
-check "rustc"   "rustc --version | awk '{print \$2}'"         "just rust"
+check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "just extras rust"
+check "cargo"   "cargo --version | awk '{print \$2}'"         "just extras rust"
+check "rustc"   "rustc --version | awk '{print \$2}'"         "just extras rust"
 
-cargo_tools=(htmlq jless mprocs)
-for tool in "${cargo_tools[@]}"; do
-    if command -v "$tool" &>/dev/null; then
-        ver=$("$tool" --version 2>/dev/null | head -1 | awk '{print $NF}' || echo "installed")
-        ok "cargo: $tool" "$ver"
+# ── Extras ────────────────────────────────────────────────────────────────────
+
+# Opt-in, so a missing extra warns instead of failing the audit.
+section "Extras (opt-in)"
+while read -r mark name desc; do
+    if [[ "${mark}" == "✓" ]]; then
+        ok "${name}" "${desc}"
     else
-        fail "cargo: $tool" "cargo install $tool"
+        warn "${name}" "not installed  →  just extras ${name}"
     fi
-done
-
-check "git-absorb" "git-absorb --version 2>&1 | awk '{print \$NF}'" "cargo install git-absorb  (or: just git-tools)"
-check "git-branchless" "git-branchless --version 2>&1 | awk '{print \$NF}'" "cargo install --locked git-branchless  (or: just git-tools)"
+done < <(DOTFILES_ROOT="${DOTFILES_DIR}" bash "${DOTFILES_DIR}/scripts/extras.sh" --list)
 
 # ── Dev Tooling ───────────────────────────────────────────────────────────────
 
@@ -322,7 +334,7 @@ if git -C "$DOTFILES_DIR" config --get-all credential.https://github.com.helper 
     grep -q "git-credential-personal"; then
     ok "personal git credentials" "dotfiles uses MY_GITHUB_TOKEN"
 else
-    fail "personal git credentials" "run: just symlinks  (includeIf -> ~/.gitconfig-personal)"
+    fail "personal git credentials" "run: just bootstrap  (includeIf -> ~/.gitconfig-personal)"
 fi
 
 if [[ -n "${MY_GITHUB_TOKEN:-}" ]]; then
@@ -337,16 +349,14 @@ elif [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
     warn "wsl.conf systemd" "not enabled — add to /etc/wsl.conf: [boot] systemd=true"
 fi
 
-# Docker comes from Docker Desktop on the Windows host, not from an install/ script,
-# so the only thing worth auditing is whether the daemon actually answers.
+# A missing docker CLI is already reported by the extras loop; a present CLI can
+# still have no daemon behind it, since Docker Desktop runs on the Windows host.
 if command -v docker &>/dev/null; then
     if DOCKER_VER=$(docker info --format '{{.ServerVersion}}' 2>/dev/null); then
         ok "docker" "daemon reachable (server ${DOCKER_VER})"
     else
         warn "docker" "CLI present but daemon unreachable — run: docker-up  (diagnose: docker-doctor)"
     fi
-elif [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
-    warn "docker" "no docker CLI — install Docker Desktop on Windows and enable WSL integration"
 fi
 
 # ── VS Code Extensions ────────────────────────────────────────────────────────
@@ -381,7 +391,7 @@ else
                 ver=$(echo "$matched" | sed "s/^${ext}-//i" | sed 's/-linux.*$//')
                 ok "$ext" "$ver"
             else
-                fail "$ext" "code --install-extension ${ext}  (or: just vscode)"
+                fail "$ext" "code --install-extension ${ext}  (or: just vscode ${ext})"
             fi
         done
     fi

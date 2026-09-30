@@ -36,6 +36,22 @@ from check_secret_exposure import (
         'rg PRIVACY config/.secrets',
         'sed -n 1p config/.secrets',
         'awk "{print}" .env',
+        'pass show manifest',
+        'pass manifest',
+        'pass some/token',
+        'pass grep TOKEN',
+        'pass generate new/entry',
+        'gh auth token',
+        'gh auth status --show-token',
+        'gh auth status -t',
+        'export -p',
+        'export',
+        'declare -p',
+        'declare -p GITHUB_TOKEN',
+        'typeset -p',
+        'git credential fill <<<"protocol=https"',
+        'base64 config/.secrets',
+        'cut -c1- config/.secrets',
     ],
 )
 def test_detect_bash_risk_flags_dangerous_commands(command: str) -> None:
@@ -56,6 +72,16 @@ def test_detect_bash_risk_flags_dangerous_commands(command: str) -> None:
         'ls config/',
         'echo "$HOME/bin"',
         'wc -l config/.secrets',
+        'pass',
+        'pass ls',
+        'pass git pull --rebase',
+        'pass insert -m some/token',
+        'pass show -c manifest',
+        'pass generate -c new/entry',
+        'gh auth status',
+        'export FOO=bar',
+        'declare -p HOME',
+        'git credential-cache exit',
     ],
 )
 def test_detect_bash_risk_allows_safe_commands(command: str) -> None:
@@ -132,6 +158,28 @@ def test_main_blocks_read_of_secret_file(
 def test_main_allows_read_of_ordinary_file() -> None:
     payload = json.dumps(
         {'tool_name': 'Read', 'tool_input': {'file_path': 'README.md'}},
+    )
+
+    assert main(payload) == 0
+
+
+@pytest.mark.parametrize(
+    'tool_input',
+    [
+        {'pattern': '.', 'path': 'config/.secrets'},
+        {'pattern': 'TOKEN', 'path': 'config', 'glob': '.secrets'},
+        {'pattern': 'KEY', 'glob': '**/.env.*'},
+    ],
+)
+def test_main_blocks_grep_of_secret_file(tool_input: dict[str, str]) -> None:
+    payload = json.dumps({'tool_name': 'Grep', 'tool_input': tool_input})
+
+    assert main(payload) == BLOCK_EXIT_CODE
+
+
+def test_main_allows_grep_of_ordinary_files() -> None:
+    payload = json.dumps(
+        {'tool_name': 'Grep', 'tool_input': {'pattern': 'x', 'path': 'src'}},
     )
 
     assert main(payload) == 0

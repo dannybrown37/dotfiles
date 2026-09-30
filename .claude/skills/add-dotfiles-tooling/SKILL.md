@@ -11,24 +11,27 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
 
 ## Adding a New Tool
 
-1. Create `install/<tool>.sh` — idempotent, sources cleanly. Copy `install/lazygit.sh`
+**Core or extra?** `just bootstrap` installs core tools only — ones a fresh machine is
+broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-an-extra).
+
+1. Create `install/<tool>.sh` — idempotent, sources cleanly. Copy `install/extras/lazygit.sh`
    as the reference implementation: version check, skip-if-current, `mktemp -d` + `trap`
    cleanup, install, confirm, optional config symlink.
 
    **Name the file after the recipe you want** — the filename *is* the recipe name
-   (`install/spotify.sh` → `just spotify`), so don't name it after the upstream project.
+   (`install/gnome.sh` → `just gnome`), so don't name it after the upstream project.
 
 2. Give it a `## @just` header, directly under the shebang:
 
    ```bash
    #!/usr/bin/env bash
-   ## @just 34 Developer Tools | Install Terraform (latest release)
+   ## @just 43 Environment-Specific | Install Sway config (Wayland desktops only)
    ```
 
    That one line is the entire registration. The help script renders it under `<Section>`
    sorted by `<order>`, and the `embed-command` hook copies that help into the README.
    A script without the header is not discoverable — which is how helpers like
-   `apt_packages.sh`, `versions.sh`, and `this_repo.sh` stay out of the listing.
+   `apt_packages.sh`, `versions.sh`, and `bootstrap.sh` stay out of the listing.
 
    You must also add a corresponding recipe to the `justfile` (one line calling
    `bash -c ". install/<tool>.sh"`).
@@ -39,8 +42,8 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
    command reports; leave the rest to float.
 
    Pick `<order>` to slot the entry where you want it; existing sections use 10 (Start
-   Here), 20s (Languages & Runtimes), 30s (Developer Tools), 40s (Environment-Specific),
-   50s (Secrets), 60s (My Projects).
+   Here), 40s (Environment-Specific), 50s (Secrets), 70s (Verification). Most new tools
+   belong in extras, not here — keep `just` short.
 
 3. If the tool needs shell aliases/functions, add them to `config/.bash_aliases` or a new file in `bin/`.
 4. Add a passthrough stub to `bin/stubs.sh` so the tool appears in `cmds` with documentation (see below).
@@ -51,11 +54,31 @@ For repo layout and general conventions, see `.claude/references/dotfiles-repo.m
    ./scripts/check-tool-wiring.sh <tool>
    ```
 
-A Windows-only tool works the same way with a `.ps1` extension — `install/komo.ps1` carries
-the same header and becomes `just komo`, run via `powershell.exe`.
+A Windows-side winget/npm/uv tool goes in the tables at the top of `install/win-dev.ps1`,
+which backs the `just windows` picker (`scripts/windows.sh`) via `powershell.exe`.
 
-Recipes with no install script of their own (`vscode`, `my-dev-tools`, `secrets-*`) keep their
+Recipes with no install script of their own (`vscode`, `secrets-*`) keep their
 header in the `justfile`, directly above the recipe.
+
+## Adding an Extra
+
+An extra is an opt-in tool picked from the `just extras` menu (or `just extras <name>`).
+
+1. Create `install/extras/<name>.sh`. It runs with `bash`, not sourced, so exit with
+   `exit`. Reach shared helpers with `../` (`source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"`).
+2. Give it a header directly under the shebang:
+
+   ```bash
+   #!/usr/bin/env bash
+   ## @extra <binary> | <description>
+   ```
+
+   `<binary>` is what `command -v` looks for to show ✓ in the menu. No justfile edit.
+   A language toolchain (python, node, golang, rust) also carries a `## @runtime` line,
+   so it installs before any extra that builds with it.
+3. Add the `bin/stubs.sh` stub as usual. No audit line: the audit lists extras from their
+   headers and warns (not fails) when one is missing.
+4. Run `./scripts/check-tool-wiring.sh <name>`.
 
 ## Verifying Wiring
 
@@ -66,11 +89,12 @@ that applies:
 | Mode | Detected by | Needs a `## @just` header? |
 |---|---|---|
 | `dedicated` | `install/<tool>.sh` exists | yes |
+| `extra` | `install/extras/<tool>.sh` exists | no — needs `## @extra` |
 | `apt` | listed in `install/apt_packages.sh` | no |
 | `bundled` | another install script builds it (eza via `install/cli-tools.sh`) | no |
 
-All three still need a `bin/stubs.sh` stub and audit coverage. apt packages get audit
-coverage for free — `dotfiles_audit.sh` iterates `apt_packages.sh`.
+All four still need a `bin/stubs.sh` stub and audit coverage. apt packages and extras get
+audit coverage for free — `dotfiles_audit.sh` iterates `apt_packages.sh` and `extras.sh --list`.
 
 The checker no longer verifies the justfile recipe or the help line separately:
 both are derived from the header, so they cannot drift out of sync.
@@ -107,7 +131,7 @@ mytool() { command mytool "$@"; }  # @doc Brief description | mytool <usage>
   Run it before declaring a tool done.
 
 There is deliberately no install-script template. `install/` ranges from 3 lines
-(`deno.sh`, a `curl | sh`) to 252 (`cli-tools.sh`), and the install method differs per tool —
+(`extras/deno.sh`, a `curl | sh`) to 252 (`cli-tools.sh`), and the install method differs per tool —
 apt, cargo, GitHub release, language version manager. Copy whichever existing script
 matches the method you need; `lazygit.sh` is the closest thing to a canonical
 GitHub-release example.

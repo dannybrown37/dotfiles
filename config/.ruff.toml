@@ -1,4 +1,4 @@
-# Sym-linked to ~/.ruff.toml via .pipx_setup
+# Sym-linked to ~/.ruff.toml by install/symlinks.sh
 
 line-length = 79
 show-fixes = true

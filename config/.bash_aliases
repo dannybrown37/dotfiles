@@ -3,6 +3,7 @@
 alias awsconfig='nvim ~/.aws/config'  # @doc Edit AWS config file in Neovim
 alias bl='backlog'  # @doc Alias for backlog command from skill-tree
 alias cb='tee >(~/projects/dotfiles/scripts/tmux-copy-to-clipboard.sh)' # @doc Copy stdin to clipboard. <command> | cb
+alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 alias du='du -h | sort -h'  # @doc Disk usage sorted and human-readable
 alias pcb='~/projects/dotfiles/scripts/tmux-paste-from-clipboard.sh' # @doc Print clipboard contents
 alias shot='screenshot'  # @doc Alias for screenshot
@@ -16,24 +17,27 @@ vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
     )
     [[ ${#files[@]} -gt 0 ]] && nvim "${files[@]}"
 }
+
+alias praf='pre-commit run --all-files'
+
 alias lg='lazygit'  # @doc Open lazygit TUI
-alias dotaudit='. ~/projects/dotfiles/scripts/dotfiles_audit.sh'  # @doc Audit system for dotfile setup compliance
 alias gitdoctor='~/projects/dotfiles/scripts/git_auth_doctor.sh'  # @doc Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir]
+
 alias screenshot='~/projects/dotfiles/scripts/screenshot.sh'  # @doc Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest]
+mystats() { # @doc Top commands I typed, excluding Claude Code's atuin entries | mystats [count]
+    atuin history list --format "{author}\t{command}" \
+        | awk -F'\t' -v me="$USER" '$1 == me { split($2, a, " "); print a[1] }' \
+        | sort | uniq -c | sort -rn | head -n "${1:-20}"
+}
 alias song='spotify_copy_playing_link'  # @doc Copy the Spotify link for the currently playing track: song
 alias sorn='spotify_now_playing_markdown'  # @doc Copy a "Song On Right Now" markdown blurb for the currently playing Spotify track: sorn
-
-# Tools I'm trying out
-
-alias cinrec='asciinema rec session.cast'  # @doc Record terminal session to session.cast
-alias cinplay='asciinema play session.cast'  # @doc Replay session.cast recording
 
 # Cargo package aliases
 
 if [[ -n "${ON_WINDOWS}" ]]; then
     alias ahk='${DOTFILES_DIR}/ahk/ahk.sh' # @doc Start AutoHotkey (ahk/main.ahk); ahk --help for more (Windows only)
     alias beep='powershell.exe -c "[console]::beep(261, 300)"'  # @doc Play a beep sound (Windows only)
-    alias komo='just -f "${DOTFILES_DIR}/justfile" komo' # @doc Reset komorebi window manager (Windows only)
+    alias komo='just -f "${DOTFILES_DIR}/justfile" _komo' # @doc Reset komorebi window manager (Windows only)
 fi
 
 if [[ -f "${HOME}/.local/bin/zoxide" ]]; then
@@ -56,7 +60,7 @@ if command -v batcat &>/dev/null; then
 fi
 
 # dotfiles
-alias idf='sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/install/this_repo.sh | bash'
+alias idf='sudo apt upgrade && sudo apt install -y curl && curl -s https://raw.githubusercontent.com/dannybrown37/dotfiles/main/bootstrap.sh | bash'
 alias cdf='code ~/projects/dotfiles'  # @doc Code Dot Files: Open the dotfiles repo in VSCode
 
 # npm
@@ -83,6 +87,7 @@ alias newdotenv='echo "source .venv/bin/activate" >> .env && echo "echo \"$(base
 # Git
 alias ga='git add'
 alias gaa='git add .'
+alias gab='git absorb --and-rebase' # @doc Fold staged fixes into the commits they belong to
 alias gap='git add -p'
 alias gb='git branch --sort=-committerdate | fzf | xargs git checkout' # @doc Fuzzy-find and checkout a git branch
 alias gc='git commit -m'
@@ -92,7 +97,7 @@ alias gcd='git checkout develop'
 alias gcdf='git clone https://www.github.com/dannybrown37/dotfiles'
 alias gcl='git checkout -'
 alias gds='git diff --staged'
-alias gitwf='glow "${DOTFILES_DIR}/docs/git-workflow.md" 2>/dev/null || cat "${DOTFILES_DIR}/docs/git-workflow.md"' # @doc Show the git workflow cheat sheet (git start / ship / done)
+alias gitwf='refs git-workflow' # @doc Show the git workflow cheat sheet (git start / ship / done)
 alias gcm='git checkout main'
 alias gco='git checkout'
 __git_complete gco _git_checkout
@@ -100,25 +105,29 @@ __git_complete gcb _git_checkout
 alias gcr='git commit --amend --no-edit'
 alias gcuemail='git config --global user.email "dannybrown37@gmail.com"'
 alias gcuname='git config --global user.name "Danny Brown"'
-unalias gitpurge 2>/dev/null
-gitpurge() {  # @doc Delete all local branches except main, develop, and the current branch
-    local current
-    current=$(git rev-parse --abbrev-ref HEAD)
-    git branch | sed 's/^[*+ ]*//' | while IFS= read -r branch; do
-        case "$branch" in
-            main|develop|bonfire|"$current") ;;
-            *) git branch -D "$branch" ;;
-        esac
-    done
-}
 alias gl='git log'
 alias glog='git log --oneline --graph --decorate --all'  # @doc Graph log of all branches
-alias gitlines='git ls-files | xargs wc -l'  # @doc Count lines of code in all files from curren branch
+alias gitlines='git ls-files | xargs wc -l'  # @doc Count lines of code in all files from current branch
 alias glo='git log -1 --pretty=%B'  # @doc Show last commit message (Git Log One-Line)
 alias gss='git stash'  # @doc Git stash save
 alias gsp='git stash pop'  # @doc Git stash pop
 alias gsl='git stash list'  # @doc Git stash list
-alias gp='git push'
+unalias gp 2>/dev/null || true
+gp() { # @doc Git push; if remote is ahead, pull --rebase and push again
+    local err status
+    err=$(mktemp)
+    git push "$@" 2>"$err"
+    status=$?
+    cat "$err" >&2
+    # "fetch first" means the remote has commits we lack; plain "non-fast-forward" means we rewrote history, so leave that alone
+    if [[ $status -ne 0 ]] && grep -q '(fetch first)' "$err"; then
+        echo "gp: remote is ahead, running git pull --rebase" >&2
+        git pull --rebase && git push "$@"
+        status=$?
+    fi
+    rm -f "$err"
+    return "$status"
+}
 alias gpf='git push -f'
 alias gpo='git push -u origin'
 alias gpup='git push -u origin HEAD && git open' # @doc Push new branch and open PR in browser
@@ -135,8 +144,6 @@ alias gs='git status'
 
 # GitHub CLI
 alias ghd='BROWSER="cmd.exe /c start chrome" gh dash'
-alias stack='~/projects/dotfiles/scripts/stack.sh'  # @doc Stacked PR helper wrapper | stack doctor
-alias gstk='stack'  # @doc Short alias for stacked PR helper
 
 function ghpr() {  # @doc Push branch and open GitHub PR creation page in browser | ghprc [--draft]
     local branch
@@ -205,6 +212,7 @@ alias tml='tmux ls'
 alias tmconf='tmux source-file ~/.tmux.conf'  # @doc Reload tmux config
 
 # Mental Models
-alias mentalmodels='nvim -c "setlocal wrap linebreak" ~/projects/dotfiles/references/mental-models.md'  # @doc Open mental models reference
-alias media='nvim -c "setlocal wrap linebreak" ~/projects/dotfiles/references/media.md'  # @doc Open educational media reference
+alias refs='"${DOTFILES_DIR}/scripts/refs.sh"'  # @doc Read references and repo guides in glow (bare: pick one) | refs [links] [media|mental-models]
+alias mentalmodels='refs mental-models'  # @doc Read mental models in glow (links: refs links mental-models)
+alias media='refs media'  # @doc Read educational media in glow (links: refs links media)
 # alias fixhashicorppublickey='wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg'

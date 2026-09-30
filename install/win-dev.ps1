@@ -1,46 +1,69 @@
 ## Install Windows-side dev tooling (git, uv, node, typescript, etc.)
+##
+## -List          Print name<TAB>installed(0/1)<TAB>description for each item
+## -Only a,b,c    Install only the named items (default: all)
 
-$env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+param(
+    [switch]$List,
+    [string]$Only = ""
+)
 
-# ── winget packages ──────────────────────────────────────────────────────────
-# Each entry: [winget ID, command to check]
-$wingetPackages = @{
-    "Git.Git"                    = "git"
-    "GitHub.cli"                 = "gh"
-    "Microsoft.PowerShell"       = "pwsh"
-    "Microsoft.WindowsTerminal"  = "wt"
-    "Microsoft.VisualStudioCode" = "code"
-    "astral-sh.uv"              = "uv"
-    "OpenJS.NodeJS.LTS"         = "node"
-    "7zip.7zip"                 = "7z"
-    "jqlang.jq"                 = "jq"
-    "BurntSushi.ripgrep.MSVC"   = "rg"
-    "sharkdp.fd"                = "fd"
-    "sharkdp.bat"               = "bat"
-    "junegunn.fzf"              = "fzf"
+function Update-Path {
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 }
 
-foreach ($id in $wingetPackages.Keys) {
-    $cmd = $wingetPackages[$id]
+Update-Path
 
-    if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
-        Write-Host "Installing $id ..."
-        winget install --id $id --exact --accept-source-agreements --accept-package-agreements
-    } else {
-        Write-Host "$cmd already installed, skipping"
+# Cmd is what Get-Command looks for; $null falls back to `winget list`
+$wingetPackages = @(
+    @{ Name = "git";        Id = "Git.Git";                    Cmd = "git";  Desc = "Git for Windows" }
+    @{ Name = "gh";         Id = "GitHub.cli";                 Cmd = "gh";   Desc = "GitHub CLI" }
+    @{ Name = "pwsh";       Id = "Microsoft.PowerShell";       Cmd = "pwsh"; Desc = "PowerShell 7" }
+    @{ Name = "terminal";   Id = "Microsoft.WindowsTerminal";  Cmd = "wt";   Desc = "Windows Terminal" }
+    @{ Name = "vscode";     Id = "Microsoft.VisualStudioCode"; Cmd = "code"; Desc = "VS Code" }
+    @{ Name = "uv";         Id = "astral-sh.uv";               Cmd = "uv";   Desc = "Python package manager" }
+    @{ Name = "node";       Id = "OpenJS.NodeJS.LTS";          Cmd = "node"; Desc = "Node.js LTS" }
+    @{ Name = "7zip";       Id = "7zip.7zip";                  Cmd = "7z";   Desc = "Archive tool" }
+    @{ Name = "jq";         Id = "jqlang.jq";                  Cmd = "jq";   Desc = "JSON processor" }
+    @{ Name = "ripgrep";    Id = "BurntSushi.ripgrep.MSVC";    Cmd = "rg";   Desc = "Fast grep" }
+    @{ Name = "fd";         Id = "sharkdp.fd";                 Cmd = "fd";   Desc = "Fast find" }
+    @{ Name = "bat";        Id = "sharkdp.bat";                Cmd = "bat";  Desc = "cat with syntax highlighting" }
+    @{ Name = "fzf";        Id = "junegunn.fzf";               Cmd = "fzf";  Desc = "Fuzzy finder" }
+    @{ Name = "autohotkey"; Id = "AutoHotkey.AutoHotkey";      Cmd = $null;  Desc = "AutoHotkey v2" }
+)
+$npmGlobals = @("typescript", "ts-node", "npx")
+$uvTools = @("ruff", "cookiecutter")
+
+function Test-Winget($pkg) {
+    if ($pkg.Cmd) {
+        return [bool](Get-Command $pkg.Cmd -ErrorAction SilentlyContinue)
     }
+    $listed = winget list --id $pkg.Id --exact --accept-source-agreements 2>$null | Out-String
+    return $listed -match [regex]::Escape($pkg.Id)
 }
 
-# Refresh PATH after winget installs
-$env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+function Test-NpmGlobals {
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { return $false }
+    npm list --global @npmGlobals *> $null
+    return $LASTEXITCODE -eq 0
+}
 
-# ── npm global packages (need node) ─────────────────────────────────────────
+function Test-UvTools {
+    if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { return $false }
+    $listed = uv tool list 2>$null | Out-String
+    foreach ($tool in $uvTools) {
+        if ($listed -notmatch "(?m)^$([regex]::Escape($tool)) ") { return $false }
+    }
+    return $true
+}
 
-if (Get-Command npm -ErrorAction SilentlyContinue) {
-    $npmGlobals = @("typescript", "ts-node", "npx")
-
+function Install-NpmGlobals {
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+        Write-Host "WARNING: node/npm not found — skipping npm globals" -ForegroundColor Yellow
+        return
+    }
     foreach ($pkg in $npmGlobals) {
-        $installed = npm list --global $pkg 2>$null
+        npm list --global $pkg *> $null
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Installing npm global: $pkg ..."
             npm install --global $pkg
@@ -48,21 +71,60 @@ if (Get-Command npm -ErrorAction SilentlyContinue) {
             Write-Host "npm global $pkg already installed, skipping"
         }
     }
-} else {
-    Write-Host "WARNING: node/npm not found after install — skipping npm globals" -ForegroundColor Yellow
 }
 
-# ── uv tools (need uv) ──────────────────────────────────────────────────────
-
-if (Get-Command uv -ErrorAction SilentlyContinue) {
-    $uvTools = @("ruff", "cookiecutter")
-
+function Install-UvTools {
+    if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+        Write-Host "WARNING: uv not found — skipping uv tools" -ForegroundColor Yellow
+        return
+    }
     foreach ($tool in $uvTools) {
         Write-Host "Installing uv tool: $tool ..."
         uv tool install $tool
     }
-} else {
-    Write-Host "WARNING: uv not found after install — skipping uv tools" -ForegroundColor Yellow
+}
+
+$groups = @(
+    @{ Name = "npm-globals"; Desc = "npm globals: $($npmGlobals -join ', ')"; Test = ${function:Test-NpmGlobals}; Install = ${function:Install-NpmGlobals} }
+    @{ Name = "uv-tools";    Desc = "uv tools: $($uvTools -join ', ')";       Test = ${function:Test-UvTools};    Install = ${function:Install-UvTools} }
+)
+
+if ($List) {
+    foreach ($pkg in $wingetPackages) {
+        "{0}`t{1}`t{2}" -f $pkg.Name, [int](Test-Winget $pkg), $pkg.Desc
+    }
+    foreach ($group in $groups) {
+        "{0}`t{1}`t{2}" -f $group.Name, [int](& $group.Test), $group.Desc
+    }
+    exit 0
+}
+
+$wanted = @($Only -split "," | Where-Object { $_ })
+$known = @($wingetPackages.Name) + @($groups.Name)
+$unknown = @($wanted | Where-Object { $_ -notin $known })
+if ($unknown) {
+    Write-Host "unknown item(s): $($unknown -join ' ')" -ForegroundColor Red
+    Write-Host "available: $($known -join ' ')"
+    exit 2
+}
+
+function Test-Wanted($name) { return (-not $wanted) -or ($name -in $wanted) }
+
+foreach ($pkg in $wingetPackages) {
+    if (-not (Test-Wanted $pkg.Name)) { continue }
+    if (Test-Winget $pkg) {
+        Write-Host "$($pkg.Id) already installed, skipping"
+    } else {
+        Write-Host "Installing $($pkg.Id) ..."
+        winget install --id $pkg.Id --exact --accept-source-agreements --accept-package-agreements
+    }
+}
+
+# npm globals and uv tools need node/uv on PATH from the winget step
+Update-Path
+
+foreach ($group in $groups) {
+    if (Test-Wanted $group.Name) { & $group.Install }
 }
 
 Write-Host "`nWindows dev tooling setup complete." -ForegroundColor Green

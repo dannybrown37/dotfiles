@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-## @just 74 Verification | Benchmark interactive shell startup time (10 runs default, pass N to override)
+## @just 74 Verification | Benchmark interactive shell startup time
 
 readonly ITERATIONS="${1:-10}"
 readonly WARMUP=2
 readonly REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 readonly README="$REPO_ROOT/README.md"
+# CI sets this: fail when the median is over budget, and leave the README alone.
+readonly BUDGET_MS="${SHELL_BUDGET_MS:-}"
 
 times=()
 
@@ -38,6 +40,16 @@ printf "  min: %ss  median: %ss  avg: %ss  max: %ss\n" "$min" "$median" "$avg" "
 if awk "BEGIN{exit !($median > 0.5)}"; then
     printf "\n  ⚠ median > 0.5s — consider profiling with:\n"
     printf "    bash -x -ic exit 2>&1 | head -80\n"
+fi
+
+if [[ -n "$BUDGET_MS" ]]; then
+    median_ms=$(awk "BEGIN{printf \"%d\", $median * 1000}")
+    if ((median_ms > BUDGET_MS)); then
+        printf "\n  ✗ median %sms is over the %sms budget\n" "$median_ms" "$BUDGET_MS" >&2
+        exit 1
+    fi
+    printf "\n  ✓ median %sms is within the %sms budget\n" "$median_ms" "$BUDGET_MS"
+    exit 0
 fi
 
 # Inject summary into README between bench markers

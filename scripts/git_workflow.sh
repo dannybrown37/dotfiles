@@ -1,22 +1,44 @@
 #!/usr/bin/env bash
-# @doc Backs the git start/ship/rescue/done aliases in config/.gitconfig | git_workflow.sh help
+# @doc Backs the git start/ship/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help
 
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.0.0"
+readonly VERSION="1.9.0"
 
 usage() {
     cat <<'EOF'
 Usage: git <command> [args...]
 
-  git start <topic>    Go to main, pull, make branch <topic> (carries uncommitted changes)
-  git ship             Push, open a PR, turn on auto-merge, watch CI
-  git done             After the merge: go back to main and pull
+  git start <topic>    Go to the base branch, pull, make branch <topic> (carries uncommitted changes)
+                       On the base with local commits: move them to <topic>
+  git start -s <topic> Stack: make branch <topic> on top of the current branch
+  git ship [--no-auto] [--no-done]
+                       Push, open a PR, turn on auto-merge, watch CI, then git done
+                       No auto-merge: skip the CI watch, merge by hand after CI
+                       --no-auto: leave auto-merge off
+                       Repo without auto-merge: PR body uses the work template
+                       Stacked: the PR targets the parent branch, no auto-merge
+  git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
+                       Stacked: once the parent merges or moves, rebase onto it and stay
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
+  git purge [--all] [-y]
+                       Delete local branches whose origin branch is gone (merged PRs)
+                       --all: every branch but the base, main/master/develop, and worktrees; asks first
+                       -y: with --all, don't ask
 
+The base branch is origin's default branch (main, master, develop, ...).
 See docs/git-workflow.md.
 EOF
+}
+
+base_branch() {
+    local head
+    head="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD)" ||
+        { git remote set-head origin --auto >/dev/null &&
+            head="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD)"; } ||
+        fail 1 "can't find origin's default branch: run git remote set-head origin <branch>"
+    echo "${head#origin/}"
 }
 
 fail() {
@@ -24,6 +46,19 @@ fail() {
     shift
     echo "$*" >&2
     exit "${code}"
+}
+
+# gh ignores git's per-remote credential helpers, so without this it acts as
+# whichever account gh/GITHUB_TOKEN holds -- not the one git pushes as.
+use_push_token_for_gh() {
+    local url token
+    url="$(git config --get remote.origin.url)" || return 0
+    [[ "${url}" == https://github.com/* ]] || return 0
+    token="$(printf 'url=%s\n\n' "${url}" |
+        GIT_TERMINAL_PROMPT=0 git credential fill 2>/dev/null |
+        sed -n 's/^password=//p')" || return 0
+    [[ -n "${token}" ]] && export GH_TOKEN="${token}"
+    return 0
 }
 
 top_prefix() {
@@ -58,46 +93,214 @@ wait_for_checks() {
     done
 }
 
-cmd_start() {
-    local topic="${1:-}" from stashed=0
-    [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" 'usage: git start <topic>'
+# gh's watch table cuts links to fit the pane, which breaks them. gh's
+# hyperlink emits escape codes even when piped, so full URLs off a terminal.
+print_check_links() {
+    if [[ -t 1 ]]; then
+        gh pr checks --json name,link \
+            --template '{{range .}}{{hyperlink .link .name}}{{"\n"}}{{end}}' || true
+    else
+        gh pr checks --json name,link -q '.[] | .name + "\n" + .link' || true
+    fi
+}
+
+merged_head() {
+    local pr polls=0
+    while [[ "${polls}" -lt 30 ]]; do
+        pr="$(gh pr view --json state,headRefOid -q '.state + " " + .headRefOid' 2>/dev/null || true)"
+        if [[ "${pr%% *}" == MERGED ]]; then
+            echo "${pr#* }"
+            return
+        fi
+        polls=$((polls + 1))
+        sleep "${GIT_SHIP_POLL_SECS:-2}"
+    done
+    return 1
+}
+
+done_after_merge() {
+    local merged
+    if ! merged="$(merged_head)"; then
+        echo 'CI green but PR not merged after 60s: run git done once it merges' >&2
+    elif [[ "${merged}" != "$(git rev-parse HEAD)" ]]; then
+        echo 'PR merged without your newest commits: run git rescue <topic>' >&2
+    else
+        cmd_done
+    fi
+}
+
+pop_carried() {
+    git stash pop --index 2>/dev/null && return
+    echo 'staged changes did not apply to the new base: carrying them unstaged' >&2
+    git stash pop
+}
+
+with_carried_changes() {
+    local label="$1" from stashed=0
+    shift
     from="$(git branch --show-current)"
     if [[ -n "$(git status --porcelain)" ]]; then
-        git stash push -u -m "git start ${topic}"
+        git stash push -u -m "${label}"
         stashed=1
     fi
-    if ! { git switch main && git pull --ff-only && git switch -c "${topic}"; }; then
+    if ! "$@"; then
         if [[ "${stashed}" == 1 ]]; then
             git switch "${from}" >/dev/null 2>&1 || true
-            git stash pop
+            pop_carried
         fi
         exit 1
     fi
-    if [[ "${stashed}" == 1 ]] && ! git stash pop; then
+    if [[ "${stashed}" == 1 ]] && ! pop_carried; then
         fail 1 'carried changes conflict: fix the files, git add them, then git stash drop'
     fi
 }
 
+cmd_start() {
+    local arg topic='' stack=0 usage='usage: git start [-s] <topic>'
+    for arg in "$@"; do
+        case "${arg}" in
+        -s | --stack) stack=1 ;;
+        -*) fail "${EXIT_USAGE}" "${usage}" ;;
+        *)
+            [[ -z "${topic}" ]] || fail "${EXIT_USAGE}" "${usage}"
+            topic="${arg}"
+            ;;
+        esac
+    done
+    [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" "${usage}"
+    if [[ "${stack}" == 1 ]]; then
+        stack_on_current "${topic}"
+        return
+    fi
+    git fetch origin "${BASE}"
+    if [[ "$(git branch --show-current)" == "${BASE}" ]] && base_has_own_commits; then
+        move_base_commits "${topic}"
+    else
+        with_carried_changes "git start ${topic}" branch_from_base "${topic}"
+    fi
+}
+
+base_has_own_commits() {
+    ! git merge-base --is-ancestor "${BASE}" "origin/${BASE}" &&
+        ! git diff --quiet "${BASE}" "origin/${BASE}"
+}
+
+# Commits made on the base by mistake: the topic keeps them, the base goes
+# back to origin. The base moves first, so a conflict leaves only the rebase.
+move_base_commits() {
+    local topic="$1" remote="origin/${BASE}" stashed=0
+    git switch -c "${topic}"
+    git branch -f "${BASE}" "${remote}"
+    # Not --autostash: it drops what was staged.
+    if [[ -n "$(git status --porcelain)" ]]; then
+        git stash push -u -m "git start ${topic}"
+        stashed=1
+    fi
+    if ! git rebase "${remote}"; then
+        [[ "${stashed}" == 0 ]] || fail 1 'fix the conflicts, git rebase --continue, then git stash pop --index'
+        fail 1 'fix the conflicts, git rebase --continue'
+    fi
+    if [[ "${stashed}" == 1 ]] && ! pop_carried; then
+        fail 1 'carried changes conflict: fix the files, git add them, then git stash drop'
+    fi
+    echo "moved commits made on ${BASE} to ${topic}" >&2
+}
+
+stack_on_current() {
+    local topic="$1" parent
+    parent="$(git branch --show-current)"
+    [[ -n "${parent}" && "${parent}" != "${BASE}" ]] ||
+        fail "${EXIT_USAGE}" "on ${parent:-detached HEAD}: nothing to stack on, use git start ${topic}"
+    git switch -c "${topic}"
+    git config "branch.${topic}.stackParent" "${parent}"
+    git config "branch.${topic}.stackBase" "$(git rev-parse HEAD)"
+}
+
+stack_parent() {
+    git config --get "branch.$1.stackParent" || true
+}
+
+# The newest commit the branch shares with its parent. The parent tip is exact
+# while the branch sits on it; once the parent is rewritten (squash-merged or
+# restacked) only the recorded stackBase still marks the fork.
+stack_fork() {
+    local branch="$1" parent="$2" base
+    if git merge-base --is-ancestor "${parent}" HEAD 2>/dev/null; then
+        echo "${parent}"
+    elif base="$(git config --get "branch.${branch}.stackBase")" &&
+        git merge-base --is-ancestor "${base}" HEAD; then
+        echo "${base}"
+    else
+        fail 1 "can't find where ${branch} forks from ${parent}"
+    fi
+}
+
+require_open_parent() {
+    local parent="$1" state
+    git ls-remote --exit-code --heads origin "${parent}" >/dev/null ||
+        fail "${EXIT_USAGE}" "${parent} is not on origin: git ship it first"
+    state="$(gh pr view "${parent}" --json state -q .state 2>/dev/null || true)"
+    [[ "${state}" != MERGED ]] || fail "${EXIT_USAGE}" "${parent} already merged: run git done first"
+}
+
+repo_allows_auto_merge() {
+    [[ "$(gh api 'repos/{owner}/{repo}' -q .allow_auto_merge 2>/dev/null)" != false ]]
+}
+
+pr_body() {
+    local since="$1" commits
+    commits="$(git log --reverse --format='- %s' "${since}..HEAD")"
+    if repo_allows_auto_merge; then
+        echo "${commits}"
+        return
+    fi
+    printf '%s\n\n%s\n\n%s\n\n%s\n' \
+        '## Why These Changes and What They Are' "${commits}" \
+        '## Evidence of Testing' '## QA Testing Instructions'
+}
+
 cmd_ship() {
-    local branch prefix state auto=1
+    local arg branch parent since prefix state auto=1 run_done=1 ci=0
+    for arg in "$@"; do
+        case "${arg}" in
+        --no-auto) auto=0 ;;
+        --no-done) run_done=0 ;;
+        *) fail "${EXIT_USAGE}" 'usage: git ship [--no-auto] [--no-done]' ;;
+        esac
+    done
     branch="$(git branch --show-current)"
-    [[ "${branch}" != main ]] || fail "${EXIT_USAGE}" 'on main: run git start <topic> first'
-    prefix="$(git log --format=%s origin/main..HEAD | top_prefix)"
-    [[ -n "${prefix}" ]] || fail "${EXIT_USAGE}" 'no conventional commit prefix in origin/main..HEAD'
+    [[ "${branch}" != "${BASE}" ]] || fail "${EXIT_USAGE}" "on ${BASE}: run git start <topic> first"
+    parent="$(stack_parent "${branch}")"
+    since="origin/${BASE}"
+    if [[ -n "${parent}" ]]; then
+        since="$(stack_fork "${branch}" "${parent}")"
+    fi
+    prefix="$(git log --format=%s "${since}..HEAD" | top_prefix)"
+    [[ -n "${prefix}" ]] || fail "${EXIT_USAGE}" "no conventional commit prefix in ${since}..HEAD"
+    [[ -z "${parent}" ]] || require_open_parent "${parent}"
     state="$(gh pr view --json state -q .state 2>/dev/null || true)"
     [[ "${state}" != MERGED ]] ||
         fail "${EXIT_USAGE}" "PR for ${branch} already merged: run git done, or git rescue <topic> to keep new commits"
     git push -u origin HEAD
     if [[ "${state}" != OPEN ]]; then
         gh pr create \
+            --base "${parent:-${BASE}}" \
             --title "${prefix}: $(tr '_-' '  ' <<<"${branch}")" \
-            --body "$(git log --reverse --format='- %s' origin/main..HEAD)"
+            --body "$(pr_body "${since}")"
     fi
-    gh pr merge --auto --squash --delete-branch || auto=0
-    [[ "${auto}" == 1 ]] || echo 'auto-merge is off: watching CI, then merge by hand' >&2
+    if [[ -n "${parent}" ]]; then
+        echo "stacked PR: once ${parent} merges, run git done here" >&2
+        return
+    fi
+    if [[ "${auto}" == 0 ]] || ! gh pr merge --auto --squash --delete-branch; then
+        echo 'auto-merge is off: after CI: gh pr merge --squash --delete-branch' >&2
+        return
+    fi
     wait_for_checks
-    gh pr checks --watch
-    [[ "${auto}" == 1 ]] || echo 'CI green: gh pr merge --squash --delete-branch' >&2
+    gh pr checks --watch || ci=$?
+    print_check_links
+    [[ "${ci}" == 0 ]] || exit "${ci}"
+    [[ "${run_done}" == 0 ]] || done_after_merge
 }
 
 cmd_rescue() {
@@ -109,22 +312,112 @@ cmd_rescue() {
     merged_head="${pr#* }"
     late="$(git rev-list "${merged_head}..HEAD")"
     [[ -n "${late}" ]] || fail "${EXIT_USAGE}" 'nothing to rescue: run git done'
-    git fetch origin main
+    git fetch origin "${BASE}"
     git switch -c "${topic}"
-    git rebase --onto origin/main "${merged_head}"
+    git rebase --onto "origin/${BASE}" "${merged_head}"
+}
+
+# Moves the base ref before any checkout, so the working tree never holds a
+# stale base (file watchers like ahk/main.ahk reload on every change).
+update_base() {
+    local remote="origin/${BASE}"
+    if ! git rev-parse --verify --quiet "${BASE}" >/dev/null; then
+        git branch --track "${BASE}" "${remote}" >/dev/null
+    elif ! git merge-base --is-ancestor "${BASE}" "${remote}"; then
+        if ! git diff --quiet "${BASE}" "${remote}"; then
+            echo "local ${BASE} has commits not on ${remote}: git switch -c <topic> ${BASE} to keep them, then git branch -f ${BASE} ${remote}" >&2
+            return 1
+        fi
+        echo "local ${BASE} matches ${remote} (already squash-merged): resetting to it" >&2
+    fi
+    if [[ "$(git branch --show-current)" == "${BASE}" ]]; then
+        git reset --keep "${remote}"
+    else
+        git branch -f "${BASE}" "${remote}"
+    fi
+}
+
+sync_base() {
+    git fetch origin "${BASE}" && update_base && git switch "${BASE}"
+}
+
+branch_from_base() {
+    update_base && git switch -c "$1" "${BASE}"
+}
+
+# Config moves before the rebase, so a conflict leaves nothing to redo:
+# finish the rebase and push.
+restack() {
+    local branch="$1" parent="$2" fork onto
+    fork="$(stack_fork "${branch}" "${parent}")"
+    if [[ "$(gh pr view "${parent}" --json state -q .state 2>/dev/null || true)" == MERGED ]]; then
+        git fetch origin "${BASE}"
+        onto="origin/${BASE}"
+        git config --unset "branch.${branch}.stackParent"
+        git config --unset "branch.${branch}.stackBase"
+        if [[ "$(gh pr view --json state -q .state 2>/dev/null || true)" == OPEN ]]; then
+            gh pr edit --base "${BASE}"
+        fi
+    elif [[ "${fork}" == "${parent}" ]]; then
+        echo "${parent} not merged yet: nothing to do" >&2
+        return
+    else
+        onto="${parent}"
+        git config "branch.${branch}.stackBase" "$(git rev-parse "${parent}")"
+    fi
+    git rebase --autostash --onto "${onto}" "${fork}" ||
+        fail 1 'fix the conflicts, git rebase --continue, then git push --force-with-lease'
+    if git rev-parse --verify --quiet "refs/remotes/origin/${branch}" >/dev/null; then
+        git push --force-with-lease origin HEAD
+    fi
 }
 
 cmd_done() {
-    git switch main
-    git fetch origin main
-    if git merge-base --is-ancestor main origin/main; then
-        git merge --ff-only origin/main
-    elif git diff --quiet main origin/main; then
-        echo 'local main matches origin/main (already squash-merged): resetting to it' >&2
-        git reset --keep origin/main
-    else
-        fail 1 'local main has commits not on origin/main: git switch -c <topic> to keep them, then git branch -f main origin/main'
+    local branch parent dirty
+    branch="$(git branch --show-current)"
+    parent="$(stack_parent "${branch}")"
+    if [[ -n "${parent}" ]]; then
+        restack "${branch}" "${parent}"
+        return
     fi
+    dirty="$(git status --porcelain)"
+    with_carried_changes 'git done' sync_base
+    [[ -z "${dirty}" ]] || echo "carried uncommitted changes to ${BASE}: git start <topic> to keep working" >&2
+}
+
+purgeable() {
+    local all="$1" branch track worktree
+    while IFS='|' read -r branch track worktree; do
+        case "${branch}" in
+        "${BASE}" | main | master | develop) continue ;;
+        esac
+        [[ -z "${worktree}" ]] || continue
+        [[ "${all}" == 1 || "${track}" == '[gone]' ]] && echo "${branch}"
+    done < <(git for-each-ref --format='%(refname:short)|%(upstream:track)|%(worktreepath)' refs/heads)
+    return 0
+}
+
+cmd_purge() {
+    local arg all=0 yes=0 answer branches
+    for arg in "$@"; do
+        case "${arg}" in
+        --all) all=1 ;;
+        -y | --yes) yes=1 ;;
+        *) fail "${EXIT_USAGE}" 'usage: git purge [--all] [-y]' ;;
+        esac
+    done
+    git fetch --prune --quiet origin
+    branches="$(purgeable "${all}")"
+    if [[ -z "${branches}" ]]; then
+        echo 'nothing to purge' >&2
+        return
+    fi
+    if [[ "${all}" == 1 && "${yes}" == 0 ]]; then
+        echo "${branches}" >&2
+        read -r -p "delete $(wc -l <<<"${branches}") branches, merged or not? [y/N] " answer || true
+        [[ "${answer}" == [yY] ]] || fail 1 'nothing deleted'
+    fi
+    xargs git branch -D <<<"${branches}"
 }
 
 main() {
@@ -136,12 +429,20 @@ main() {
     local cmd="$1"
     shift
     case "${cmd}" in
+    purge) BASE="$(base_branch)" ;;
+    start | ship | rescue | done)
+        BASE="$(base_branch)"
+        use_push_token_for_gh
+        ;;
+    esac
+    case "${cmd}" in
     -h | --help | help) usage ;;
     -v | --version) echo "git_workflow ${VERSION}" ;;
     start) cmd_start "$@" ;;
     ship) cmd_ship "$@" ;;
     rescue) cmd_rescue "$@" ;;
     done) cmd_done "$@" ;;
+    purge) cmd_purge "$@" ;;
     *)
         echo "unknown command: ${cmd}" >&2
         usage >&2

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-## @just 13 Start Here | Symlink every tracked config into $HOME (idempotent, no network)
+## Symlink every tracked config into $HOME (idempotent, no network)
 
 ##
 ## The whole config-symlink sweep, in one target. Split out of the bootstrap
 ## script because this is the part you actually re-run -- every time a new file
-## lands in config/ -- and it should not cost an `apt upgrade` plus a dozen
+## lands in config/ -- and it should not cost an apt run plus a dozen
 ## downloads to do it. Needs no network, no sudo, and is idempotent.
 ##
 ## `link_config` itself lives in link_config.sh so lazygit.sh and spotify.sh can

@@ -4,7 +4,7 @@ repos:
   # ruff and pytest live in git-a-grip so every repo shares one copy, rather
   # than each keeping its own `bash -c '... && git add "$@"'` wrapper.
   - repo: https://github.com/dannybrown37/git-a-grip
-    rev: v0.13.0
+    rev: v0.15.1
     hooks:
       # git-a-grip only floors commitizen (>=4.0); match the commit-msg hook's rev.
       - id: commitizen-early
@@ -14,9 +14,12 @@ repos:
         args: [--config, config/.ruff.toml]
       - id: ruff-format
         args: [--config, config/.ruff.toml]
+      # Push, not commit: the full suite is slow, and CI's test job gates
+      # merges anyway. Runs from githooks/pre-push.
       - id: pytest
         args: ['--runner=uv run pytest', scripts/, -q]
         files: ^scripts/.*\.py$
+        stages: [pre-push]
       - id: mypy
         args: ['--runner=uv run --with mypy mypy', scripts/, --ignore-missing-imports]
         files: ^scripts/.*\.py$
@@ -63,6 +66,21 @@ repos:
     hooks:
       - id: shfmt
         args: ["-i", "4"]
+
+  # Upstream's golang hook over the actionlint-py wheel: one less third party
+  # between us and the linter. zizmor covers security, this covers correctness.
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.50.3
+    hooks:
+      # Report, don't rewrite: a "fix" to a name or a quoted string can break
+      # code, so a human picks the change or adds the word to _typos.toml.
+      - id: typos
+        args: [--force-exclude]
 
   - repo: https://github.com/gitleaks/gitleaks
     # autoupdate resolves this repo one tag low; v8.30.1 is the latest release.

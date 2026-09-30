@@ -28,7 +28,7 @@ jobs:
       # $GITHUB_ENV takes -- so the pins transfer with a grep, no parsing and no
       # second copy of the versions in this file.
       - name: Load pinned tool versions
-        run: grep -E '^[A-Z_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
+        run: grep -E '^[A-Z0-9_]+_VERSION=' install/versions.sh >> "$GITHUB_ENV"
 
       - name: Install ruff and prek
         run: |
@@ -49,13 +49,13 @@ jobs:
           path: ~/.cache/prek
           key: prek-${{ hashFiles('.pre-commit-config.yaml', 'install/versions.sh') }}
 
-      # The pytest hook duplicates the `test` job below; skip it by hook id.
       # no-commit-to-branch guards local commits, and a push to main checks
-      # out branch main here, so it would always fail.
+      # out branch main here, so it would always fail. The pytest hook is
+      # pre-push only, so the `test` job below is its sole CI run.
       - name: Run prek hooks
         run: prek run --all-files
         env:
-          SKIP: pytest,no-commit-to-branch
+          SKIP: no-commit-to-branch
 
   changes:
     runs-on: ubuntu-latest
@@ -91,18 +91,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # Skips compiling eza and just (~2.5 min). A hit puts `just` on PATH, so
-      # this_repo.sh skips its pre-just steps -- but the key covers those
-      # scripts, so touching them runs cold, and the weekly run is always cold.
-      - name: Cache cargo-installed binaries
-        if: github.event_name != 'schedule'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: |
-            ~/.cargo/bin/eza
-            ~/.cargo/bin/just
-          key: cargo-bins-${{ runner.os }}-${{ hashFiles('install/this_repo.sh', 'install/apt.sh', 'install/rust.sh', 'install/cli-tools.sh', 'install/versions.sh') }}
-
       - name: Syntax-check all install scripts
         run: |
           failed=0
@@ -117,17 +105,25 @@ jobs:
       # Through the README's curl | bash entrypoint rather than setup-just, so
       # CI proves a machine with no `just` can get one. DOTFILES_DIR points it
       # at this checkout instead of cloning main.
-      - name: Bootstrap via this_repo.sh (safe subset)
-        run: bash install/this_repo.sh
+      - name: Bootstrap via bootstrap.sh (safe subset)
+        run: bash bootstrap.sh
         env:
           DOTFILES_DIR: ${{ github.workspace }}
           DOTFILES_BOOTSTRAP_RECIPE: _ci
 
       - name: Idempotency — re-run the same entrypoint
-        run: bash install/this_repo.sh
+        run: bash bootstrap.sh
         env:
           DOTFILES_DIR: ${{ github.workspace }}
           DOTFILES_BOOTSTRAP_RECIPE: _ci
+
+      # Local median is ~40ms; the slack is for runner noise, so a failure
+      # means something eager landed in .bashrc, not a slow runner.
+      - name: Shell startup within budget
+        run: bash scripts/bench-shell.sh 10
+        env:
+          DOTFILES_DIR: ${{ github.workspace }}
+          SHELL_BUDGET_MS: 250
 
   test:
     runs-on: ubuntu-latest
@@ -140,4 +136,4 @@ jobs:
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
 
       - name: Run scripts tests
-        run: uv run --with pytest --with pytest-cov --with pytest-xdist pytest --cov=scripts --cov-report=term-missing scripts/
+        run: uv run pytest --cov=scripts --cov-report=term-missing scripts/

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Same forwarding as githooks/pre-commit. prek needs the pushed range, which
+# git only hands over on stdin, one line per ref.
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+
+if ! command -v prek &>/dev/null || [[ ! -f "${repo_root}/.pre-commit-config.yaml" ]]; then
+    exit 0
+fi
+
+zero_sha="0000000000000000000000000000000000000000"
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+    [[ "${local_sha}" == "${zero_sha}" ]] && continue
+
+    from_ref="${remote_sha}"
+    if [[ "${remote_sha}" == "${zero_sha}" ]]; then
+        from_ref="$(git merge-base origin/main "${local_sha}")"
+    fi
+
+    prek run --hook-stage pre-push --from-ref "${from_ref}" --to-ref "${local_sha}"
+done

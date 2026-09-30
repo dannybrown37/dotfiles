@@ -14,18 +14,42 @@ REPO = Path(__file__).parent.parent
 GITCONFIG = REPO / 'config' / '.gitconfig'
 SCRIPT = REPO / 'scripts' / 'git_workflow.sh'
 FIVE_LINES = 'a\nb\nc\nd\ne\n'
+EDGES_EDITED = 'A\nb\nc\nd\nE\n'
+EXIT_USAGE = 2
+CHECK_LINK = 'https://github.com/o/r/actions/runs/12345678901/job/34567890123'
 GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
+echo "${GH_TOKEN:-<unset>}" >> "${GH_CALLS_FILE}.tokens"
+if [ "$1 $2" = 'pr view' ] && [ -n "${3:-}" ] && [ "${3#-}" = "$3" ]; then
+    [ -n "${GH_PARENT_STATE:-}" ] || exit 1
+    echo "${GH_PARENT_STATE}"
+    exit 0
+fi
 if [ "$1 $2" = 'pr view' ]; then
+    if [ -e "${GH_CALLS_FILE}.watched" ] \\
+        && [ -n "${GH_PR_STATE_AFTER_WATCH:-}" ]; then
+        GH_PR_STATE="${GH_PR_STATE_AFTER_WATCH}"
+    fi
     [ -n "${GH_PR_STATE:-}" ] || { echo 'no pull requests found' >&2; exit 1; }
     case "$*" in
         *headRefOid*) echo "${GH_PR_STATE} ${GH_PR_HEAD:-}" ;;
         *) echo "${GH_PR_STATE}" ;;
     esac
 fi
+if [ "$1" = api ]; then
+    echo "${GH_AUTO_MERGE_ALLOWED:-true}"
+fi
 if [ "$1 $2" = 'pr merge' ] && [ -n "${GH_MERGE_FAILS:-}" ]; then
     echo "${GH_MERGE_FAILS}" >&2
     exit 1
+fi
+if [ "$*" = 'pr checks --watch' ]; then
+    touch "${GH_CALLS_FILE}.watched"
+    [ -z "${GH_WATCH_FAILS:-}" ] || exit 1
+fi
+if [ "$1 $2 $3" = 'pr checks --json' ]; then
+    echo "build"
+    echo "${CHECK_LINK}"
 fi
 if [ "$*" = 'pr checks' ]; then
     n=$(( $(cat "${GH_CALLS_FILE}.polls" 2>/dev/null || echo 0) + 1 ))
@@ -73,23 +97,29 @@ def env(tmp_path: Path) -> dict[str, str]:
         'GIT_COMMITTER_EMAIL': 't@example.com',
         'GH_CALLS_FILE': str(tmp_path / 'gh_calls'),
         'GIT_SHIP_POLL_SECS': '0',
+        'CHECK_LINK': CHECK_LINK,
     }
 
 
 @pytest.fixture
-def clone(tmp_path: Path, env: dict[str, str]) -> Path:
+def base() -> str:
+    return 'main'
+
+
+@pytest.fixture
+def clone(tmp_path: Path, env: dict[str, str], base: str) -> Path:
     origin = tmp_path / 'origin.git'
-    git(tmp_path, 'init', '--bare', '-b', 'main', str(origin), env=env)
+    git(tmp_path, 'init', '--bare', '-b', base, str(origin), env=env)
     seed = tmp_path / 'seed'
     git(tmp_path, 'clone', str(origin), str(seed), env=env)
     (seed / 'f.txt').write_text(FIVE_LINES)
     git(seed, 'add', 'f.txt', env=env)
     git(seed, 'commit', '-m', 'first', env=env)
-    git(seed, 'push', 'origin', 'HEAD:main', env=env)
+    git(seed, 'push', 'origin', *{f'HEAD:{base}', 'HEAD:main'}, env=env)
     work = tmp_path / 'work'
     git(tmp_path, 'clone', str(origin), str(work), env=env)
     git(seed, 'commit', '--allow-empty', '-m', 'upstream', env=env)
-    git(seed, 'push', 'origin', 'HEAD:main', env=env)
+    git(seed, 'push', 'origin', f'HEAD:{base}', env=env)
     return work
 
 
@@ -139,7 +169,7 @@ def test_script_prints_usage(
 def test_gitconfig_aliases_only_delegate_to_script() -> None:
     lines = GITCONFIG.read_text().splitlines()
     script = '${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh'
-    for name in ('start', 'ship', 'rescue', 'done'):
+    for name in ('start', 'ship', 'rescue', 'done', 'purge'):
         assert f'    {name} = "!\\"{script}\\" {name}"' in lines
 
 
@@ -181,6 +211,48 @@ def test_start_carries_uncommitted_changes_to_new_branch(
     assert git(clone, 'stash', 'list', env=env).stdout == ''
 
 
+@pytest.mark.parametrize('on_main_with_commits', [False, True])
+def test_start_keeps_staged_changes_staged(
+    clone: Path,
+    env: dict[str, str],
+    on_main_with_commits: bool,  # noqa: FBT001
+) -> None:
+    if on_main_with_commits:
+        commit_on_main(clone, env, FIVE_LINES.replace('a', 'A'))
+    else:
+        git(clone, 'switch', '-c', 'old-topic', env=env)
+        (clone / 'other.txt').write_text('other\n')
+        git(clone, 'add', 'other.txt', env=env)
+        git(clone, 'commit', '-m', 'feat: other', env=env)
+    f = clone / 'f.txt'
+    f.write_text(f.read_text().replace('c', 'C'))
+    git(clone, 'add', 'f.txt', env=env)
+    (clone / 'unstaged.txt').write_text('unstaged\n')
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    staged = git(clone, 'diff', '--cached', '--name-only', env=env).stdout
+    assert staged.split() == ['f.txt']
+    assert (clone / 'unstaged.txt').read_text() == 'unstaged\n'
+
+
+def test_start_unstages_changes_that_only_apply_as_a_merge(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    on_branch_with_committed_edit(clone, env)
+    (clone / 'f.txt').write_text(FIVE_LINES.replace('e', 'E'))
+    git(clone, 'add', 'f.txt', env=env)
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert 'carrying them unstaged' in result.stderr
+    assert (clone / 'f.txt').read_text() == FIVE_LINES.replace('e', 'E')
+    assert git(clone, 'stash', 'list', env=env).stdout == ''
+
+
 def test_start_keeps_stash_and_explains_when_carry_conflicts(
     clone: Path,
     env: dict[str, str],
@@ -201,7 +273,9 @@ def test_start_failure_restores_branch_and_changes(
     clone: Path,
     env: dict[str, str],
 ) -> None:
-    git(clone, 'commit', '--allow-empty', '-m', 'diverge main', env=env)
+    (clone / 'main_only.txt').write_text('diverged\n')
+    git(clone, 'add', 'main_only.txt', env=env)
+    git(clone, 'commit', '-m', 'diverge main', env=env)
     on_branch_with_committed_edit(clone, env)
     (clone / 'new.txt').write_text('untracked\n')
 
@@ -212,6 +286,52 @@ def test_start_failure_restores_branch_and_changes(
     assert branch == 'old-topic'
     assert (clone / 'new.txt').read_text() == 'untracked\n'
     assert git(clone, 'stash', 'list', env=env).stdout == ''
+
+
+def commit_on_main(clone: Path, env: dict[str, str], text: str) -> None:
+    (clone / 'f.txt').write_text(text)
+    git(clone, 'commit', '-am', 'fix: direct on main', env=env)
+
+
+@pytest.mark.parametrize('origin_moved', [True, False])
+def test_start_on_main_moves_local_commits_to_new_branch(
+    clone: Path,
+    env: dict[str, str],
+    origin_moved: bool,  # noqa: FBT001
+) -> None:
+    if not origin_moved:
+        git(clone, 'pull', '--quiet', env=env)
+    commit_on_main(clone, env, FIVE_LINES.replace('a', 'A'))
+    (clone / 'new.txt').write_text('untracked\n')
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert current_branch(clone, env) == 'my-topic'
+    assert subject_of(clone, env) == 'fix: direct on main'
+    assert subject_of(clone, env, 'HEAD~') == 'upstream'
+    main = git(clone, 'rev-parse', 'main', 'origin/main', env=env).stdout
+    assert len(set(main.split())) == 1
+    assert (clone / 'new.txt').read_text() == 'untracked\n'
+    assert git(clone, 'stash', 'list', env=env).stdout == ''
+
+
+def test_start_on_main_keeps_commits_on_new_branch_when_rebase_conflicts(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    commit_on_main(clone, env, 'mine\n')
+    seed = clone.parent / 'seed'
+    (seed / 'f.txt').write_text('theirs\n')
+    git(seed, 'commit', '-am', 'fix: other', env=env)
+    git(seed, 'push', 'origin', 'HEAD:main', env=env)
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode != 0
+    assert 'git rebase --continue' in result.stderr
+    assert subject_of(clone, env, 'my-topic') == 'fix: direct on main'
+    assert subject_of(clone, env, 'main') == 'fix: other'
 
 
 def test_start_with_clean_tree_leaves_older_stashes_alone(
@@ -228,14 +348,19 @@ def test_start_with_clean_tree_leaves_older_stashes_alone(
     assert git(clone, 'stash', 'list', env=env).stdout.count('\n') == 1
 
 
-def test_start_without_topic_prints_usage(
+@pytest.mark.parametrize(
+    'args',
+    [(), ('-s',), ('a', 'b'), ('--bogus', 'a')],
+)
+def test_start_rejects_bad_arguments_with_usage(
     clone: Path,
     env: dict[str, str],
+    args: tuple[str, ...],
 ) -> None:
-    result = git(clone, 'start', env=env)
+    result = git(clone, 'start', *args, env=env)
 
-    assert result.returncode != 0
-    assert 'usage: git start <topic>' in result.stderr
+    assert result.returncode == EXIT_USAGE
+    assert 'usage: git start [-s] <topic>' in result.stderr
 
 
 @pytest.mark.parametrize(
@@ -268,12 +393,17 @@ def test_ship_titles_pr_with_top_prefix_and_branch_name(
     )
     assert 'refs/heads/main-branch-protection' in remote.stdout
     body = '\n'.join(f'- {s}' for s in subjects)
-    assert Path(env['GH_CALLS_FILE']).read_text() == (
-        'gh pr view --json state -q .state\n'
-        f'gh pr create --title {title} --body {body}\n'
-        'gh pr merge --auto --squash --delete-branch\n'
-        'gh pr checks\n'
-        'gh pr checks --watch\n'
+    assert (
+        Path(env['GH_CALLS_FILE'])
+        .read_text()
+        .startswith(
+            'gh pr view --json state -q .state\n'
+            'gh api repos/{owner}/{repo} -q .allow_auto_merge\n'
+            f'gh pr create --base main --title {title} --body {body}\n'
+            'gh pr merge --auto --squash --delete-branch\n'
+            'gh pr checks\n'
+            'gh pr checks --watch\n',
+        )
     )
 
 
@@ -322,14 +452,15 @@ def test_ship_reuses_open_pr(
     calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
     creates = state != 'OPEN'
     assert any(c.startswith('gh pr create') for c in calls) == creates
-    assert calls[-3:] == [
+    merge = calls.index('gh pr merge --auto --squash --delete-branch')
+    assert calls[merge : merge + 3] == [
         'gh pr merge --auto --squash --delete-branch',
         'gh pr checks',
         'gh pr checks --watch',
     ]
 
 
-def test_ship_watches_ci_when_auto_merge_not_allowed(
+def test_ship_skips_ci_watch_when_auto_merge_not_allowed(
     clone: Path,
     env: dict[str, str],
 ) -> None:
@@ -341,9 +472,9 @@ def test_ship_watches_ci_when_auto_merge_not_allowed(
 
     assert result.returncode == 0, result.stderr
     calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
-    assert calls[-2:] == ['gh pr checks', 'gh pr checks --watch']
+    assert calls[-1] == 'gh pr merge --auto --squash --delete-branch'
     assert 'Auto merge is not allowed' in result.stderr
-    assert 'gh pr merge --squash --delete-branch' in result.stderr
+    assert 'after CI: gh pr merge --squash --delete-branch' in result.stderr
 
 
 def test_ship_refuses_when_pr_already_merged(
@@ -389,6 +520,233 @@ def test_ship_refuses_on_main(clone: Path, env: dict[str, str]) -> None:
 
 def head(clone: Path, env: dict[str, str]) -> str:
     return git(clone, 'rev-parse', 'HEAD', env=env).stdout.strip()
+
+
+def ready_to_ship(clone: Path, env: dict[str, str]) -> None:
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: one', env=env)
+    env['GH_PR_STATE_AFTER_WATCH'] = 'MERGED'
+    env['GH_PR_HEAD'] = head(clone, env)
+
+
+def current_branch(clone: Path, env: dict[str, str]) -> str:
+    return git(clone, 'branch', '--show-current', env=env).stdout.strip()
+
+
+def test_ship_runs_done_after_auto_merge(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+    (clone / 'new.txt').write_text('untracked\n')
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
+    assert (current_branch(clone, env), subject) == ('main', 'upstream')
+    assert (clone / 'new.txt').read_text() == 'untracked\n'
+
+
+@pytest.mark.parametrize(
+    ('args', 'env_overrides', 'message'),
+    [
+        ((), {'GH_PR_HEAD': '0' * 40}, 'git rescue <topic>'),
+        (
+            (),
+            {'GH_PR_STATE_AFTER_WATCH': 'OPEN'},
+            'run git done once it merges',
+        ),
+        (('--no-done',), {}, ''),
+        (
+            (),
+            {'GH_MERGE_FAILS': 'Auto merge is not allowed'},
+            'after CI: gh pr merge --squash --delete-branch',
+        ),
+    ],
+    ids=['commits-after-ship', 'never-merged', 'no-done', 'auto-merge-off'],
+)
+def test_ship_stays_on_branch_when_done_is_unsafe(
+    clone: Path,
+    env: dict[str, str],
+    args: tuple[str, ...],
+    env_overrides: dict[str, str],
+    message: str,
+) -> None:
+    ready_to_ship(clone, env)
+    env.update(env_overrides)
+
+    result = git(clone, 'ship', *args, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert current_branch(clone, env) == 'topic'
+    assert message in result.stderr
+
+
+@pytest.mark.parametrize(
+    'args',
+    [('--no-auto',), ('--no-auto', '--no-done'), ('--no-done', '--no-auto')],
+)
+def test_ship_no_auto_skips_auto_merge_and_ci_watch(
+    clone: Path,
+    env: dict[str, str],
+    args: tuple[str, ...],
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = git(clone, 'ship', *args, env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert not [
+        c for c in calls if c.startswith(('gh pr merge', 'gh pr checks'))
+    ]
+    assert current_branch(clone, env) == 'topic'
+    assert 'after CI: gh pr merge --squash --delete-branch' in result.stderr
+
+
+@pytest.mark.parametrize(('watch_fails', 'returncode'), [('', 0), ('1', 1)])
+def test_ship_prints_full_check_links_after_watch(
+    clone: Path,
+    env: dict[str, str],
+    watch_fails: str,
+    returncode: int,
+) -> None:
+    ready_to_ship(clone, env)
+    env['GH_WATCH_FAILS'] = watch_fails
+
+    result = git(clone, 'ship', '--no-done', env=env)
+
+    assert result.returncode == returncode, result.stderr
+    assert f'build\n{CHECK_LINK}\n' in result.stdout
+
+
+def test_ship_links_check_names_on_a_terminal(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = subprocess.run(
+        ['script', '-qec', 'git ship --no-done', '/dev/null'],  # noqa: S607
+        cwd=clone,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert calls[-1] == (
+        'gh pr checks --json name,link --template '
+        '{{range .}}{{hyperlink .link .name}}{{"\\n"}}{{end}}'
+    )
+
+
+def test_ship_stays_on_branch_when_ci_fails(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+    env['GH_WATCH_FAILS'] = '1'
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode != 0
+    assert current_branch(clone, env) == 'topic'
+
+
+WORK_BODY = (
+    '## Why These Changes and What They Are\n\n'
+    '- feat: one\n- fix: two\n\n'
+    '## Evidence of Testing\n\n'
+    '## QA Testing Instructions'
+)
+
+
+@pytest.mark.parametrize(
+    ('auto_merge_allowed', 'body'),
+    [('true', '- feat: one\n- fix: two'), ('false', WORK_BODY)],
+    ids=['auto-merge-on', 'auto-merge-off'],
+)
+def test_ship_pr_body_uses_work_template_without_auto_merge(
+    clone: Path,
+    env: dict[str, str],
+    auto_merge_allowed: str,
+    body: str,
+) -> None:
+    env['GH_AUTO_MERGE_ALLOWED'] = auto_merge_allowed
+    git(clone, 'start', 'topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: one', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: two', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text()
+    assert f'--title feat: topic --body {body}\n' in calls
+
+
+def test_ship_rejects_unknown_argument(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = git(clone, 'ship', '--bogus', env=env)
+
+    assert result.returncode == EXIT_USAGE
+    assert 'usage: git ship [--no-auto] [--no-done]' in result.stderr
+    assert not Path(env['GH_CALLS_FILE']).exists()
+
+
+@pytest.mark.parametrize(
+    ('origin_url', 'expected_token'),
+    [
+        ('https://github.com/o/r.git', 'push-token'),
+        (None, 'work-token'),
+    ],
+)
+def test_ship_runs_gh_with_the_token_git_pushes_with(
+    clone: Path,
+    env: dict[str, str],
+    origin_url: str | None,
+    expected_token: str,
+) -> None:
+    env['GH_TOKEN'] = 'work-token'  # noqa: S105
+    if origin_url:
+        local_origin = git(clone, 'remote', 'get-url', 'origin', env=env)
+        git(
+            clone,
+            'config',
+            f'url.{local_origin.stdout.strip()}.insteadOf',
+            origin_url,
+            env=env,
+        )
+        git(clone, 'remote', 'set-url', 'origin', origin_url, env=env)
+        git(
+            clone,
+            'config',
+            'credential.https://github.com.helper',
+            '',
+            env=env,
+        )
+        git(
+            clone,
+            'config',
+            '--add',
+            'credential.https://github.com.helper',
+            '!f() { echo username=me; echo password=push-token; }; f',
+            env=env,
+        )
+    ready_to_ship(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    tokens = Path(f'{env["GH_CALLS_FILE"]}.tokens').read_text().splitlines()
+    assert set(tokens) == {expected_token}
 
 
 def on_merged_branch(clone: Path, env: dict[str, str]) -> None:
@@ -547,3 +905,481 @@ def test_done_refuses_when_local_main_has_unmerged_work(
     assert 'local main has commits not on origin/main' in result.stderr
     subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
     assert subject == 'fix: direct on main'
+
+
+def test_done_carries_uncommitted_changes_to_main(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    git(clone, 'switch', '-c', 'my-topic', env=env)
+    (clone / 'f.txt').write_text(FIVE_LINES.replace('e', 'E'))
+    (clone / 'new.txt').write_text('untracked\n')
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    branch = git(clone, 'branch', '--show-current', env=env).stdout.strip()
+    subject = git(clone, 'log', '-1', '--format=%s', env=env).stdout.strip()
+    assert (branch, subject) == ('main', 'upstream')
+    assert (clone / 'f.txt').read_text() == FIVE_LINES.replace('e', 'E')
+    assert (clone / 'new.txt').read_text() == 'untracked\n'
+    assert git(clone, 'stash', 'list', env=env).stdout == ''
+    assert 'git start <topic>' in result.stderr
+
+
+def test_done_failure_restores_branch_and_changes(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    main_diverged_from_origin(clone, env, upstream_text='other\n')
+    (clone / 'new.txt').write_text('untracked\n')
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode != 0
+    assert 'local main has commits not on origin/main' in result.stderr
+    branch = git(clone, 'branch', '--show-current', env=env).stdout.strip()
+    assert branch == 'my-topic'
+    assert (clone / 'new.txt').read_text() == 'untracked\n'
+    assert git(clone, 'stash', 'list', env=env).stdout == ''
+
+
+@pytest.mark.parametrize(
+    'args',
+    [('done',), ('start', 'my-topic')],
+)
+def test_never_checks_out_stale_main(
+    clone: Path,
+    env: dict[str, str],
+    args: tuple[str, ...],
+) -> None:
+    stale_main = git(clone, 'rev-parse', 'main', env=env).stdout.strip()
+    git(clone, 'switch', '-c', 'old-topic', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'feat: work', env=env)
+    seen_before = len(reflog(clone, env))
+
+    result = git(clone, *args, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert stale_main not in reflog(clone, env)[: -seen_before or None]
+
+
+def reflog(clone: Path, env: dict[str, str]) -> list[str]:
+    return git(clone, 'reflog', '--format=%H', 'HEAD', env=env).stdout.split()
+
+
+NON_MAIN_BASES = pytest.mark.parametrize('base', ['develop', 'master'])
+
+
+def subject_of(clone: Path, env: dict[str, str], rev: str = 'HEAD') -> str:
+    return git(clone, 'log', '-1', '--format=%s', rev, env=env).stdout.strip()
+
+
+@NON_MAIN_BASES
+def test_start_branches_from_remote_default_branch(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    git(clone, 'switch', '-c', 'old-topic', env=env)
+    git(clone, 'branch', '-D', base, env=env)
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert current_branch(clone, env) == 'my-topic'
+    assert subject_of(clone, env) == 'upstream'
+    assert subject_of(clone, env, base) == 'upstream'
+
+
+@NON_MAIN_BASES
+def test_start_finds_base_without_origin_head(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    git(clone, 'remote', 'set-head', 'origin', '--delete', env=env)
+
+    result = git(clone, 'start', 'my-topic', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert subject_of(clone, env) == 'upstream'
+    assert subject_of(clone, env, base) == 'upstream'
+
+
+@NON_MAIN_BASES
+def test_done_returns_to_remote_default_branch(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    git(clone, 'switch', '-c', 'my-topic', env=env)
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert (current_branch(clone, env), subject_of(clone, env)) == (
+        base,
+        'upstream',
+    )
+
+
+@NON_MAIN_BASES
+def test_ship_targets_remote_default_branch(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    ready_to_ship(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert (
+        f'gh pr create --base {base} --title feat: topic --body - feat: one'
+        in calls
+    )
+    assert (current_branch(clone, env), subject_of(clone, env)) == (
+        base,
+        'upstream',
+    )
+
+
+@NON_MAIN_BASES
+def test_ship_refuses_on_base(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    git(clone, 'switch', base, env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode != 0
+    assert f'on {base}: run git start <topic> first' in result.stderr
+
+
+@NON_MAIN_BASES
+def test_rescue_rebases_onto_remote_default_branch(
+    clone: Path,
+    env: dict[str, str],
+    base: str,
+) -> None:
+    on_merged_branch(clone, env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: late', env=env)
+
+    result = git(clone, 'rescue', 'late-fixes', env=env)
+
+    assert result.returncode == 0, result.stderr
+    subjects = git(
+        clone,
+        'log',
+        '--format=%s',
+        f'origin/{base}..HEAD',
+        env=env,
+    ).stdout.splitlines()
+    assert subjects == ['fix: late']
+    assert subject_of(clone, env, 'HEAD~1') == 'upstream'
+
+
+def stack_config(clone: Path, env: dict[str, str], key: str) -> str:
+    return git(
+        clone,
+        'config',
+        '--get',
+        f'branch.{key}',
+        env=env,
+    ).stdout.strip()
+
+
+def stacked(clone: Path, env: dict[str, str]) -> None:
+    git(clone, 'start', 'parent', env=env)
+    (clone / 'f.txt').write_text(FIVE_LINES.replace('a', 'A'))
+    git(clone, 'commit', '-am', 'feat: parent', env=env)
+    git(clone, 'push', '-u', 'origin', 'parent', env=env)
+    git(clone, 'start', '-s', 'child', env=env)
+    (clone / 'f.txt').write_text(EDGES_EDITED)
+    git(clone, 'commit', '-am', 'feat: child', env=env)
+
+
+def squash_merge_parent(clone: Path, env: dict[str, str], text: str) -> None:
+    seed = clone.parent / 'seed'
+    git(seed, 'pull', '--quiet', env=env)
+    (seed / 'f.txt').write_text(text)
+    git(seed, 'commit', '-am', 'feat: parent (#1)', env=env)
+    git(seed, 'push', 'origin', 'HEAD:main', ':parent', env=env)
+    env['GH_PARENT_STATE'] = 'MERGED'
+
+
+def own_subjects(clone: Path, env: dict[str, str], since: str) -> list[str]:
+    log = git(clone, 'log', '--format=%s', f'{since}..HEAD', env=env)
+    return log.stdout.splitlines()
+
+
+@pytest.mark.parametrize(
+    'args',
+    [('-s', 'child'), ('--stack', 'child'), ('child', '-s')],
+)
+def test_start_stack_branches_from_current_branch(
+    clone: Path,
+    env: dict[str, str],
+    args: tuple[str, ...],
+) -> None:
+    on_branch_with_committed_edit(clone, env)
+    parent_head = head(clone, env)
+    (clone / 'f.txt').write_text(EDGES_EDITED)
+
+    result = git(clone, 'start', *args, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert (current_branch(clone, env), head(clone, env)) == (
+        'child',
+        parent_head,
+    )
+    assert stack_config(clone, env, 'child.stackParent') == 'old-topic'
+    assert stack_config(clone, env, 'child.stackBase') == parent_head
+    assert (clone / 'f.txt').read_text() == EDGES_EDITED
+
+
+def test_start_stack_refuses_on_base(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    result = git(clone, 'start', '-s', 'child', env=env)
+
+    assert result.returncode == EXIT_USAGE
+    assert 'on main: nothing to stack on' in result.stderr
+    assert current_branch(clone, env) == 'main'
+
+
+def test_ship_stacked_targets_parent_without_auto_merge(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert Path(env['GH_CALLS_FILE']).read_text().splitlines() == [
+        'gh pr view parent --json state -q .state',
+        'gh pr view --json state -q .state',
+        'gh api repos/{owner}/{repo} -q .allow_auto_merge',
+        'gh pr create --base parent --title feat: child --body - feat: child',
+    ]
+    assert current_branch(clone, env) == 'child'
+    assert 'once parent merges, run git done' in result.stderr
+
+
+def test_ship_stacked_lists_only_own_commits_after_rebase_on_parent(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+    git(clone, 'switch', 'parent', env=env)
+    git(clone, 'commit', '--allow-empty', '-m', 'fix: review', env=env)
+    git(clone, 'push', 'origin', 'parent', env=env)
+    git(clone, 'switch', 'child', env=env)
+    git(clone, 'rebase', 'parent', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert (
+        'gh pr create --base parent --title feat: child --body - feat: child'
+        in calls
+    )
+
+
+@pytest.mark.parametrize(
+    ('before_ship', 'parent_state', 'message'),
+    [
+        (
+            ('push', 'origin', ':parent'),
+            '',
+            'parent is not on origin: git ship it first',
+        ),
+        (
+            (),
+            'MERGED',
+            'parent already merged: run git done first',
+        ),
+    ],
+    ids=['parent-not-pushed', 'parent-merged'],
+)
+def test_ship_stacked_refuses_without_open_parent(
+    clone: Path,
+    env: dict[str, str],
+    before_ship: tuple[str, ...],
+    parent_state: str,
+    message: str,
+) -> None:
+    stacked(clone, env)
+    if before_ship:
+        git(clone, *before_ship, env=env)
+    env['GH_PARENT_STATE'] = parent_state
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == EXIT_USAGE
+    assert message in result.stderr
+    assert git(clone, 'ls-remote', 'origin', 'child', env=env).stdout == ''
+    calls = Path(env['GH_CALLS_FILE'])
+    assert not calls.exists() or 'pr create' not in calls.read_text()
+
+
+def test_done_moves_stacked_branch_onto_base_after_parent_merges(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+    git(clone, 'push', '-u', 'origin', 'child', env=env)
+    env['GH_PR_STATE'] = 'OPEN'
+    squash_merge_parent(clone, env, FIVE_LINES.replace('a', 'A'))
+    (clone / 'f.txt').write_text('A\nb\nC\nd\nE\n')
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert current_branch(clone, env) == 'child'
+    assert own_subjects(clone, env, 'origin/main') == ['feat: child']
+    assert (clone / 'f.txt').read_text() == 'A\nb\nC\nd\nE\n'
+    assert stack_config(clone, env, 'child.stackParent') == ''
+    assert stack_config(clone, env, 'child.stackBase') == ''
+    remote = git(clone, 'ls-remote', 'origin', 'child', env=env).stdout
+    assert remote.startswith(head(clone, env))
+    calls = Path(env['GH_CALLS_FILE']).read_text().splitlines()
+    assert 'gh pr edit --base main' in calls
+
+
+def test_done_restacks_grandchild_onto_moved_parent(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+    git(clone, 'start', '-s', 'grandchild', env=env)
+    (clone / 'g.txt').write_text('g\n')
+    git(clone, 'add', 'g.txt', env=env)
+    git(clone, 'commit', '-m', 'feat: grandchild', env=env)
+    squash_merge_parent(clone, env, FIVE_LINES.replace('a', 'A'))
+    git(clone, 'switch', 'child', env=env)
+    git(clone, 'done', env=env)
+    git(clone, 'switch', 'grandchild', env=env)
+    env['GH_PARENT_STATE'] = 'OPEN'
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert own_subjects(clone, env, 'child') == ['feat: grandchild']
+    assert own_subjects(clone, env, 'origin/main') == [
+        'feat: grandchild',
+        'feat: child',
+    ]
+    child_head = git(clone, 'rev-parse', 'child', env=env).stdout.strip()
+    assert stack_config(clone, env, 'grandchild.stackParent') == 'child'
+    assert stack_config(clone, env, 'grandchild.stackBase') == child_head
+
+
+def test_done_stacked_waits_for_unmerged_unmoved_parent(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    stacked(clone, env)
+    before = head(clone, env)
+    env['GH_PARENT_STATE'] = 'OPEN'
+
+    result = git(clone, 'done', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert 'parent not merged yet' in result.stderr
+    assert (current_branch(clone, env), head(clone, env)) == ('child', before)
+
+
+ALL = frozenset({'main', 'merged', 'open', 'local', 'tree', 'develop'})
+
+
+def branches(clone: Path, env: dict[str, str]) -> set[str]:
+    out = git(clone, 'branch', '--format=%(refname:short)', env=env).stdout
+    return set(out.split())
+
+
+@pytest.fixture
+def purge_clone(clone: Path, env: dict[str, str]) -> Path:
+    """Branches covering every purge case; ends on `open`.
+
+    merged: deleted on origin. open: on origin. local: never pushed.
+    tree: in a worktree. develop: protected.
+    """
+    for name in ('merged', 'open', 'local', 'tree', 'develop'):
+        git(clone, 'branch', name, env=env)
+    for name in ('merged', 'open', 'tree'):
+        git(clone, 'push', '-u', 'origin', name, env=env)
+    seed = clone.parent / 'seed'
+    git(seed, 'push', 'origin', '--delete', 'merged', 'tree', env=env)
+    git(clone, 'worktree', 'add', str(clone.parent / 'wt'), 'tree', env=env)
+    git(clone, 'switch', 'open', env=env)
+    return clone
+
+
+def run_purge(
+    clone: Path,
+    env: dict[str, str],
+    *args: str,
+    answer: str = '',
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        ['git', 'purge', *args],  # noqa: S607
+        cwd=clone,
+        env=env,
+        input=answer,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize(
+    ('args', 'answer', 'returncode', 'deleted'),
+    [
+        ([], '', 0, {'merged'}),
+        (['--all'], 'y\n', 0, {'merged', 'local'}),
+        (['--all', '-y'], '', 0, {'merged', 'local'}),
+        (['--all'], 'n\n', 1, set()),
+        (['--all'], '', 1, set()),
+    ],
+)
+def test_purge_deletes_only_what_it_should(
+    purge_clone: Path,
+    env: dict[str, str],
+    *,
+    args: list[str],
+    answer: str,
+    returncode: int,
+    deleted: set[str],
+) -> None:
+    result = run_purge(purge_clone, env, *args, answer=answer)
+
+    assert result.returncode == returncode, result.stderr
+    assert branches(purge_clone, env) == ALL - deleted
+
+
+def test_purge_with_nothing_gone_says_so(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    result = run_purge(clone, env)
+
+    assert result.returncode == 0, result.stderr
+    assert 'nothing to purge' in result.stderr
+
+
+def test_purge_rejects_unknown_argument(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    result = run_purge(clone, env, '--bogus')
+
+    assert result.returncode == EXIT_USAGE
+    assert 'usage: git purge' in result.stderr

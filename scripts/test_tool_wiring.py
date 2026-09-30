@@ -216,3 +216,31 @@ def test_missing_tool_argument_is_a_usage_error(tmp_path: Path) -> None:
 
     assert result.returncode == EXIT_USAGE
     assert 'usage' in (result.stdout + result.stderr).lower()
+
+
+@pytest.mark.parametrize(
+    ('header', 'expected_code'),
+    [
+        ('## @extra gizmo | Install gizmo', 0),
+        ('', EXIT_FAILED_CHECKS),
+    ],
+)
+def test_extra_needs_extra_header_but_no_audit_line(
+    tmp_path: Path,
+    header: str,
+    expected_code: int,
+) -> None:
+    """Extras are audited in bulk from their headers, like apt packages."""
+    build_repo(tmp_path)
+    extras = tmp_path / 'install' / 'extras'
+    extras.mkdir()
+    (extras / 'gizmo.sh').write_text(f'#!/usr/bin/env bash\n{header}\n')
+    stubs = tmp_path / 'bin' / 'stubs.sh'
+    stubs.write_text(stubs.read_text() + 'gizmo() { command gizmo "$@"; }\n')
+
+    result = run_checker(tmp_path, 'gizmo')
+    output = result.stdout + result.stderr
+
+    assert result.returncode == expected_code, output
+    assert '(extra)' in output
+    assert 'install/extras/gizmo.sh' in output

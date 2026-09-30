@@ -37,7 +37,7 @@ vim.keymap.set("n", "<leader>rw", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI", { desc =
 
 vim.keymap.set("n", "<leader>x", "<cmd>!chmod +x %<CR>", { desc = "Make current file e[x]ecutable" })
 
-vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from curent location" })
+vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplore files from current location" })
 
 local fn = require("functions")
 vim.keymap.set("n", "<leader>note", fn.CreateNote, { desc = "[N]ote file (created in ~/notes)" })

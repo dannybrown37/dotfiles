@@ -5,7 +5,7 @@ set -euo pipefail
 ##
 ## The actual bash profile, which is what `make bash` (now `just _bash`) always claimed to be and
 ## for a long time was not -- it used to also install seven CLI tools, Chrome and
-## the password-store. Those are `just _cli-tools`, `just _chrome` and
+## the password-store. Those are `just _cli-tools`, `just extras chrome` and
 ## `just _password-store` now.
 ##
 ## Everything here is either sourced by config/.bashrc at startup or is a file
@@ -55,6 +55,7 @@ if [[ ! -d "${HOME}/.tmux/plugins/tpm" ]]; then
 else
     echo "tmux plugin manager is already installed on this system"
 fi
+"${HOME}/.tmux/plugins/tpm/bin/install_plugins"
 
 ##
 ## gh-dash, a gh extension rather than a standalone binary. `gh extension

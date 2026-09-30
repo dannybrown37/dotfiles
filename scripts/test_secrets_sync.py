@@ -57,6 +57,8 @@ GIT_ENV = {
 # manifest form still have something ordinary syncing alongside it.
 BASELINE_ENTRY = 'some/token:.token\n'
 
+OWNER_ONLY = 0o600
+
 
 class SyncHarness:
     """A throwaway repo plus fake store to run secrets.sh against."""
@@ -265,6 +267,25 @@ def test_entries_are_copied_verbatim(harness: SyncHarness) -> None:
     harness.run('load')
 
     assert (harness.repo / '.token').read_text() == 'secret-value\n'
+
+
+@pytest.mark.parametrize('existing_mode', [None, 0o644])
+def test_loaded_secrets_are_owner_only(
+    harness: SyncHarness,
+    existing_mode: int | None,
+) -> None:
+    target = harness.repo / '.token'
+    if existing_mode is not None:
+        target.write_text('from-here\n')
+        target.chmod(existing_mode)
+    harness.write_store_entry('some/token', 'from-there\n')
+
+    harness.run('load')
+
+    assert target.stat().st_mode & 0o777 == OWNER_ONLY
+    if existing_mode is not None:
+        backup = harness.repo / '.token.bak'
+        assert backup.stat().st_mode & 0o777 == OWNER_ONLY
 
 
 def test_load_overwrites_local_but_leaves_a_backup(
