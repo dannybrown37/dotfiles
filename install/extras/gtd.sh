@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-## Clone git-a-grip and install it with uv
+## @extra gtd | GTD CLI powered by Notion
 
 ##
-## Clone git-a-grip and install it with uv
+## Clone gtd and install it with uv
 ##
 
 set -euo pipefail
 
-repo_dir="${HOME}/projects/git-a-grip"
+repo_dir="${HOME}/projects/gtd"
 
 if [[ ! -d "${repo_dir}" ]]; then
-    git clone https://github.com/dannybrown37/git-a-grip "${repo_dir}"
+    git clone https://github.com/dannybrown37/gtd "${repo_dir}"
 else
-    echo "git-a-grip already cloned at ${repo_dir}"
+    echo "gtd already cloned at ${repo_dir}"
 fi
 
 if ! command -v uv &>/dev/null; then

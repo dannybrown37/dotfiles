@@ -34,9 +34,6 @@ Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
   secrets-load    Pull private repo, load secrets from password-store to local files
 
-My Dev Tooling:
-  my-dev-tools    Clone and install skill-tree, gtd, and git-a-grip
-
 Verification:
   check           Run every prek hook over the whole repo
   test            Run all tests (pytest + shell syntax check)

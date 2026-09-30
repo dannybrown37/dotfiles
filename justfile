@@ -40,15 +40,6 @@ _win-dev:
 _win32yank:
     bash -c ". {{root_dir}}/install/win32yank.sh"
 
-_skill-tree:
-    bash -c ". {{root_dir}}/install/skill-tree.sh"
-
-_gtd:
-    bash -c ". {{root_dir}}/install/gtd.sh"
-
-_git-a-grip:
-    bash -c ". {{root_dir}}/install/git-a-grip.sh"
-
 # ── Composite targets ────────────────────────────────────────────────────────
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else
 # assumes.
@@ -78,9 +69,6 @@ secrets-load:
 
 ## @just 41 Environment-Specific | Install Windows-side tooling (win-dev, win32yank)
 windows: _win-dev _win32yank
-
-## @just 60 My Dev Tooling | Clone and install skill-tree, gtd, and git-a-grip
-my-dev-tools: _skill-tree _gtd _git-a-grip
 
 ## @just 74 Verification | Benchmark interactive shell startup time
 bench-shell runs='10':

@@ -57,7 +57,7 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
 A Windows-only tool works the same way with a `.ps1` extension — `install/win-dev.ps1`
 backs `just _win-dev`, run via `powershell.exe`.
 
-Recipes with no install script of their own (`vscode`, `my-dev-tools`, `secrets-*`) keep their
+Recipes with no install script of their own (`vscode`, `secrets-*`) keep their
 header in the `justfile`, directly above the recipe.
 
 ## Adding an Extra
