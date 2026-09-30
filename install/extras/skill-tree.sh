@@ -15,4 +15,9 @@ else
     echo "skill-tree already cloned at ${repo_dir}"
 fi
 
+if ! command -v uv &>/dev/null; then
+    bash "$(dirname "${BASH_SOURCE[0]}")/python.sh"
+    export PATH="${HOME}/.local/bin:${PATH}"
+fi
+
 "${repo_dir}/scripts/install.sh"

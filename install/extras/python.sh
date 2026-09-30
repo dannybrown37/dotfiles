@@ -27,7 +27,7 @@ uv python install --default "${python_version}"
 ## Sync this repo's own venv, which the pre-push pytest hook runs in
 ##
 
-uv sync --project "$(dirname "${BASH_SOURCE[0]}")/.."
+uv sync --project "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 ##
 ## Install global Python packages with uv tool

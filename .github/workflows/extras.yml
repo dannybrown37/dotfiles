@@ -64,7 +64,7 @@ jobs:
           source install/apt_packages.sh
           apt-get update -qq
           apt-get install -y -qq sudo xz-utils "${apt_packages[@]}" >/dev/null
-          printf '%s\n' "${HOME}/.local/bin" "${HOME}/.deno/bin" /usr/games >> "$GITHUB_PATH"
+          printf '%s\n' "${HOME}/.local/bin" "${HOME}/.deno/bin" "${HOME}/.cargo/bin" /usr/local/go/bin /usr/games >> "$GITHUB_PATH"
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
