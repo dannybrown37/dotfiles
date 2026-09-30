@@ -20,37 +20,24 @@ The output of `just` in the root directory:
 Usage: just [option]
 
 Start Here:
-  bootstrap       Full machine setup (apt, bash, cli-tools, password-store)
-  extras          Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
-  symlinks        Symlink every tracked config into $HOME (idempotent, no network)
-
-Languages & Runtimes:
-  python          Install Python environment (uv, select uv tools)
-  node            Install Node.js environment (n, Node 22, select global packages)
-  golang          Install Go environment (pinned Golang version)
-  rust            Install the Rust toolchain (rustup, latest stable)
-
-Developer Tools:
-  nvim            Install Neovim
-  vscode          Install VS Code extensions and settings
+  bootstrap       Full machine setup (apt, bash, cli-tools, python, password-store)
+  extras          Languages, editors, and opt-in tools, with ✓ for installed
 
 Environment-Specific:
+  vscode          Link VS Code settings, then pick extensions (✓ = installed)
+  windows         Windows-side tools (winget, npm, uv, win32yank), with ✓ for installed
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
-  windows         Install Windows-side tooling (win-dev, win32yank)
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
   secrets-load    Pull private repo, load secrets from password-store to local files
-
-My Dev Tooling:
-  my-dev-tools    Clone and install skill-tree, gtd, and git-a-grip
 
 Verification:
   check           Run every prek hook over the whole repo
   test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
-  bench-shell     Benchmark interactive shell startup time (10 runs default, pass N to override)
+  bench-shell     Benchmark interactive shell startup time
 ```
 
 <!-- make:end -->
@@ -150,7 +137,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `push_to_topic` | Push a message to ntfy.sh at a topic | push_to_topic <topic> <message> | `bin/ntfy.sh` |
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
 | `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
-| `refs` | Read link references in glow (bare: pick one) | refs [links] [media|mental-models] | `config/.bash_aliases` |
+| `refs` | Read references and repo guides in glow (bare: pick one) | refs [links] [media|mental-models] | `config/.bash_aliases` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `selection` | Alt+T - transform selected text (case, JSON, URL) from a keyboard menu; Alt+G - open selection (or clipboard) as URL / Jira key / Google search | `ahk/selection.ahk` |
@@ -216,13 +203,13 @@ Updated with `just bench-shell`:
 
 ## Initial Windows Setup Notes
 
-For when you're truly starting from scratch. `just windows` installs Windows Terminal, VS Code, AutoHotkey v2, and the rest of the winget-managed toolchain; only Chrome and the WSL distro itself are manual.
+For when you're truly starting from scratch. `just windows --all` installs Windows Terminal, VS Code, AutoHotkey v2, and the rest of the winget-managed toolchain (plain `just windows` picks items one by one); only Chrome and the WSL distro itself are manual.
 
 ### Downloads
 
 - [Google Chrome](https://www.google.com/search?q=google+chrome+download)
 
-After WSL is up and this repo is cloned, run `just windows`, then `ahk && ahk startup` from WSL.
+After WSL is up and this repo is cloned, run `just windows --all`, then `ahk && ahk startup` from WSL.
 
 ### Set Up a WSL Debian Distro
 

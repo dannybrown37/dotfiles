@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## Clone gtd and install it with uv
+## @extra gtd | GTD CLI powered by Notion
 
 ##
 ## Clone gtd and install it with uv
@@ -16,10 +16,9 @@ else
 fi
 
 if ! command -v uv &>/dev/null; then
-    echo "uv not found -- run 'just python' first" >&2
-    exit 1
+    bash "$(dirname "${BASH_SOURCE[0]}")/python.sh"
+    export PATH="${HOME}/.local/bin:${PATH}"
 fi
 
 cd "${repo_dir}"
-uv sync
-uv pip install -e .
+uv tool install --force --editable .

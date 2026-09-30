@@ -2,7 +2,7 @@
 
 ##
 ## Puts ~/.cargo/bin on PATH for the current script.
-## Sourced by install/rust.sh and the cargo extras in install/extras/.
+## Sourced by install/extras/rust.sh and the cargo extras in install/extras/.
 ##
 ## Library only -- no `## @just` header, so not a Make target.
 ##

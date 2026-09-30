@@ -8,6 +8,9 @@
 ## <binary> is what `command -v` looks for to mark the extra installed. A file
 ## in install/extras/ without the header is a helper, not an extra.
 ##
+## A `## @runtime` line marks a language toolchain. Runtimes install before
+## other extras, because some extras build with cargo or uv.
+##
 
 set -euo pipefail
 
@@ -66,7 +69,15 @@ install() {
             exit "${EXIT_USAGE}"
         fi
     done
+    local runtimes=() others=()
     for name in "$@"; do
+        if grep -qx '## @runtime' "${extras_dir}/${name}.sh"; then
+            runtimes+=("${name}")
+        else
+            others+=("${name}")
+        fi
+    done
+    for name in "${runtimes[@]}" "${others[@]}"; do
         echo "── ${name}"
         bash "${extras_dir}/${name}.sh"
     done

@@ -3,10 +3,9 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly REFS_VERSION="0.3.0"
+readonly REFS_VERSION="0.5.0"
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly DOTFILES_ROOT="$(dirname "$(dirname "${SELF}")")"
-readonly REFS_DIR="${REFS_DIR:-${DOTFILES_ROOT}/references}"
 
 usage() {
     cat >&2 <<EOF
@@ -26,23 +25,45 @@ EOF
     exit "${EXIT_USAGE}"
 }
 
+markdown_in() {
+    local file
+    for file in "$1"/*.md; do
+        [[ -f "${file}" ]] && echo "${file}"
+    done
+    return 0
+}
+
+# REFS_DIR narrows the search to one directory (used by the tests)
+ref_paths() {
+    if [[ -n "${REFS_DIR:-}" ]]; then
+        markdown_in "${REFS_DIR}"
+        return 0
+    fi
+    markdown_in "${DOTFILES_ROOT}/references"
+    markdown_in "${DOTFILES_ROOT}/wsl"
+    echo "${DOTFILES_ROOT}/docs/git-workflow.md"
+}
+
 list_files() {
     local file
-    for file in "${REFS_DIR}"/*.md; do
-        if grep -qE '^\[[^]]*\]\(https?://' "${file}" 2>/dev/null; then
-            basename "${file}" .md
-        fi
-    done
+    while IFS= read -r file; do
+        basename "${file}" .md
+    done < <(ref_paths)
 }
 
 resolve_file() {
+    local file
     if [[ -f "$1" ]]; then
         echo "$1"
-    elif list_files | grep -qxF -- "$1"; then
-        echo "${REFS_DIR}/$1.md"
-    else
-        usage
+        return 0
     fi
+    while IFS= read -r file; do
+        if [[ "$(basename "${file}" .md)" == "$1" ]]; then
+            echo "${file}"
+            return 0
+        fi
+    done < <(ref_paths)
+    usage
 }
 
 list_entries() {
@@ -92,6 +113,25 @@ view() {
     fi
 }
 
+preview() {
+    if command -v glow &>/dev/null; then
+        glow -s dark -w "${FZF_PREVIEW_COLUMNS:-80}" "$1"
+    else
+        cat "$1"
+    fi
+}
+
+pick_ref() {
+    list_files | fzf \
+        --prompt='refs> ' --no-input \
+        --reverse --height=90% \
+        --header='↑/↓: pick · j/k: scroll · ctrl-d/u: page · enter: read · esc: quit' \
+        --preview="'${SELF}' preview {}" \
+        --preview-window='right,70%,wrap' \
+        --bind='j:preview-down,k:preview-up' \
+        --bind='ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up'
+}
+
 pick_link() {
     local file="$1"
     list_entries "${file}" | fzf \
@@ -110,12 +150,12 @@ main() {
     --version) echo "refs ${REFS_VERSION}"; return 0 ;;
     copy) copy_to_clipboard; return 0 ;;
     files) list_files; return 0 ;;
-    links | list | url | open | edit | add) shift ;;
+    links | list | url | open | edit | add | preview) shift ;;
     -h | --help) usage ;;
     "")
         [[ -t 0 && -t 1 ]] || usage
         local ref
-        ref="$(list_files | fzf --prompt='refs> ' --reverse --height=40%)" || return 0
+        ref="$(pick_ref)" || return 0
         view "$(resolve_file "${ref}")"
         echo "Run again with: refs ${ref}"
         return 0
@@ -127,6 +167,7 @@ main() {
     file="$(resolve_file "${1:-}")"
     case "${cmd}" in
     view) view "${file}" ;;
+    preview) preview "${file}" ;;
     list) list_entries "${file}" ;;
     edit)
         [[ -t 0 && -t 1 ]] || usage

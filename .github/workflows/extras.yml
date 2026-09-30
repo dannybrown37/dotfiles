@@ -29,13 +29,14 @@ jobs:
           persist-credentials: false
 
       # cartoon, mprocs and spotify_player build with cargo: minutes each, and
-      # a crates.io build doesn't rot the way a release URL does.
+      # a crates.io build doesn't rot the way a release URL does. docker
+      # installs Docker Desktop on the Windows host, which no runner has.
       - name: List extras from their headers
         id: list
         run: |
           extras="$(
               grep -H '^## @extra ' install/extras/*.sh |
-                  grep -vE '/(cartoon|mprocs|spotify)\.sh:' |
+                  grep -vE '/(cartoon|docker|mprocs|spotify)\.sh:' |
                   sed -E 's|^install/extras/([^.]+)\.sh:## @extra ([^ ]+) .*|{"name":"\1","binary":"\2"}|' |
                   jq -sc .
           )"
@@ -63,7 +64,7 @@ jobs:
           source install/apt_packages.sh
           apt-get update -qq
           apt-get install -y -qq sudo xz-utils "${apt_packages[@]}" >/dev/null
-          printf '%s\n' "${HOME}/.local/bin" "${HOME}/.deno/bin" /usr/games >> "$GITHUB_PATH"
+          printf '%s\n' "${HOME}/.local/bin" "${HOME}/.deno/bin" "${HOME}/.cargo/bin" /usr/local/go/bin /usr/games >> "$GITHUB_PATH"
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive

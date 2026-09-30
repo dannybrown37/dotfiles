@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 23 Languages & Runtimes | Install Go environment (pinned Golang version)
+## @extra go | Go toolchain (pinned version)
+## @runtime
 
 # shellcheck source=install/versions.sh
-source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
 
 target_version="go${GOLANG_VERSION}"
 current_version=$(go version 2>/dev/null | awk '{print $3}' || true)
