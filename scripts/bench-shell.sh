@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-## @just 74 Verification | Benchmark interactive shell startup time (10 runs default, pass N to override)
+## @just 74 Verification | Benchmark interactive shell startup time
 
 readonly ITERATIONS="${1:-10}"
 readonly WARMUP=2

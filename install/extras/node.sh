@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 21 Languages & Runtimes | Install Node.js environment (n, Node 22, select global packages)
+## @extra node | Node 22 via n, plus select global packages
+## @runtime
 
 ##
 ## Install n (Node version manager) and set up Node 22
@@ -9,7 +10,7 @@ set -euo pipefail
 readonly node_major=22
 
 # shellcheck source=install/versions.sh
-source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
 
 if ! command -v n &>/dev/null; then
     curl -fsSL "https://raw.githubusercontent.com/tj/n/v${N_VERSION}/bin/n" | sudo bash -s "${node_major}"
@@ -27,18 +28,18 @@ fi
 ##
 
 if ! command -v n &>/dev/null; then
-    echo "install/node.sh: n is not on PATH after install" >&2
+    echo "install/extras/node.sh: n is not on PATH after install" >&2
     exit 1
 fi
 
 if [[ "$(command -v node)" == *"/.nvm/"* ]]; then
-    echo "install/node.sh: node resolves to nvm ($(command -v node))." >&2
+    echo "install/extras/node.sh: node resolves to nvm ($(command -v node))." >&2
     echo "  This repo uses n. Remove ~/.nvm, start a new shell, and re-run." >&2
     exit 1
 fi
 
 if ! node --version 2>/dev/null | grep -q "^v${node_major}"; then
-    echo "install/node.sh: expected Node v${node_major}, got '$(node --version 2>&1)'" >&2
+    echo "install/extras/node.sh: expected Node v${node_major}, got '$(node --version 2>&1)'" >&2
     echo "  Installed at $(command -v node). A stale shell PATH is the usual cause —" >&2
     echo "  start a new shell and re-run." >&2
     exit 1
@@ -50,7 +51,7 @@ fi
 ##
 
 if ! sudo npm install --global git-open; then
-    echo "install/node.sh: failed to install global npm packages" >&2
+    echo "install/extras/node.sh: failed to install global npm packages" >&2
     exit 1
 fi
 

@@ -20,18 +20,10 @@ The output of `just` in the root directory:
 Usage: just [option]
 
 Start Here:
-  bootstrap       Full machine setup (apt, bash, cli-tools, python, password-store)
-  extras          Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
-  symlinks        Symlink every tracked config into $HOME (idempotent, no network)
-
-Languages & Runtimes:
-  python          Install Python environment (uv, select uv tools)
-  node            Install Node.js environment (n, Node 22, select global packages)
-  golang          Install Go environment (pinned Golang version)
-  rust            Install the Rust toolchain (rustup, latest stable)
+  bootstrap       Full machine setup (apt, bash, cli-tools, password-store)
+  extras          Languages, editors, and opt-in tools, with ✓ for installed
 
 Developer Tools:
-  nvim            Install Neovim
   vscode          Install VS Code extensions and settings
 
 Environment-Specific:
@@ -50,7 +42,7 @@ Verification:
   test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
-  bench-shell     Benchmark interactive shell startup time (10 runs default, pass N to override)
+  bench-shell     Benchmark interactive shell startup time
 ```
 
 <!-- make:end -->

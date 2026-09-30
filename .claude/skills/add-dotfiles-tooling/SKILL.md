@@ -19,7 +19,7 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
    cleanup, install, confirm, optional config symlink.
 
    **Name the file after the recipe you want** — the filename *is* the recipe name
-   (`install/nvim.sh` → `just nvim`), so don't name it after the upstream project.
+   (`install/gnome.sh` → `just gnome`), so don't name it after the upstream project.
 
 2. Give it a `## @just` header, directly under the shebang:
 
@@ -74,6 +74,8 @@ An extra is an opt-in tool picked from the `just extras` menu (or `just extras <
    ```
 
    `<binary>` is what `command -v` looks for to show ✓ in the menu. No justfile edit.
+   A language toolchain (python, node, golang, rust) also carries a `## @runtime` line,
+   so it installs before any extra that builds with it.
 3. Add the `bin/stubs.sh` stub as usual. No audit line: the audit lists extras from their
    headers and warns (not fails) when one is missing.
 4. Run `./scripts/check-tool-wiring.sh <name>`.

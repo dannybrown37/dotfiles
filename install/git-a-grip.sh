@@ -16,7 +16,7 @@ else
 fi
 
 if ! command -v uv &>/dev/null; then
-    echo "uv not found -- run 'just python' first" >&2
+    echo "uv not found -- run 'just extras python' first" >&2
     exit 1
 fi
 

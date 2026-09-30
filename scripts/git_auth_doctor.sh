@@ -317,12 +317,12 @@ for include in "${HOME}/.gitconfig-personal" "${HOME}/.gitconfig-private"; do
         if [[ -L "$include" ]]; then
             ok "$label" "→ $(readlink "$include")"
         else
-            warn "$label" "real file, not a symlink — run: just symlinks"
+            warn "$label" "real file, not a symlink — run: just bootstrap"
         fi
     elif [[ "$include" == *private ]]; then
         warn "$label" "absent — only personal remotes have an identity here"
     else
-        fail "$label" "missing — git ignores an includeIf pointing at a nonexistent file, silently. Run: just symlinks"
+        fail "$label" "missing — git ignores an includeIf pointing at a nonexistent file, silently. Run: just bootstrap"
     fi
 done
 

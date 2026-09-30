@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 31 Developer Tools | Install Neovim
+## @extra nvim | Neovim editor
 
 # shellcheck source=install/versions.sh
-source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
 
 ##
 ## make and gcc build telescope-fzf-native and LuaSnip's jsregexp; without them
