@@ -78,7 +78,7 @@ check_ahk_v2() {
     elif [[ -x "$user_path" ]]; then
         ok "AutoHotkey v2" "installed (${user_path})"
     else
-        fail "AutoHotkey v2" "just windows  (or install from https://www.autohotkey.com/download/)"
+        fail "AutoHotkey v2" "just windows autohotkey  (or install from https://www.autohotkey.com/download/)"
     fi
 }
 
@@ -142,7 +142,7 @@ check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "jus
 # ── WSL Clipboard ────────────────────────────────────────────────────────────
 
 if [[ -n "${ON_WINDOWS:-}" ]]; then
-    check "win32yank.exe" "command -v win32yank.exe" "just windows"
+    check "win32yank.exe" "command -v win32yank.exe" "just windows win32yank"
     check_ahk_v2
     check "AHK autocorrect list" "test -s '${DOTFILES_DIR}/ahk/vendor/AutoCorrectHotstrings.ahk' && echo present" "ahk"
 fi
