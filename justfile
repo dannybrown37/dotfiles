@@ -37,12 +37,6 @@ _wsl-fonts:
 _komo:
     powershell.exe -ExecutionPolicy Bypass -File "{{root_dir}}/install/komo.ps1"
 
-_win-dev:
-    powershell.exe -ExecutionPolicy Bypass -File "{{root_dir}}/install/win-dev.ps1"
-
-_win32yank:
-    bash -c ". {{root_dir}}/install/win32yank.sh"
-
 # ── Composite targets ────────────────────────────────────────────────────────
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else
 # assumes.
@@ -70,8 +64,9 @@ secrets-save:
 secrets-load:
     bash -c "{{root_dir}}/scripts/secrets.sh load"
 
-## @just 41 Environment-Specific | Install Windows-side tooling (win-dev, win32yank)
-windows: _win-dev _win32yank
+## @just 41 Environment-Specific | Windows-side tools (winget, npm, uv, win32yank), with ✓ for installed
+windows *names:
+    @bash "{{root_dir}}/scripts/windows.sh" {{names}}
 
 ## @just 74 Verification | Benchmark interactive shell startup time
 bench-shell runs='10':

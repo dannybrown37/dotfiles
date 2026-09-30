@@ -54,8 +54,8 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
    ./scripts/check-tool-wiring.sh <tool>
    ```
 
-A Windows-only tool works the same way with a `.ps1` extension — `install/win-dev.ps1`
-backs `just _win-dev`, run via `powershell.exe`.
+A Windows-side winget/npm/uv tool goes in the tables at the top of `install/win-dev.ps1`,
+which backs the `just windows` picker (`scripts/windows.sh`) via `powershell.exe`.
 
 Recipes with no install script of their own (`vscode`, `secrets-*`) keep their
 header in the `justfile`, directly above the recipe.

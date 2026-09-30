@@ -25,7 +25,7 @@ Start Here:
 
 Environment-Specific:
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
-  windows         Install Windows-side tooling (win-dev, win32yank)
+  windows         Windows-side tools (winget, npm, uv, win32yank), with ✓ for installed
   vscode          Install VS Code extensions and settings
 
 Secrets (requires GPG keys):
@@ -203,13 +203,13 @@ Updated with `just bench-shell`:
 
 ## Initial Windows Setup Notes
 
-For when you're truly starting from scratch. `just windows` installs Windows Terminal, VS Code, AutoHotkey v2, and the rest of the winget-managed toolchain; only Chrome and the WSL distro itself are manual.
+For when you're truly starting from scratch. `just windows --all` installs Windows Terminal, VS Code, AutoHotkey v2, and the rest of the winget-managed toolchain (plain `just windows` picks items one by one); only Chrome and the WSL distro itself are manual.
 
 ### Downloads
 
 - [Google Chrome](https://www.google.com/search?q=google+chrome+download)
 
-After WSL is up and this repo is cloned, run `just windows`, then `ahk && ahk startup` from WSL.
+After WSL is up and this repo is cloned, run `just windows --all`, then `ahk && ahk startup` from WSL.
 
 ### Set Up a WSL Debian Distro
 
