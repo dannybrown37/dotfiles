@@ -210,3 +210,14 @@ def test_add_by_name_writes_to_refs_dir(refs_dir: Path) -> None:
     result = run('add', 'alpha', 'T', 'D', 'https://x.io', refs_dir=refs_dir)
     assert result.returncode == 0
     assert (refs_dir / 'alpha.md').read_text().endswith('[T](https://x.io)\n')
+
+
+def test_preview_renders_ref_by_name(refs_dir: Path) -> None:
+    result = run('preview', 'notes', refs_dir=refs_dir)
+    assert result.returncode == 0
+    assert 'no link lines' in result.stdout
+
+
+def test_preview_unknown_ref_is_usage_error(refs_dir: Path) -> None:
+    result = run('preview', 'nope', refs_dir=refs_dir)
+    assert result.returncode == EXIT_USAGE

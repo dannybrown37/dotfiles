@@ -21,5 +21,4 @@ if ! command -v uv &>/dev/null; then
 fi
 
 cd "${repo_dir}"
-uv sync
-uv pip install -e .
+uv tool install --force --editable .
