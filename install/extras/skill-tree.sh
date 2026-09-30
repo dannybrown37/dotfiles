@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## Clone skill-tree and run its setup script
+## @extra skill-tree | My Claude Code skills, hooks, and CLIs
 
 ##
 ## Clone skill-tree and run its own setup

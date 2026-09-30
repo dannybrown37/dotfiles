@@ -21,36 +21,23 @@ Usage: just [option]
 
 Start Here:
   bootstrap       Full machine setup (apt, bash, cli-tools, python, password-store)
-  extras          Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
-  symlinks        Symlink every tracked config into $HOME (idempotent, no network)
-
-Languages & Runtimes:
-  python          Install Python environment (uv, select uv tools)
-  node            Install Node.js environment (n, Node 22, select global packages)
-  golang          Install Go environment (pinned Golang version)
-  rust            Install the Rust toolchain (rustup, latest stable)
-
-Developer Tools:
-  nvim            Install Neovim
-  vscode          Install VS Code extensions and settings
+  extras          Languages, editors, and opt-in tools, with ✓ for installed
 
 Environment-Specific:
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
   windows         Install Windows-side tooling (win-dev, win32yank)
+  vscode          Install VS Code extensions and settings
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
   secrets-load    Pull private repo, load secrets from password-store to local files
-
-My Dev Tooling:
-  my-dev-tools    Clone and install skill-tree, gtd, and git-a-grip
 
 Verification:
   check           Run every prek hook over the whole repo
   test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
   doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
-  bench-shell     Benchmark interactive shell startup time (10 runs default, pass N to override)
+  bench-shell     Benchmark interactive shell startup time
 ```
 
 <!-- make:end -->

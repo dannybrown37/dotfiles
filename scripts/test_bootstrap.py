@@ -25,13 +25,16 @@ def write_executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
-def link_system_bins_except_just(target: Path) -> None:
+def link_system_bins_except_just(
+    target: Path,
+    sources: tuple[Path, ...] = (Path('/usr/bin'), Path('/bin')),
+) -> None:
     """Debian 13 ships `just` in apt, so /usr/bin can't go on PATH as-is."""
     target.mkdir()
-    for system_bin in (Path('/usr/bin'), Path('/bin')):
+    for system_bin in sources:
         for executable in system_bin.iterdir():
             link = target / executable.name
-            if executable.name != 'just' and not link.exists():
+            if executable.name != 'just' and not link.is_symlink():
                 link.symlink_to(executable)
 
 
@@ -111,6 +114,21 @@ class Machine:
 
     def calls(self) -> list[str]:
         return self.call_log.read_text().splitlines()
+
+
+def test_link_system_bins_tolerates_dangling_symlink_in_two_sources(
+    tmp_path: Path,
+) -> None:
+    # /usr/bin/docker points into Docker Desktop, which vanishes when it stops
+    sources = (tmp_path / 'usr-bin', tmp_path / 'bin')
+    for source in sources:
+        source.mkdir()
+        (source / 'docker').symlink_to(tmp_path / 'missing')
+    target = tmp_path / 'out'
+
+    link_system_bins_except_just(target, sources)
+
+    assert (target / 'docker').is_symlink()
 
 
 @pytest.fixture(scope='session')

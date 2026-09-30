@@ -6,7 +6,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/../cargo_env.sh"
 
 if ! command -v cargo &>/dev/null; then
-    echo "mprocs needs cargo -- run 'just rust' first" >&2
+    echo "mprocs needs cargo -- run 'just extras rust' first" >&2
     exit 1
 fi
 

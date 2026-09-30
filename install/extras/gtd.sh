@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## Clone gtd and install it with uv
+## @extra gtd | GTD CLI powered by Notion
 
 ##
 ## Clone gtd and install it with uv
@@ -16,7 +16,7 @@ else
 fi
 
 if ! command -v uv &>/dev/null; then
-    echo "uv not found -- run 'just python' first" >&2
+    echo "uv not found -- run 'just extras python' first" >&2
     exit 1
 fi
 

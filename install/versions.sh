@@ -3,7 +3,7 @@
 
 ##
 ## Single source of truth for pinned tool versions.
-## Sourced by install/python.sh (to install) and scripts/dotfiles_audit.sh (to
+## Sourced by install/extras/python.sh (to install) and scripts/dotfiles_audit.sh (to
 ## check); read by .github/workflows/ci.yml (to install the same versions in CI).
 ##
 ## Keep assignments unquoted and one-per-line in NAME=value form -- CI appends

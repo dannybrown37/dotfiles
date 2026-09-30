@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 20 Languages & Runtimes | Install Python environment (uv, select uv tools)
+## @extra uv | Python via uv, plus select uv tools
+## @runtime
 
 # shellcheck source=install/versions.sh
-source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
 
 ##
 ## Install uv
@@ -19,7 +20,7 @@ curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
 # --default installs the bare `python3` shim as well, so scripts with a
 # `#!/usr/bin/env python3` shebang get the pinned interpreter rather than
 # whatever the distro happens to ship.
-python_version="$(cat "$(dirname "${BASH_SOURCE[0]}")/../.python-version")"
+python_version="$(cat "$(dirname "${BASH_SOURCE[0]}")/../../.python-version")"
 uv python install --default "${python_version}"
 
 ##

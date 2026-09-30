@@ -13,29 +13,17 @@ _apt:
 _bash:
     bash -c ". {{root_dir}}/install/bash.sh"
 
-symlinks:
+_symlinks:
     bash -c ". {{root_dir}}/install/symlinks.sh"
+
+_python:
+    bash "{{root_dir}}/install/extras/python.sh"
 
 _cli-tools:
     bash -c ". {{root_dir}}/install/cli-tools.sh"
 
 _password-store:
     bash -c ". {{root_dir}}/install/password-store.sh"
-
-python:
-    bash -c ". {{root_dir}}/install/python.sh"
-
-node:
-    bash -c ". {{root_dir}}/install/node.sh"
-
-golang:
-    bash -c ". {{root_dir}}/install/golang.sh"
-
-rust:
-    bash -c ". {{root_dir}}/install/rust.sh"
-
-nvim:
-    bash -c ". {{root_dir}}/install/nvim.sh"
 
 gnome:
     bash -c ". {{root_dir}}/install/gnome.sh"
@@ -55,30 +43,21 @@ _win-dev:
 _win32yank:
     bash -c ". {{root_dir}}/install/win32yank.sh"
 
-_skill-tree:
-    bash -c ". {{root_dir}}/install/skill-tree.sh"
-
-_gtd:
-    bash -c ". {{root_dir}}/install/gtd.sh"
-
-_git-a-grip:
-    bash -c ". {{root_dir}}/install/git-a-grip.sh"
-
 # ── Composite targets ────────────────────────────────────────────────────────
 # Order is important: apt delivers curl/wget/jq/git/gh that everything else
 # assumes.
 
 ## @just 10 Start Here | Full machine setup (apt, bash, cli-tools, python, password-store)
-bootstrap: _apt _bash _cli-tools python _password-store
+bootstrap: _apt _bash _cli-tools _python _password-store
 
-## @just 11 Start Here | Pick opt-in tools to install (claude, copilot, terraform, croc, ...)
+## @just 11 Start Here | Languages, editors, and opt-in tools, with ✓ for installed
 extras *names:
     @bash "{{root_dir}}/scripts/extras.sh" {{names}}
 
 # CI-safe subset: no bash/chrome/password-store (needs GPG), no symlinks (needs $HOME layout)
-_ci: _apt symlinks _cli-tools
+_ci: _apt _symlinks _cli-tools
 
-## @just 32 Developer Tools | Install VS Code extensions and settings
+## @just 42 Environment-Specific | Install VS Code extensions and settings
 vscode:
     bash -c ". {{root_dir}}/.vscode/vsc_extensions.sh"
     bash -c ". {{root_dir}}/.vscode/sync_vsc_settings.sh"
@@ -94,10 +73,7 @@ secrets-load:
 ## @just 41 Environment-Specific | Install Windows-side tooling (win-dev, win32yank)
 windows: _win-dev _win32yank
 
-## @just 60 My Dev Tooling | Clone and install skill-tree, gtd, and git-a-grip
-my-dev-tools: _skill-tree _gtd _git-a-grip
-
-## @just 74 Verification | Benchmark interactive shell startup time (10 runs default, pass N to override)
+## @just 74 Verification | Benchmark interactive shell startup time
 bench-shell runs='10':
     bash "{{root_dir}}/scripts/bench-shell.sh" "{{runs}}"
 

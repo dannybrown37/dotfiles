@@ -151,6 +151,31 @@ def test_named_extras_run_their_scripts(root: Path, stub_bin: Path) -> None:
     assert calls(root) == ['ran beta', 'ran alpha']
 
 
+@pytest.mark.parametrize(
+    ('args', 'expected'),
+    [
+        (['alpha', 'lang'], ['ran lang', 'ran alpha']),
+        (['beta', 'lang', 'alpha'], ['ran lang', 'ran beta', 'ran alpha']),
+        (['alpha'], ['ran alpha']),
+    ],
+)
+def test_runtimes_install_before_other_extras(
+    root: Path,
+    stub_bin: Path,
+    args: list[str],
+    expected: list[str],
+) -> None:
+    (root / 'install' / 'extras' / 'lang.sh').write_text(
+        EXTRA_SCRIPT.format(name='lang', binary='lang', desc='A runtime')
+        + '## @runtime\n',
+    )
+
+    result = run_extras(root, stub_bin, *args)
+
+    assert result.returncode == 0
+    assert calls(root) == expected
+
+
 def test_unknown_name_fails_before_running_anything(
     root: Path,
     stub_bin: Path,

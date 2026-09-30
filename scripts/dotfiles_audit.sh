@@ -61,9 +61,9 @@ check_symlink() {
             warn "$label" "exists but points to '$actual' (expected '$target')"
         fi
     elif [[ -f "$link" ]]; then
-        warn "$label" "$link is a real file, not a symlink — run: just symlinks"
+        warn "$label" "$link is a real file, not a symlink — run: just bootstrap"
     else
-        fail "$label" "run: just symlinks"
+        fail "$label" "run: just bootstrap"
     fi
 }
 
@@ -137,7 +137,7 @@ check "delta"      "delta --version | awk '{print \$2}'"                    "jus
 check "atuin"      "atuin --version | awk '{print \$2}'"                    "just _bash"
 check "starship"   "starship --version | head -1 | awk '{print \$2}'"       "just _wsl-fonts"
 check "fzf"        "fzf --version | awk '{print \$1}'"                      "just _cli-tools"
-check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "just nvim"
+check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "just extras nvim"
 
 # ── WSL Clipboard ────────────────────────────────────────────────────────────
 
@@ -219,8 +219,8 @@ fi
 # ── Node / NPM ────────────────────────────────────────────────────────────────
 
 section "Node / NPM"
-check "n"    "n --version"                          "just node"
-check "node" "node --version | sed 's/v//'"         "just node"
+check "n"    "n --version"                          "just extras node"
+check "node" "node --version | sed 's/v//'"         "just extras node"
 check "npm"  "npm --version"                         "comes with node"
 
 NODE_VER=$(node --version 2>/dev/null | sed 's/v//' | cut -d. -f1)
@@ -233,7 +233,7 @@ fi
 # shell, silently sending global npm installs to the wrong Node.
 NODE_PATH_RESOLVED=$(command -v node 2>/dev/null)
 if [[ "$NODE_PATH_RESOLVED" == *"/.nvm/"* ]]; then
-    fail "node source" "resolves to nvm ($NODE_PATH_RESOLVED) — remove ~/.nvm, then: just node"
+    fail "node source" "resolves to nvm ($NODE_PATH_RESOLVED) — remove ~/.nvm, then: just extras node"
 elif [[ -d "$HOME/.nvm" ]]; then
     warn "nvm leftover" "$HOME/.nvm still exists — this repo uses n; run: rm -rf ~/.nvm"
 else
@@ -253,7 +253,7 @@ done
 # ── Python / uv ───────────────────────────────────────────────────────────────
 
 section "Python / uv"
-check "uv"    "uv --version | awk '{print \$2}'"    "just python"
+check "uv"    "uv --version | awk '{print \$2}'"    "just extras python"
 check "python" "python3 --version | awk '{print \$2}'" "uv python install"
 
 uv_tools=(prek cookiecutter ruff bashate)
@@ -272,20 +272,20 @@ done
 # ── Go ────────────────────────────────────────────────────────────────────────
 
 section "Go"
-check "go" "go version | awk '{print \$3}' | sed 's/go//'" "just golang"
+check "go" "go version | awk '{print \$3}' | sed 's/go//'" "just extras golang"
 
 if [[ -d "/usr/local/go" ]]; then
     ok "GOROOT" "/usr/local/go"
 else
-    fail "GOROOT" "/usr/local/go missing — run: just golang"
+    fail "GOROOT" "/usr/local/go missing — run: just extras golang"
 fi
 
 # ── Rust ──────────────────────────────────────────────────────────────────────
 
 section "Rust"
-check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "just rust"
-check "cargo"   "cargo --version | awk '{print \$2}'"         "just rust"
-check "rustc"   "rustc --version | awk '{print \$2}'"         "just rust"
+check "rustup"  "rustup --version 2>&1 | head -1 | awk '{print \$2}'"  "just extras rust"
+check "cargo"   "cargo --version | awk '{print \$2}'"         "just extras rust"
+check "rustc"   "rustc --version | awk '{print \$2}'"         "just extras rust"
 
 # ── Extras ────────────────────────────────────────────────────────────────────
 
@@ -334,7 +334,7 @@ if git -C "$DOTFILES_DIR" config --get-all credential.https://github.com.helper 
     grep -q "git-credential-personal"; then
     ok "personal git credentials" "dotfiles uses MY_GITHUB_TOKEN"
 else
-    fail "personal git credentials" "run: just symlinks  (includeIf -> ~/.gitconfig-personal)"
+    fail "personal git credentials" "run: just bootstrap  (includeIf -> ~/.gitconfig-personal)"
 fi
 
 if [[ -n "${MY_GITHUB_TOKEN:-}" ]]; then

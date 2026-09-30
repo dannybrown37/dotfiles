@@ -19,13 +19,13 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
    cleanup, install, confirm, optional config symlink.
 
    **Name the file after the recipe you want** — the filename *is* the recipe name
-   (`install/nvim.sh` → `just nvim`), so don't name it after the upstream project.
+   (`install/gnome.sh` → `just gnome`), so don't name it after the upstream project.
 
 2. Give it a `## @just` header, directly under the shebang:
 
    ```bash
    #!/usr/bin/env bash
-   ## @just 34 Developer Tools | Install Terraform (latest release)
+   ## @just 43 Environment-Specific | Install Sway config (Wayland desktops only)
    ```
 
    That one line is the entire registration. The help script renders it under `<Section>`
@@ -42,8 +42,8 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
    command reports; leave the rest to float.
 
    Pick `<order>` to slot the entry where you want it; existing sections use 10 (Start
-   Here), 20s (Languages & Runtimes), 30s (Developer Tools), 40s (Environment-Specific),
-   50s (Secrets), 60s (My Projects).
+   Here), 40s (Environment-Specific), 50s (Secrets), 70s (Verification). Most new tools
+   belong in extras, not here — keep `just` short.
 
 3. If the tool needs shell aliases/functions, add them to `config/.bash_aliases` or a new file in `bin/`.
 4. Add a passthrough stub to `bin/stubs.sh` so the tool appears in `cmds` with documentation (see below).
@@ -57,7 +57,7 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
 A Windows-only tool works the same way with a `.ps1` extension — `install/win-dev.ps1`
 backs `just _win-dev`, run via `powershell.exe`.
 
-Recipes with no install script of their own (`vscode`, `my-dev-tools`, `secrets-*`) keep their
+Recipes with no install script of their own (`vscode`, `secrets-*`) keep their
 header in the `justfile`, directly above the recipe.
 
 ## Adding an Extra
@@ -74,6 +74,8 @@ An extra is an opt-in tool picked from the `just extras` menu (or `just extras <
    ```
 
    `<binary>` is what `command -v` looks for to show ✓ in the menu. No justfile edit.
+   A language toolchain (python, node, golang, rust) also carries a `## @runtime` line,
+   so it installs before any extra that builds with it.
 3. Add the `bin/stubs.sh` stub as usual. No audit line: the audit lists extras from their
    headers and warns (not fails) when one is missing.
 4. Run `./scripts/check-tool-wiring.sh <name>`.
