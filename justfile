@@ -16,6 +16,9 @@ _bash:
 _symlinks:
     bash -c ". {{root_dir}}/install/symlinks.sh"
 
+_python:
+    bash "{{root_dir}}/install/extras/python.sh"
+
 _cli-tools:
     bash -c ". {{root_dir}}/install/cli-tools.sh"
 
@@ -45,7 +48,7 @@ _win32yank:
 # assumes.
 
 ## @just 10 Start Here | Full machine setup (apt, bash, cli-tools, python, password-store)
-bootstrap: _apt _bash _cli-tools python _password-store
+bootstrap: _apt _bash _cli-tools _python _password-store
 
 ## @just 11 Start Here | Languages, editors, and opt-in tools, with ✓ for installed
 extras *names:

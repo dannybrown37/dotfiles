@@ -20,7 +20,7 @@ The output of `just` in the root directory:
 Usage: just [option]
 
 Start Here:
-  bootstrap       Full machine setup (apt, bash, cli-tools, password-store)
+  bootstrap       Full machine setup (apt, bash, cli-tools, python, password-store)
   extras          Languages, editors, and opt-in tools, with ✓ for installed
 
 Environment-Specific:
