@@ -25,13 +25,24 @@ def write_executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
+def link_system_bins_except_just(target: Path) -> None:
+    """Debian 13 ships `just` in apt, so /usr/bin can't go on PATH as-is."""
+    target.mkdir()
+    for system_bin in (Path('/usr/bin'), Path('/bin')):
+        for executable in system_bin.iterdir():
+            link = target / executable.name
+            if executable.name != 'just' and not link.exists():
+                link.symlink_to(executable)
+
+
 class Machine:
     """Fake fresh machine: stubbed sudo/git, empty $HOME, no `just` on PATH.
 
     install_bin stands in for /usr/local/bin: on PATH, empty until cli-tools.
     """
 
-    def __init__(self, tmp_path: Path) -> None:
+    def __init__(self, tmp_path: Path, system_bin: Path) -> None:
+        self.system_bin = system_bin
         self.home = tmp_path / 'home'
         self.home.mkdir()
         self.stub_bin = tmp_path / 'stub_bin'
@@ -68,7 +79,7 @@ class Machine:
     def env(self, **extra: str) -> dict[str, str]:
         return {
             'HOME': str(self.home),
-            'PATH': f'{self.stub_bin}:{self.install_bin}:/usr/bin:/bin',
+            'PATH': f'{self.stub_bin}:{self.install_bin}:{self.system_bin}',
             'INSTALL_BIN': str(self.install_bin),
             'CALL_LOG': str(self.call_log),
             'UPSTREAM': str(self.upstream),
@@ -102,9 +113,16 @@ class Machine:
         return self.call_log.read_text().splitlines()
 
 
+@pytest.fixture(scope='session')
+def system_bin(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    target = tmp_path_factory.mktemp('system') / 'bin'
+    link_system_bins_except_just(target)
+    return target
+
+
 @pytest.fixture
-def machine(tmp_path: Path) -> Machine:
-    return Machine(tmp_path)
+def machine(tmp_path: Path, system_bin: Path) -> Machine:
+    return Machine(tmp_path, system_bin)
 
 
 def test_fresh_machine_installs_just_before_running_bootstrap(
