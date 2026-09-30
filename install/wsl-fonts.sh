@@ -54,7 +54,7 @@ fi
 
 ##
 ## The terminal font setting is NOT patched in here. It is tracked, in
-## .vscode/.symlinked-user-settings.json, and `just vscode` symlinks Windows'
+## .vscode/.symlinked-user-settings.json, and `just vscode --all` symlinks Windows'
 ## settings.json at that file.
 ##
 ## This block used to rewrite settings.json in place, and every run printed
@@ -68,4 +68,4 @@ fi
 ## strictly worse one, in a file that is a symlink into this repo.
 ##
 
-echo "VSCode terminal font is tracked in .vscode/.symlinked-user-settings.json (run: just vscode)"
+echo "VSCode terminal font is tracked in .vscode/.symlinked-user-settings.json (run: just vscode --all)"

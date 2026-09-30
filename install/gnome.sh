@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-## @just 40 Environment-Specific | Install Gnome extensions (dash-to-dock, just-perfection)
+## @just 42 Environment-Specific | Install Gnome extensions (dash-to-dock, just-perfection)
 
 if ! command -v gnome-shell &>/dev/null; then
     echo "just gnome: gnome-shell not found — run this on a GNOME desktop" >&2

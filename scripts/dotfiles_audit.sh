@@ -391,7 +391,7 @@ else
                 ver=$(echo "$matched" | sed "s/^${ext}-//i" | sed 's/-linux.*$//')
                 ok "$ext" "$ver"
             else
-                fail "$ext" "code --install-extension ${ext}  (or: just vscode)"
+                fail "$ext" "code --install-extension ${ext}  (or: just vscode ${ext})"
             fi
         done
     fi

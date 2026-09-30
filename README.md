@@ -24,9 +24,9 @@ Start Here:
   extras          Languages, editors, and opt-in tools, with ✓ for installed
 
 Environment-Specific:
-  gnome           Install Gnome extensions (dash-to-dock, just-perfection)
+  vscode          Link VS Code settings, then pick extensions (✓ = installed)
   windows         Windows-side tools (winget, npm, uv, win32yank), with ✓ for installed
-  vscode          Install VS Code extensions and settings
+  gnome           Install Gnome extensions (dash-to-dock, just-perfection)
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo

@@ -51,10 +51,10 @@ extras *names:
 # CI-safe subset: no bash/chrome/password-store (needs GPG), no symlinks (needs $HOME layout)
 _ci: _apt _symlinks _cli-tools
 
-## @just 42 Environment-Specific | Install VS Code extensions and settings
-vscode:
-    bash -c ". {{root_dir}}/.vscode/vsc_extensions.sh"
-    bash -c ". {{root_dir}}/.vscode/sync_vsc_settings.sh"
+## @just 40 Environment-Specific | Link VS Code settings, then pick extensions (✓ = installed)
+vscode *names:
+    @case "{{names}}" in -h|--help|--list) ;; *) bash "{{root_dir}}/.vscode/sync_vsc_settings.sh" ;; esac
+    @bash "{{root_dir}}/.vscode/vsc_extensions.sh" {{names}}
 
 ## @just 50 Secrets (requires GPG keys) | Save local secrets to password-store, push to private repo
 secrets-save:

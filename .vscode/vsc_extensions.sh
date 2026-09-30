@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 
-## invoke with no argument to install all VS Code extensions below
-## invoke with --uninstall to uninstall all VS Code extensions
+set -euo pipefail
+
+readonly EXIT_USAGE=2
+
+usage() {
+    cat <<'EOF'
+Usage: just vscode                  Pick extensions in a menu (✓ = installed)
+       just vscode <extension>...   Install the named extensions
+       just vscode --all            Install every missing extension
+       just vscode --list           List extensions and whether each is installed
+       just vscode --uninstall      Uninstall every extension
+EOF
+}
 
 extensions_to_install=(
     # visual/dev improvements
@@ -60,21 +71,78 @@ extensions_to_install=(
     codeium.codeium
 )
 
-installed_extensions=$(code --list-extensions)
+wanted() {
+    printf '%s\n' "${extensions_to_install[@]}"
+}
 
-if [[ $* == *--uninstall* ]]; then
+# VS Code may report IDs in a different case than the marketplace
+installed_extensions="$(code --list-extensions | tr '[:upper:]' '[:lower:]')"
+
+is_installed() {
+    grep -qxF "${1,,}" <<<"${installed_extensions}"
+}
+
+list() {
+    local id mark
+    while read -r id; do
+        mark="·"
+        is_installed "${id}" && mark="✓"
+        printf "%s %s\n" "${mark}" "${id}"
+    done < <(wanted)
+}
+
+install() {
+    local id
+    for id in "$@"; do
+        if ! wanted | grep -qxF "${id}"; then
+            echo "unknown extension: ${id}" >&2
+            exit "${EXIT_USAGE}"
+        fi
+    done
+    for id in "$@"; do
+        if is_installed "${id}"; then
+            echo "✓ ${id} already installed"
+        else
+            echo "Installing extension: ${id}"
+            code --install-extension "${id}"
+        fi
+    done
+}
+
+pick() {
+    local picked
+    picked="$(list | fzf --multi --prompt='vscode> ' \
+        --header='TAB to select, ENTER to install' | awk '{print $2}')" || true
+    [[ -n "${picked}" ]] || return 0
+    mapfile -t ids <<<"${picked}"
+    echo "just vscode ${ids[*]}"
+    install "${ids[@]}"
+}
+
+case "${1:-}" in
+-h | --help)
+    usage
+    ;;
+--list)
+    list
+    ;;
+--all)
+    mapfile -t ids < <(wanted)
+    install "${ids[@]}"
+    ;;
+--uninstall)
     code --list-extensions | xargs -L 1 code --uninstall-extension
-    exit 0
-fi
-
-for extension_id in "${extensions_to_install[@]}"; do
-    if [[ -z "${extension_id}" || "${extension_id}" =~ ^# ]]; then
-        continue
+    ;;
+"")
+    if [[ -t 0 && -t 1 ]] && command -v fzf &>/dev/null; then
+        pick
+    else
+        list
+        echo
+        usage
     fi
-    if [[ ! "${installed_extensions}" == *"${extension_id}"* ]]; then
-        echo "Installing extension: ${extension_id}"
-        code --install-extension "${extension_id}"
-    fi
-done
-
-echo "All extensions have been installed."
+    ;;
+*)
+    install "$@"
+    ;;
+esac
