@@ -25,7 +25,7 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
 
    ```bash
    #!/usr/bin/env bash
-   ## @just 34 Developer Tools | Install Terraform (latest release)
+   ## @just 43 Environment-Specific | Install Sway config (Wayland desktops only)
    ```
 
    That one line is the entire registration. The help script renders it under `<Section>`
@@ -42,8 +42,8 @@ broken without. Nice-to-have tools are *extras*: see [Adding an Extra](#adding-a
    command reports; leave the rest to float.
 
    Pick `<order>` to slot the entry where you want it; existing sections use 10 (Start
-   Here), 20s (Languages & Runtimes), 30s (Developer Tools), 40s (Environment-Specific),
-   50s (Secrets), 60s (My Projects).
+   Here), 40s (Environment-Specific), 50s (Secrets), 70s (Verification). Most new tools
+   belong in extras, not here — keep `just` short.
 
 3. If the tool needs shell aliases/functions, add them to `config/.bash_aliases` or a new file in `bin/`.
 4. Add a passthrough stub to `bin/stubs.sh` so the tool appears in `cmds` with documentation (see below).

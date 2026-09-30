@@ -54,7 +54,7 @@ extras *names:
 # CI-safe subset: no bash/chrome/password-store (needs GPG), no symlinks (needs $HOME layout)
 _ci: _apt _symlinks _cli-tools
 
-## @just 32 Developer Tools | Install VS Code extensions and settings
+## @just 42 Environment-Specific | Install VS Code extensions and settings
 vscode:
     bash -c ". {{root_dir}}/.vscode/vsc_extensions.sh"
     bash -c ". {{root_dir}}/.vscode/sync_vsc_settings.sh"

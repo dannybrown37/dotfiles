@@ -23,12 +23,10 @@ Start Here:
   bootstrap       Full machine setup (apt, bash, cli-tools, password-store)
   extras          Languages, editors, and opt-in tools, with ✓ for installed
 
-Developer Tools:
-  vscode          Install VS Code extensions and settings
-
 Environment-Specific:
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
   windows         Install Windows-side tooling (win-dev, win32yank)
+  vscode          Install VS Code extensions and settings
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
