@@ -350,7 +350,7 @@ elif [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
 fi
 
 # A missing docker CLI is already reported by the extras loop; a present CLI can
-# still have no daemon behind it, since Docker Desktop runs on the Windows host.
+# still have no daemon behind it (Engine service stopped, or Desktop not running).
 if command -v docker &>/dev/null; then
     if DOCKER_VER=$(docker info --format '{{.ServerVersion}}' 2>/dev/null); then
         ok "docker" "daemon reachable (server ${DOCKER_VER})"

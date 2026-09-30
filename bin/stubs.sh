@@ -14,7 +14,7 @@ croc() { command croc "$@"; }           # @doc Send files between machines secur
 deno() { command deno "$@"; }           # @doc Deno JavaScript/TypeScript runtime | deno run <file>
 delta() { command delta "$@"; }         # @doc Syntax-highlighting pager for git diffs (replaces less)
 difftastic() { command difft "$@"; }    # @doc Diff that understands syntax | difft <old> <new>
-docker() { command docker "$@"; }       # @doc Containers -- via Docker Desktop on the Windows host | docker-up to start it
+docker() { command docker "$@"; }       # @doc Containers -- Docker Engine in WSL or Docker Desktop on Windows | just extras docker-engine
 eza() { command eza "$@"; }             # @doc Modern ls replacement with git status and icons
 faker() { command faker "$@"; }         # @doc Generate fake test data | faker name
 fastfetch() { command fastfetch "$@"; } # @doc System info summary (neofetch successor) | fastfetch
