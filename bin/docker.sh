@@ -1,6 +1,6 @@
-## Docker Desktop helpers for WSL.
-##
-## Docker Desktop runs on the Windows side and injects its socket into this distro.
+## Docker helpers for either backend (the docker-engine and docker-desktop extras
+## refuse to coexist). Engine, detected by dockerd, is a systemd service in this
+## distro. Desktop runs on the Windows side and injects its socket into this distro.
 ## Nothing here sets DOCKER_HOST or touches /var/run/docker.sock -- a hand-set
 ## DOCKER_HOST in a dotfile outlives the problem it solved and breaks confusingly.
 ##
@@ -31,14 +31,33 @@ _docker_daemon_ready() {
     [[ -n "${server_version}" ]]
 }
 
+_docker_engine_installed() {
+    command -v dockerd &>/dev/null
+}
+
+_docker_wait_ready() {
+    local timeout=$1 waited=0
+    while ((waited < timeout)); do
+        sleep 2
+        waited=$((waited + 2))
+        if _docker_daemon_ready; then
+            printf '\nDocker is up after %ss.\n' "${waited}"
+            return 0
+        fi
+        printf '.'
+    done
+
+    printf '\n'
+    echo "docker-up: daemon did not respond within ${timeout}s. Run docker-doctor." >&2
+    return 1
+}
+
 _docker_desktop_running() {
     tasklist.exe /FI "IMAGENAME eq Docker Desktop.exe" 2>/dev/null |
         tr -d '\r' | grep -q "Docker Desktop.exe"
 }
 
-docker-up() { # @doc Start Docker Desktop from WSL and block until the daemon answers | docker-up [timeout_seconds]
-    _docker_require_wsl "docker-up" || return 1
-
+docker-up() { # @doc Start the docker daemon (Engine service or Desktop) and block until it answers | docker-up [timeout_seconds]
     local timeout="${1:-90}"
     if [[ ! "${timeout}" =~ ^[0-9]+$ ]]; then
         echo "docker-up: timeout must be a whole number of seconds" >&2
@@ -49,6 +68,15 @@ docker-up() { # @doc Start Docker Desktop from WSL and block until the daemon an
         echo "Docker is already up."
         return 0
     fi
+
+    if _docker_engine_installed; then
+        echo "Starting the docker service..."
+        sudo systemctl start docker || return 1
+        _docker_wait_ready "${timeout}"
+        return
+    fi
+
+    _docker_require_wsl "docker-up" || return 1
 
     # Launching a second Docker Desktop while one is still starting wedges the engine
     # into answering 500 on every API route, so only launch when nothing is running.
@@ -67,32 +95,43 @@ docker-up() { # @doc Start Docker Desktop from WSL and block until the daemon an
         ("${exe}" >/dev/null 2>&1 &)
     fi
 
-    local waited=0
-    while ((waited < timeout)); do
-        sleep 2
-        waited=$((waited + 2))
-        if _docker_daemon_ready; then
-            printf '\nDocker is up after %ss.\n' "${waited}"
-            return 0
-        fi
-        printf '.'
-    done
+    _docker_wait_ready "${timeout}"
+}
 
-    printf '\n'
-    echo "docker-up: daemon did not respond within ${timeout}s. Run docker-doctor." >&2
+_docker_doctor_engine() {
+    echo "❌ The daemon is not serving a valid response. Checking Docker Engine:"
+    echo ""
+
+    if systemctl is-active --quiet docker; then
+        echo "✅ The docker service is running."
+    else
+        echo "❌ The docker service is not running.  →  fix: sudo systemctl start docker"
+    fi
+
+    if [[ " $(id -nG) " == *" docker "* ]]; then
+        echo "✅ $(id -un) is in the docker group."
+    else
+        echo "❌ $(id -un) is not in the docker group, so the socket refuses the CLI."
+        echo "   →  fix: sudo usermod -aG docker $(id -un), then open a new shell"
+    fi
     return 1
 }
 
-docker-doctor() { # @doc Diagnose why the docker CLI can't reach a daemon under WSL | docker-doctor
-    _docker_require_wsl "docker-doctor" || return 1
-
-    local settings problems=0
-    settings="$(_docker_desktop_settings)"
-
+docker-doctor() { # @doc Diagnose why the docker CLI can't reach a daemon (Engine or Desktop) | docker-doctor
     if _docker_daemon_ready; then
         echo "✅ Daemon is reachable (server $(docker info --format '{{.ServerVersion}}'))."
         return 0
     fi
+
+    if _docker_engine_installed; then
+        _docker_doctor_engine
+        return
+    fi
+
+    _docker_require_wsl "docker-doctor" || return 1
+
+    local settings problems=0
+    settings="$(_docker_desktop_settings)"
 
     echo "❌ The daemon is not serving a valid response. Checking the three causes that look identical from the CLI:"
     echo ""

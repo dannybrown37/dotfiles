@@ -75,9 +75,9 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `delta` | Syntax-highlighting pager for git diffs (replaces less) | `bin/stubs.sh` |
 | `deno` | Deno JavaScript/TypeScript runtime | deno run <file> | `bin/stubs.sh` |
 | `difftastic` | Diff that understands syntax | difft <old> <new> | `bin/stubs.sh` |
-| `docker-doctor` | Diagnose why the docker CLI can't reach a daemon under WSL | docker-doctor | `bin/docker.sh` |
-| `docker-up` | Start Docker Desktop from WSL and block until the daemon answers | docker-up [timeout_seconds] | `bin/docker.sh` |
-| `docker` | Containers -- via Docker Desktop on the Windows host | docker-up to start it | `bin/stubs.sh` |
+| `docker-doctor` | Diagnose why the docker CLI can't reach a daemon (Engine or Desktop) | docker-doctor | `bin/docker.sh` |
+| `docker-up` | Start the docker daemon (Engine service or Desktop) and block until it answers | docker-up [timeout_seconds] | `bin/docker.sh` |
+| `docker` | Containers -- Docker Engine in WSL or Docker Desktop on Windows | just extras docker-engine | `bin/stubs.sh` |
 | `dotaudit` | Audit system for dotfile setup compliance | `config/.bash_aliases` |
 | `du` | Disk usage sorted and human-readable | `config/.bash_aliases` |
 | `epoch_timestamp` | Print the current epoch timestamp in milliseconds, copy to clipboard | `bin/timestamps.sh` |
