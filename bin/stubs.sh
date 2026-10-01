@@ -4,6 +4,7 @@
 
 asciinema() { command asciinema "$@"; } # @doc Record and replay terminal sessions | asciinema rec session.cast
 atuin() { command atuin "$@"; }         # @doc Shell history search/sync (replaces Ctrl+R) | atuin search
+bubblewrap() { command bwrap "$@"; } # @doc Run a command in a sandbox | bwrap --ro-bind / / <cmd>
 cartoon() { command cartoon "$@"; }     # @doc Compress noisy CLI output for AI agents | cartoon pytest
 chrome() { command google-chrome "$@"; } # @doc Google Chrome browser | chrome <url>
 claude() { command claude "$@"; }       # @doc Claude Code coding agent | claude
@@ -36,6 +37,7 @@ mprocs() { command mprocs "$@"; }       # @doc Run several commands side by side
 neofetch() { command fastfetch "$@"; } # @doc Alias for fastfetch, for muscle memory | neofetch
 pass() { command pass "$@"; }           # @doc Password store -- manage secrets via GPG | pass show <name>
 rg() { command rg "$@"; }               # @doc Fast regex search across files (ripgrep) | rg <pattern>
+socat() { command socat "$@"; }         # @doc Relay data between sockets, ports, and files | socat TCP-LISTEN:8080,fork TCP:host:80
 starship() { command starship "$@"; }   # @doc Cross-shell prompt with git/lang context
 terraform() { command terraform "$@"; } # @doc Provision infrastructure as code | terraform plan
 tldr() { command tldr "$@"; }           # @doc Simplified man pages with practical examples | tldr <cmd>
