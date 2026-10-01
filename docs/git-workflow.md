@@ -16,6 +16,7 @@ main ─●─────────────────────┼─
 | `git start <topic>` | Pull base, make branch `<topic>` |
 | `gab` | Before ship: fold staged fixes into commits |
 | `git ship` | Push, PR, auto-merge, watch CI, then `git done` |
+| `git fix` | Fold staged fixes into their commits anywhere in the stack, push what moved |
 | `git done` | Back to base, pull (keeps uncommitted changes) |
 | `git rescue <topic>` | Move commits made after the merge to `<topic>` |
 | `git purge` | Delete local branches whose origin branch is gone. `--all`: every branch but base/main/master/develop and worktrees (asks) |
@@ -41,4 +42,8 @@ main ─●────────────●── main
 ```
 
 - `git done` on `b` rebases onto `a` if `a` moved. Repeat down the stack.
+- `git ship` on `b` force-pushes (with lease) any lower branch that moved, bottom-up, then links the PRs into a GitHub stack (`gh stack link`; needs the `gh-stack` extra, warns if missing). It refuses if a lower branch is behind origin: pull it first.
+- Fix for a lower PR? Stay on the top branch, stage it, `git fix`. It folds the fix into `a`'s commit (git-absorb), rebases with `rebase.updateRefs` so `a` moves too, and pushes `a` and `b`. No editor. Changes with no commit to fold into stay staged and nothing is pushed.
+- A lower branch made without `git start -s`? Its open PR's base stands in, and gets recorded.
+- Plain `gab` skips commits other branches can reach, so on `b` it only touches `b`'s own commits.
 - Conflict: fix, `git rebase --continue`, `git push --force-with-lease`.

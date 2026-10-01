@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# @doc Backs the git start/ship/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help
+# @doc Backs the git start/ship/fix/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help
 
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.9.0"
+readonly VERSION="1.10.0"
 
 usage() {
     cat <<'EOF'
@@ -18,7 +18,11 @@ Usage: git <command> [args...]
                        No auto-merge: skip the CI watch, merge by hand after CI
                        --no-auto: leave auto-merge off
                        Repo without auto-merge: PR body uses the work template
-                       Stacked: the PR targets the parent branch, no auto-merge
+                       Stacked: the PR targets the parent branch, no auto-merge,
+                       lower branches that moved are force-pushed (with lease),
+                       and the PRs are linked into a GitHub stack (gh-stack extension)
+  git fix              Fold staged changes into the commits they fix, anywhere in
+                       the stack (git-absorb), then push every branch that moved
   git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
                        Stacked: once the parent merges or moves, rebase onto it and stay
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
@@ -235,6 +239,69 @@ stack_fork() {
     fi
 }
 
+# Prints the stack bottom-to-top, ending at $1. A branch made without
+# git start -s has no stackParent, so its open PR's base stands in, and is
+# recorded so git done can restack it later.
+stack_chain() {
+    local branch="$1" parent pr depth=0 chain=()
+    while [[ -n "${branch}" && "${branch}" != "${BASE}" && "${depth}" -lt 20 ]]; do
+        chain=("${branch}" "${chain[@]}")
+        depth=$((depth + 1))
+        parent="$(stack_parent "${branch}")"
+        if [[ -z "${parent}" ]]; then
+            pr="$(gh pr view "${branch}" --json state,baseRefName \
+                -q '.state + " " + .baseRefName' 2>/dev/null || true)"
+            [[ "${pr%% *}" == OPEN ]] || break
+            parent="${pr#* }"
+            if [[ "${parent}" != "${BASE}" ]] &&
+                git rev-parse --verify --quiet "refs/heads/${parent}" >/dev/null; then
+                git config "branch.${branch}.stackParent" "${parent}"
+                git config "branch.${branch}.stackBase" "$(git merge-base "${parent}" "${branch}")"
+            fi
+        fi
+        branch="${parent}"
+    done
+    printf '%s\n' "${chain[@]}"
+}
+
+on_origin() {
+    git rev-parse --verify --quiet "refs/heads/$1" >/dev/null &&
+        git rev-parse --verify --quiet "refs/remotes/origin/$1" >/dev/null
+}
+
+# Bottom-up, so a PR never shows a parent's stale commits. Checks every
+# branch before pushing any; the lease stops a push the last fetch missed.
+push_stack() {
+    local b
+    for b in "$@"; do
+        on_origin "${b}" || continue
+        if [[ "$(git rev-parse "${b}")" != "$(git rev-parse "origin/${b}")" ]] &&
+            git merge-base --is-ancestor "${b}" "origin/${b}"; then
+            fail 1 "${b} is behind origin/${b}: git switch ${b} && git pull"
+        fi
+    done
+    for b in "$@"; do
+        on_origin "${b}" || continue
+        [[ "$(git rev-parse "${b}")" != "$(git rev-parse "origin/${b}")" ]] || continue
+        git push --force-with-lease origin "${b}"
+    done
+}
+
+# GitHub only shows a stack once its PRs are linked; a parent-based PR alone
+# isn't one. Never fails the ship: stacks are a preview feature.
+link_stack() {
+    local out
+    if out="$(gh stack link --base "${BASE}" --remote origin "$@" 2>&1 </dev/null)"; then
+        [[ -z "${out}" ]] || echo "${out}" >&2
+        return
+    fi
+    if [[ "${out}" == *'unknown command "stack"'* ]]; then
+        echo 'GitHub stack not linked: gh extension install github/gh-stack, then git ship again' >&2
+    else
+        echo "GitHub stack not linked: ${out}" >&2
+    fi
+}
+
 require_open_parent() {
     local parent="$1" state
     git ls-remote --exit-code --heads origin "${parent}" >/dev/null ||
@@ -260,7 +327,7 @@ pr_body() {
 }
 
 cmd_ship() {
-    local arg branch parent since prefix state auto=1 run_done=1 ci=0
+    local arg branch parent since prefix state auto=1 run_done=1 ci=0 chain
     for arg in "$@"; do
         case "${arg}" in
         --no-auto) auto=0 ;;
@@ -281,7 +348,10 @@ cmd_ship() {
     state="$(gh pr view --json state -q .state 2>/dev/null || true)"
     [[ "${state}" != MERGED ]] ||
         fail "${EXIT_USAGE}" "PR for ${branch} already merged: run git done, or git rescue <topic> to keep new commits"
-    git push -u origin HEAD
+    chain=("${branch}")
+    [[ -z "${parent}" ]] || mapfile -t chain < <(stack_chain "${branch}")
+    push_stack "${chain[@]}"
+    git push --force-with-lease -u origin HEAD
     if [[ "${state}" != OPEN ]]; then
         gh pr create \
             --base "${parent:-${BASE}}" \
@@ -289,6 +359,7 @@ cmd_ship() {
             --body "$(pr_body "${since}")"
     fi
     if [[ -n "${parent}" ]]; then
+        link_stack "${chain[@]}"
         echo "stacked PR: once ${parent} merges, run git done here" >&2
         return
     fi
@@ -301,6 +372,33 @@ cmd_ship() {
     print_check_links
     [[ "${ci}" == 0 ]] || exit "${ci}"
     [[ "${run_done}" == 0 ]] || done_after_merge
+}
+
+# Folds staged changes into the commits they fix, anywhere in the stack, then
+# pushes every branch that moved. Absorb's own --and-rebase opens an editor.
+cmd_fix() {
+    local branch fork before leftover chain
+    [[ $# -eq 0 ]] || fail "${EXIT_USAGE}" 'usage: git fix (stage the fix first)'
+    branch="$(git branch --show-current)"
+    [[ -n "${branch}" && "${branch}" != "${BASE}" ]] ||
+        fail "${EXIT_USAGE}" "on ${branch:-detached HEAD}: git fix works on a topic branch"
+    ! git diff --cached --quiet || fail "${EXIT_USAGE}" 'nothing staged: git add the fix, then git fix'
+    command -v git-absorb >/dev/null ||
+        fail 1 'git fix needs git-absorb: https://github.com/tummychow/git-absorb#installing'
+    git fetch origin "${BASE}"
+    fork="$(git merge-base HEAD "origin/${BASE}")"
+    before="$(git rev-parse HEAD)"
+    git absorb --no-limit --base "${fork}"
+    leftover="$(git diff --cached --name-only)"
+    if [[ "$(git rev-parse HEAD)" != "${before}" ]]; then
+        GIT_SEQUENCE_EDITOR=: git -c rebase.updateRefs=true \
+            rebase --interactive --autosquash --autostash "${fork}" ||
+            fail 1 'fix the conflicts, git rebase --continue, then git ship'
+    fi
+    [[ -z "${leftover}" ]] ||
+        fail 1 "no commit to fold these into, nothing pushed: commit them, then git ship"$'\n'"${leftover}"
+    mapfile -t chain < <(stack_chain "${branch}")
+    push_stack "${chain[@]}"
 }
 
 cmd_rescue() {
@@ -430,7 +528,7 @@ main() {
     shift
     case "${cmd}" in
     purge) BASE="$(base_branch)" ;;
-    start | ship | rescue | done)
+    start | ship | fix | rescue | done)
         BASE="$(base_branch)"
         use_push_token_for_gh
         ;;
@@ -440,6 +538,7 @@ main() {
     -v | --version) echo "git_workflow ${VERSION}" ;;
     start) cmd_start "$@" ;;
     ship) cmd_ship "$@" ;;
+    fix) cmd_fix "$@" ;;
     rescue) cmd_rescue "$@" ;;
     done) cmd_done "$@" ;;
     purge) cmd_purge "$@" ;;

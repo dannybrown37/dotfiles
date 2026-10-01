@@ -5,6 +5,7 @@ tests never hit GitHub.
 """
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -17,9 +18,32 @@ FIVE_LINES = 'a\nb\nc\nd\ne\n'
 EDGES_EDITED = 'A\nb\nc\nd\nE\n'
 EXIT_USAGE = 2
 CHECK_LINK = 'https://github.com/o/r/actions/runs/12345678901/job/34567890123'
+BASE_QUERY = '--json state,baseRefName -q .state + " " + .baseRefName'
+STACK = ('parent', 'child', 'grandchild')
+LINK_STACK = (
+    'gh stack link --base main --remote origin parent child grandchild'
+)
 GH_STUB = """#!/usr/bin/env bash
 echo "gh $*" >> "${GH_CALLS_FILE}"
 echo "${GH_TOKEN:-<unset>}" >> "${GH_CALLS_FILE}.tokens"
+if [ "$1" = stack ]; then
+    if [ -n "${GH_NO_STACK_EXT:-}" ]; then
+        echo 'unknown command "stack" for "gh"' >&2
+        exit 1
+    fi
+    [ -z "${GH_STACK_FAILS:-}" ] || { echo "${GH_STACK_FAILS}" >&2; exit 1; }
+    exit 0
+fi
+case "$*" in
+    'pr view '*baseRefName*)
+        for pair in ${GH_PR_BASES:-}; do
+            [ "${pair%%=*}" = "$3" ] || continue
+            echo "OPEN ${pair#*=}"
+            exit 0
+        done
+        exit 1
+        ;;
+esac
 if [ "$1 $2" = 'pr view' ] && [ -n "${3:-}" ] && [ "${3#-}" = "$3" ]; then
     [ -n "${GH_PARENT_STATE:-}" ] || exit 1
     echo "${GH_PARENT_STATE}"
@@ -169,7 +193,7 @@ def test_script_prints_usage(
 def test_gitconfig_aliases_only_delegate_to_script() -> None:
     lines = GITCONFIG.read_text().splitlines()
     script = '${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/git_workflow.sh'
-    for name in ('start', 'ship', 'rescue', 'done', 'purge'):
+    for name in ('start', 'ship', 'fix', 'rescue', 'done', 'purge'):
         assert f'    {name} = "!\\"{script}\\" {name}"' in lines
 
 
@@ -1165,8 +1189,10 @@ def test_ship_stacked_targets_parent_without_auto_merge(
     assert Path(env['GH_CALLS_FILE']).read_text().splitlines() == [
         'gh pr view parent --json state -q .state',
         'gh pr view --json state -q .state',
+        f'gh pr view parent {BASE_QUERY}',
         'gh api repos/{owner}/{repo} -q .allow_auto_merge',
         'gh pr create --base parent --title feat: child --body - feat: child',
+        'gh stack link --base main --remote origin parent child',
     ]
     assert current_branch(clone, env) == 'child'
     assert 'once parent merges, run git done' in result.stderr
@@ -1295,6 +1321,260 @@ def test_done_stacked_waits_for_unmerged_unmoved_parent(
     assert result.returncode == 0, result.stderr
     assert 'parent not merged yet' in result.stderr
     assert (current_branch(clone, env), head(clone, env)) == ('child', before)
+
+
+def three_stack(clone: Path, env: dict[str, str]) -> Path:
+    """parent <- child <- grandchild, all pushed; returns origin's push log."""
+    for i, branch in enumerate(STACK):
+        git(clone, 'start', *(['-s'] if i else []), branch, env=env)
+        (clone / f'{branch}.txt').write_text(FIVE_LINES)
+        git(clone, 'add', f'{branch}.txt', env=env)
+        git(clone, 'commit', '-m', f'feat: {branch}', env=env)
+        git(clone, 'push', '-u', 'origin', branch, env=env)
+    pushed = clone.parent / 'pushed'
+    hook = clone.parent / 'origin.git' / 'hooks' / 'update'
+    hook.write_text(f'#!/bin/sh\necho "${{1#refs/heads/}}" >> "{pushed}"\n')
+    hook.chmod(0o755)
+    return pushed
+
+
+def pushed_refs(pushed: Path) -> list[str]:
+    return pushed.read_text().splitlines() if pushed.exists() else []
+
+
+def rewrite_stack(clone: Path, env: dict[str, str]) -> None:
+    redated = {**env, 'GIT_COMMITTER_DATE': '2001-01-01T00:00:00'}
+    git(
+        clone,
+        'rebase',
+        '--update-refs',
+        '--force-rebase',
+        'origin/main',
+        env=redated,
+    )
+
+
+def in_sync_with_origin(clone: Path, env: dict[str, str], branch: str) -> bool:
+    local = git(clone, 'rev-parse', branch, env=env).stdout.strip()
+    remote = git(clone, 'ls-remote', 'origin', branch, env=env).stdout
+    return remote.startswith(local)
+
+
+def gh_calls(env: dict[str, str]) -> list[str]:
+    calls = Path(env['GH_CALLS_FILE'])
+    return calls.read_text().splitlines() if calls.exists() else []
+
+
+def test_ship_stacked_force_pushes_rewritten_ancestors_bottom_up(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    pushed = three_stack(clone, env)
+    rewrite_stack(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert pushed_refs(pushed) == list(STACK)
+    assert all(in_sync_with_origin(clone, env, b) for b in STACK)
+
+
+def test_ship_stacked_skips_ancestors_already_on_origin(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    pushed = three_stack(clone, env)
+    git(clone, 'commit', '--amend', '-m', 'feat: grandchild!', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert pushed_refs(pushed) == ['grandchild']
+
+
+def test_ship_stacked_finds_parent_from_pr_base_and_records_it(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    pushed = three_stack(clone, env)
+    git(clone, 'config', '--unset', 'branch.child.stackParent', env=env)
+    git(clone, 'config', '--unset', 'branch.child.stackBase', env=env)
+    env['GH_PR_BASES'] = 'child=parent parent=main'
+    rewrite_stack(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert pushed_refs(pushed) == list(STACK)
+    assert stack_config(clone, env, 'child.stackParent') == 'parent'
+    parent_head = git(clone, 'rev-parse', 'parent', env=env).stdout.strip()
+    assert stack_config(clone, env, 'child.stackBase') == parent_head
+    assert LINK_STACK in gh_calls(env)
+
+
+def test_ship_stacked_refuses_when_ancestor_is_behind_origin(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    pushed = three_stack(clone, env)
+    seed = clone.parent / 'seed'
+    git(seed, 'fetch', 'origin', 'child', env=env)
+    git(seed, 'switch', '-c', 'child', 'origin/child', env=env)
+    git(seed, 'commit', '--allow-empty', '-m', 'fix: review', env=env)
+    git(seed, 'push', 'origin', 'child', env=env)
+    git(clone, 'fetch', 'origin', env=env)
+    pushed.unlink()
+    git(clone, 'commit', '--amend', '-m', 'feat: grandchild!', env=env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 1
+    assert 'child is behind origin/child: git switch child && git pull' in (
+        result.stderr
+    )
+    assert pushed_refs(pushed) == []
+
+
+def test_ship_stacked_lease_stops_before_clobbering_unfetched_push(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    pushed = three_stack(clone, env)
+    seed = clone.parent / 'seed'
+    git(seed, 'fetch', 'origin', 'parent', env=env)
+    git(seed, 'switch', '-c', 'parent', 'origin/parent', env=env)
+    git(seed, 'commit', '--allow-empty', '-m', 'fix: theirs', env=env)
+    git(seed, 'push', 'origin', 'parent', env=env)
+    pushed.unlink()
+    rewrite_stack(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode != 0
+    assert pushed_refs(pushed) == []
+    assert 'gh pr create' not in '\n'.join(gh_calls(env))
+
+
+def test_ship_unstacked_force_pushes_amended_commit_without_stack_link(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    git(clone, 'start', 'topic', env=env)
+    (clone / 'topic.txt').write_text(FIVE_LINES)
+    git(clone, 'add', 'topic.txt', env=env)
+    git(clone, 'commit', '-m', 'feat: one', env=env)
+    git(clone, 'ship', '--no-auto', env=env)
+    shipped = head(clone, env)
+    git(clone, 'commit', '--amend', '-m', 'feat: one!', env=env)
+    assert head(clone, env) != shipped
+    env['GH_PR_STATE'] = 'OPEN'
+
+    result = git(clone, 'ship', '--no-auto', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert in_sync_with_origin(clone, env, 'topic')
+    assert not [c for c in gh_calls(env) if c.startswith('gh stack')]
+
+
+def test_ship_stacked_links_whole_chain_into_github_stack(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    three_stack(clone, env)
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    calls = gh_calls(env)
+    assert calls[-1] == LINK_STACK
+    assert any(c.startswith('gh pr create --base child') for c in calls)
+
+
+@pytest.mark.parametrize(
+    ('toggle', 'message'),
+    [
+        ('GH_NO_STACK_EXT', 'gh extension install github/gh-stack'),
+        ('GH_STACK_FAILS', 'stacks are not enabled'),
+    ],
+)
+def test_ship_stacked_warns_when_stack_link_fails(
+    clone: Path,
+    env: dict[str, str],
+    toggle: str,
+    message: str,
+) -> None:
+    three_stack(clone, env)
+    env[toggle] = 'stacks are not enabled'
+
+    result = git(clone, 'ship', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert 'GitHub stack not linked' in result.stderr
+    assert message in result.stderr
+    assert any(c.startswith('gh pr create') for c in gh_calls(env))
+
+
+needs_absorb = pytest.mark.skipif(
+    not shutil.which('git-absorb'),
+    reason='git-absorb not installed',
+)
+
+
+@needs_absorb
+def test_fix_folds_staged_change_into_grandparent_and_pushes_stack(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    pushed = three_stack(clone, env)
+    (clone / 'parent.txt').write_text(EDGES_EDITED)
+    git(clone, 'add', 'parent.txt', env=env)
+    env['GIT_EDITOR'] = 'false'
+
+    result = git(clone, 'fix', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert git(clone, 'diff', '--cached', '--name-only', env=env).stdout == ''
+    show = git(clone, 'show', 'parent:parent.txt', env=env)
+    assert show.stdout == EDGES_EDITED
+    assert own_subjects(clone, env, 'origin/main') == [
+        'feat: grandchild',
+        'feat: child',
+        'feat: parent',
+    ]
+    assert pushed_refs(pushed) == list(STACK)
+    assert all(in_sync_with_origin(clone, env, b) for b in STACK)
+
+
+def test_fix_with_nothing_staged_prints_usage(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    three_stack(clone, env)
+
+    result = git(clone, 'fix', env=env)
+
+    assert result.returncode == EXIT_USAGE
+    assert 'nothing staged' in result.stderr
+
+
+@needs_absorb
+def test_fix_leaves_unabsorbable_change_staged_and_pushes_nothing(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    pushed = three_stack(clone, env)
+    before = head(clone, env)
+    (clone / 'new.txt').write_text('new\n')
+    git(clone, 'add', 'new.txt', env=env)
+
+    result = git(clone, 'fix', env=env)
+
+    assert result.returncode == 1
+    assert 'new.txt' in result.stderr
+    staged = git(clone, 'diff', '--cached', '--name-only', env=env)
+    assert staged.stdout == 'new.txt\n'
+    assert head(clone, env) == before
+    assert pushed_refs(pushed) == []
 
 
 ALL = frozenset({'main', 'merged', 'open', 'local', 'tree', 'develop'})
