@@ -92,6 +92,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
 | `generate_random_uuid_and_put_in_clipboard` | Generate a random UUID and copy to clipboard | `bin/uuid.sh` |
 | `gh-dash` | Terminal GitHub dashboard -- PRs, issues, notifications | gh-dash | `bin/stubs.sh` |
+| `gh-stack` | GitHub stacked PRs; git ship links stacks with it | gh-stack view | `bin/stubs.sh` |
 | `ghautomerge` | Enable auto-merge + auto-delete head branches: ghautomerge [owner/repo] | `bin/ghautomerge.sh` |
 | `ghpr` | Push branch and open GitHub PR creation page in browser | ghprc [--draft] | `config/.bash_aliases` |
 | `ghrun` | github-action-run: ghrun [repo] [workflow] | `bin/ghrun.sh` |
@@ -102,7 +103,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gitdoctor` | Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir] | `config/.bash_aliases` |
 | `gitlines` | Count lines of code in all files from current branch | `config/.bash_aliases` |
 | `gitwf` | Show the git workflow cheat sheet (git start / ship / done) | `config/.bash_aliases` |
-| `git_workflow` | Backs the git start/ship/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help | `scripts/git_workflow.sh` |
+| `git_workflow` | Backs the git start/ship/fix/rescue/done/purge aliases in config/.gitconfig | git_workflow.sh help | `scripts/git_workflow.sh` |
 | `glog` | Graph log of all branches | `config/.bash_aliases` |
 | `glow` | Render markdown in the terminal | glow <file> | `bin/stubs.sh` |
 | `glo` | Show last commit message (Git Log One-Line) | `config/.bash_aliases` |
