@@ -58,6 +58,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `awsconfig` | Edit AWS config file in Neovim | `config/.bash_aliases` |
 | `beep` | Play a beep sound (Windows only) | `config/.bash_aliases` |
 | `bl` | Alias for backlog command from skill-tree | `config/.bash_aliases` |
+| `bubblewrap` | Run a command in a sandbox | bwrap --ro-bind / / <cmd> | `bin/stubs.sh` |
 | `cartoon` | Compress noisy CLI output for AI agents | cartoon pytest | `bin/stubs.sh` |
 | `cb` | Copy stdin to clipboard. <command> | cb | `config/.bash_aliases` |
 | `cdf` | Code Dot Files: Open the dotfiles repo in VSCode | `config/.bash_aliases` |
@@ -142,6 +143,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `selection` | Alt+T - transform selected text (case, JSON, URL) from a keyboard menu; Alt+G - open selection (or clipboard) as URL / Jira key / Google search | `ahk/selection.ahk` |
 | `shot` | Alias for screenshot | `config/.bash_aliases` |
+| `socat` | Relay data between sockets, ports, and files | socat TCP-LISTEN:8080,fork TCP:host:80 | `bin/stubs.sh` |
 | `song` | ,,song -- insert a Spotify link for the currently playing track | `ahk/hotstrings.ahk` |
 | `song` | Copy the Spotify link for the currently playing track: song | `config/.bash_aliases` |
 | `sorn` | ,,sorn -- insert "Song On Right Now" markdown for the currently playing track | `ahk/hotstrings.ahk` |
