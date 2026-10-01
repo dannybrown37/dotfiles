@@ -18,7 +18,7 @@ vsi() { # @doc Fuzzy find files and open in Neovim (git-aware)
     [[ ${#files[@]} -gt 0 ]] && nvim "${files[@]}"
 }
 
-alias praf='pre-commit run --all-files'
+alias praf='prek run --all-files'
 
 alias lg='lazygit'  # @doc Open lazygit TUI
 alias gitdoctor='~/projects/dotfiles/scripts/git_auth_doctor.sh'  # @doc Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir]

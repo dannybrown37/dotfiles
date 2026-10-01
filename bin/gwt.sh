@@ -1,10 +1,18 @@
 ## Git Worktree Helpers
 
-gwt() {  # @doc git-worktree: gwt <add|list|rm|cd> [branch] [options]
-    local usage="Usage: gwt <add|list|rm|cd> [branch] [options]"
+gwt() {  # @doc git-worktree: gwt <add|list|rm|cd|bootstrap> [branch] [options]
+    local usage="Usage: gwt <add|list|rm|cd|bootstrap> [branch] [options]"
 
     case "${1:-}" in
         add) shift; _gwt_add "$@" ;;
+        bootstrap)
+            local wt_path
+            wt_path="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+                echo "Error: not in a git repository" >&2
+                return 1
+            }
+            _gwt_bootstrap "${wt_path}"
+            ;;
         list | ls) _gwt_list ;;
         rm) shift; _gwt_rm "$@" ;;
         cd) shift; _gwt_cd "$@" ;;
@@ -60,8 +68,20 @@ _gwt_pick_base_ref() {
 }
 
 _gwt_add() {
-    local branch="${1:-}"
-    local base_ref="${2:-}"
+    local add_usage="Usage: gwt add <branch> [base-ref] [-b|--bootstrap]"
+    local bootstrap=false
+    local positional=()
+    while (($#)); do
+        case "$1" in
+            -b | --bootstrap) bootstrap=true ;;
+            -h | --help) echo "${add_usage}"; return 0 ;;
+            -*) echo "Unknown option: $1" >&2; echo "${add_usage}" >&2; return 1 ;;
+            *) positional+=("$1") ;;
+        esac
+        shift
+    done
+    local branch="${positional[0]:-}"
+    local base_ref="${positional[1]:-}"
 
     if [[ -z "${branch}" ]]; then
         if [[ -t 0 ]]; then
@@ -71,7 +91,7 @@ _gwt_add() {
                 return 1
             fi
         else
-            echo "Usage: gwt add <branch> [base-ref]" >&2
+            echo "${add_usage}" >&2
             echo "Error: branch is required when not running in a TTY." >&2
             return 1
         fi
@@ -107,7 +127,11 @@ _gwt_add() {
     fi
 
     echo ""
-    _gwt_bootstrap "${worktree_path}"
+    if [[ "${bootstrap}" == true ]]; then
+        _gwt_bootstrap "${worktree_path}"
+    else
+        echo "Skipped dependency bootstrap (run 'gwt bootstrap' inside the worktree if needed)."
+    fi
 
     echo ""
     echo "Ready: cd ${worktree_path}"
@@ -117,7 +141,8 @@ _gwt_add() {
 _gwt_bootstrap() {
     local wt_path="${1}"
     local git_root
-    git_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+    git_root="$(git -C "${wt_path}" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+    git_root="${git_root%/.git}"
 
     echo "Bootstrapping dependencies..."
 

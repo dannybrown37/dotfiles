@@ -114,7 +114,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `gsl` | Git stash list | `config/.bash_aliases` |
 | `gsp` | Git stash pop | `config/.bash_aliases` |
 | `gss` | Git stash save | `config/.bash_aliases` |
-| `gwt` | git-worktree: gwt <add|list|rm|cd> [branch] [options] | `bin/gwt.sh` |
+| `gwt` | git-worktree: gwt <add|list|rm|cd|bootstrap> [branch] [options] | `bin/gwt.sh` |
 | `htmlq` | jq for HTML | htmlq <selector> < page.html | `bin/stubs.sh` |
 | `httpie` | Friendly HTTP client (httpie) | http GET <url> | `bin/stubs.sh` |
 | `hyperfine` | Benchmark commands head-to-head | hyperfine 'cmd1' 'cmd2' | `bin/stubs.sh` |
