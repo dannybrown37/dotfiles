@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 ## @extra gtd | GTD CLI powered by Notion
+## @mine
 
 ##
 ## Clone gtd and install it with uv

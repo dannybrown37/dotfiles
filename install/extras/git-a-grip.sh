@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 ## @extra gag | Pre-commit hooks for commit messages, docs, and tests (git-a-grip)
+## @mine
 
 ##
 ## Clone git-a-grip and install it with uv

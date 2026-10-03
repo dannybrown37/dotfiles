@@ -16,6 +16,15 @@ REPO_ROOT = Path(__file__).parent.parent
 EXTRAS = REPO_ROOT / 'scripts' / 'extras.sh'
 BASH = shutil.which('bash') or '/bin/bash'
 EXIT_USAGE = 2
+ESCAPE = '\x1b'
+RESET = f'{ESCAPE}[0m'
+SOURCE_COLORS = {
+    'mine': f'{ESCAPE}[1;35m',
+    'runtime': f'{ESCAPE}[36m',
+    'cargo': f'{ESCAPE}[33m',
+    'gh': f'{ESCAPE}[34m',
+    'apt': f'{ESCAPE}[32m',
+}
 
 EXTRA_SCRIPT = """\
 #!/usr/bin/env bash
@@ -55,12 +64,19 @@ def run_extras(
     root: Path,
     stub_bin: Path,
     *args: str,
+    color_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
+    inherited = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {'NO_COLOR', 'FORCE_COLOR'}
+    }
     env = {
-        **os.environ,
+        **inherited,
         'DOTFILES_ROOT': str(root),
         'CALL_LOG': str(root / 'calls.log'),
         'PATH': f'{stub_bin}:/usr/bin:/bin',
+        **(color_env or {}),
     }
     return subprocess.run(  # noqa: S603
         [BASH, str(EXTRAS), *args],
@@ -142,6 +158,75 @@ def test_list_skips_scripts_without_header(root: Path, stub_bin: Path) -> None:
 
     assert 'helper' not in result.stdout
     assert 'Second tool' in result.stdout
+
+
+@pytest.mark.parametrize(
+    ('body', 'source'),
+    [
+        ('## @mine\ngit clone https://example.com/tool\n', 'mine'),
+        ('## @mine\n## @runtime\ncargo install tool\n', 'mine'),
+        ('## @runtime\ncurl -fsSL https://example.com | sh\n', 'runtime'),
+        ('sudo apt install -y build\ncargo install --locked tool\n', 'cargo'),
+        ('gh extension install owner/gh-tool\n', 'gh'),
+        ('sudo apt install -y tool\n', 'apt'),
+        ('sudo apt-get install -y -qq tool\n', 'apt'),
+        ('sudo apt install -y dep\ncurl -fsSLo t https://example.com\n', None),
+        ('install_release_binary tool "https://example.com" 1.0\n', None),
+        ('## needs cargo install and apt install\n', None),
+        ('winget.exe install --id Tool\n', None),
+    ],
+)
+def test_list_colors_name_by_source(
+    root: Path,
+    stub_bin: Path,
+    body: str,
+    source: str | None,
+) -> None:
+    (root / 'install' / 'extras' / 'tool.sh').write_text(
+        EXTRA_SCRIPT.format(name='tool', binary='tool', desc='A tool') + body,
+    )
+
+    result = run_extras(
+        root,
+        stub_bin,
+        '--list',
+        color_env={'FORCE_COLOR': '1'},
+    )
+
+    row = next(line for line in result.stdout.splitlines() if 'A tool' in line)
+    name = f'{"tool":<12}'
+    colored = f'{SOURCE_COLORS[source]}{name}{RESET}' if source else name
+    assert row == f'· {colored} A tool'
+
+
+def test_colored_list_ends_with_legend(root: Path, stub_bin: Path) -> None:
+    result = run_extras(
+        root,
+        stub_bin,
+        '--list',
+        color_env={'FORCE_COLOR': '1'},
+    )
+
+    legend = result.stdout.splitlines()[-1]
+    for source, color in SOURCE_COLORS.items():
+        assert f'{color}{source}{RESET}' in legend
+
+
+@pytest.mark.parametrize(
+    'color_env',
+    [{}, {'NO_COLOR': '1'}, {'NO_COLOR': '1', 'FORCE_COLOR': '1'}],
+)
+def test_list_is_plain_without_color(
+    root: Path,
+    stub_bin: Path,
+    color_env: dict[str, str],
+) -> None:
+    result = run_extras(root, stub_bin, '--list', color_env=color_env)
+
+    assert result.stdout.splitlines() == [
+        '· alpha        First tool',
+        '· beta         Second tool',
+    ]
 
 
 def test_named_extras_run_their_scripts(root: Path, stub_bin: Path) -> None:
