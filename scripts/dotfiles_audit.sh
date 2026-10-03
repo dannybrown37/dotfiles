@@ -87,7 +87,7 @@ check_net_rescue() {
     local windows_user="${WINDOWS_USERNAME:-$(powershell.exe '$env:UserName' 2>/dev/null | tr -d '\r\n')}"
     local installed="/mnt/c/Users/${windows_user}/.dotfiles" name
 
-    for name in net.ps1 rescue.txt; do
+    for name in net.ps1 net-rescue.md; do
         if [[ ! -f "${installed}/${name}" ]]; then
             warn "net-rescue: ${name}" "not on C: — run: just windows net-rescue"
         elif cmp -s "${DOTFILES_DIR}/windows/${name}" "${installed}/${name}"; then

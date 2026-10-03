@@ -272,5 +272,5 @@ function dns-set {
 }
 
 function rescue {
-    Get-Content -Path (Join-Path $PSScriptRoot 'rescue.txt')
+    Get-Content -Path (Join-Path $PSScriptRoot 'net-rescue.md')
 }

@@ -225,7 +225,7 @@ The fix for a dead network can't live on the internet, so it lives here. Run `ju
 | Command | Where | What |
 | --- | --- | --- |
 | `net-doctor` (or `just net-doctor`) | bash, PowerShell | Checks link, IPv4, gateway, internet by IP, DNS in order; prints the fix per failure with the real adapter name. Under WSL a failure hands over to the Windows doctor. |
-| `rescue` | bash, PowerShell | Offline cheat sheet: network recovery, Hyper-V console, restarting WSL |
+| `rescue` (or `refs net-rescue`) | bash, PowerShell | Offline cheat sheet (`windows/net-rescue.md`): network recovery, Hyper-V console, restarting WSL |
 | `net-show` | PowerShell | Adapter / IP / gateway / DNS at a glance |
 | `net-snapshot` | PowerShell | Save the current config to `~\.net-snapshots` |
 | `net-restore [file] [-Full] [-Yes]` | PowerShell | Reapply the latest snapshot's DNS to the adapter that now holds the gateway; `-Full` adds IP + gateway when the adapter name still matches |

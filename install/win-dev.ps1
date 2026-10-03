@@ -33,7 +33,7 @@ $wingetPackages = @(
 )
 $npmGlobals = @("typescript", "ts-node", "npx")
 $uvTools = @("ruff", "cookiecutter")
-$netRescueFiles = @("net.ps1", "rescue.txt")
+$netRescueFiles = @("net.ps1", "net-rescue.md")
 $netRescueSource = Join-Path (Split-Path $PSScriptRoot -Parent) "windows"
 $netRescueTarget = Join-Path $HOME ".dotfiles"
 

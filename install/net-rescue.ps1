@@ -11,7 +11,7 @@ $source = Join-Path (Split-Path $PSScriptRoot -Parent) 'windows'
 $target = Join-Path $HOME '.dotfiles'
 
 New-Item -ItemType Directory -Force -Path $target | Out-Null
-foreach ($name in 'net.ps1', 'rescue.txt') {
+foreach ($name in 'net.ps1', 'net-rescue.md') {
     $destination = Join-Path $target $name
     Copy-Item -Path (Join-Path $source $name) -Destination $destination -Force
     Unblock-File -Path $destination

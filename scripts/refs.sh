@@ -3,7 +3,7 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly REFS_VERSION="0.5.0"
+readonly REFS_VERSION="0.6.0"
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly DOTFILES_ROOT="$(dirname "$(dirname "${SELF}")")"
 
@@ -41,6 +41,7 @@ ref_paths() {
     fi
     markdown_in "${DOTFILES_ROOT}/references"
     markdown_in "${DOTFILES_ROOT}/wsl"
+    markdown_in "${DOTFILES_ROOT}/windows"
     echo "${DOTFILES_ROOT}/docs/git-workflow.md"
 }
 

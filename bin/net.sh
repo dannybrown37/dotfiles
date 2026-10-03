@@ -116,5 +116,5 @@ net-doctor() { # @doc Diagnose a dead network in order (link, IP, gateway, inter
 }
 
 rescue() { # @doc Offline cheat sheet: network recovery, Hyper-V console, restarting WSL | rescue
-    cat "${DOTFILES_DIR:-$HOME/projects/dotfiles}/windows/rescue.txt"
+    cat "${DOTFILES_DIR:-$HOME/projects/dotfiles}/windows/net-rescue.md"
 }
