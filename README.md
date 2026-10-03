@@ -33,8 +33,7 @@ Secrets (requires GPG keys):
   secrets-load    Pull private repo, load secrets from password-store to local files
 
 Verification:
-  check           Run every prek hook over the whole repo
-  test            Run all tests (pytest + shell syntax check)
+  qa              Run every prek hook, then all tests (also callable alone: just check, just test)
   audit           Audit this machine against every dotfiles dependency (read-only)
   git-doctor      Diagnose a refused git push -- credentials, remotes, transport (read-only)
   net-doctor      Diagnose a dead network -- link, IP, gateway, internet, DNS (read-only, works offline)

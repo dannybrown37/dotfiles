@@ -72,11 +72,12 @@ windows *names:
 bench-shell runs='10':
     bash "{{root_dir}}/scripts/bench-shell.sh" "{{runs}}"
 
-## @just 70 Verification | Run every prek hook over the whole repo
+## @just 70 Verification | Run every prek hook, then all tests (also callable alone: just check, just test)
+qa: check test
+
 check:
     prek run --all-files
 
-## @just 71 Verification | Run all tests (pytest + shell syntax check)
 test:
     uv run --with pytest --with pytest-cov --with pytest-xdist pytest --cov=scripts --cov-report=term-missing "{{root_dir}}/scripts/"
     bash "{{root_dir}}/scripts/test_shell_syntax.sh"

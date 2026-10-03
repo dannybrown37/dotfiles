@@ -24,9 +24,13 @@ shopt -s checkwinsize
 
 if ! shopt -oq posix; then
     if [[ $- == *i* ]]; then
+        # source=/dev/null: shellcheck would otherwise follow these into 3,500 lines
+        # of system completion code and spend ~12s linting it on every run.
         if [ -f /usr/share/bash-completion/bash_completion ]; then
+            # shellcheck source=/dev/null
             . /usr/share/bash-completion/bash_completion
         else
+            # shellcheck source=/dev/null
             [ -f /etc/bash_completion ] && . /etc/bash_completion
         fi
     fi
