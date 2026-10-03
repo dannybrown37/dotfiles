@@ -2,6 +2,7 @@
 
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -10,6 +11,11 @@ import pytest
 REFS = Path(__file__).parent / 'refs.sh'
 EXIT_USAGE = 2
 ANSI = re.compile(r'\x1b\[[0-9;]*m')
+
+needs_glow = pytest.mark.skipif(
+    not shutil.which('glow'),
+    reason='glow is an opt-in extra; preview falls back to cat without it',
+)
 
 SAMPLE = """# Title
 
@@ -222,6 +228,7 @@ def test_preview_renders_ref_by_name(refs_dir: Path) -> None:
     assert 'no link lines' in ANSI.sub('', result.stdout)
 
 
+@needs_glow
 def test_preview_renders_h2_without_literal_hashes(refs_dir: Path) -> None:
     result = run('preview', 'notes', refs_dir=refs_dir)
     plain = ANSI.sub('', result.stdout)
