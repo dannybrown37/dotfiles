@@ -1,4 +1,4 @@
-## Install Windows-side dev tooling (git, uv, node, typescript, etc.)
+## Install Windows-side dev tooling (git, uv, node, typescript, net-rescue, etc.)
 ##
 ## -List          Print name<TAB>installed(0/1)<TAB>description for each item
 ## -Only a,b,c    Install only the named items (default: all)
@@ -33,6 +33,9 @@ $wingetPackages = @(
 )
 $npmGlobals = @("typescript", "ts-node", "npx")
 $uvTools = @("ruff", "cookiecutter")
+$netRescueFiles = @("net.ps1", "net-rescue.md")
+$netRescueSource = Join-Path (Split-Path $PSScriptRoot -Parent) "windows"
+$netRescueTarget = Join-Path $HOME ".dotfiles"
 
 function Test-Winget($pkg) {
     if ($pkg.Cmd) {
@@ -84,9 +87,24 @@ function Install-UvTools {
     }
 }
 
+# Installed means the C: copy matches the repo, so a stale copy shows as not installed
+function Test-NetRescue {
+    foreach ($name in $netRescueFiles) {
+        $installed = Join-Path $netRescueTarget $name
+        if (-not (Test-Path $installed)) { return $false }
+        if ((Get-FileHash $installed).Hash -ne (Get-FileHash (Join-Path $netRescueSource $name)).Hash) { return $false }
+    }
+    return $true
+}
+
+function Install-NetRescue {
+    & (Join-Path $PSScriptRoot "net-rescue.ps1")
+}
+
 $groups = @(
     @{ Name = "npm-globals"; Desc = "npm globals: $($npmGlobals -join ', ')"; Test = ${function:Test-NpmGlobals}; Install = ${function:Install-NpmGlobals} }
     @{ Name = "uv-tools";    Desc = "uv tools: $($uvTools -join ', ')";       Test = ${function:Test-UvTools};    Install = ${function:Install-UvTools} }
+    @{ Name = "net-rescue";  Desc = "Offline network verbs in the PowerShell profile (net-doctor, dns-set, rescue)"; Test = ${function:Test-NetRescue}; Install = ${function:Install-NetRescue} }
 )
 
 if ($List) {

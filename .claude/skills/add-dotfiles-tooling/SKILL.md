@@ -76,6 +76,8 @@ An extra is an opt-in tool picked from the `just extras` menu (or `just extras <
    `<binary>` is what `command -v` looks for to show ✓ in the menu. No justfile edit.
    A language toolchain (python, node, golang, rust) also carries a `## @runtime` line,
    so it installs before any extra that builds with it.
+   One of my own projects carries a `## @mine` line. The menu colors names by source:
+   mine, runtime, or the install method it reads from the script (cargo, gh, apt).
 3. Add the `bin/stubs.sh` stub as usual. No audit line: the audit lists extras from their
    headers and warns (not fails) when one is missing.
 4. Run `./scripts/check-tool-wiring.sh <name>`.

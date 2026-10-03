@@ -2,6 +2,7 @@
 
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -10,6 +11,11 @@ import pytest
 REFS = Path(__file__).parent / 'refs.sh'
 EXIT_USAGE = 2
 ANSI = re.compile(r'\x1b\[[0-9;]*m')
+
+needs_glow = pytest.mark.skipif(
+    not shutil.which('glow'),
+    reason='glow is an opt-in extra; preview falls back to cat without it',
+)
 
 SAMPLE = """# Title
 
@@ -76,6 +82,7 @@ def test_files_lists_every_markdown_file(refs_dir: Path) -> None:
         'vim-notes',
         'home-server-setup',
         'git-workflow',
+        'net-rescue',
     ],
 )
 def test_default_refs_include_repo_docs(name: str) -> None:
@@ -87,6 +94,7 @@ def test_default_refs_include_repo_docs(name: str) -> None:
     [
         ('home-server-setup', 'wsl/home-server-setup.md'),
         ('git-workflow', 'docs/git-workflow.md'),
+        ('net-rescue', 'windows/net-rescue.md'),
     ],
 )
 def test_default_name_resolves_outside_references(
@@ -218,6 +226,14 @@ def test_preview_renders_ref_by_name(refs_dir: Path) -> None:
     result = run('preview', 'notes', refs_dir=refs_dir)
     assert result.returncode == 0
     assert 'no link lines' in ANSI.sub('', result.stdout)
+
+
+@needs_glow
+def test_preview_renders_h2_without_literal_hashes(refs_dir: Path) -> None:
+    result = run('preview', 'notes', refs_dir=refs_dir)
+    plain = ANSI.sub('', result.stdout)
+    assert 'heading' in plain
+    assert '## heading' not in plain
 
 
 def test_preview_unknown_ref_is_usage_error(refs_dir: Path) -> None:

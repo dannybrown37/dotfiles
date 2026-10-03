@@ -82,6 +82,22 @@ check_ahk_v2() {
     fi
 }
 
+check_net_rescue() {
+    # shellcheck disable=SC2016  # $env:UserName is PowerShell's, not bash's
+    local windows_user="${WINDOWS_USERNAME:-$(powershell.exe '$env:UserName' 2>/dev/null | tr -d '\r\n')}"
+    local installed="/mnt/c/Users/${windows_user}/.dotfiles" name
+
+    for name in net.ps1 net-rescue.md; do
+        if [[ ! -f "${installed}/${name}" ]]; then
+            warn "net-rescue: ${name}" "not on C: — run: just windows net-rescue"
+        elif cmp -s "${DOTFILES_DIR}/windows/${name}" "${installed}/${name}"; then
+            ok "net-rescue: ${name}" "C: copy matches the repo"
+        else
+            warn "net-rescue: ${name}" "C: copy is stale — run: just windows net-rescue"
+        fi
+    done
+}
+
 section() {
     echo ""
     echo "  $1"
@@ -144,6 +160,7 @@ check "nvim"       "nvim --version | head -1 | awk '{print \$2}'"           "jus
 if [[ -n "${ON_WINDOWS:-}" ]]; then
     check "win32yank.exe" "command -v win32yank.exe" "just windows win32yank"
     check_ahk_v2
+    check_net_rescue
     check "AHK autocorrect list" "test -s '${DOTFILES_DIR}/ahk/vendor/AutoCorrectHotstrings.ahk' && echo present" "ahk"
 fi
 

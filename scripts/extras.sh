@@ -11,12 +11,26 @@
 ## A `## @runtime` line marks a language toolchain. Runtimes install before
 ## other extras, because some extras build with cargo or uv.
 ##
+## A `## @mine` line marks one of my own projects. On a terminal, names are
+## colored by source: mine, runtime, or the install method read from the
+## script (cargo, gh extension, apt). Downloads and anything else stay plain.
+## NO_COLOR turns color off; FORCE_COLOR turns it on when piped.
+##
 
 set -euo pipefail
 
 readonly EXIT_USAGE=2
 readonly root="${DOTFILES_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 readonly extras_dir="${root}/install/extras"
+readonly color_reset=$'\e[0m'
+readonly colored_sources=(mine runtime cargo gh apt)
+declare -Ar source_colors=(
+    [mine]=$'\e[1;35m'
+    [runtime]=$'\e[36m'
+    [cargo]=$'\e[33m'
+    [gh]=$'\e[34m'
+    [apt]=$'\e[32m'
+)
 
 usage() {
     cat <<'EOF'
@@ -26,20 +40,56 @@ Usage: just extras              Pick extras in a menu (✓ = installed)
 EOF
 }
 
-# Emits: name<TAB>binary<TAB>description
+# Emits: name<TAB>binary<TAB>description<TAB>source
 extras() {
     awk '
-        /^## @extra / {
-            name = FILENAME
-            sub(/.*\//, "", name)
-            sub(/\.sh$/, "", name)
+        function emit() {
+            if (binary == "") { return }
+            source = "other"
+            if (mine) { source = "mine" }
+            else if (runtime) { source = "runtime" }
+            else if (cargo) { source = "cargo" }
+            else if (gh) { source = "gh" }
+            else if (apt && !download) { source = "apt" }
+            printf "%s\t%s\t%s\t%s\n", name, binary, desc, source
+        }
+        FNR == 1 {
+            emit()
+            binary = ""
+            mine = runtime = cargo = gh = apt = download = 0
+        }
+        /^## @extra / && binary == "" {
             meta = substr($0, 11)
             i = index(meta, " | ")
             if (i == 0) { nextfile }
-            printf "%s\t%s\t%s\n", name, substr(meta, 1, i - 1), substr(meta, i + 3)
-            nextfile
+            name = FILENAME
+            sub(/.*\//, "", name)
+            sub(/\.sh$/, "", name)
+            binary = substr(meta, 1, i - 1)
+            desc = substr(meta, i + 3)
         }
+        /^## @mine$/ { mine = 1 }
+        /^## @runtime$/ { runtime = 1 }
+        /^[[:space:]]*#/ { next }
+        /cargo install / { cargo = 1 }
+        /gh extension install / { gh = 1 }
+        /apt(-get)? install / { apt = 1 }
+        /curl |install_release_binary / { download = 1 }
+        END { emit() }
     ' "${extras_dir}"/*.sh
+}
+
+use_color() {
+    [[ -z "${NO_COLOR:-}" ]] && [[ -n "${FORCE_COLOR:-}" || -t 1 ]]
+}
+
+legend() {
+    use_color || return 0
+    local source line=""
+    for source in "${colored_sources[@]}"; do
+        line+="${source_colors[${source}]}${source}${color_reset}  "
+    done
+    echo "${line% *}"
 }
 
 # gh extensions live under gh's data dir, not PATH, so ask gh for gh-* binaries
@@ -51,11 +101,15 @@ installed() {
 }
 
 list() {
-    local name binary desc mark
-    while IFS=$'\t' read -r name binary desc; do
+    local name binary desc source mark color reset
+    while IFS=$'\t' read -r name binary desc source; do
         mark="·"
         installed "${binary}" && mark="✓"
-        printf "%s %-12s %s\n" "${mark}" "${name}" "${desc}"
+        color="" reset=""
+        if use_color && [[ -n "${source_colors[${source}]:-}" ]]; then
+            color="${source_colors[${source}]}" reset="${color_reset}"
+        fi
+        printf "%s %s%-12s%s %s\n" "${mark}" "${color}" "${name}" "${reset}" "${desc}"
     done < <(extras)
 }
 
@@ -84,9 +138,11 @@ install() {
 }
 
 pick() {
-    local picked
-    picked="$(list | fzf --multi --prompt='extras> ' \
-        --header='TAB to select, ENTER to install' | awk '{print $2}')" || true
+    local picked header='TAB to select, ENTER to install'
+    local -x FORCE_COLOR=1
+    use_color && header+=$'\n'"$(legend)"
+    picked="$(list | fzf --multi --ansi --prompt='extras> ' \
+        --header="${header}" | awk '{print $2}')" || true
     [[ -n "${picked}" ]] || return 0
     mapfile -t names <<<"${picked}"
     echo "just extras ${names[*]}"
@@ -99,12 +155,14 @@ case "${1:-}" in
     ;;
 --list)
     list
+    legend
     ;;
 "")
     if [[ -t 0 && -t 1 ]] && command -v fzf &>/dev/null; then
         pick
     else
         list
+        legend
         echo
         usage
     fi

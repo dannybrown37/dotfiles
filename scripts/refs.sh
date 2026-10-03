@@ -3,9 +3,12 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly REFS_VERSION="0.5.0"
+readonly REFS_VERSION="0.6.0"
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly DOTFILES_ROOT="$(dirname "$(dirname "${SELF}")")"
+# glamour styles do not inherit, so this is the stock dark.json (glamour v2.0.1)
+# in full, with only h2 changed from a literal "## " prefix to a chip like h1
+readonly GLOW_STYLE="${DOTFILES_ROOT}/references/glow-style.json"
 
 usage() {
     cat >&2 <<EOF
@@ -41,6 +44,7 @@ ref_paths() {
     fi
     markdown_in "${DOTFILES_ROOT}/references"
     markdown_in "${DOTFILES_ROOT}/wsl"
+    markdown_in "${DOTFILES_ROOT}/windows"
     echo "${DOTFILES_ROOT}/docs/git-workflow.md"
 }
 
@@ -107,7 +111,7 @@ add_entry() {
 
 view() {
     if [[ -t 1 ]] && command -v glow &>/dev/null; then
-        glow -p "$1"
+        glow -p -s "${GLOW_STYLE}" "$1"
     else
         cat "$1"
     fi
@@ -115,7 +119,7 @@ view() {
 
 preview() {
     if command -v glow &>/dev/null; then
-        glow -s dark -w "${FZF_PREVIEW_COLUMNS:-80}" "$1"
+        glow -s "${GLOW_STYLE}" -w "${FZF_PREVIEW_COLUMNS:-80}" "$1"
     else
         cat "$1"
     fi
