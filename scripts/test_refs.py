@@ -222,6 +222,13 @@ def test_preview_renders_ref_by_name(refs_dir: Path) -> None:
     assert 'no link lines' in ANSI.sub('', result.stdout)
 
 
+def test_preview_renders_h2_without_literal_hashes(refs_dir: Path) -> None:
+    result = run('preview', 'notes', refs_dir=refs_dir)
+    plain = ANSI.sub('', result.stdout)
+    assert 'heading' in plain
+    assert '## heading' not in plain
+
+
 def test_preview_unknown_ref_is_usage_error(refs_dir: Path) -> None:
     result = run('preview', 'nope', refs_dir=refs_dir)
     assert result.returncode == EXIT_USAGE
