@@ -38,6 +38,7 @@ mprocs() { command mprocs "$@"; }       # @doc Run several commands side by side
 neofetch() { command fastfetch "$@"; } # @doc Alias for fastfetch, for muscle memory | neofetch
 pass() { command pass "$@"; }           # @doc Password store -- manage secrets via GPG | pass show <name>
 rg() { command rg "$@"; }               # @doc Fast regex search across files (ripgrep) | rg <pattern>
+rsync() { command rsync "$@"; }         # @doc Copy and sync files locally or over SSH | rsync -av --progress <src>/ <dest>/
 socat() { command socat "$@"; }         # @doc Relay data between sockets, ports, and files | socat TCP-LISTEN:8080,fork TCP:host:80
 starship() { command starship "$@"; }   # @doc Cross-shell prompt with git/lang context
 terraform() { command terraform "$@"; } # @doc Provision infrastructure as code | terraform plan

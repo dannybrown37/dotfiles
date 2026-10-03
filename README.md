@@ -25,7 +25,7 @@ Start Here:
 
 Environment-Specific:
   vscode          Link VS Code settings, then pick extensions (✓ = installed)
-  windows         Windows-side tools (winget, npm, uv, win32yank), with ✓ for installed
+  windows         Windows-side tools (winget, npm, uv, win32yank, net-rescue), with ✓ for installed
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
 
 Secrets (requires GPG keys):
@@ -36,7 +36,8 @@ Verification:
   check           Run every prek hook over the whole repo
   test            Run all tests (pytest + shell syntax check)
   audit           Audit this machine against every dotfiles dependency (read-only)
-  doctor          Diagnose a refused git push -- credentials, remotes, transport (read-only)
+  git-doctor      Diagnose a refused git push -- credentials, remotes, transport (read-only)
+  net-doctor      Diagnose a dead network -- link, IP, gateway, internet, DNS (read-only, works offline)
   bench-shell     Benchmark interactive shell startup time
 ```
 
@@ -131,6 +132,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `mprocs` | Run several commands side by side | mprocs 'cmd1' 'cmd2' | `bin/stubs.sh` |
 | `mystats` | Top commands I typed, excluding Claude Code's atuin entries | mystats [count] | `config/.bash_aliases` |
 | `neofetch` | Alias for fastfetch, for muscle memory | neofetch | `bin/stubs.sh` |
+| `net-doctor` | Diagnose a dead network in order (link, IP, gateway, internet, DNS) and print each fix | net-doctor | `bin/net.sh` |
 | `noteion` | Create Notion pages from the terminal (lazy-loaded on first use) | `bin/noteion.sh` |
 | `open_url_in_browser` | Open a URL in the browser, system-agnostic | `bin/browser.sh` |
 | `pass` | Password store -- manage secrets via GPG | pass show <name> | `bin/stubs.sh` |
@@ -140,7 +142,9 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `push` | Push a message to ntfy.sh at $PERSONAL_ALERT_TOPIC | push <message> | `bin/ntfy.sh` |
 | `quick_run` | Alt+P - show/hide an always-warm WSL terminal on the `quickrun` tmux session | `ahk/quick_run.ahk` |
 | `refs` | Read references and repo guides in glow (bare: pick one) | refs [links] [media|mental-models] | `config/.bash_aliases` |
+| `rescue` | Offline cheat sheet: network recovery, Hyper-V console, restarting WSL | rescue | `bin/net.sh` |
 | `rg` | Fast regex search across files (ripgrep) | rg <pattern> | `bin/stubs.sh` |
+| `rsync` | Copy and sync files locally or over SSH | rsync -av --progress <src>/ <dest>/ | `bin/stubs.sh` |
 | `screenshot` | Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest] | `config/.bash_aliases` |
 | `selection` | Alt+T - transform selected text (case, JSON, URL) from a keyboard menu; Alt+G - open selection (or clipboard) as URL / Jira key / Google search | `ahk/selection.ahk` |
 | `shot` | Alias for screenshot | `config/.bash_aliases` |
@@ -180,6 +184,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
 | `scripts/` | Non-sourced standalone executable scripts |
+| `windows/` | Windows PowerShell network-rescue verbs and the offline rescue cheat sheet |
 | `wsl/` | WSL-specific settings, functions, and komorebi config |
 
 <!-- @doc:structure:end -->
@@ -213,6 +218,21 @@ For when you're truly starting from scratch. `just windows --all` installs Windo
 - [Google Chrome](https://www.google.com/search?q=google+chrome+download)
 
 After WSL is up and this repo is cloned, run `just windows --all`, then `ahk && ahk startup` from WSL.
+
+### Network Rescue (offline)
+
+The fix for a dead network can't live on the internet, so it lives here. Run `just windows net-rescue` once, while things work: it copies `windows/` to `C:\Users\<you>\.dotfiles`, loads it from the PowerShell profile, and takes a first snapshot. The copy is on `C:` so it still works when WSL won't start.
+
+| Command | Where | What |
+| --- | --- | --- |
+| `net-doctor` (or `just net-doctor`) | bash, PowerShell | Checks link, IPv4, gateway, internet by IP, DNS in order; prints the fix per failure with the real adapter name. Under WSL a failure hands over to the Windows doctor. |
+| `rescue` | bash, PowerShell | Offline cheat sheet: network recovery, Hyper-V console, restarting WSL |
+| `net-show` | PowerShell | Adapter / IP / gateway / DNS at a glance |
+| `net-snapshot` | PowerShell | Save the current config to `~\.net-snapshots` |
+| `net-restore [file] [-Full] [-Yes]` | PowerShell | Reapply the latest snapshot's DNS to the adapter that now holds the gateway; `-Full` adds IP + gateway when the adapter name still matches |
+| `dns-set <ip>...` | PowerShell | Set DNS on the adapter holding the default route |
+
+The write verbs print the exact command and self-elevate through UAC. `just windows` shows `net-rescue` unticked, and `just audit` warns, when the `C:` copy is stale.
 
 ### Set Up a WSL Debian Distro
 

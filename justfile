@@ -64,11 +64,11 @@ secrets-save:
 secrets-load:
     bash -c "{{root_dir}}/scripts/secrets.sh load"
 
-## @just 41 Environment-Specific | Windows-side tools (winget, npm, uv, win32yank), with ✓ for installed
+## @just 41 Environment-Specific | Windows-side tools (winget, npm, uv, win32yank, net-rescue), with ✓ for installed
 windows *names:
     @bash "{{root_dir}}/scripts/windows.sh" {{names}}
 
-## @just 74 Verification | Benchmark interactive shell startup time
+## @just 75 Verification | Benchmark interactive shell startup time
 bench-shell runs='10':
     bash "{{root_dir}}/scripts/bench-shell.sh" "{{runs}}"
 
@@ -86,5 +86,9 @@ audit:
     bash "{{root_dir}}/scripts/dotfiles_audit.sh"
 
 ## @just 73 Verification | Diagnose a refused git push -- credentials, remotes, transport (read-only)
-doctor:
+git-doctor:
     bash "{{root_dir}}/scripts/git_auth_doctor.sh"
+
+## @just 74 Verification | Diagnose a dead network -- link, IP, gateway, internet, DNS (read-only, works offline)
+net-doctor:
+    @DOTFILES_DIR="{{root_dir}}" ON_WINDOWS="${ON_WINDOWS:-${WSL_DISTRO_NAME:+true}}" bash -c 'source "{{root_dir}}/bin/net.sh"; net-doctor'
