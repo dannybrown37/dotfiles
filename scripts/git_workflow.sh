@@ -17,6 +17,7 @@ Usage: git <command> [args...]
                        No auto-merge: skip the CI watch, merge by hand after CI
                        --no-auto: leave auto-merge off
                        Repo without auto-merge: PR body uses the work template
+  git fix              Edit an earlier commit on this branch with the staged change (git-absorb)
   git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
   git purge [--all] [-y]
@@ -240,6 +241,22 @@ cmd_ship() {
     [[ "${run_done}" == 0 ]] || done_after_merge
 }
 
+# git-absorb's own output is noise for the one case that matters: what it
+# couldn't place. Its log only shows when it fails outright.
+cmd_fix() {
+    local fork out leftover
+    [[ $# -eq 0 ]] || fail "${EXIT_USAGE}" 'usage: git fix'
+    fork="$(git merge-base HEAD "origin/${BASE}")"
+    [[ "$(git rev-parse HEAD)" != "${fork}" ]] || fail "${EXIT_USAGE}" 'no commits on this branch yet: use git commit'
+    ! git diff --cached --quiet || fail "${EXIT_USAGE}" 'nothing staged: git add the change, then git fix'
+    command -v git-absorb >/dev/null ||
+        fail 1 'git fix needs git-absorb: https://github.com/tummychow/git-absorb#installing'
+    out="$(GIT_SEQUENCE_EDITOR=: git absorb --and-rebase --base "${fork}" 2>&1)" || fail 1 "${out}"
+    leftover="$(git diff --cached --name-only | paste -sd ' ')"
+    [[ -z "${leftover}" ]] || fail 1 "left staged (no earlier commit to edit), git commit them: ${leftover}"
+    echo 'folded staged changes into earlier commits' >&2
+}
+
 cmd_rescue() {
     local topic="${1:-}" pr merged_head late
     [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" 'usage: git rescue <topic>'
@@ -344,6 +361,7 @@ main() {
     -v | --version) echo "git_workflow ${VERSION}" ;;
     start) cmd_start "$@" ;;
     ship) cmd_ship "$@" ;;
+    fix) cmd_fix "$@" ;;
     rescue) cmd_rescue "$@" ;;
     done) cmd_done "$@" ;;
     purge) cmd_purge "$@" ;;

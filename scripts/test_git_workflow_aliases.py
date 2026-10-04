@@ -1105,6 +1105,85 @@ def test_ship_force_pushes_amended_commit(
     assert in_sync_with_origin(clone, env, 'topic')
 
 
+needs_absorb = pytest.mark.skipif(
+    not shutil.which('git-absorb'),
+    reason='git-absorb not installed',
+)
+
+
+def show_f(clone: Path, env: dict[str, str]) -> str:
+    return git(clone, 'show', 'HEAD:f.txt', env=env).stdout
+
+
+def staged(clone: Path, env: dict[str, str]) -> str:
+    return git(clone, 'diff', '--cached', '--name-only', env=env).stdout
+
+
+@needs_absorb
+def test_fix_folds_staged_change_into_earlier_commit(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    on_branch_with_committed_edit(clone, env)
+    (clone / 'f.txt').write_text(AB_EDITED)
+    git(clone, 'add', 'f.txt', env=env)
+
+    result = git(clone, 'fix', env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stderr == 'folded staged changes into earlier commits\n'
+    assert subject_of(clone, env) == 'feat: edit a'
+    assert subject_of(clone, env, 'HEAD~1') == 'first'
+    assert show_f(clone, env) == AB_EDITED
+    assert staged(clone, env) == ''
+
+
+@pytest.mark.parametrize(
+    ('commit_first', 'message'),
+    [
+        (False, 'no commits on this branch yet: use git commit'),
+        (True, 'nothing staged: git add the change, then git fix'),
+    ],
+)
+def test_fix_refuses_with_one_plain_line(
+    clone: Path,
+    env: dict[str, str],
+    commit_first: bool,  # noqa: FBT001
+    message: str,
+) -> None:
+    if commit_first:
+        on_branch_with_committed_edit(clone, env)
+    else:
+        git(clone, 'switch', '-c', 'topic', env=env)
+        (clone / 'f.txt').write_text(FIVE_LINES.replace('a', 'A'))
+        git(clone, 'add', 'f.txt', env=env)
+
+    result = git(clone, 'fix', env=env)
+
+    assert result.returncode == EXIT_USAGE
+    assert result.stderr == f'{message}\n'
+
+
+@needs_absorb
+def test_fix_names_changes_it_could_not_place(
+    clone: Path,
+    env: dict[str, str],
+) -> None:
+    on_branch_with_committed_edit(clone, env)
+    (clone / 'f.txt').write_text(AB_EDITED)
+    (clone / 'new.txt').write_text('new\n')
+    git(clone, 'add', 'f.txt', 'new.txt', env=env)
+
+    result = git(clone, 'fix', env=env)
+
+    assert result.returncode == 1
+    assert result.stderr == (
+        'left staged (no earlier commit to edit), git commit them: new.txt\n'
+    )
+    assert show_f(clone, env) == AB_EDITED
+    assert staged(clone, env) == 'new.txt\n'
+
+
 ALL = frozenset({'main', 'merged', 'open', 'local', 'tree', 'develop'})
 
 
