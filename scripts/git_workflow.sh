@@ -4,7 +4,7 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly VERSION="1.10.0"
+readonly VERSION="2.1.0"
 
 usage() {
     cat <<'EOF'
@@ -12,19 +12,12 @@ Usage: git <command> [args...]
 
   git start <topic>    Go to the base branch, pull, make branch <topic> (carries uncommitted changes)
                        On the base with local commits: move them to <topic>
-  git start -s <topic> Stack: make branch <topic> on top of the current branch
   git ship [--no-auto] [--no-done]
                        Push, open a PR, turn on auto-merge, watch CI, then git done
                        No auto-merge: skip the CI watch, merge by hand after CI
                        --no-auto: leave auto-merge off
                        Repo without auto-merge: PR body uses the work template
-                       Stacked: the PR targets the parent branch, no auto-merge,
-                       lower branches that moved are force-pushed (with lease),
-                       and the PRs are linked into a GitHub stack (gh-stack extension)
-  git fix              Fold staged changes into the commits they fix, anywhere in
-                       the stack (git-absorb), then push every branch that moved
   git done             After the merge: go back to the base branch and pull (carries uncommitted changes)
-                       Stacked: once the parent merges or moves, rebase onto it and stay
   git rescue <topic>   Move commits made after a PR merged onto a new branch <topic>
   git purge [--all] [-y]
                        Delete local branches whose origin branch is gone (merged PRs)
@@ -160,22 +153,8 @@ with_carried_changes() {
 }
 
 cmd_start() {
-    local arg topic='' stack=0 usage='usage: git start [-s] <topic>'
-    for arg in "$@"; do
-        case "${arg}" in
-        -s | --stack) stack=1 ;;
-        -*) fail "${EXIT_USAGE}" "${usage}" ;;
-        *)
-            [[ -z "${topic}" ]] || fail "${EXIT_USAGE}" "${usage}"
-            topic="${arg}"
-            ;;
-        esac
-    done
-    [[ -n "${topic}" ]] || fail "${EXIT_USAGE}" "${usage}"
-    if [[ "${stack}" == 1 ]]; then
-        stack_on_current "${topic}"
-        return
-    fi
+    local topic="${1:-}"
+    [[ $# -eq 1 && -n "${topic}" && "${topic}" != -* ]] || fail "${EXIT_USAGE}" 'usage: git start <topic>'
     git fetch origin "${BASE}"
     if [[ "$(git branch --show-current)" == "${BASE}" ]] && base_has_own_commits; then
         move_base_commits "${topic}"
@@ -210,106 +189,6 @@ move_base_commits() {
     echo "moved commits made on ${BASE} to ${topic}" >&2
 }
 
-stack_on_current() {
-    local topic="$1" parent
-    parent="$(git branch --show-current)"
-    [[ -n "${parent}" && "${parent}" != "${BASE}" ]] ||
-        fail "${EXIT_USAGE}" "on ${parent:-detached HEAD}: nothing to stack on, use git start ${topic}"
-    git switch -c "${topic}"
-    git config "branch.${topic}.stackParent" "${parent}"
-    git config "branch.${topic}.stackBase" "$(git rev-parse HEAD)"
-}
-
-stack_parent() {
-    git config --get "branch.$1.stackParent" || true
-}
-
-# The newest commit the branch shares with its parent. The parent tip is exact
-# while the branch sits on it; once the parent is rewritten (squash-merged or
-# restacked) only the recorded stackBase still marks the fork.
-stack_fork() {
-    local branch="$1" parent="$2" base
-    if git merge-base --is-ancestor "${parent}" HEAD 2>/dev/null; then
-        echo "${parent}"
-    elif base="$(git config --get "branch.${branch}.stackBase")" &&
-        git merge-base --is-ancestor "${base}" HEAD; then
-        echo "${base}"
-    else
-        fail 1 "can't find where ${branch} forks from ${parent}"
-    fi
-}
-
-# Prints the stack bottom-to-top, ending at $1. A branch made without
-# git start -s has no stackParent, so its open PR's base stands in, and is
-# recorded so git done can restack it later.
-stack_chain() {
-    local branch="$1" parent pr depth=0 chain=()
-    while [[ -n "${branch}" && "${branch}" != "${BASE}" && "${depth}" -lt 20 ]]; do
-        chain=("${branch}" "${chain[@]}")
-        depth=$((depth + 1))
-        parent="$(stack_parent "${branch}")"
-        if [[ -z "${parent}" ]]; then
-            pr="$(gh pr view "${branch}" --json state,baseRefName \
-                -q '.state + " " + .baseRefName' 2>/dev/null || true)"
-            [[ "${pr%% *}" == OPEN ]] || break
-            parent="${pr#* }"
-            if [[ "${parent}" != "${BASE}" ]] &&
-                git rev-parse --verify --quiet "refs/heads/${parent}" >/dev/null; then
-                git config "branch.${branch}.stackParent" "${parent}"
-                git config "branch.${branch}.stackBase" "$(git merge-base "${parent}" "${branch}")"
-            fi
-        fi
-        branch="${parent}"
-    done
-    printf '%s\n' "${chain[@]}"
-}
-
-on_origin() {
-    git rev-parse --verify --quiet "refs/heads/$1" >/dev/null &&
-        git rev-parse --verify --quiet "refs/remotes/origin/$1" >/dev/null
-}
-
-# Bottom-up, so a PR never shows a parent's stale commits. Checks every
-# branch before pushing any; the lease stops a push the last fetch missed.
-push_stack() {
-    local b
-    for b in "$@"; do
-        on_origin "${b}" || continue
-        if [[ "$(git rev-parse "${b}")" != "$(git rev-parse "origin/${b}")" ]] &&
-            git merge-base --is-ancestor "${b}" "origin/${b}"; then
-            fail 1 "${b} is behind origin/${b}: git switch ${b} && git pull"
-        fi
-    done
-    for b in "$@"; do
-        on_origin "${b}" || continue
-        [[ "$(git rev-parse "${b}")" != "$(git rev-parse "origin/${b}")" ]] || continue
-        git push --force-with-lease origin "${b}"
-    done
-}
-
-# GitHub only shows a stack once its PRs are linked; a parent-based PR alone
-# isn't one. Never fails the ship: stacks are a preview feature.
-link_stack() {
-    local out
-    if out="$(gh stack link --base "${BASE}" --remote origin "$@" 2>&1 </dev/null)"; then
-        [[ -z "${out}" ]] || echo "${out}" >&2
-        return
-    fi
-    if [[ "${out}" == *'unknown command "stack"'* ]]; then
-        echo 'GitHub stack not linked: gh extension install github/gh-stack, then git ship again' >&2
-    else
-        echo "GitHub stack not linked: ${out}" >&2
-    fi
-}
-
-require_open_parent() {
-    local parent="$1" state
-    git ls-remote --exit-code --heads origin "${parent}" >/dev/null ||
-        fail "${EXIT_USAGE}" "${parent} is not on origin: git ship it first"
-    state="$(gh pr view "${parent}" --json state -q .state 2>/dev/null || true)"
-    [[ "${state}" != MERGED ]] || fail "${EXIT_USAGE}" "${parent} already merged: run git done first"
-}
-
 repo_allows_auto_merge() {
     [[ "$(gh api 'repos/{owner}/{repo}' -q .allow_auto_merge 2>/dev/null)" != false ]]
 }
@@ -327,7 +206,7 @@ pr_body() {
 }
 
 cmd_ship() {
-    local arg branch parent since prefix state auto=1 run_done=1 ci=0 chain
+    local arg branch since prefix state auto=1 run_done=1 ci=0
     for arg in "$@"; do
         case "${arg}" in
         --no-auto) auto=0 ;;
@@ -337,31 +216,18 @@ cmd_ship() {
     done
     branch="$(git branch --show-current)"
     [[ "${branch}" != "${BASE}" ]] || fail "${EXIT_USAGE}" "on ${BASE}: run git start <topic> first"
-    parent="$(stack_parent "${branch}")"
     since="origin/${BASE}"
-    if [[ -n "${parent}" ]]; then
-        since="$(stack_fork "${branch}" "${parent}")"
-    fi
     prefix="$(git log --format=%s "${since}..HEAD" | top_prefix)"
     [[ -n "${prefix}" ]] || fail "${EXIT_USAGE}" "no conventional commit prefix in ${since}..HEAD"
-    [[ -z "${parent}" ]] || require_open_parent "${parent}"
     state="$(gh pr view --json state -q .state 2>/dev/null || true)"
     [[ "${state}" != MERGED ]] ||
         fail "${EXIT_USAGE}" "PR for ${branch} already merged: run git done, or git rescue <topic> to keep new commits"
-    chain=("${branch}")
-    [[ -z "${parent}" ]] || mapfile -t chain < <(stack_chain "${branch}")
-    push_stack "${chain[@]}"
     git push --force-with-lease -u origin HEAD
     if [[ "${state}" != OPEN ]]; then
         gh pr create \
-            --base "${parent:-${BASE}}" \
+            --base "${BASE}" \
             --title "${prefix}: $(tr '_-' '  ' <<<"${branch}")" \
             --body "$(pr_body "${since}")"
-    fi
-    if [[ -n "${parent}" ]]; then
-        link_stack "${chain[@]}"
-        echo "stacked PR: once ${parent} merges, run git done here" >&2
-        return
     fi
     if [[ "${auto}" == 0 ]] || ! gh pr merge --auto --squash --delete-branch; then
         echo 'auto-merge is off: after CI: gh pr merge --squash --delete-branch' >&2
@@ -372,33 +238,6 @@ cmd_ship() {
     print_check_links
     [[ "${ci}" == 0 ]] || exit "${ci}"
     [[ "${run_done}" == 0 ]] || done_after_merge
-}
-
-# Folds staged changes into the commits they fix, anywhere in the stack, then
-# pushes every branch that moved. Absorb's own --and-rebase opens an editor.
-cmd_fix() {
-    local branch fork before leftover chain
-    [[ $# -eq 0 ]] || fail "${EXIT_USAGE}" 'usage: git fix (stage the fix first)'
-    branch="$(git branch --show-current)"
-    [[ -n "${branch}" && "${branch}" != "${BASE}" ]] ||
-        fail "${EXIT_USAGE}" "on ${branch:-detached HEAD}: git fix works on a topic branch"
-    ! git diff --cached --quiet || fail "${EXIT_USAGE}" 'nothing staged: git add the fix, then git fix'
-    command -v git-absorb >/dev/null ||
-        fail 1 'git fix needs git-absorb: https://github.com/tummychow/git-absorb#installing'
-    git fetch origin "${BASE}"
-    fork="$(git merge-base HEAD "origin/${BASE}")"
-    before="$(git rev-parse HEAD)"
-    git absorb --no-limit --base "${fork}"
-    leftover="$(git diff --cached --name-only)"
-    if [[ "$(git rev-parse HEAD)" != "${before}" ]]; then
-        GIT_SEQUENCE_EDITOR=: git -c rebase.updateRefs=true \
-            rebase --interactive --autosquash --autostash "${fork}" ||
-            fail 1 'fix the conflicts, git rebase --continue, then git ship'
-    fi
-    [[ -z "${leftover}" ]] ||
-        fail 1 "no commit to fold these into, nothing pushed: commit them, then git ship"$'\n'"${leftover}"
-    mapfile -t chain < <(stack_chain "${branch}")
-    push_stack "${chain[@]}"
 }
 
 cmd_rescue() {
@@ -443,41 +282,8 @@ branch_from_base() {
     update_base && git switch -c "$1" "${BASE}"
 }
 
-# Config moves before the rebase, so a conflict leaves nothing to redo:
-# finish the rebase and push.
-restack() {
-    local branch="$1" parent="$2" fork onto
-    fork="$(stack_fork "${branch}" "${parent}")"
-    if [[ "$(gh pr view "${parent}" --json state -q .state 2>/dev/null || true)" == MERGED ]]; then
-        git fetch origin "${BASE}"
-        onto="origin/${BASE}"
-        git config --unset "branch.${branch}.stackParent"
-        git config --unset "branch.${branch}.stackBase"
-        if [[ "$(gh pr view --json state -q .state 2>/dev/null || true)" == OPEN ]]; then
-            gh pr edit --base "${BASE}"
-        fi
-    elif [[ "${fork}" == "${parent}" ]]; then
-        echo "${parent} not merged yet: nothing to do" >&2
-        return
-    else
-        onto="${parent}"
-        git config "branch.${branch}.stackBase" "$(git rev-parse "${parent}")"
-    fi
-    git rebase --autostash --onto "${onto}" "${fork}" ||
-        fail 1 'fix the conflicts, git rebase --continue, then git push --force-with-lease'
-    if git rev-parse --verify --quiet "refs/remotes/origin/${branch}" >/dev/null; then
-        git push --force-with-lease origin HEAD
-    fi
-}
-
 cmd_done() {
-    local branch parent dirty
-    branch="$(git branch --show-current)"
-    parent="$(stack_parent "${branch}")"
-    if [[ -n "${parent}" ]]; then
-        restack "${branch}" "${parent}"
-        return
-    fi
+    local dirty
     dirty="$(git status --porcelain)"
     with_carried_changes 'git done' sync_base
     [[ -z "${dirty}" ]] || echo "carried uncommitted changes to ${BASE}: git start <topic> to keep working" >&2
@@ -538,7 +344,6 @@ main() {
     -v | --version) echo "git_workflow ${VERSION}" ;;
     start) cmd_start "$@" ;;
     ship) cmd_ship "$@" ;;
-    fix) cmd_fix "$@" ;;
     rescue) cmd_rescue "$@" ;;
     done) cmd_done "$@" ;;
     purge) cmd_purge "$@" ;;
