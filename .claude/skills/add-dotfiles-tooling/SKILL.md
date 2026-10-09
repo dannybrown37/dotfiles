@@ -133,7 +133,7 @@ mytool() { command mytool "$@"; }  # @doc Brief description | mytool <usage>
   Run it before declaring a tool done.
 
 There is deliberately no install-script template. `install/` ranges from 3 lines
-(`extras/deno.sh`, a `curl | sh`) to 252 (`cli-tools.sh`), and the install method differs per tool —
+(`install/extras/deno.sh`, a `curl | sh`) to 252 (`cli-tools.sh`), and the install method differs per tool —
 apt, cargo, GitHub release, language version manager. Copy whichever existing script
 matches the method you need; `lazygit.sh` is the closest thing to a canonical
 GitHub-release example.

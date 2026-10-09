@@ -3,6 +3,13 @@ set -euo pipefail
 
 ## @just 74 Verification | Benchmark interactive shell startup time
 
+readonly VERSION="1.0.0"
+
+if [[ "${1:-}" == "--version" ]]; then
+    echo "bench-shell ${VERSION}"
+    exit 0
+fi
+
 readonly ITERATIONS="${1:-10}"
 readonly WARMUP=2
 readonly REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
