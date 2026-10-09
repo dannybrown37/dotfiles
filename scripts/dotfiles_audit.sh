@@ -2,7 +2,14 @@
 # shellcheck disable=SC1090,SC1091
 # Audits the state of all dotfiles system dependencies.
 # Read-only — does not install or modify anything.
-# Usage: ./scripts/dotfiles_audit.sh
+# Usage: ./scripts/dotfiles_audit.sh [--version]
+
+readonly VERSION="1.0.0"
+
+if [[ "${1:-}" == "--version" ]]; then
+    echo "dotfiles_audit ${VERSION}"
+    exit 0
+fi
 
 PASS="✅"
 FAIL="❌"

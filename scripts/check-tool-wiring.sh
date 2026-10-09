@@ -4,6 +4,7 @@
 ## Verify a tool is fully wired into this dotfiles repo.
 ##
 ## Usage: check-tool-wiring.sh <tool> [--apt-package <pkg>] [--no-stub]
+##        check-tool-wiring.sh --version
 ##
 ## --apt-package  when the apt package name differs (fd-find -> fd)
 ## --no-stub      for language runtimes and action-only just recipes that
@@ -19,6 +20,7 @@
 
 set -euo pipefail
 
+readonly VERSION="1.0.0"
 readonly EXIT_FAILED_CHECKS=1
 readonly EXIT_USAGE=2
 
@@ -53,6 +55,10 @@ require_stub=true
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+    --version)
+        echo "check-tool-wiring ${VERSION}"
+        exit 0
+        ;;
     --apt-package)
         [[ $# -ge 2 ]] || usage
         apt_package="$2"
