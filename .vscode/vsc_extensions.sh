@@ -94,7 +94,8 @@ list() {
 install() {
     local id
     for id in "$@"; do
-        if ! wanted | grep -qxF "${id}"; then
+        # A here-string, not a pipe: grep -q exits early and pipefail turns the writer's SIGPIPE into a miss
+        if ! grep -qxF "${id}" <<<"$(wanted)"; then
             echo "unknown extension: ${id}" >&2
             exit "${EXIT_USAGE}"
         fi
