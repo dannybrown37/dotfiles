@@ -52,6 +52,10 @@ from check_secret_exposure import (
         'git credential fill <<<"protocol=https"',
         'base64 config/.secrets',
         'cut -c1- config/.secrets',
+        'glow config/.secrets',
+        'glow -s dark -w 80 .env',
+        'tac .env',
+        'diff .env .env.example',
     ],
 )
 def test_detect_bash_risk_flags_dangerous_commands(command: str) -> None:

@@ -10,8 +10,13 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 - A bug fix always gets a regression test.
 - We'll be doing Human-in-the-Loop AI-assisted coding.
   - Unless specifically requested to build end to end, you should implement code in discrete, testable steps, then wait for human feedback before continuing.
+  - Exception: when I say go, point at a plan or `/handoff`, or say I'm stepping away, run the whole plan. Don't re-plan or pause for calls the plan already scoped; note them in the report.
+  - A question is not a go-ahead. Answer it; don't edit files or run state-changing commands.
   - When you write tests, provide commands to run them to the user.
   - You should not be adding, committing, or pushing code, the user will do that manually.
+- Before calling a UI change done, screenshot it (headless Chrome, mobile and desktop width) and look at the image. Say where on the page the change shows up.
+- Run commands yourself rather than asking me to run them or paste output (read `.env` without printing values). A command I'll rerun becomes a `just`/`npm run` recipe, not a pasted snippet. Exception: deploy keys, repo secrets and rulesets. Auto mode blocks these, so give me the exact `gh` commands.
+- Delegate mechanical, fully specified steps (a plan with the code already written) to a cheaper subagent (`model: sonnet` or `haiku`) with exact instructions and no research. Keep design and debugging on the main model.
 
 ## Communication Style
 
@@ -19,7 +24,8 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 - Very few to no comments in generated code unless explicitly requested. Comments should be "why", not "what". i.e., if a comment is needed to explain what the code does, the code should be rewritten to be more readable instead.
 - If multiple approaches exist, briefly state which and why to choose, then list alternatives.
 - Cite sources. Provide links to visualizations that can't be displayed in a TUI.
-- Always show the diff as you make changes to my code.
+- Always show the diff as you make changes to my code. Change files with Edit/Write, not `python3 -` or `sed -i` heredocs, which hide the diff.
+- When explaining a concept, show a short code example.
 
 ## Code Review
 
@@ -42,11 +48,16 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
 - Always use type hints for function parameters (all languages where available).
 - Write tests using `test.each` (JS/TS) or `pytest.mark.parametrize` (Python) for DRY reusable test code.
 - You have read-only access to git. Don't write with git unless permission is explicitly given.
+  - For a before/after comparison, never `git stash`, `checkout` or `reset` my working tree. Copy files to `/tmp` or use `git worktree add`.
+
+## Shell
+
+- Don't pipe test, build or lint output through `| tail` or `| head`. The cartoon PreToolUse hook only compresses bare commands, and the pipe hides the exit code.
 
 ## Documentation
 
 - When making architectural changes (API framework, storage backend, TUI restructure, major dependencies), update the relevant `SKILL.md` / `CLAUDE.md` / `README.md` to match. Look for outdated framework names, dependency lists, API signatures, and file structure.
-- When planning, make many diagrams to help reading humans understand program flow. These can be either mermaid or a full-on HTML-based plan document.
+- When planning, make many diagrams to help reading humans understand program flow. Use ASCII diagrams in plan files and terminal replies (Mermaid doesn't render there). Use Mermaid only where it renders: GitHub Markdown or a full-on HTML-based plan document.
 
 ## Security
 

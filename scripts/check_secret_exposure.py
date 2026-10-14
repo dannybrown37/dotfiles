@@ -50,6 +50,9 @@ FILE_READ_COMMANDS = {
     'awk',
     'base64',
     'cut',
+    'glow',
+    'tac',
+    'diff',
 }
 
 # `pass <entry>` is `pass show <entry>`, so allow only subcommands that never

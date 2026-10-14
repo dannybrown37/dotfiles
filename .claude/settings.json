@@ -1,4 +1,20 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(skill-tree repo-audit .)",
+      "Bash(git check-ignore *)",
+      "Bash(wslpath -w *)",
+      "Bash(zizmor .)",
+      "Bash(zizmor .github/workflows/)",
+      "Bash(glow -s dark -w 80 docs/*)",
+      "Bash(glow --version)",
+      "Bash(gh extension list)",
+      "Bash(just --list)",
+      "Bash(just --list --unsorted)",
+      "Bash(just --version)",
+      "Bash(actionlint)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
