@@ -8,7 +8,6 @@ repo). Only `dotfiles`-specific instructions belong here.
 Invoke the relevant skill before writing or debugging code in that language/domain:
 
 - **add-dotfiles-tooling** — Adding a new third-party dependency, tool, install script, or shell command to this repo. Invoke when performing one of those procedures.
-- **skill-tree:bash-style** — Invoke before writing Bash code
 - **skill-tree:python-style** — Invoke before writing Python code
 - **skill-tree:node-style** — Invoke before writing Node/TS/JS code
 
