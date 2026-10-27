@@ -35,3 +35,7 @@ Jason Hunter runthrough of seven strategies for counting things, accurately and 
 ## Advanced DynamoDB Data Modeling
 I was at this talk. Great overview going from basic to advanced data modeling.
 [Advanced DynamoDB Data Modeling by Alex DeBrie](https://www.youtube.com/watch?v=PGfyJX8eS48)
+
+## PII Redaction in Logs
+Discusses four strategies for handling PII in logs -- drop, hash, mask, redact.
+[Link](https://www.motadata.com/blog/pii-redaction-in-logs)
