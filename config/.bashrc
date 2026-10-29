@@ -172,7 +172,7 @@ export PATH
 
 ### Between-Enters Timer ###
 
-# This shows a cool grayed-out 1.234s timer after each entered command to show how long it took
+# This shows a cool grayed-out "1.234s  2026-01-31 14:03:12" after each entered command: how long it took, and when it started
 # Low-cost profiling built-in for every command, plus sanity checking how much time long-running commands *really* take
 # shellcheck disable=SC2016  # usage here is intentional, we want the literal string to be evaluated at runtime
 PS0='$(echo "$EPOCHREALTIME" > /tmp/_bt_$$)'
@@ -180,14 +180,18 @@ PS0='$(echo "$EPOCHREALTIME" > /tmp/_bt_$$)'
 _bt_pc_mark() { _bt_pc_start=$EPOCHREALTIME; }
 
 _bt_show() {
-    local now=$EPOCHREALTIME
+    local now=$EPOCHREALTIME start when
     local f="/tmp/_bt_$$"
     if [[ -f "$f" ]]; then
-        awk "BEGIN{printf \"  \033[2m%.3fs\033[0m\n\",($now-$(< "$f"))}"
+        start=$(< "$f")
         rm -f "$f"
     elif [[ -n "${_bt_pc_start:-}" ]]; then
-        awk "BEGIN{printf \"  \033[2m%.3fs\033[0m\n\",($now-${_bt_pc_start})}"
+        start=$_bt_pc_start
+    else
+        return
     fi
+    printf -v when '%(%F %T)T' "${start%.*}"
+    awk "BEGIN{printf \"  \033[2m%.3fs  %s\033[0m\n\",($now-$start),\"$when\"}"
 }
 
 [[ "${PROMPT_COMMAND[*]}" != *_bt_pc_mark* ]] && PROMPT_COMMAND=("_bt_pc_mark" "${PROMPT_COMMAND[@]}")
