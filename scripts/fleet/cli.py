@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fleet import VERSION, radar
+from fleet import VERSION, aws, jira, radar
 from fleet.agents import AGENT_KINDS, validate_agent_name
 from fleet.hooks_install import (
     CLAUDE_SETTINGS,
@@ -38,6 +38,12 @@ from fleet.ops import (
 from fleet.palette import by_urgency
 from fleet.procs import scan_agent_processes
 from fleet.store import AgentRecord, default_state_dir
+from fleet.work import (
+    WorkItems,
+    integration_status,
+    live_fetchers,
+    load_work_items,
+)
 
 USAGE_ERROR = 2
 COPILOT_HOOK_LINK = Path.home() / '.copilot' / 'hooks' / 'fleet.json'
@@ -109,7 +115,13 @@ def replay_command(
 
 def cmd_new(args: argparse.Namespace, extra_args: list[str]) -> int:
     prompted = False
+    key_picked_with_fzf = ''
     name = args.name
+    if args.jira is not None:
+        ticket = ticket_task(args.jira)
+        name = name or jira.agent_name_for(ticket)
+        args.prompt = args.prompt or jira.ticket_prompt(ticket)
+        key_picked_with_fzf = '' if args.jira else ticket.key
     if not name and not sys.stdin.isatty():
         usage = 'fleet new NAME -p "task"'
         print(f'fleet new: error: missing NAME ({usage})', file=sys.stderr)
@@ -142,6 +154,10 @@ def cmd_new(args: argparse.Namespace, extra_args: list[str]) -> int:
     )
     print(f'started {record.kind} agent {record.name!r} in {record.worktree}')
     print(f'  jump in: fleet attach {record.name}   dashboard: fleet')
+    if key_picked_with_fzf:
+        replay = ['fleet', 'new', name, '--jira', key_picked_with_fzf]
+        replay += ['-a', args.agent, '-C', str(repo_dir)]
+        print(f'Run again with:\n  {shlex.join(replay)}')
     if prompted:
         print('Run again with:')
         print(
@@ -317,6 +333,114 @@ def cmd_radar(args: argparse.Namespace) -> int:
     return 0
 
 
+def work_json(items: WorkItems, errors: list[str]) -> str:
+    return json.dumps(
+        {
+            'org_repos': [
+                {'repo': r.name_with_owner, 'url': r.url}
+                for r in items.org_repos
+            ],
+            'tickets': [
+                {
+                    'key': t.key,
+                    'summary': t.summary,
+                    'status': t.status,
+                    'url': t.url,
+                }
+                for t in items.tickets
+            ],
+            'alarms': [
+                {
+                    'profile': result.profile.label,
+                    'needs_login': result.needs_login,
+                    'alarms': [
+                        {
+                            'name': a.name,
+                            'reason': a.reason,
+                            'since': a.updated,
+                        }
+                        for a in result.alarms
+                    ],
+                }
+                for result in items.alarms
+            ],
+            'log_groups': [
+                {'profile': g.profile.label, 'group': g.name}
+                for g in items.log_groups
+            ],
+            'errors': errors,
+        },
+    )
+
+
+def print_work(items: WorkItems) -> None:
+    for result in items.alarms:
+        if result.needs_login:
+            command = shlex.join(aws.sso_login_command(result.profile))
+            print(f'🔑 {result.profile.label}: login expired, run: {command}')
+        for alarm in result.alarms:
+            print(f'🚨 {alarm.name} ({result.profile.label})  {alarm.reason}')
+        if not result.alarms and not result.needs_login and not result.error:
+            print(f'✓ {result.profile.label}: no alarms firing')
+    for ticket in items.tickets:
+        print(f'🎫 {ticket.key:<12} {ticket.status:<14} {ticket.summary[:60]}')
+    if items.org_repos:
+        print(f'🌐 {len(items.org_repos)} repos in the configured GitHub orgs')
+    for group in items.log_groups:
+        print(f'📜 {group.name} ({group.profile.label})')
+
+
+def cmd_work(args: argparse.Namespace) -> int:
+    if args.status:
+        print('\n'.join(integration_status(os.environ)))
+        return 0
+    items, errors = load_work_items(
+        os.environ,
+        default_state_dir(),
+        live_fetchers(),
+    )
+    if args.json:
+        print(work_json(items, errors))
+    else:
+        print_work(items)
+    for error in errors:
+        print(f'fleet: {error}', file=sys.stderr)
+    return 1 if errors else 0
+
+
+def pick_ticket(tickets: Sequence[jira.Ticket]) -> jira.Ticket:
+    if not tickets:
+        msg = 'no open Jira tickets assigned to you (see FLEET_JIRA_JQL)'
+        raise ValueError(msg)
+    if not sys.stdin.isatty() or shutil.which('fzf') is None:
+        keys = ', '.join(ticket.key for ticket in tickets)
+        msg = f'missing KEY for --jira; your tickets: {keys}'
+        raise ValueError(msg)
+    lines = [f'{t.key}\t{t.status}\t{t.summary}' for t in tickets]
+    picked = subprocess.run(
+        ['fzf', '--prompt', 'ticket> ', '--height', '40%', '--reverse'],  # noqa: S607
+        input='\n'.join(lines),
+        stdout=subprocess.PIPE,
+        text=True,
+        check=False,
+    ).stdout.partition('\t')[0]
+    for ticket in tickets:
+        if ticket.key == picked:
+            return ticket
+    msg = 'no ticket picked'
+    raise ValueError(msg)
+
+
+def ticket_task(key: str) -> jira.Ticket:
+    config = jira.jira_config()
+    if config is None:
+        msg = '--jira needs FLEET_JIRA_URL and a token (see docs/fleet.md)'
+        raise ValueError(msg)
+    if not key:
+        return pick_ticket(jira.fetch_assigned(config))
+    return jira.fetch_ticket(config, jira.validate_ticket_key(key))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog='fleet',
@@ -354,6 +478,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=default_agent_kind(),
     )
     new.add_argument('-p', '--prompt', help='first task for the agent')
+    new.add_argument(
+        '--jira',
+        nargs='?',
+        const='',
+        metavar='KEY',
+        help=(
+            'take the task from a Jira ticket; no KEY = pick from yours '
+            '(NAME defaults to the key plus its summary)'
+        ),
+    )
     new.add_argument(
         '-C',
         '--repo-dir',
@@ -434,6 +568,21 @@ def build_parser() -> argparse.ArgumentParser:
         help='reviewer CLI',
     )
     radar_parser.add_argument('--json', action='store_true')
+
+    work = sub.add_parser(
+        'work',
+        help='firing alarms, your Jira tickets and org repos',
+        description=(
+            'Fetch every configured work integration (FLEET_GITHUB_ORGS, '
+            'FLEET_JIRA_URL, FLEET_AWS_PROFILES). Exits 1 if any source fails.'
+        ),
+    )
+    work.add_argument(
+        '--status',
+        action='store_true',
+        help='show what is configured, without fetching',
+    )
+    work.add_argument('--json', action='store_true')
     return parser
 
 
@@ -456,6 +605,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         'send': cmd_send,
         'rm': cmd_rm,
         'radar': cmd_radar,
+        'work': cmd_work,
         'cockpit': cmd_cockpit,
         'hooks': cmd_hooks,
     }

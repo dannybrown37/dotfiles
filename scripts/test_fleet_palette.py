@@ -6,10 +6,14 @@ from pathlib import Path
 import pytest
 
 from fleet.agents import AgentState
+from fleet.aws import Alarm, AwsProfile, LogGroup, ProfileAlarms
+from fleet.github_org import OrgRepo
+from fleet.jira import Ticket
 from fleet.ops import DashboardRow
 from fleet.palette import (
     PaletteEntry,
     RankedReview,
+    cloned_remotes,
     find_local_clone,
     find_repos,
     palette_entries,
@@ -19,6 +23,7 @@ from fleet.palette import (
 )
 from fleet.radar import ChecksState, PullRequest, Score
 from fleet.store import AgentRecord
+from fleet.work import WorkItems
 
 
 def make_view(
@@ -250,3 +255,171 @@ def test_find_local_clone_matches_remote_forms(
 def test_find_local_clone_none_when_absent(tmp_path: Path) -> None:
     write_repo(tmp_path / 'x', 'git@github.com:acme/other.git')
     assert find_local_clone([tmp_path / 'x'], 'acme/api') is None
+
+
+# ---- work sources: GitHub org, Jira, AWS ------------------------------------
+
+PROD = AwsProfile('prod', 'us-east-1')
+
+
+def make_ticket(key: str) -> Ticket:
+    return Ticket(
+        key=key,
+        summary=f'do {key}',
+        status='To Do',
+        issue_type='Task',
+        priority='High',
+        url=f'https://tracker.example.test/browse/{key}',
+        description='',
+    )
+
+
+def test_org_repo_without_clone_offers_browser_and_remote_agent() -> None:
+    repo = OrgRepo('acme/api', 'https://github.com/acme/api')
+    entries = palette_entries(
+        [],
+        [],
+        [],
+        None,
+        work=WorkItems(org_repos=(repo,)),
+    )
+    assert ('open-url', 'https://github.com/acme/api') in actions(entries)
+    assert ('new-agent-remote', 'acme/api') in actions(entries)
+
+
+def test_org_repo_with_local_clone_uses_the_clone(tmp_path: Path) -> None:
+    clone = write_repo(tmp_path / 'api', 'git@github.com:acme/api.git')
+    repo = OrgRepo('acme/api', 'https://github.com/acme/api')
+    entries = palette_entries(
+        [],
+        [],
+        [clone],
+        None,
+        work=WorkItems(org_repos=(repo,)),
+        cloned_repos=cloned_remotes([clone]),
+    )
+    assert ('new-agent-remote', 'acme/api') not in actions(entries)
+    assert ('new-agent', str(clone)) in actions(entries)
+    assert ('open-url', 'https://github.com/acme/api') in actions(entries)
+
+
+def test_tickets_offer_browser_and_agent() -> None:
+    entries = palette_entries(
+        [],
+        [],
+        [],
+        None,
+        work=WorkItems(tickets=(make_ticket('ABC-1'),)),
+    )
+    labels = {e.label for e in entries}
+    assert '🎫 ABC-1 do ABC-1' in labels
+    assert (
+        'open-url',
+        'https://tracker.example.test/browse/ABC-1',
+    ) in actions(
+        entries,
+    )
+    assert ('jira-agent', 'ABC-1') in actions(entries)
+
+
+def test_firing_alarms_come_before_agents() -> None:
+    alarm = Alarm('api-5xx', 'Threshold Crossed', '', PROD)
+    entries = palette_entries(
+        [make_view('a', AgentState.WAITING)],
+        [],
+        [],
+        None,
+        work=WorkItems(
+            alarms=(
+                ProfileAlarms(PROD, (alarm,), needs_login=False, error=''),
+            ),
+        ),
+    )
+    assert entries[0].action == 'open-url'
+    assert entries[0].label == '🚨 api-5xx (prod@us-east-1)'
+    assert entries[0].target.startswith('https://us-east-1.console.aws')
+
+
+def test_expired_aws_login_offers_sso_login() -> None:
+    entries = palette_entries(
+        [],
+        [],
+        [],
+        None,
+        work=WorkItems(
+            alarms=(ProfileAlarms(PROD, (), needs_login=True, error=''),),
+        ),
+    )
+    login = next(e for e in entries if e.action == 'run')
+    assert login.command == ('aws', 'sso', 'login', '--profile', 'prod')
+    assert login.target == 'aws-login-prod'
+
+
+def test_log_groups_offer_tail_in_a_window() -> None:
+    entries = palette_entries(
+        [],
+        [],
+        [],
+        None,
+        work=WorkItems(log_groups=(LogGroup('/aws/lambda/api', PROD),)),
+    )
+    tail = next(e for e in entries if e.action == 'run')
+    assert tail.label == '📜 tail /aws/lambda/api (prod@us-east-1)'
+    assert tail.command[:3] == ('aws', 'logs', 'tail')
+    assert tail.target == 'logs-api'
+
+
+def test_cloned_remotes_lowercases_and_skips_repos_without_remote(
+    tmp_path: Path,
+) -> None:
+    clone = write_repo(tmp_path / 'api', 'git@github.com:Acme/API.git')
+    (tmp_path / 'bare' / '.git').mkdir(parents=True)
+    assert cloned_remotes([clone, tmp_path / 'bare']) == frozenset(
+        {'acme/api'},
+    )
+
+
+def test_palette_entries_reads_no_files(tmp_path: Path) -> None:
+    missing = tmp_path / 'not-there'
+    repo = OrgRepo('acme/api', 'https://github.com/acme/api')
+    entries = palette_entries(
+        [],
+        [],
+        [missing],
+        None,
+        work=WorkItems(org_repos=(repo,)),
+    )
+    assert ('new-agent-remote', 'acme/api') in actions(entries)
+
+
+def test_alarms_sorted_newest_first_across_profiles() -> None:
+    dev = AwsProfile('dev', 'eu-west-2')
+    old = Alarm('old', '', '2026-11-04T09:00:00+00:00', PROD)
+    new = Alarm('new', '', '2026-11-04T12:00:00+00:00', dev)
+    entries = palette_entries(
+        [],
+        [],
+        [],
+        None,
+        work=WorkItems(
+            alarms=(
+                ProfileAlarms(PROD, (old,), needs_login=False, error=''),
+                ProfileAlarms(dev, (new,), needs_login=False, error=''),
+            ),
+        ),
+    )
+    alarms = [e.label for e in entries if e.label.startswith('🚨')]
+    assert alarms == ['🚨 new (dev@eu-west-2)', '🚨 old (prod@us-east-1)']
+
+
+def test_log_group_with_region_gets_console_link() -> None:
+    entries = palette_entries(
+        [],
+        [],
+        [],
+        None,
+        work=WorkItems(log_groups=(LogGroup('/aws/lambda/api', PROD),)),
+    )
+    assert any(
+        e.action == 'open-url' and 'logsV2' in e.target for e in entries
+    )
