@@ -112,7 +112,8 @@ CHECKS_STYLE = {
     radar.ChecksState.PENDING: ('⟳', 'yellow'),
     radar.ChecksState.NONE: ('·', 'dim'),
 }
-DEEP_REVIEW_PROMPT = """\
+DEEP_REVIEW_PROMPT = (
+    """\
 Review pull request {url} locally. Check it out with `gh pr checkout {number}`,
 read the code around every change, and run the relevant tests.
 Do not push, comment, approve or post anything to GitHub: report your
@@ -124,6 +125,8 @@ is most relevant (include both when both help):
   https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<start>-L<end>
 Use commit SHAs, not branch names, so links stay valid.
 """
+    + radar.FEEDBACK_LADDER
+)
 
 
 @dataclass(frozen=True)
