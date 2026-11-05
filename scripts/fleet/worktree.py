@@ -76,8 +76,10 @@ def branch_exists(root: Path, branch: str) -> bool:
 
 def create_worktree(root: Path, branch: str, base: str) -> Path:
     path = worktree_path(root, branch)
+    if (path / '.git').exists():
+        return path
     if path.exists():
-        msg = f'worktree already exists: {path}'
+        msg = f'{path} exists but is not a git worktree'
         raise FileExistsError(msg)
     path.parent.mkdir(parents=True, exist_ok=True)
     if branch_exists(root, branch):
