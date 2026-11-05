@@ -45,7 +45,7 @@ counts them: `Agents (2/8)` means 2 of 8 are waiting on you.
 | `enter` | Jump into the session's tmux pane (`prefix F` comes back) |
 | `s` | Type a message into it (sent as one bracketed paste) |
 | `j` / `k`, `g` / `G`, `ctrl+d` / `ctrl+u` | Down / up, top / bottom, page down / up (vim keys; arrows work too) |
-| `h` / `l` | Agents tab / Reviews tab (same as `1` / `2`) |
+| `h` / `l` | Previous / next tab (`1` Agents, `2` Reviews, `3` My PRs) |
 | `d` / `L` | Diff (fleet agents: since branching; others: uncommitted) / lazygit |
 | `o` | Open its PR in the browser |
 | `n` | New agent |
@@ -123,6 +123,13 @@ with tools off (the diff is untrusted input), from an empty temp directory.
 Results are cached in `~/.local/state/fleet/reviews/`, keyed by head commit,
 so a PR is re-reviewed only when it changes. Nothing is posted to GitHub.
 
+## My PRs tab
+
+Your own open PRs (`gh search prs --author=@me`, drafts included, marked `✎`),
+scored and keyed the same as the Reviews tab. Pre-reviews here use a
+self-review prompt: what reviewers will flag, and what to fix before
+requesting review.
+
 ## Ctrl+P palette
 
 Fuzzy search over every action: jump/send/diff for each session, open or
@@ -189,7 +196,7 @@ fleet new --jira -C ~/projects/api           # pick one of your tickets with fzf
 | Variable | Default | Effect |
 |---|---|---|
 | `FLEET_DEFAULT_AGENT` | `claude` | Agent for `fleet new` and the `n` dialog |
-| `FLEET_REVIEW_AGENT` | default agent | CLI that writes pre-reviews |
+| `FLEET_REVIEW_AGENT` | `copilot` | CLI that writes pre-reviews |
 | `FLEET_REVIEW_MODEL` | CLI default | `--model` for pre-reviews |
 | `FLEET_PROJECTS_DIR` | `~/projects` | Where the palette and deep review look for repos |
 | `FLEET_SESSION` | `fleet` | tmux session for fleet's agents and the dashboard |

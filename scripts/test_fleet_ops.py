@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from fleet.agents import AgentState
+from fleet import ops
 from fleet.ops import (
     SpawnRequest,
     agent_views,
@@ -457,3 +458,11 @@ def test_kill_agent_refuses_dirty_worktree_without_force(
         kill_agent(store, tmux, record, remove_checkout=True, force=False)
     assert Path(record.worktree, 'wip.txt').exists()
     assert store.list_records() == [record]
+
+
+def test_review_agent_defaults_to_copilot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv('FLEET_REVIEW_AGENT', raising=False)
+    monkeypatch.setenv('FLEET_DEFAULT_AGENT', 'claude')
+    assert ops.review_agent_kind(None) == 'copilot'
