@@ -1,7 +1,9 @@
 """Headless tests for the fleet dashboard, driven through Textual's pilot."""
 
 import asyncio
+import dataclasses
 import subprocess
+import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -124,8 +126,8 @@ def test_agent_row_shows_gone_state_and_prompt(tmp_path: Path) -> None:
         assert table.row_count == 1
         assert 'gone' in cell_text(table, 0, 0)
         assert cell_text(table, 0, 2) == 'fix-x'
-        assert cell_text(table, 0, 4) == 'fix-x'
-        assert 'flaky' in cell_text(table, 0, 8)
+        assert cell_text(table, 0, 5) == 'fix-x'
+        assert 'flaky' in cell_text(table, 0, 9)
 
     run_with_pilot(app, scenario)
 
@@ -159,7 +161,7 @@ def test_session_fleet_did_not_start_is_listed_but_not_stoppable(
         assert cell_text(table, 0, 2) == 'web'
         assert 'waiting' in cell_text(table, 0, 0)
         assert cell_text(table, 0, 3) == 'terminal'
-        assert 'allow shell?' in cell_text(table, 0, 8)
+        assert 'allow shell?' in cell_text(table, 0, 9)
         await pilot.press('x')
         await pilot.pause()
         assert type(app.screen).__name__ == 'Screen'
@@ -622,5 +624,29 @@ def test_broken_browser_is_a_notification_not_a_crash(
             'could not open' in n.message
             for n in app._notifications  # noqa: SLF001
         )
+
+    run_with_pilot(app, scenario)
+
+
+@pytest.mark.parametrize(('ran_for', 'toasts'), [(31, True), (5, False)])
+def test_toasts_when_a_long_shell_command_beside_an_agent_finishes(
+    tmp_path: Path,
+    ran_for: int,
+    toasts: bool,  # noqa: FBT001
+) -> None:
+    app = make_app(tmp_path, [])
+
+    async def scenario(pilot: Pilot[int]) -> None:
+        [row] = app.rows
+        app.rows = [dataclasses.replace(row, shell='▶ npm')]  # noqa: S604
+        app.announce_finished_commands()
+        app.shell_runs = {row.key: ('▶ npm', time.time() - ran_for - 0.5)}
+        app.rows = [dataclasses.replace(row, shell='$ idle')]  # noqa: S604
+        app.announce_finished_commands()
+        await pilot.pause()
+        done = [n for n in app._notifications if n.title == 'command done']  # noqa: SLF001
+        assert bool(done) is toasts
+        if toasts:
+            assert 'npm finished after 31s' in done[0].message
 
     run_with_pilot(app, scenario)

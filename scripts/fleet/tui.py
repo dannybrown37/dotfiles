@@ -86,6 +86,8 @@ from fleet.worktree import (
 
 AGENT_REFRESH_SECONDS = 2.0
 PREVIEW_REFRESH_SECONDS = 1.0
+# A shell command beside an agent toasts when it ends, if it ran this long.
+LONG_COMMAND_SECONDS = 30
 SLOW_REFRESH_SECONDS = 30.0
 RADAR_REFRESH_SECONDS = 300.0
 WORK_REFRESH_SECONDS = 300.0
@@ -401,7 +403,12 @@ class FleetApp(App[int]):
     #preview, #reviews-preview, #mine-preview {
         height: 2fr; border-top: solid $accent;
     }
-    #preview { overflow-y: auto; }
+    #previews { height: 2fr; border-top: solid $accent; }
+    #previews #preview { height: 1fr; width: 1fr; border-top: none; }
+    #shell-preview {
+        width: 1fr; height: 1fr; border-left: solid $accent; display: none;
+    }
+    #preview, #shell-preview { overflow-y: auto; }
     #dialog {
         width: 80%; height: auto; max-height: 90%;
         padding: 1 2; border: thick $accent; background: $surface;
@@ -484,6 +491,8 @@ class FleetApp(App[int]):
         }
         self.reviewing: set[str] = set()
         self.last_states: dict[str, AgentState] = {}
+        # row key -> (shell status, when it started running)
+        self.shell_runs: dict[str, tuple[str, float]] = {}
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -494,7 +503,9 @@ class FleetApp(App[int]):
                     cursor_type='row',
                     zebra_stripes=True,
                 )
-                yield Static(id='preview')
+                with Horizontal(id='previews'):
+                    yield Static(id='preview')
+                    yield Static(id='shell-preview')
             for tab, label in REVIEW_TABS.items():
                 with TabPane(label, id=tab):
                     yield DataTable(
@@ -512,6 +523,7 @@ class FleetApp(App[int]):
             'Agent',
             'Name',
             'Where',
+            'Shell',
             'Branch',
             'Changes',
             'PR',
@@ -642,6 +654,10 @@ class FleetApp(App[int]):
                 row.kind,
                 Text(row.name, style='bold' if row.record else ''),
                 Text(row.where, style='dim' if not row.target else ''),
+                Text(
+                    row.shell or '-',
+                    style='yellow' if '▶' in row.shell else 'dim',
+                ),
                 self.branch_cell(row),
                 format_diff(self.diffstats.get(row.key)),
                 pr_cell,
@@ -668,12 +684,40 @@ class FleetApp(App[int]):
                 )
                 self.bell()
         self.last_states = {row.key: row.state for row in self.rows}
+        self.announce_finished_commands()
+
+    def announce_finished_commands(self) -> None:
+        now = time.time()
+        runs = {}
+        for row in self.rows:
+            before = self.shell_runs.get(row.key)
+            if '▶' in row.shell:
+                runs[row.key] = (
+                    before
+                    if before and before[0] == row.shell
+                    else (row.shell, now)
+                )
+            if before and before[0] != row.shell:
+                elapsed = now - before[1]
+                if elapsed >= LONG_COMMAND_SECONDS:
+                    command = before[0].replace('▶ ', '')
+                    self.notify(
+                        f'{row.name}: {command} finished after '
+                        f'{relative_age(elapsed)}',
+                        title='command done',
+                    )
+                    self.bell()
+        self.shell_runs = runs
 
     def refresh_preview(self) -> None:
         if self.active_tab() != 'agents':
             return
         row = self.selected_row()
         preview = self.query_one('#preview', Static)
+        shell = self.query_one('#shell-preview', Static)
+        shell.display = bool(row and row.shell_target)
+        if row and row.shell_target:
+            self.capture_preview(row.shell_target, shell.size.height, shell)
         if row is None:
             preview.update(
                 Text(
@@ -689,17 +733,17 @@ class FleetApp(App[int]):
                 ),
             )
         else:
-            self.capture_preview(row.target, preview.size.height)
+            self.capture_preview(row.target, preview.size.height, preview)
 
-    @work(thread=True, exclusive=True, group='preview')
-    def capture_preview(self, target: str, height: int) -> None:
+    @work(thread=True)
+    def capture_preview(self, target: str, height: int, view: Static) -> None:
         """Only as many lines as fit, so the newest output is what shows."""
         captured = self.tmux.capture(target, lines=max(height, 1))
         captured = '\n'.join(
             captured.rstrip('\n').splitlines()[-max(height, 1) :],
         )
         self.call_from_thread(
-            self.query_one('#preview', Static).update,
+            view.update,
             Text.from_ansi(captured),
         )
 

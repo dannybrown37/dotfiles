@@ -1,10 +1,11 @@
 """Fleet operations shared by the CLI and the TUI."""
 
+import dataclasses
 import os
 import subprocess
 import time
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,7 +15,10 @@ from fleet.agents import (
     launch_command,
     validate_agent_name,
 )
-from fleet.hooks_install import claude_hooks_installed
+from fleet.hooks_install import (
+    claude_hooks_installed,
+    copilot_hooks_installed,
+)
 from fleet.procs import AgentProcess, process_started_at
 from fleet.store import AgentRecord, LiveState, Store, default_state_dir
 from fleet.tmux import PaneInfo, Tmux
@@ -74,6 +78,49 @@ class DashboardRow:
     started_at: float
     where: str
     record: AgentRecord | None
+    shell: str = ''
+    shell_target: str = ''
+
+
+IDLE_SHELLS = frozenset({'bash', 'zsh', 'fish', 'sh', 'dash'})
+
+
+def sibling_panes(target: str, panes: Sequence[PaneInfo]) -> list[PaneInfo]:
+    """Live non-agent panes sharing a window with `target` (`%N` or `@N`)."""
+    own = next(
+        (p for p in panes if target in (p.pane_id, p.window_id)),
+        None,
+    )
+    if own is None:
+        return []
+    own_pane = target if target.startswith('%') else own.pane_id
+    return [
+        pane
+        for pane in panes
+        if pane.window_id == own.window_id
+        and pane.pane_id != own_pane
+        and not pane.dead
+        and pane.command not in AGENT_KINDS
+    ]
+
+
+def shell_status(siblings: Sequence[PaneInfo]) -> str:
+    """e.g. `$ idle` for a bare prompt, `▶ npm` while a script runs."""
+    return ', '.join(
+        '$ idle' if pane.command in IDLE_SHELLS else f'▶ {pane.command}'
+        for pane in siblings
+    )
+
+
+def with_shell(row: DashboardRow, panes: Sequence[PaneInfo]) -> DashboardRow:
+    siblings = sibling_panes(row.target, panes) if row.target else []
+    if not siblings:
+        return row
+    return dataclasses.replace(
+        row,
+        shell=shell_status(siblings),
+        shell_target=siblings[0].pane_id,
+    )
 
 
 def fleet_session() -> str:
@@ -212,7 +259,18 @@ def session_row(
     process: AgentProcess,
     live: LiveState | None,
     pane: PaneInfo | None,
+    *,
+    hooks_on: bool = False,
 ) -> DashboardRow:
+    # Copilot fires its first hook (sessionStart) only once the first prompt
+    # is sent, so with hooks on, no state means it sits at a fresh prompt.
+    state, message = (
+        (live.state, live.message)
+        if live
+        else (AgentState.IDLE, 'new session, no prompt yet')
+        if hooks_on
+        else (AgentState.UNKNOWN, '')
+    )
     if process.background:
         where = 'background'
     elif pane:
@@ -223,8 +281,8 @@ def session_row(
         key=f'pid:{process.pid}',
         kind=process.kind,
         name=Path(process.cwd).name,
-        state=live.state if live else AgentState.UNKNOWN,
-        message=live.message if live else '',
+        state=state,
+        message=message,
         cwd=Path(process.cwd),
         diff_base='HEAD',
         target=pane.pane_id if pane else '',
@@ -238,18 +296,32 @@ def dashboard_rows(
     store: Store,
     tmux: Tmux,
     processes: Sequence[AgentProcess],
+    hooks_on: Mapping[str, bool] | None = None,
 ) -> list[DashboardRow]:
+    if hooks_on is None:
+        hooks_on = {
+            'claude': claude_hooks_installed(),
+            'copilot': copilot_hooks_installed(),
+        }
     rows = [agent_row(view) for view in agent_views(store, tmux)]
-    panes_by_id = {pane.pane_id: pane for pane in tmux.all_panes()}
+    all_panes = tmux.all_panes()
+    panes_by_id = {pane.pane_id: pane for pane in all_panes}
     for process in processes:
         if process.fleet_agent:
             continue
         same_server = process.tmux_socket == tmux.socket_name
         pane = panes_by_id.get(process.tmux_pane) if same_server else None
         live = store.read_session(process.pid, process.start_time)
-        rows.append(session_row(process, live, pane))
+        rows.append(
+            session_row(
+                process,
+                live,
+                pane,
+                hooks_on=hooks_on.get(process.kind, False),
+            ),
+        )
     store.prune_sessions({(p.pid, p.start_time) for p in processes})
-    return rows
+    return [with_shell(row, all_panes) for row in rows]
 
 
 def kill_agent(
