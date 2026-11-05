@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "\"${FLEET_HOOK:-${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/fleet-hook.sh}\" copilot sessionStart",
+        "timeoutSec": 5
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "\"${FLEET_HOOK:-${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/fleet-hook.sh}\" copilot userPromptSubmitted",
+        "timeoutSec": 5
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "\"${FLEET_HOOK:-${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/fleet-hook.sh}\" copilot postToolUse",
+        "timeoutSec": 5
+      }
+    ],
+    "permissionRequest": [
+      {
+        "type": "command",
+        "bash": "\"${FLEET_HOOK:-${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/fleet-hook.sh}\" copilot permissionRequest",
+        "timeoutSec": 5
+      }
+    ],
+    "notification": [
+      {
+        "type": "command",
+        "bash": "\"${FLEET_HOOK:-${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/fleet-hook.sh}\" copilot notification",
+        "timeoutSec": 5
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "\"${FLEET_HOOK:-${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/fleet-hook.sh}\" copilot agentStop",
+        "timeoutSec": 5
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "bash": "\"${FLEET_HOOK:-${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/fleet-hook.sh}\" copilot errorOccurred",
+        "timeoutSec": 5
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "\"${FLEET_HOOK:-${DOTFILES_DIR:-$HOME/projects/dotfiles}/scripts/fleet-hook.sh}\" copilot sessionEnd",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}

@@ -29,6 +29,7 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux)
 - **Shell utilities** in `bin/` are **sourced** by `.bashrc`. They can call other functions and use dynamic shell state. No shebang needed.
 - **Standalone scripts** in `scripts/` are **non-sourced** executables. Use `#!/usr/bin/env bash` and `set -euo pipefail`.
 - **Config files** in `config/` are symlinked to `~` by `install/symlinks.sh` (run by `just bootstrap`). Edit them here, not in `~`.
+- **Fleet** (`scripts/fleet/`, a Python package run by `scripts/fleet.sh`) is the agent dashboard, launcher and review radar; see `docs/fleet.md`. Its hook (`scripts/fleet-hook.sh`) runs on every Claude/Copilot event, so `fleet/events.py`, `fleet/proclite.py` and `fleet/hook.py` must stay stdlib-only with no heavy imports (no `dataclasses`, `re`, `json` at import time). Textual is the repo's one runtime Python dependency (`pyproject.toml`).
 - **Secrets** are never committed. Use `password-store` (`pass`) and the `just secrets-save`/`secrets-load` recipes (see `docs/secrets.md`).
 
 ## Prek

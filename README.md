@@ -86,6 +86,8 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `faker` | Generate fake test data | faker name | `bin/stubs.sh` |
 | `fastfetch` | System info summary (neofetch successor) | fastfetch | `bin/stubs.sh` |
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
+| `fleet` | Alt+W - show/hide the always-warm fleet cockpit (agents, review radar, Ctrl+P palette) | `ahk/fleet.ahk` |
+| `fleet` | Parallel Claude/Copilot agents in worktrees + review radar (bare: dashboard) | fleet new NAME -p "task", fleet radar --review, fleet cockpit | `config/.bash_aliases` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |
@@ -205,6 +207,7 @@ Updated with `just bench-shell`:
 - [Handling Secrets](docs/secrets.md) — password-store sync, manifest format, new machine setup
 - [Multiple GitHub Accounts](docs/github-accounts.md) — identity routing, credential helpers, `gitdoctor`
 - [Git Workflow](docs/git-workflow.md) — branch, PR, auto-merge on green CI (`gitwf` to view)
+- [Fleet](docs/fleet.md) — dashboard for every Claude/Copilot session, agents in worktrees, local PR review radar (`fleet`, Alt+W)
 
 ## Initial Windows Setup Notes
 
