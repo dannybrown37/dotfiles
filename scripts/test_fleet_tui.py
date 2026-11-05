@@ -52,8 +52,10 @@ def make_app(
     tmp_path: Path,
     prs: list[PullRequest],
     processes: list[AgentProcess] | None = None,
+    *,
     work_env: dict[str, str] | None = None,
     work_fetchers: Fetchers | None = None,
+    my_prs: list[PullRequest] | None = None,
 ) -> FleetApp:
     store = Store(tmp_path / 'state')
     store.save(
@@ -74,6 +76,7 @@ def make_app(
         store,
         tmux,
         fetch_prs=lambda: prs,
+        fetch_my_prs=lambda: my_prs or [],
         projects=tmp_path,
         scan_processes=lambda: processes or [],
         work_fetchers=work_fetchers,
@@ -192,8 +195,38 @@ def test_cached_review_shows_in_preview(tmp_path: Path) -> None:
         await pilot.pause()
         table = app.query_one('#reviews-table', DataTable)
         assert 'rewrites billing' in cell_text(table, 0, 4)
-        markdown = app.query_one('#review-preview', Markdown)
+        markdown = app.query_one('#reviews-preview', Markdown)
         assert 'copilot' in markdown.source
+
+    run_with_pilot(app, scenario)
+
+
+def test_my_prs_tab_lists_own_prs_and_self_reviews(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mine = make_pr(9, ('src/a.py',))
+    app = make_app(tmp_path, [make_pr(1, ('README.md',))], my_prs=[mine])
+    calls: list[bool] = []
+
+    def fake_review(*_args: object, own: bool = False) -> Review:
+        calls.append(own)
+        return Review(text='RISK: low\nSUMMARY: tidy', agent='copilot')
+
+    monkeypatch.setattr('fleet.tui.radar.run_review', fake_review)
+
+    async def scenario(pilot: Pilot[int]) -> None:
+        await pilot.press('3')
+        await pilot.pause()
+        table = app.query_one('#mine-table', DataTable)
+        assert table.row_count == 1
+        assert cell_text(table, 0, 2) == 'acme/api#9'
+        assert app.check_action('review', ()) is True
+        await pilot.press('r')
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+        assert calls == [True]
+        assert 'tidy' in cell_text(table, 0, 4)
 
     run_with_pilot(app, scenario)
 
@@ -244,7 +277,8 @@ def test_vim_keys_move_the_review_cursor(
     ('keys', 'expected_tab'),
     [
         (('l',), 'reviews'),
-        (('l', 'l'), 'reviews'),
+        (('l', 'l'), 'mine'),
+        (('l', 'l', 'l'), 'mine'),
         (('l', 'h'), 'agents'),
         (('h',), 'agents'),
     ],

@@ -84,6 +84,7 @@ SLOW_REFRESH_SECONDS = 30.0
 RADAR_REFRESH_SECONDS = 300.0
 WORK_REFRESH_SECONDS = 300.0
 HIGH_SCORE = 60
+REVIEW_TABS = {'reviews': 'Reviews', 'mine': 'My PRs'}
 CLONE_TIMEOUT_SECONDS = 600
 NEEDS_YOU = frozenset(
     {AgentState.WAITING, AgentState.IDLE, AgentState.ERROR, AgentState.EXITED},
@@ -394,8 +395,10 @@ class FleetApp(App[int]):
     # Fleet's actions only: Textual's built-ins crowd them out.
     COMMANDS: ClassVar = {FleetCommands}
     CSS = """
-    #agents-table, #reviews-table { height: 1fr; }
-    #preview, #review-preview { height: 2fr; border-top: solid $accent; }
+    #agents-table, #reviews-table, #mine-table { height: 1fr; }
+    #preview, #reviews-preview, #mine-preview {
+        height: 2fr; border-top: solid $accent;
+    }
     #preview { overflow-y: auto; }
     #dialog {
         width: 80%; height: auto; max-height: 90%;
@@ -407,8 +410,9 @@ class FleetApp(App[int]):
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding('1', 'tab("agents")', 'Agents', show=False),
         Binding('2', 'tab("reviews")', 'Reviews', show=False),
-        Binding('h', 'tab("agents")', 'Agents', show=False),
-        Binding('l', 'tab("reviews")', 'Reviews', show=False),
+        Binding('3', 'tab("mine")', 'My PRs', show=False),
+        Binding('h', 'step_tab(-1)', 'Previous tab', show=False),
+        Binding('l', 'step_tab(1)', 'Next tab', show=False),
         Binding('j', 'table("cursor_down")', 'Down', show=False),
         Binding('k', 'table("cursor_up")', 'Up', show=False),
         Binding('g', 'table("scroll_top")', 'Top', show=False),
@@ -447,6 +451,10 @@ class FleetApp(App[int]):
             list[AgentProcess],
         ] = scan_agent_processes,
         *,
+        fetch_my_prs: Callable[
+            [],
+            list[radar.PullRequest],
+        ] = radar.fetch_my_prs,
         work_fetchers: Fetchers | None = None,
         work_env: Mapping[str, str] = os.environ,
     ) -> None:
@@ -454,6 +462,7 @@ class FleetApp(App[int]):
         self.store = store
         self.tmux = tmux
         self.fetch_prs = fetch_prs
+        self.fetch_my_prs = fetch_my_prs
         self.scan_processes = scan_processes
         self.work_fetchers = work_fetchers or live_fetchers()
         self.work_env = work_env
@@ -464,8 +473,12 @@ class FleetApp(App[int]):
         self.rows: list[DashboardRow] = []
         self.diffstats: dict[str, DiffStat | None] = {}
         self.agent_prs: dict[str, AgentPr | None] = {}
-        self.prs: list[radar.PullRequest] = []
-        self.ranked: list[RankedReview] = []
+        self.prs: dict[str, list[radar.PullRequest]] = {
+            tab: [] for tab in REVIEW_TABS
+        }
+        self.ranked_by: dict[str, list[RankedReview]] = {
+            tab: [] for tab in REVIEW_TABS
+        }
         self.reviewing: set[str] = set()
         self.last_states: dict[str, AgentState] = {}
 
@@ -479,13 +492,14 @@ class FleetApp(App[int]):
                     zebra_stripes=True,
                 )
                 yield Static(id='preview')
-            with TabPane('Reviews', id='reviews'):
-                yield DataTable(
-                    id='reviews-table',
-                    cursor_type='row',
-                    zebra_stripes=True,
-                )
-                yield Markdown(id='review-preview')
+            for tab, label in REVIEW_TABS.items():
+                with TabPane(label, id=tab):
+                    yield DataTable(
+                        id=f'{tab}-table',
+                        cursor_type='row',
+                        zebra_stripes=True,
+                    )
+                    yield Markdown(id=f'{tab}-preview')
         yield Footer()
 
     def on_mount(self) -> None:
@@ -500,8 +514,14 @@ class FleetApp(App[int]):
             'Age',
             'Note',
         )
-        reviews = self.query_one('#reviews-table', DataTable)
-        reviews.add_columns('Score', '', 'PR', 'Title', 'Why')
+        for tab in REVIEW_TABS:
+            self.query_one(f'#{tab}-table', DataTable).add_columns(
+                'Score',
+                '',
+                'PR',
+                'Title',
+                'Why',
+            )
         self.refresh_agents()
         self.refresh_slow()
         self.refresh_radar()
@@ -525,7 +545,7 @@ class FleetApp(App[int]):
         if action in self.AGENT_ACTIONS:
             return self.active_tab() == 'agents'
         if action in self.REVIEW_ACTIONS:
-            return self.active_tab() == 'reviews'
+            return self.active_tab() in REVIEW_TABS
         return True
 
     @on(TabbedContent.TabActivated)
@@ -538,6 +558,19 @@ class FleetApp(App[int]):
     def action_tab(self, tab: str) -> None:
         self.query_one('#tabs', TabbedContent).active = tab
         self.active_table().focus()
+
+    def action_step_tab(self, step: int) -> None:
+        order = ['agents', *REVIEW_TABS]
+        index = order.index(self.active_tab()) + step
+        self.action_tab(order[max(0, min(len(order) - 1, index))])
+
+    @property
+    def ranked(self) -> list[RankedReview]:
+        return self.ranked_by['reviews']
+
+    def review_tab(self) -> str:
+        tab = self.active_tab()
+        return tab if tab in REVIEW_TABS else 'reviews'
 
     async def action_table(self, action: str) -> None:
         await self.run_action(action, self.active_table())
@@ -795,7 +828,7 @@ class FleetApp(App[int]):
             subprocess.run(['lazygit', '-p', str(row.cwd)], check=False)  # noqa: S603, S607
 
     def action_browser(self) -> None:
-        if self.active_tab() == 'reviews':
+        if self.active_tab() in REVIEW_TABS:
             review = self.selected_review()
             url = review.pr.url if review else ''
         else:
@@ -859,33 +892,46 @@ class FleetApp(App[int]):
 
     # ---- reviews ---------------------------------------------------------
 
-    def selected_review(self) -> RankedReview | None:
-        table = self.query_one('#reviews-table', DataTable)
+    def selected_review(self, tab: str = '') -> RankedReview | None:
+        tab = tab or self.review_tab()
+        table = self.query_one(f'#{tab}-table', DataTable)
         if table.row_count == 0 or table.cursor_row < 0:
             return None
         key = table.coordinate_to_cell_key(
             table.cursor_coordinate,
         ).row_key.value
-        return next((r for r in self.ranked if r.pr.url == key), None)
+        return next((r for r in self.ranked_by[tab] if r.pr.url == key), None)
 
-    @work(thread=True, exclusive=True, group='radar')
     def refresh_radar(self) -> None:
+        self.fetch_radar('reviews', self.fetch_prs)
+        self.fetch_radar('mine', self.fetch_my_prs)
+
+    @work(thread=True, group='radar')
+    def fetch_radar(
+        self,
+        tab: str,
+        fetch: Callable[[], list[radar.PullRequest]],
+    ) -> None:
         try:
-            prs = self.fetch_prs()
+            prs = fetch()
         except (subprocess.CalledProcessError, ValueError, OSError) as error:
             self.call_from_thread(
                 self.notify,
-                f'radar: {error}',
+                f'radar ({REVIEW_TABS[tab]}): {error}',
                 severity='error',
             )
             return
-        self.prs = prs
-        self.call_from_thread(self.rerank)
+        self.prs[tab] = prs
+        self.call_from_thread(self.render_reviews, tab)
 
     def rerank(self) -> None:
+        for tab in REVIEW_TABS:
+            self.render_reviews(tab)
+
+    def render_reviews(self, tab: str) -> None:
         now = datetime.now(UTC)
         ranked = []
-        for pr in self.prs:
+        for pr in self.prs[tab]:
             review = self.review_cache.get(pr)
             score = radar.score_pull_request(
                 pr,
@@ -893,11 +939,15 @@ class FleetApp(App[int]):
                 review.risk if review else '',
             )
             ranked.append(RankedReview(pr=pr, score=score, review=review))
-        self.ranked = sorted(ranked, key=lambda r: r.score.score, reverse=True)
-        table = self.query_one('#reviews-table', DataTable)
-        selected = self.selected_review()
+        selected = self.selected_review(tab)
+        self.ranked_by[tab] = sorted(
+            ranked,
+            key=lambda r: r.score.score,
+            reverse=True,
+        )
+        table = self.query_one(f'#{tab}-table', DataTable)
         table.clear()
-        for row in self.ranked:
+        for row in self.ranked_by[tab]:
             reviewing = row.pr.url in self.reviewing
             why = ', '.join(row.score.reasons)
             if reviewing:
@@ -909,26 +959,37 @@ class FleetApp(App[int]):
                     str(row.score.score),
                     style='bold' if row.score.score >= HIGH_SCORE else '',
                 ),
-                '⚡' if row.score.quick else '',
+                '✎' if row.pr.is_draft else '⚡' if row.score.quick else '',
                 f'{row.pr.repo}#{row.pr.number}',
                 row.pr.title[:60],
                 why[:120],
                 key=row.pr.url,
             )
         if selected:
-            urls = [r.pr.url for r in self.ranked]
+            urls = [r.pr.url for r in self.ranked_by[tab]]
             if selected.pr.url in urls:
                 table.move_cursor(row=urls.index(selected.pr.url))
         tabs = self.query_one('#tabs', TabbedContent)
-        tabs.get_tab('reviews').label = f'Reviews ({len(self.ranked)})'
-        self.show_review_preview()
+        tabs.get_tab(
+            tab,
+        ).label = f'{REVIEW_TABS[tab]} ({len(self.ranked_by[tab])})'
+        self.show_review_preview(tab)
 
-    @on(DataTable.RowHighlighted, '#reviews-table')
-    def show_review_preview(self) -> None:
-        row = self.selected_review()
-        preview = self.query_one('#review-preview', Markdown)
+    @on(DataTable.RowHighlighted, '#reviews-table, #mine-table')
+    def review_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        self.show_review_preview(
+            str(event.data_table.id).removesuffix('-table'),
+        )
+
+    def show_review_preview(self, tab: str) -> None:
+        row = self.selected_review(tab)
+        preview = self.query_one(f'#{tab}-preview', Markdown)
         if row is None:
-            preview.update('_No open review requests._')
+            preview.update(
+                '_No open review requests._'
+                if tab == 'reviews'
+                else '_You have no open PRs._',
+            )
         elif row.review:
             preview.update(
                 f'**{row.pr.title}** · {row.pr.author} · '
@@ -942,7 +1003,7 @@ class FleetApp(App[int]):
                 '(nothing is posted)._',
             )
 
-    @on(DataTable.RowSelected, '#reviews-table')
+    @on(DataTable.RowSelected, '#reviews-table, #mine-table')
     def open_selected_review(self) -> None:
         self.action_browser()
 
@@ -952,15 +1013,22 @@ class FleetApp(App[int]):
     def action_review(self) -> None:
         row = self.selected_review()
         if row:
-            self.run_reviews([row.pr])
+            self.run_reviews([row.pr], own=self.review_tab() == 'mine')
 
     def action_review_all(self) -> None:
+        tab = self.review_tab()
         self.run_reviews(
-            [pr for pr in self.prs if self.review_cache.get(pr) is None],
+            [pr for pr in self.prs[tab] if self.review_cache.get(pr) is None],
+            own=tab == 'mine',
         )
 
     @work(thread=True, group='reviews')
-    def run_reviews(self, prs: list[radar.PullRequest]) -> None:
+    def run_reviews(
+        self,
+        prs: list[radar.PullRequest],
+        *,
+        own: bool = False,
+    ) -> None:
         kind = self.review_kind()
         for pr in prs:
             if pr.url in self.reviewing:
@@ -973,6 +1041,7 @@ class FleetApp(App[int]):
                     kind,
                     agent_binary(kind),
                     os.environ.get('FLEET_REVIEW_MODEL', ''),
+                    own=own,
                 )
             except (
                 subprocess.CalledProcessError,

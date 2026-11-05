@@ -114,6 +114,16 @@ SUMMARY: <one line: what the change does and why>
 """
 
 
+SELF_REVIEW_PROMPT = REVIEW_PROMPT.replace(
+    'for a Staff engineer who will do the\nreal review.',
+    'that its author is about to send\nto reviewers. Find what they will'
+    ' flag.',
+).replace(
+    '## Questions for the author\n- <at most 3, only real ones>',
+    '## Before requesting review\n- <at most 3 fixes or PR-description gaps>',
+)
+
+
 class ChecksState(StrEnum):
     PASSING = 'passing'
     FAILING = 'failing'
@@ -336,9 +346,10 @@ def review_command(kind: str, *, binary: str, model: str) -> list[str]:
     raise ValueError(msg)
 
 
-def review_input(pr: PullRequest, diff: str) -> str:
+def review_input(pr: PullRequest, diff: str, *, own: bool = False) -> str:
+    prompt = SELF_REVIEW_PROMPT if own else REVIEW_PROMPT
     return (
-        f'{REVIEW_PROMPT}\n<pr>\nrepo: {pr.repo}\ntitle: {pr.title}\n'
+        f'{prompt}\n<pr>\nrepo: {pr.repo}\ntitle: {pr.title}\n'
         f'author: {pr.author}\nfiles:\n'
         + '\n'.join(f'  {path}' for path in pr.files)
         + f'\n\n{trim_diff(diff, MAX_DIFF_CHARS)}\n</pr>\n'
@@ -394,8 +405,28 @@ def fetch_review_requests() -> list[PullRequest]:
             '50',
         ),
     )
-    ready = [item for item in search if not item.get('isDraft')]
+    return with_details([item for item in search if not item.get('isDraft')])
 
+
+def fetch_my_prs() -> list[PullRequest]:
+    """Your own open PRs, drafts included: pre-review before asking anyone."""
+    return with_details(
+        json.loads(
+            gh(
+                'search',
+                'prs',
+                '--author=@me',
+                '--state=open',
+                '--json',
+                SEARCH_FIELDS,
+                '--limit',
+                '50',
+            ),
+        ),
+    )
+
+
+def with_details(items: list[dict[str, object]]) -> list[PullRequest]:
     def with_detail(item: dict[str, object]) -> PullRequest:
         detail = json.loads(
             gh('pr', 'view', str(item['url']), '--json', DETAIL_FIELDS),
@@ -403,16 +434,23 @@ def fetch_review_requests() -> list[PullRequest]:
         return parse_pull_request(item, detail)
 
     with ThreadPoolExecutor(max_workers=8) as pool:
-        return list(pool.map(with_detail, ready))
+        return list(pool.map(with_detail, items))
 
 
-def run_review(pr: PullRequest, kind: str, binary: str, model: str) -> Review:
+def run_review(
+    pr: PullRequest,
+    kind: str,
+    binary: str,
+    model: str,
+    *,
+    own: bool = False,
+) -> Review:
     diff = gh('pr', 'diff', pr.url)
     # An empty cwd keeps a reviewer that ignores --tools away from any repo.
     with tempfile.TemporaryDirectory(prefix='fleet-radar-') as empty_dir:
         result = subprocess.run(  # noqa: S603
             review_command(kind, binary=binary, model=model),
-            input=review_input(pr, diff),
+            input=review_input(pr, diff, own=own),
             capture_output=True,
             text=True,
             check=True,

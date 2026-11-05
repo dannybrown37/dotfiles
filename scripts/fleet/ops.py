@@ -88,8 +88,8 @@ def default_agent_kind() -> str:
 
 
 def review_agent_kind(requested: str | None) -> str:
-    kind = requested or os.environ.get('FLEET_REVIEW_AGENT', '')
-    return kind if kind in AGENT_KINDS else default_agent_kind()
+    kind = requested or os.environ.get('FLEET_REVIEW_AGENT', 'copilot')
+    return kind if kind in AGENT_KINDS else 'copilot'
 
 
 def resolve_state(
