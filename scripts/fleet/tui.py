@@ -125,6 +125,10 @@ is most relevant (include both when both help):
 - the base branch:
   https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<start>-L<end>
 Use commit SHAs, not branch names, so links stay valid.
+End with a recommendation on its own line: `RECOMMENDATION: approve` or
+`RECOMMENDATION: withhold approval`, followed by one line of reasoning.
+Withhold if there is any blocking (⛰ mountain or 🧗 boulder) finding or the
+tests fail.
 """
     + radar.FEEDBACK_LADDER
 )
@@ -820,6 +824,7 @@ class FleetApp(App[int]):
         prompt: str,
         *,
         split_here: bool = False,
+        extra_args: Sequence[str] = (),
     ) -> None:
         request = SpawnRequest(
             kind=kind,
@@ -827,7 +832,7 @@ class FleetApp(App[int]):
             repo_dir=repo_dir,
             base=base,
             prompt=prompt,
-            extra_args=[],
+            extra_args=list(extra_args),
             binary=agent_binary(kind),
             hook_path=str(HOOK_PATH),
             session=fleet_session(),
@@ -1161,15 +1166,19 @@ class FleetApp(App[int]):
             return
         owner, repo, number = parse_pr_url(url)
         prompt = DEEP_REVIEW_PROMPT.format(url=url, number=number)
+        kind = self.review_kind()
+        # Claude has no autopilot mode; it runs interactively.
+        extra_args = ['--autopilot'] if kind == 'copilot' else []
         self.with_clone(
             f'{owner}/{repo}',
             lambda clone: self.spawn(
-                self.review_kind(),
+                kind,
                 review_agent_name(url),
                 clone,
                 '',
                 prompt,
                 split_here=True,
+                extra_args=extra_args,
             ),
         )
 

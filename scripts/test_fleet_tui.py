@@ -4,7 +4,7 @@ import asyncio
 import dataclasses
 import subprocess
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -492,8 +492,10 @@ def test_deep_review_without_local_clone_clones_then_spawns(
         _prompt: str,
         *,
         split_here: bool = False,
+        extra_args: Sequence[str] = (),
     ) -> None:
         assert split_here
+        assert list(extra_args) == ['--autopilot']
         spawned.append((name, repo_dir))
 
     monkeypatch.setattr('fleet.tui.run_captured', fake_clone)
