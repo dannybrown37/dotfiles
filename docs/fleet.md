@@ -11,7 +11,7 @@ ranks the PRs waiting on you and pre-reviews them locally.
                                          │ Agents  │ Reviews  │  Ctrl+P      │
                                          ├─────────┴──────────┴──────────────┤
                                          │ every agent session + live state  │
-                                         │ live preview of the selected pane │
+                                         │ live preview: agent │ shell beside │
                                          └──────────────────────────────────┘
 ```
 
@@ -67,6 +67,13 @@ counts them: `Agents (2/8)` means 2 of 8 are waiting on you.
 
 - The hook runs on every agent event, so it imports only `os` and `sys`
   (about 38 ms). It is silent and always exits 0.
+- Other panes in an agent's tmux window (e.g. a bash split beside it) are
+  mirrored next to the agent's preview, and the Shell column shows `$ idle`
+  or `▶ <command>` while a script runs. A command that ran 30s or more
+  toasts (and rings the bell) when it finishes.
+- Copilot fires its first hook only after the first prompt, so with hooks
+  installed a session with no state yet shows `idle` ("new session, no
+  prompt yet").
 - A row with no tmux pane (a VS Code terminal, a Claude background session)
   still shows state and diff, but cannot be jumped to or typed into.
 - The pid file stores the process start time, so a reused pid never inherits

@@ -18,6 +18,7 @@ import pytest
 from fleet.agents import AgentState
 from fleet import ops
 from fleet.ops import (
+    DashboardRow,
     SpawnRequest,
     agent_views,
     dashboard_rows,
@@ -25,6 +26,7 @@ from fleet.ops import (
     kill_agent,
     resolve_state,
     spawn_agent,
+    with_shell,
 )
 from fleet.procs import AgentProcess
 from fleet.store import LiveState, Store
@@ -252,7 +254,9 @@ def test_dashboard_rows_include_sessions_fleet_did_not_start(
         discovered(13, background=True),
         discovered(14, fleet_agent='fix-x'),
     ]
-    rows = {row.key: row for row in dashboard_rows(store, tmux, procs)}
+    rows = {
+        row.key: row for row in dashboard_rows(store, tmux, procs, hooks_on={})
+    }
     assert set(rows) == {'pid:11', 'pid:12', 'pid:13'}
     in_tmux = rows['pid:11']
     assert (in_tmux.state, in_tmux.message) == (AgentState.WAITING, 'allow?')
@@ -266,6 +270,72 @@ def test_dashboard_rows_include_sessions_fleet_did_not_start(
     )
     assert rows['pid:12'].where == 'terminal'
     assert rows['pid:13'].where == 'background'
+
+
+@needs_tmux
+def test_unprompted_session_is_idle_when_hooks_are_on(
+    tmux: Tmux,
+    tmp_path: Path,
+) -> None:
+    procs = [discovered(12, cwd='/home/u/projects/web')]
+    store = Store(tmp_path / 'state')
+    [row] = dashboard_rows(store, tmux, procs, hooks_on={'claude': True})
+    assert (row.state, row.message) == (
+        AgentState.IDLE,
+        'new session, no prompt yet',
+    )
+
+
+@needs_tmux
+def test_dashboard_rows_mirror_the_shell_pane_beside_an_agent(
+    tmux: Tmux,
+    tmp_path: Path,
+) -> None:
+    window_id = tmux.new_window('mine', 'w', tmp_path, {}, ['sleep', '30'])
+    agent_pane = tmux.panes()[window_id].pane_id
+    shell_pane = tmux.split_pane(agent_pane, tmp_path, {}, ['bash'])
+    procs = [discovered(11, socket=tmux.socket_name, pane=agent_pane)]
+    [row] = dashboard_rows(Store(tmp_path / 'state'), tmux, procs)
+    assert row.shell_target == shell_pane
+    assert row.shell == '$ idle'
+
+
+def make_row(target: str) -> DashboardRow:
+    return DashboardRow(
+        key='pid:1',
+        kind='copilot',
+        name='x',
+        state=AgentState.IDLE,
+        message='',
+        cwd=Path('/x'),
+        diff_base='HEAD',
+        target=target,
+        started_at=1.0,
+        where='tmux s:w',
+        record=None,
+    )
+
+
+def test_with_shell_flags_a_running_script_and_skips_agent_panes() -> None:
+    def info(pane_id: str, command: str, window: str = '@1') -> PaneInfo:
+        return PaneInfo(
+            window,
+            'w',
+            pane_id,
+            dead=False,
+            session='s',
+            command=command,
+        )
+
+    panes = [
+        info('%1', 'copilot'),
+        info('%2', 'npm'),
+        info('%3', 'claude'),
+        info('%4', 'bash', window='@2'),
+    ]
+    row = with_shell(make_row('%1'), panes)
+    assert (row.shell, row.shell_target) == ('▶ npm', '%2')
+    assert with_shell(make_row('%4'), panes).shell == ''
 
 
 @needs_tmux

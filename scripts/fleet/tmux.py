@@ -14,6 +14,7 @@ PANE_FORMAT = '\t'.join(
         '#{pane_id}',
         '#{pane_dead}',
         '#{session_name}',
+        '#{pane_current_command}',
     ),
 )
 
@@ -25,6 +26,7 @@ class PaneInfo:
     pane_id: str
     dead: bool
     session: str
+    command: str = ''
 
 
 class Tmux:
@@ -149,10 +151,19 @@ class Tmux:
             return []
         panes = []
         for line in result.stdout.splitlines():
-            window_id, window_name, pane_id, dead, session = line.split('\t')
+            window_id, window_name, pane_id, dead, session, command = (
+                line.split('\t')
+            )
             is_dead = dead == '1'
             panes.append(
-                PaneInfo(window_id, window_name, pane_id, is_dead, session),
+                PaneInfo(
+                    window_id,
+                    window_name,
+                    pane_id,
+                    is_dead,
+                    session,
+                    command,
+                ),
             )
         return panes
 

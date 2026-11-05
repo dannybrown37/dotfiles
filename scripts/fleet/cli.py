@@ -192,6 +192,7 @@ def cmd_ls(args: argparse.Namespace) -> int:
                         'state': row.state.value,
                         'managed': row.record is not None,
                         'where': row.where,
+                        'shell': row.shell,
                         'cwd': str(row.cwd),
                         'message': row.message,
                     }
@@ -206,6 +207,7 @@ def cmd_ls(args: argparse.Namespace) -> int:
     for row in rows:
         columns = (
             f'{row.state.value:8} {row.kind:8} {row.name:24} {row.where:24}'
+            f' {row.shell or "-":12}'
         )
         print(f'{columns} {row.cwd}')
     if not (claude_hooks_installed() or copilot_hooks_installed()):
