@@ -276,8 +276,12 @@ def cmd_rm(args: argparse.Namespace) -> int:
         default_tmux(),
         record,
         remove_checkout=args.worktree,
+        remove_branch=args.branch,
         force=args.force,
     )
+    if args.branch:
+        print(f'removed agent {record.name!r}, its worktree and branch')
+        return 0
     kept = '' if args.worktree else f' (worktree kept: {record.worktree})'
     print(
         f'removed agent {record.name!r}; branch {record.branch!r} kept{kept}',
@@ -546,7 +550,7 @@ def build_parser() -> argparse.ArgumentParser:
     send.add_argument('name', nargs='?', metavar='NAME')
     send.add_argument('text', nargs='*', metavar='TEXT')
 
-    rm = sub.add_parser('rm', help='stop an agent (branch is always kept)')
+    rm = sub.add_parser('rm', help='stop an agent')
     rm.add_argument('name', nargs='?', metavar='NAME')
     rm.add_argument(
         '--worktree',
@@ -554,9 +558,14 @@ def build_parser() -> argparse.ArgumentParser:
         help='also remove its worktree',
     )
     rm.add_argument(
+        '--branch',
+        action='store_true',
+        help='also remove its worktree and delete its branch',
+    )
+    rm.add_argument(
         '--force',
         action='store_true',
-        help='remove even with uncommitted changes',
+        help='remove even with uncommitted or unpushed changes',
     )
 
     hooks = sub.add_parser(

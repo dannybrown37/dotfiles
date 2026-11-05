@@ -25,10 +25,12 @@ from fleet.tmux import PaneInfo, Tmux
 from fleet.trust import answer_trust_dialog, source_is_trusted
 from fleet.worktree import (
     create_worktree,
+    delete_branch,
     git,
     is_dirty,
     remove_worktree,
     repo_root,
+    unpushed_commits,
 )
 
 DEFAULT_SESSION = 'fleet'
@@ -331,8 +333,11 @@ def kill_agent(
     *,
     remove_checkout: bool,
     force: bool,
+    remove_branch: bool = False,
 ) -> None:
     worktree = Path(record.worktree)
+    repo = Path(record.repo)
+    remove_checkout = remove_checkout or remove_branch
     if (
         remove_checkout
         and worktree.is_dir()
@@ -344,9 +349,17 @@ def kill_agent(
             '--force to discard them'
         )
         raise ValueError(msg)
+    if remove_branch and not force and unpushed_commits(repo, record.branch):
+        msg = (
+            f'branch {record.branch} has unpushed commits; push them or '
+            'pass --force to discard them'
+        )
+        raise ValueError(msg)
     tmux.kill_window(record.window_id)
     if remove_checkout and worktree.is_dir():
-        remove_worktree(Path(record.repo), worktree, force=force)
+        remove_worktree(repo, worktree, force=force)
+    if remove_branch:
+        delete_branch(repo, record.branch)
     store.delete(record.name)
 
 

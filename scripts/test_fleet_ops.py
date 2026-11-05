@@ -31,6 +31,7 @@ from fleet.ops import (
 from fleet.procs import AgentProcess
 from fleet.store import LiveState, Store
 from fleet.tmux import PaneInfo, Tmux
+from fleet.worktree import branch_exists, git
 
 HOOK = Path(__file__).parent / 'fleet-hook.sh'
 GIT_ENV = {
@@ -556,6 +557,58 @@ def test_kill_agent_refuses_dirty_worktree_without_force(
         kill_agent(store, tmux, record, remove_checkout=True, force=False)
     assert Path(record.worktree, 'wip.txt').exists()
     assert store.list_records() == [record]
+
+
+@needs_tmux
+def test_kill_agent_removes_worktree_and_branch(
+    tmux: Tmux,
+    repo: Path,
+    fake_agent: Path,  # noqa: ARG001
+    tmp_path: Path,
+) -> None:
+    store = Store(tmp_path / 'state')
+    record = spawn_agent(store, tmux, make_request(repo, tmp_path))
+    kill_agent(
+        store,
+        tmux,
+        record,
+        remove_checkout=True,
+        remove_branch=True,
+        force=False,
+    )
+    assert not Path(record.worktree).exists()
+    assert not branch_exists(repo, record.branch)
+
+
+@needs_tmux
+def test_kill_agent_refuses_unpushed_branch_without_force(
+    tmux: Tmux,
+    repo: Path,
+    fake_agent: Path,  # noqa: ARG001
+    tmp_path: Path,
+) -> None:
+    store = Store(tmp_path / 'state')
+    record = spawn_agent(store, tmux, make_request(repo, tmp_path))
+    git(Path(record.worktree), 'commit', '--allow-empty', '-m', 'local only')
+    with pytest.raises(ValueError, match='unpushed'):
+        kill_agent(
+            store,
+            tmux,
+            record,
+            remove_checkout=True,
+            remove_branch=True,
+            force=False,
+        )
+    assert branch_exists(repo, record.branch)
+    kill_agent(
+        store,
+        tmux,
+        record,
+        remove_checkout=True,
+        remove_branch=True,
+        force=True,
+    )
+    assert not branch_exists(repo, record.branch)
 
 
 def test_review_agent_defaults_to_copilot(

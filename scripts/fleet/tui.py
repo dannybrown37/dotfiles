@@ -82,6 +82,7 @@ from fleet.worktree import (
     diff_stat,
     git,
     is_dirty,
+    unpushed_commits,
 )
 
 AGENT_REFRESH_SECONDS = 2.0
@@ -124,6 +125,10 @@ is most relevant (include both when both help):
 - the base branch:
   https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<start>-L<end>
 Use commit SHAs, not branch names, so links stay valid.
+End with a recommendation on its own line: `RECOMMENDATION: approve` or
+`RECOMMENDATION: withhold approval`, followed by one line of reasoning.
+Withhold if there is any blocking (⛰ mountain or 🧗 boulder) finding or the
+tests fail.
 """
     + radar.FEEDBACK_LADDER
 )
@@ -442,8 +447,8 @@ class FleetApp(App[int]):
         Binding('d', 'diff', 'Diff'),
         Binding('L', 'lazygit', 'Lazygit'),
         Binding('o', 'browser', 'Browser'),
-        Binding('x', 'stop', 'Stop'),
-        Binding('X', 'stop_and_remove', 'Stop+rm'),
+        Binding('x', 'stop', 'Delete'),
+        Binding('X', 'stop_and_keep', 'Stop only'),
         Binding('r', 'review', 'Pre-review'),
         Binding('R', 'review_all', 'Review all'),
         Binding('a', 'deep_review', 'Agent review'),
@@ -451,7 +456,7 @@ class FleetApp(App[int]):
         Binding('q', 'quit', 'Quit'),
     ]
     AGENT_ACTIONS = frozenset(
-        {'send', 'diff', 'lazygit', 'stop', 'stop_and_remove'},
+        {'send', 'diff', 'lazygit', 'stop', 'stop_and_keep'},
     )
     REVIEW_ACTIONS = frozenset({'review', 'review_all', 'deep_review'})
 
@@ -819,6 +824,7 @@ class FleetApp(App[int]):
         prompt: str,
         *,
         split_here: bool = False,
+        extra_args: Sequence[str] = (),
     ) -> None:
         request = SpawnRequest(
             kind=kind,
@@ -826,7 +832,7 @@ class FleetApp(App[int]):
             repo_dir=repo_dir,
             base=base,
             prompt=prompt,
-            extra_args=[],
+            extra_args=list(extra_args),
             binary=agent_binary(kind),
             hook_path=str(HOOK_PATH),
             session=fleet_session(),
@@ -913,12 +919,12 @@ class FleetApp(App[int]):
         open_in_browser(url)
 
     def action_stop(self, key: str = '') -> None:
-        self.confirm_stop(key, remove_checkout=False)
+        self.confirm_stop(key, cleanup=True)
 
-    def action_stop_and_remove(self) -> None:
-        self.confirm_stop('', remove_checkout=True)
+    def action_stop_and_keep(self) -> None:
+        self.confirm_stop('', cleanup=False)
 
-    def confirm_stop(self, key: str, *, remove_checkout: bool) -> None:
+    def confirm_stop(self, key: str, *, cleanup: bool) -> None:
         row = self.pick_row(key)
         if row is None:
             return
@@ -929,15 +935,30 @@ class FleetApp(App[int]):
                 severity='warning',
             )
             return
-        question = f'Stop {record.name}? Branch {record.branch} is kept.'
+        question = (
+            f'Stop {record.name}? '
+            f'Worktree and branch {record.branch} are kept.'
+        )
         force = False
-        if remove_checkout:
-            dirty = Path(record.worktree).is_dir() and is_dirty(
-                Path(record.worktree),
+        if cleanup:
+            worktree = Path(record.worktree)
+            question = (
+                f'Delete {record.name}?\n'
+                f'Removes worktree {record.worktree}\n'
+                f'and branch {record.branch}.'
             )
-            question = f'Stop {record.name} and delete {record.worktree}?'
-            if dirty:
+            if worktree.is_dir() and is_dirty(worktree):
                 question += '\n[bold red]UNCOMMITTED changes will be lost.[/]'
+                force = True
+            try:
+                unpushed = unpushed_commits(Path(record.repo), record.branch)
+            except subprocess.CalledProcessError:
+                unpushed = 0
+            if unpushed:
+                question += (
+                    f'\n[bold red]{unpushed} UNPUSHED commit(s)'
+                    ' will be lost.[/]'
+                )
                 force = True
 
         def answer(yes: bool | None) -> None:  # noqa: FBT001  Textual callback
@@ -948,7 +969,8 @@ class FleetApp(App[int]):
                     self.store,
                     self.tmux,
                     record,
-                    remove_checkout=remove_checkout,
+                    remove_checkout=cleanup,
+                    remove_branch=cleanup,
                     force=force,
                 )
             except (ValueError, subprocess.CalledProcessError) as error:
@@ -957,7 +979,8 @@ class FleetApp(App[int]):
                     severity='error',
                 )
                 return
-            self.notify(f'stopped {record.name}')
+            verb = 'deleted' if cleanup else 'stopped'
+            self.notify(f'{verb} {record.name}')
             self.refresh_agents()
 
         self.push_screen(ConfirmScreen(question), answer)
@@ -1143,15 +1166,19 @@ class FleetApp(App[int]):
             return
         owner, repo, number = parse_pr_url(url)
         prompt = DEEP_REVIEW_PROMPT.format(url=url, number=number)
+        kind = self.review_kind()
+        # Claude has no autopilot mode; it runs interactively.
+        extra_args = ['--autopilot'] if kind == 'copilot' else []
         self.with_clone(
             f'{owner}/{repo}',
             lambda clone: self.spawn(
-                self.review_kind(),
+                kind,
                 review_agent_name(url),
                 clone,
                 '',
                 prompt,
                 split_here=True,
+                extra_args=extra_args,
             ),
         )
 
