@@ -9,6 +9,7 @@ SetTitleMatchMode(2)
 #Include %A_ScriptDir%\lib\text.ahk
 #Include %A_ScriptDir%\app_toggle.ahk
 #Include %A_ScriptDir%\quick_run.ahk
+#Include %A_ScriptDir%\fleet.ahk
 #Include %A_ScriptDir%\selection.ahk
 #Include %A_ScriptDir%\chrome.ahk
 #Include %A_ScriptDir%\hotstrings.ahk

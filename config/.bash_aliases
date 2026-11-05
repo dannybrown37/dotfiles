@@ -23,6 +23,7 @@ alias praf='prek run --all-files'
 alias lg='lazygit'  # @doc Open lazygit TUI
 alias gitdoctor='~/projects/dotfiles/scripts/git_auth_doctor.sh'  # @doc Diagnose why a GitHub push is refused (HTTPS chain or SSH): gitdoctor [repo-dir]
 
+alias fleet='"${DOTFILES_DIR}/scripts/fleet.sh"'  # @doc Parallel Claude/Copilot agents in worktrees + review radar (bare: dashboard) | fleet new NAME -p "task", fleet radar --review, fleet cockpit
 alias screenshot='~/projects/dotfiles/scripts/screenshot.sh'  # @doc Take a Windows screenshot from WSL, or find existing ones: screenshot, screenshot open, screenshot latest, screenshot pick, screenshot move [dest]
 mystats() { # @doc Top commands I typed, excluding Claude Code's atuin entries | mystats [count]
     atuin history list --format "{author}\t{command}" \

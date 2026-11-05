@@ -44,6 +44,8 @@ if [[ -f "${dotfiles}/config/.gitconfig-private" ]]; then
 fi
 
 link_config "${dotfiles}/config/CLAUDE.md" "${HOME}/.claude/CLAUDE.md" || ((failures++))
+link_config "${dotfiles}/config/copilot/hooks/fleet.json" \
+    "${HOME}/.copilot/hooks/fleet.json" || ((failures++))
 link_config "${dotfiles}/nvim" "${HOME}/.config/nvim" || ((failures++))
 link_config "${dotfiles}/config/starship.toml" \
     "${HOME}/.config/starship.toml" || ((failures++))
