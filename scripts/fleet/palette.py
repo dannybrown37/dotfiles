@@ -1,13 +1,25 @@
 """What the Ctrl+P palette offers, as plain data the TUI turns into hits."""
 
 import re
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from fleet.agents import AgentState
+from fleet.aws import (
+    LogGroup,
+    ProfileAlarms,
+    alarm_console_url,
+    log_group_console_url,
+    updated_at,
+    log_tail_command,
+    sso_login_command,
+)
+from fleet.github_org import OrgRepo
+from fleet.jira import Ticket
 from fleet.ops import DashboardRow
 from fleet.radar import PullRequest, Review, Score
+from fleet.work import WorkItems
 
 PR_URL = re.compile(r'https://github\.com/([\w.-]+)/([\w.-]+)/pull/(\d+)')
 REMOTE_URL = re.compile(r'^\s*url\s*=\s*(\S+)', re.MULTILINE)
@@ -31,6 +43,7 @@ class PaletteEntry:
     help: str
     action: str
     target: str = ''
+    command: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -90,6 +103,13 @@ def find_local_clone(repos: Sequence[Path], repo: str) -> Path | None:
         if found and found.lower() == wanted:
             return clone
     return None
+
+
+def cloned_remotes(repos: Sequence[Path]) -> frozenset[str]:
+    """owner/repo (lowercased) of each local clone; reads .git/config."""
+    return frozenset(
+        found.lower() for clone in repos if (found := remote_repo(clone))
+    )
 
 
 def by_urgency(rows: Sequence[DashboardRow]) -> list[DashboardRow]:
@@ -159,11 +179,124 @@ def review_entries(ranked: Sequence[RankedReview]) -> list[PaletteEntry]:
     return entries
 
 
+def window_name(prefix: str, text: str) -> str:
+    tail = text.rstrip('/').rsplit('/', 1)[-1]
+    return f'{prefix}-{re.sub(r"[^A-Za-z0-9_-]+", "-", tail)}'[:40]
+
+
+def alarm_entries(results: Sequence[ProfileAlarms]) -> list[PaletteEntry]:
+    firing = sorted(
+        (alarm for result in results for alarm in result.alarms),
+        key=updated_at,
+        reverse=True,
+    )
+    entries = [
+        PaletteEntry(
+            f'🚨 {alarm.name} ({alarm.profile.label})',
+            alarm.reason or 'CloudWatch alarm firing',
+            'open-url',
+            alarm_console_url(alarm),
+        )
+        for alarm in firing
+    ]
+    for result in results:
+        if result.needs_login:
+            entries.append(
+                PaletteEntry(
+                    f'🔑 aws sso login {result.profile.name}',
+                    'AWS login expired; alarms are hidden until you log in',
+                    'run',
+                    window_name('aws-login', result.profile.name),
+                    tuple(sso_login_command(result.profile)),
+                ),
+            )
+    return entries
+
+
+def ticket_entries(tickets: Sequence[Ticket]) -> list[PaletteEntry]:
+    entries = []
+    for ticket in tickets:
+        about = ' · '.join(
+            part
+            for part in (ticket.status, ticket.issue_type, ticket.priority)
+            if part
+        )
+        entries += [
+            PaletteEntry(
+                f'🎫 {ticket.key} {ticket.summary}',
+                about or ticket.url,
+                'open-url',
+                ticket.url,
+            ),
+            PaletteEntry(
+                f'+ agent from {ticket.key}',
+                f'new agent with the ticket as its task: {ticket.summary}',
+                'jira-agent',
+                ticket.key,
+            ),
+        ]
+    return entries
+
+
+def log_group_entries(groups: Sequence[LogGroup]) -> list[PaletteEntry]:
+    entries = []
+    for group in groups:
+        entries.append(
+            PaletteEntry(
+                f'📜 tail {group.name} ({group.profile.label})',
+                'aws logs tail --follow in a fleet window',
+                'run',
+                window_name('logs', group.name),
+                tuple(log_tail_command(group)),
+            ),
+        )
+        url = log_group_console_url(group)
+        if url:
+            entries.append(
+                PaletteEntry(
+                    f'🌐 logs {group.name} ({group.profile.label})',
+                    'open the log group in the CloudWatch console',
+                    'open-url',
+                    url,
+                ),
+            )
+    return entries
+
+
+def org_repo_entries(
+    org_repos: Sequence[OrgRepo],
+    cloned: Collection[str],
+) -> list[PaletteEntry]:
+    entries = []
+    for repo in org_repos:
+        entries.append(
+            PaletteEntry(
+                f'🌐 {repo.name_with_owner}',
+                repo.url,
+                'open-url',
+                repo.url,
+            ),
+        )
+        if repo.name_with_owner.lower() not in cloned:
+            entries.append(
+                PaletteEntry(
+                    f'+ new agent in {repo.name_with_owner}',
+                    'clone it into the projects dir, then start an agent',
+                    'new-agent-remote',
+                    repo.name_with_owner,
+                ),
+            )
+    return entries
+
+
 def palette_entries(
     rows: Sequence[DashboardRow],
     ranked: Sequence[RankedReview],
     repos: Sequence[Path],
     clipboard_pr: str | None,
+    *,
+    work: WorkItems = WorkItems(),  # noqa: B008  frozen, safe to share
+    cloned_repos: Collection[str] = (),
 ) -> list[PaletteEntry]:
     entries = []
     if clipboard_pr:
@@ -175,13 +308,15 @@ def palette_entries(
                 clipboard_pr,
             ),
         )
+    entries += alarm_entries(work.alarms)
     entries += agent_entries(rows)
     entries += review_entries(ranked)
+    entries += ticket_entries(work.tickets)
     entries += [
         PaletteEntry('+ new agent', 'start an agent in a worktree', 'new'),
         PaletteEntry(
             '⟳ refresh',
-            'reload agents and review requests',
+            'reload agents, review requests and work items',
             'refresh',
         ),
         PaletteEntry(
@@ -199,4 +334,6 @@ def palette_entries(
                 str(repo),
             ),
         )
+    entries += org_repo_entries(work.org_repos, cloned_repos)
+    entries += log_group_entries(work.log_groups)
     return entries

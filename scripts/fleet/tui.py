@@ -6,7 +6,7 @@ import os
 import shutil
 import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import partial
@@ -35,8 +35,11 @@ from textual.widgets import (
     TextArea,
 )
 
-from fleet import radar
+from fleet import jira, radar
 from fleet.agents import AGENT_KINDS, AgentState
+from fleet.browser import open_url
+from fleet.errors import describe_error
+from fleet.github_org import clone_command
 from fleet.ops import (
     HOOK_PATH,
     DashboardRow,
@@ -55,6 +58,7 @@ from fleet.palette import (
     PaletteEntry,
     RankedReview,
     by_urgency,
+    cloned_remotes,
     find_local_clone,
     find_repos,
     palette_entries,
@@ -65,13 +69,22 @@ from fleet.palette import (
 from fleet.procs import AgentProcess, scan_agent_processes
 from fleet.store import Store, default_state_dir
 from fleet.tmux import Tmux
+from fleet.work import (
+    Fetchers,
+    WorkItems,
+    live_fetchers,
+    load_work_items,
+    work_summary,
+)
 from fleet.worktree import DiffStat, diff_stat, git, is_dirty
 
 AGENT_REFRESH_SECONDS = 2.0
 PREVIEW_REFRESH_SECONDS = 1.0
 SLOW_REFRESH_SECONDS = 30.0
 RADAR_REFRESH_SECONDS = 300.0
+WORK_REFRESH_SECONDS = 300.0
 HIGH_SCORE = 60
+CLONE_TIMEOUT_SECONDS = 600
 NEEDS_YOU = frozenset(
     {AgentState.WAITING, AgentState.IDLE, AgentState.ERROR, AgentState.EXITED},
 )
@@ -187,6 +200,24 @@ def read_clipboard() -> str:
     return result.stdout
 
 
+def run_captured(command: Sequence[str]) -> subprocess.CompletedProcess[str]:
+    """Runs behind the dashboard: git must fail, not prompt on its TTY."""
+    env = os.environ | {
+        'GIT_TERMINAL_PROMPT': '0',
+        'GIT_SSH_COMMAND': os.environ.get('GIT_SSH_COMMAND', 'ssh')
+        + ' -o BatchMode=yes',
+    }
+    return subprocess.run(  # noqa: S603
+        list(command),
+        capture_output=True,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        check=False,
+        timeout=CLONE_TIMEOUT_SECONDS,
+        env=env,
+    )
+
+
 def projects_dir() -> Path:
     return Path(os.environ.get('FLEET_PROJECTS_DIR', Path.home() / 'projects'))
 
@@ -199,11 +230,18 @@ class FleetCommands(Provider):
         assert isinstance(app, FleetApp)
         clipboard = await asyncio.to_thread(read_clipboard)
         repos = await asyncio.to_thread(find_repos, app.projects_dir)
+        cloned = (
+            await asyncio.to_thread(cloned_remotes, repos)
+            if app.work.org_repos
+            else frozenset()
+        )
         self.entries = palette_entries(
             app.rows,
             app.ranked,
             repos,
             pr_from_text(clipboard),
+            work=app.work,
+            cloned_repos=cloned,
         )
 
     def callback(self, entry: PaletteEntry) -> Callable[[], None]:
@@ -247,15 +285,27 @@ class NewAgentScreen(ModalScreen[NewAgentForm | None]):
         Binding('ctrl+s', 'submit', 'Start'),
     ]
 
-    def __init__(self, repo_dir: str, kind: str) -> None:
+    def __init__(
+        self,
+        repo_dir: str,
+        kind: str,
+        name: str = '',
+        prompt: str = '',
+    ) -> None:
         super().__init__()
         self.repo_dir = repo_dir
         self.kind = kind
+        self.agent_name = name
+        self.prompt = prompt
 
     def compose(self) -> ComposeResult:
         with Vertical(id='dialog'):
             yield Label('New agent  [dim](ctrl+s start · esc cancel)[/]')
-            yield Input(placeholder='name (also the branch)', id='name')
+            yield Input(
+                value=self.agent_name,
+                placeholder='name (also the branch)',
+                id='name',
+            )
             yield Select(
                 [(kind, kind) for kind in AGENT_KINDS],
                 value=self.kind,
@@ -267,7 +317,7 @@ class NewAgentScreen(ModalScreen[NewAgentForm | None]):
                 placeholder='base ref (blank = current branch)',
                 id='base',
             )
-            yield TextArea(id='prompt')
+            yield TextArea(self.prompt, id='prompt')
 
     def action_cancel(self) -> None:
         self.dismiss(None)
@@ -357,10 +407,18 @@ class FleetApp(App[int]):
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding('1', 'tab("agents")', 'Agents', show=False),
         Binding('2', 'tab("reviews")', 'Reviews', show=False),
+        Binding('h', 'tab("agents")', 'Agents', show=False),
+        Binding('l', 'tab("reviews")', 'Reviews', show=False),
+        Binding('j', 'table("cursor_down")', 'Down', show=False),
+        Binding('k', 'table("cursor_up")', 'Up', show=False),
+        Binding('g', 'table("scroll_top")', 'Top', show=False),
+        Binding('G', 'table("scroll_bottom")', 'Bottom', show=False),
+        Binding('ctrl+d', 'table("page_down")', 'Page down', show=False),
+        Binding('ctrl+u', 'table("page_up")', 'Page up', show=False),
         Binding('n', 'new', 'New'),
         Binding('s', 'send', 'Send'),
         Binding('d', 'diff', 'Diff'),
-        Binding('g', 'lazygit', 'Lazygit'),
+        Binding('L', 'lazygit', 'Lazygit'),
         Binding('o', 'browser', 'Browser'),
         Binding('x', 'stop', 'Stop'),
         Binding('X', 'stop_and_remove', 'Stop+rm'),
@@ -388,12 +446,19 @@ class FleetApp(App[int]):
             [],
             list[AgentProcess],
         ] = scan_agent_processes,
+        *,
+        work_fetchers: Fetchers | None = None,
+        work_env: Mapping[str, str] = os.environ,
     ) -> None:
         super().__init__()
         self.store = store
         self.tmux = tmux
         self.fetch_prs = fetch_prs
         self.scan_processes = scan_processes
+        self.work_fetchers = work_fetchers or live_fetchers()
+        self.work_env = work_env
+        self.work = WorkItems()
+        self.reported_work_errors: set[str] = set()
         self.projects_dir = projects or projects_dir()
         self.review_cache = radar.ReviewCache(default_state_dir() / 'reviews')
         self.rows: list[DashboardRow] = []
@@ -440,10 +505,12 @@ class FleetApp(App[int]):
         self.refresh_agents()
         self.refresh_slow()
         self.refresh_radar()
+        self.refresh_work()
         self.set_interval(AGENT_REFRESH_SECONDS, self.refresh_agents)
         self.set_interval(PREVIEW_REFRESH_SECONDS, self.refresh_preview)
         self.set_interval(SLOW_REFRESH_SECONDS, self.refresh_slow)
         self.set_interval(RADAR_REFRESH_SECONDS, self.refresh_radar)
+        self.set_interval(WORK_REFRESH_SECONDS, self.refresh_work)
 
     # ---- which actions apply where --------------------------------------
 
@@ -465,8 +532,15 @@ class FleetApp(App[int]):
     def tab_changed(self) -> None:
         self.refresh_bindings()
 
+    def active_table(self) -> DataTable[object]:
+        return self.query_one(f'#{self.active_tab()}-table', DataTable)
+
     def action_tab(self, tab: str) -> None:
         self.query_one('#tabs', TabbedContent).active = tab
+        self.active_table().focus()
+
+    async def action_table(self, action: str) -> None:
+        await self.run_action(action, self.active_table())
 
     # ---- agents ----------------------------------------------------------
 
@@ -601,17 +675,25 @@ class FleetApp(App[int]):
                 severity='warning',
             )
             return
-        command = self.tmux.jump_command(row.target)
+        self.jump_to_target(row.target)
+
+    def jump_to_target(self, target: str) -> None:
+        command = self.tmux.jump_command(target)
         if 'switch-client' in command:
             subprocess.run(command, check=False)  # noqa: S603
             return
         with self.suspend():
             subprocess.run(command, check=False)  # noqa: S603
 
-    def action_new(self, repo_dir: str = '') -> None:
+    def action_new(
+        self,
+        repo_dir: str = '',
+        name: str = '',
+        prompt: str = '',
+    ) -> None:
         default_repo = repo_dir or str(Path.cwd())
         self.push_screen(
-            NewAgentScreen(default_repo, default_agent_kind()),
+            NewAgentScreen(default_repo, default_agent_kind(), name, prompt),
             self.spawn_from_form,
         )
 
@@ -919,23 +1001,16 @@ class FleetApp(App[int]):
         if not url:
             return
         owner, repo, number = parse_pr_url(url)
-        clone = find_local_clone(
-            find_repos(self.projects_dir),
-            f'{owner}/{repo}',
-        )
-        if clone is None:
-            self.notify(
-                f'no local clone of {owner}/{repo} in {self.projects_dir}',
-                severity='error',
-            )
-            return
         prompt = DEEP_REVIEW_PROMPT.format(url=url, number=number)
-        self.spawn(
-            self.review_kind(),
-            review_agent_name(url),
-            clone,
-            '',
-            prompt,
+        self.with_clone(
+            f'{owner}/{repo}',
+            lambda clone: self.spawn(
+                self.review_kind(),
+                review_agent_name(url),
+                clone,
+                '',
+                prompt,
+            ),
         )
 
     # ---- palette ---------------------------------------------------------
@@ -949,12 +1024,133 @@ class FleetApp(App[int]):
             'open-review': lambda: self.focus_review(entry.target),
             'deep-review': lambda: self.action_deep_review(entry.target),
             'browser': lambda: open_in_browser(entry.target),
+            'open-url': lambda: self.open_url_or_warn(entry.target),
             'new': self.action_new,
             'new-agent': lambda: self.action_new(entry.target),
+            'new-agent-remote': lambda: self.with_clone(
+                entry.target,
+                lambda clone: self.action_new(str(clone)),
+            ),
+            'jira-agent': lambda: self.agent_from_ticket(entry.target),
+            'run': lambda: self.run_in_window(entry.target, entry.command),
             'refresh': self.action_refresh,
             'review-all': self.action_review_all,
         }
         handlers[entry.action]()
+
+    def open_url_or_warn(self, url: str) -> None:
+        try:
+            open_url(url)
+        except (OSError, ValueError) as error:
+            self.notify(
+                f'could not open {url}: {error} (set $BROWSER?)',
+                severity='error',
+            )
+
+    def agent_from_ticket(self, key: str) -> None:
+        ticket = next((t for t in self.work.tickets if t.key == key), None)
+        if ticket is None:
+            self.notify(
+                f'{key} is no longer in your Jira list',
+                severity='warning',
+            )
+            return
+        self.action_new(
+            name=jira.agent_name_for(ticket),
+            prompt=jira.ticket_prompt(ticket),
+        )
+
+    def run_in_window(self, name: str, command: Sequence[str]) -> None:
+        try:
+            window_id = self.tmux.new_window(
+                fleet_session(),
+                name,
+                Path.home(),
+                {},
+                command,
+            )
+        except subprocess.CalledProcessError as error:
+            self.notify(
+                f'could not open {name}: {error.stderr or error}',
+                severity='error',
+            )
+            return
+        self.jump_to_target(window_id)
+
+    def with_clone(
+        self,
+        name_with_owner: str,
+        then: Callable[[Path], object],
+    ) -> None:
+        clone = find_local_clone(
+            find_repos(self.projects_dir),
+            name_with_owner,
+        )
+        if clone:
+            then(clone)
+            return
+        self.clone_repo(name_with_owner, then)
+
+    @work(thread=True, group='clone')
+    def clone_repo(
+        self,
+        name_with_owner: str,
+        then: Callable[[Path], object],
+    ) -> None:
+        try:
+            command, destination = clone_command(
+                name_with_owner,
+                self.projects_dir,
+            )
+        except ValueError as error:
+            self.call_from_thread(self.notify, str(error), severity='error')
+            return
+        if destination.exists():
+            self.call_from_thread(
+                self.notify,
+                f'{destination} exists but is not a clone of '
+                f'{name_with_owner}',
+                severity='error',
+            )
+            return
+        self.call_from_thread(
+            self.notify,
+            f'cloning {name_with_owner} into {destination}…',
+        )
+        try:
+            result = run_captured(command)
+        except (OSError, subprocess.SubprocessError) as error:
+            self.call_from_thread(
+                self.notify,
+                f'clone failed: {describe_error(error)}',
+                severity='error',
+            )
+            return
+        if result.returncode != 0:
+            self.call_from_thread(
+                self.notify,
+                f'clone failed: {result.stderr.strip()[:300]}',
+                severity='error',
+            )
+            return
+        self.call_from_thread(then, destination)
+
+    @work(thread=True, exclusive=True, group='work')
+    def refresh_work(self) -> None:
+        items, errors = load_work_items(
+            self.work_env,
+            default_state_dir(),
+            self.work_fetchers,
+        )
+        self.work = items
+        self.call_from_thread(self.show_work_summary)
+        for error in errors:
+            if error not in self.reported_work_errors:
+                self.call_from_thread(self.notify, error, severity='warning')
+        self.reported_work_errors = set(errors)
+
+    def show_work_summary(self) -> None:
+        self.sub_title = work_summary(self.work)
 
     def jump_to_key(self, key: str) -> None:
         row = self.pick_row(key)
@@ -973,6 +1169,7 @@ class FleetApp(App[int]):
         self.refresh_agents()
         self.refresh_slow()
         self.refresh_radar()
+        self.refresh_work()
 
 
 def run_dashboard() -> int:
