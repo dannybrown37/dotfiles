@@ -488,7 +488,10 @@ def test_deep_review_without_local_clone_clones_then_spawns(
         repo_dir: Path,
         _base: str,
         _prompt: str,
+        *,
+        split_here: bool = False,
     ) -> None:
+        assert split_here
         spawned.append((name, repo_dir))
 
     monkeypatch.setattr('fleet.tui.run_captured', fake_clone)

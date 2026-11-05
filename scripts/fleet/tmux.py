@@ -94,6 +94,32 @@ class Tmux:
         self.respawn(window_id, cwd, env, command)
         return window_id
 
+    def split_pane(
+        self,
+        target: str,
+        cwd: Path,
+        env: Mapping[str, str],
+        command: Sequence[str],
+    ) -> str:
+        """Like new_window, but split `target` (a pane id); returns `%N`."""
+        created = self.run(
+            'split-window',
+            '-d',
+            '-h',
+            '-t',
+            target,
+            '-c',
+            str(cwd),
+            '-P',
+            '-F',
+            '#{pane_id}',
+            *PLACEHOLDER,
+        )
+        pane_id = created.stdout.strip()
+        self.run('set-option', '-p', '-t', pane_id, 'remain-on-exit', 'on')
+        self.respawn(pane_id, cwd, env, command)
+        return pane_id
+
     def respawn(
         self,
         window_id: str,
@@ -178,7 +204,9 @@ class Tmux:
         self.run('send-keys', '-t', window_id, 'Enter')
 
     def kill_window(self, window_id: str) -> None:
-        self.run('kill-window', '-t', window_id, check=False)
+        """A pane id (`%N`) kills just that pane, not its whole window."""
+        verb = 'kill-pane' if window_id.startswith('%') else 'kill-window'
+        self.run(verb, '-t', window_id, check=False)
 
     def jump_command(self, target: str) -> list[str]:
         """Inside tmux, switch the client; outside, attach.
