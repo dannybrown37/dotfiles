@@ -47,6 +47,8 @@ class SpawnRequest:
     hook_path: str
     session: str
     auto_trust: bool = False
+    # A pane id to split instead of opening a window in `session`.
+    split_from: str = ''
 
 
 @dataclass(frozen=True)
@@ -145,7 +147,16 @@ def spawn_agent(
         'FLEET_HOOK': request.hook_path,
         'FLEET_STATE_DIR': str(store.agents_dir.parent),
     }
-    window_id = tmux.new_window(request.session, name, worktree, env, command)
+    if request.split_from:
+        window_id = tmux.split_pane(request.split_from, worktree, env, command)
+    else:
+        window_id = tmux.new_window(
+            request.session,
+            name,
+            worktree,
+            env,
+            command,
+        )
     record = AgentRecord(
         name=name,
         kind=request.kind,
@@ -165,7 +176,11 @@ def spawn_agent(
 
 
 def agent_views(store: Store, tmux: Tmux) -> list[AgentView]:
-    panes = tmux.panes()
+    # Records hold a window id, or a pane id for agents split into a pane.
+    panes: dict[str, PaneInfo] = {
+        pane.pane_id: pane for pane in tmux.all_panes()
+    }
+    panes.update(tmux.panes())
     now = time.time()
     views = []
     for record in store.list_records():

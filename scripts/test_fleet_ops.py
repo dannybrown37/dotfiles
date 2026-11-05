@@ -4,6 +4,7 @@ The end-to-end tests drive a real tmux server on a private socket with a
 fake agent binary, so nothing touches the user's own tmux sessions.
 """
 
+import dataclasses
 import os
 import shutil
 import subprocess
@@ -427,6 +428,33 @@ def test_spawn_refuses_duplicate_name(
     spawn_agent(store, tmux, make_request(repo, tmp_path))
     with pytest.raises(ValueError, match='already exists'):
         spawn_agent(store, tmux, make_request(repo, tmp_path))
+
+
+@needs_tmux
+def test_spawn_agent_can_split_an_existing_pane(
+    tmux: Tmux,
+    repo: Path,
+    fake_agent: Path,  # noqa: ARG001
+    tmp_path: Path,
+) -> None:
+    window_id = tmux.new_window('mine', 'ed', tmp_path, {}, ['sleep', '60'])
+    host = tmux.panes()[window_id].pane_id
+    store = Store(tmp_path / 'state')
+    request = dataclasses.replace(
+        make_request(repo, tmp_path),
+        split_from=host,
+    )
+    record = spawn_agent(store, tmux, request)
+
+    assert record.window_id.startswith('%')
+    assert not tmux.has_session('fleet')
+    split = {p.pane_id: p for p in tmux.all_panes()}[record.window_id]
+    assert split.window_id == window_id
+    wait_for(lambda: store.read_state('fix-x') is not None)
+    assert agent_views(store, tmux)[0].state == AgentState.IDLE
+
+    kill_agent(store, tmux, record, remove_checkout=False, force=False)
+    assert [p.pane_id for p in tmux.all_panes()] == [host]
 
 
 @needs_tmux

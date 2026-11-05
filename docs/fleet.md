@@ -115,7 +115,7 @@ has a reason shown next to it.
 | Key | Action |
 |---|---|
 | `r` / `R` | Pre-review the selected PR / every PR without one |
-| `a` | Deep review: an agent in a worktree of your local clone runs `gh pr checkout` and the tests |
+| `a` | Deep review: an agent in a worktree of your local clone runs `gh pr checkout` and the tests. Opens as a pane beside the dashboard (a `fleet` window if the dashboard is not in tmux) |
 | `o` / `enter` | Open in the browser |
 
 **Local only.** Pre-reviews run through your local `claude -p` or `copilot`

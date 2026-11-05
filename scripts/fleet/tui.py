@@ -66,7 +66,7 @@ from fleet.palette import (
     pr_from_text,
     review_agent_name,
 )
-from fleet.procs import AgentProcess, scan_agent_processes
+from fleet.procs import AgentProcess, scan_agent_processes, tmux_socket_name
 from fleet.store import Store, default_state_dir
 from fleet.tmux import Tmux
 from fleet.work import (
@@ -764,6 +764,8 @@ class FleetApp(App[int]):
         repo_dir: Path,
         base: str,
         prompt: str,
+        *,
+        split_here: bool = False,
     ) -> None:
         request = SpawnRequest(
             kind=kind,
@@ -776,6 +778,7 @@ class FleetApp(App[int]):
             hook_path=str(HOOK_PATH),
             session=fleet_session(),
             auto_trust=True,
+            split_from=self.own_pane() if split_here else '',
         )
         try:
             record = spawn_agent(self.store, self.tmux, request)
@@ -1095,8 +1098,15 @@ class FleetApp(App[int]):
                 clone,
                 '',
                 prompt,
+                split_here=True,
             ),
         )
+
+    def own_pane(self) -> str:
+        """The dashboard's own pane, if it runs on fleet's tmux server."""
+        pane = os.environ.get('TMUX_PANE', '')
+        socket = tmux_socket_name(os.environ.get('TMUX', ''))
+        return pane if pane and socket == self.tmux.socket_name else ''
 
     # ---- palette ---------------------------------------------------------
 
