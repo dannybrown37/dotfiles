@@ -103,7 +103,12 @@ class Tmux:
         env: Mapping[str, str],
         command: Sequence[str],
     ) -> str:
-        """Like new_window, but split `target` (a pane id); returns `%N`."""
+        """Like new_window, but split `target` (a pane id); returns `%N`.
+
+        remain-on-exit is `failed` here: a clean quit closes the split
+        instead of leaving a dead pane beside the TUI, while a crash
+        still keeps its output readable.
+        """
         created = self.run(
             'split-window',
             '-d',
@@ -118,7 +123,7 @@ class Tmux:
             *PLACEHOLDER,
         )
         pane_id = created.stdout.strip()
-        self.run('set-option', '-p', '-t', pane_id, 'remain-on-exit', 'on')
+        self.run('set-option', '-p', '-t', pane_id, 'remain-on-exit', 'failed')
         self.respawn(pane_id, cwd, env, command)
         return pane_id
 
