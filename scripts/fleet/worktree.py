@@ -94,6 +94,29 @@ def remove_worktree(root: Path, path: Path, *, force: bool) -> None:
     git(root, 'worktree', 'remove', *(['--force'] if force else []), str(path))
 
 
+def unpushed_commits(root: Path, branch: str) -> int:
+    """Commits only `branch` holds: on no remote and no other local branch."""
+    if not branch_exists(root, branch):
+        return 0
+    out = git(
+        root,
+        'rev-list',
+        '--count',
+        branch,
+        '--not',
+        f'--exclude={branch}',
+        '--branches',
+        '--remotes',
+    )
+    return int(out.strip() or 0)
+
+
+def delete_branch(root: Path, branch: str) -> None:
+    """Force-delete: callers check `unpushed_commits` first."""
+    if branch_exists(root, branch):
+        git(root, 'branch', '-D', branch)
+
+
 def is_dirty(path: Path) -> bool:
     return bool(git(path, 'status', '--porcelain').strip())
 

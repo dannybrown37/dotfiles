@@ -49,7 +49,7 @@ counts them: `Agents (2/8)` means 2 of 8 are waiting on you.
 | `d` / `L` | Diff (fleet agents: since branching; others: uncommitted) / lazygit |
 | `o` | Open its PR in the browser |
 | `n` | New agent |
-| `x` / `X` | Stop / stop and delete the worktree. Fleet's own agents only; the branch is always kept |
+| `x` / `X` | Delete (stop, remove the worktree, delete the branch; warns on uncommitted or unpushed work) / stop only, keeping both. Fleet's own agents only. CLI: `fleet rm NAME --branch` |
 
 ### How sessions are found
 

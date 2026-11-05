@@ -144,8 +144,8 @@ def agent_entries(rows: Sequence[DashboardRow]) -> list[PaletteEntry]:
         if row.record:
             entries.append(
                 PaletteEntry(
-                    f'✕ stop {row.name}',
-                    'stop agent, keep branch',
+                    f'✕ delete {row.name}',
+                    'stop agent, remove worktree and branch',
                     'stop',
                     row.key,
                 ),
