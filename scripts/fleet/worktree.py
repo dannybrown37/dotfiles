@@ -42,6 +42,17 @@ def repo_root(path: Path) -> Path:
     return Path(common_dir).parent
 
 
+def current_branch(path: Path) -> str | None:
+    """The checked-out branch, the short sha when detached, None if not git."""
+    if not path.is_dir():
+        return None
+    try:
+        branch = git(path, 'branch', '--show-current').strip()
+        return branch or git(path, 'rev-parse', '--short', 'HEAD').strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
 def worktree_path(root: Path, branch: str) -> Path:
     safe_branch = branch.replace('/', '-')
     return root.parent / f'{root.name}-worktrees' / safe_branch

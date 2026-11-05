@@ -124,7 +124,8 @@ def test_agent_row_shows_gone_state_and_prompt(tmp_path: Path) -> None:
         assert table.row_count == 1
         assert 'gone' in cell_text(table, 0, 0)
         assert cell_text(table, 0, 2) == 'fix-x'
-        assert 'flaky' in cell_text(table, 0, 7)
+        assert cell_text(table, 0, 4) == 'fix-x'
+        assert 'flaky' in cell_text(table, 0, 8)
 
     run_with_pilot(app, scenario)
 
@@ -158,7 +159,7 @@ def test_session_fleet_did_not_start_is_listed_but_not_stoppable(
         assert cell_text(table, 0, 2) == 'web'
         assert 'waiting' in cell_text(table, 0, 0)
         assert cell_text(table, 0, 3) == 'terminal'
-        assert 'allow shell?' in cell_text(table, 0, 7)
+        assert 'allow shell?' in cell_text(table, 0, 8)
         await pilot.press('x')
         await pilot.pause()
         assert type(app.screen).__name__ == 'Screen'

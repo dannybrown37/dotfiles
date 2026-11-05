@@ -1,8 +1,9 @@
-"""Merge fleet's hook into the global Claude Code settings.
+"""Install fleet's global hooks for Claude Code and Copilot CLI.
 
 Global hooks are how the dashboard sees sessions fleet did not start.
-Copilot needs no merge: its user hooks are separate files, and
-install/symlinks.sh links config/copilot/hooks/fleet.json into place.
+Claude needs fleet-hook.sh merged into its settings.json. Copilot
+reads each file in ~/.copilot/hooks/, so it only needs a symlink to
+config/copilot/hooks/fleet.json (install/symlinks.sh makes the same one).
 """
 
 import json
@@ -13,6 +14,14 @@ from fleet.events import CLAUDE_EVENT_STATES
 from fleet.store import write_json_atomically
 
 CLAUDE_SETTINGS = Path.home() / '.claude' / 'settings.json'
+COPILOT_HOOK_LINK = Path.home() / '.copilot' / 'hooks' / 'fleet.json'
+COPILOT_HOOK_FILE = (
+    Path(__file__).resolve().parents[2]
+    / 'config'
+    / 'copilot'
+    / 'hooks'
+    / 'fleet.json'
+)
 MARKER = 'fleet-hook.sh'
 BACKUP_SUFFIX = '.pre-fleet.bak'
 
@@ -92,3 +101,26 @@ def uninstall_claude_hooks(path: Path) -> bool:
     if changed:
         write_settings(path, data)
     return changed
+
+
+def copilot_hooks_installed(link: Path = COPILOT_HOOK_LINK) -> bool:
+    return link.exists()
+
+
+def install_copilot_hooks(link: Path, source: Path) -> bool:
+    if link.is_symlink() and link.resolve() == source.resolve():
+        return False
+    if link.exists() and not link.is_symlink():
+        msg = f'{link} exists and is not a symlink; move it aside first'
+        raise ValueError(msg)
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.unlink(missing_ok=True)
+    link.symlink_to(source)
+    return True
+
+
+def uninstall_copilot_hooks(link: Path) -> bool:
+    if not link.is_symlink():
+        return False
+    link.unlink()
+    return True

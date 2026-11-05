@@ -15,9 +15,14 @@ from fleet import VERSION, aws, jira, radar
 from fleet.agents import AGENT_KINDS, validate_agent_name
 from fleet.hooks_install import (
     CLAUDE_SETTINGS,
+    COPILOT_HOOK_FILE,
+    COPILOT_HOOK_LINK,
     claude_hooks_installed,
+    copilot_hooks_installed,
     install_claude_hooks,
+    install_copilot_hooks,
     uninstall_claude_hooks,
+    uninstall_copilot_hooks,
 )
 from fleet.ops import (
     HOOK_PATH,
@@ -46,7 +51,6 @@ from fleet.work import (
 )
 
 USAGE_ERROR = 2
-COPILOT_HOOK_LINK = Path.home() / '.copilot' / 'hooks' / 'fleet.json'
 
 
 def prompt_tty(text: str, flag_hint: str) -> str:
@@ -204,7 +208,7 @@ def cmd_ls(args: argparse.Namespace) -> int:
             f'{row.state.value:8} {row.kind:8} {row.name:24} {row.where:24}'
         )
         print(f'{columns} {row.cwd}')
-    if not claude_hooks_installed():
+    if not (claude_hooks_installed() or copilot_hooks_installed()):
         print(
             '\nstates show "unknown" until hooks are on: fleet hooks install',
             file=sys.stderr,
@@ -212,16 +216,38 @@ def cmd_ls(args: argparse.Namespace) -> int:
     return 0
 
 
+def report(changed: bool, done: str, noop: str, where: str) -> None:  # noqa: FBT001
+    print(f'{done if changed else noop}: {where}')
+
+
 def cmd_hooks(args: argparse.Namespace) -> int:
-    where = f'fleet hooks in {CLAUDE_SETTINGS}'
+    claude_home = CLAUDE_SETTINGS.parent
+    copilot_home = COPILOT_HOOK_LINK.parent.parent
+    claude_where = f'claude hooks in {CLAUDE_SETTINGS}'
+    copilot_where = f'copilot hooks at {COPILOT_HOOK_LINK}'
     if args.action == 'install':
-        changed = install_claude_hooks(CLAUDE_SETTINGS, str(HOOK_PATH))
-        print(f'{"installed" if changed else "already installed"}: {where}')
+        if claude_home.is_dir():
+            changed = install_claude_hooks(CLAUDE_SETTINGS, str(HOOK_PATH))
+            report(changed, 'installed', 'already installed', claude_where)
+        else:
+            print(f'skipped: {claude_where} (no {claude_home})')
+        if copilot_home.is_dir():
+            changed = install_copilot_hooks(
+                COPILOT_HOOK_LINK,
+                COPILOT_HOOK_FILE,
+            )
+            report(changed, 'installed', 'already installed', copilot_where)
+        else:
+            print(f'skipped: {copilot_where} (no {copilot_home})')
     elif args.action == 'uninstall':
-        changed = uninstall_claude_hooks(CLAUDE_SETTINGS)
-        print(f'{"removed" if changed else "not installed"}: {where}')
-    claude = 'on' if claude_hooks_installed() else 'off (fleet hooks install)'
-    copilot = 'on' if COPILOT_HOOK_LINK.exists() else 'off (just symlinks)'
+        changed = CLAUDE_SETTINGS.exists() and uninstall_claude_hooks(
+            CLAUDE_SETTINGS,
+        )
+        report(changed, 'removed', 'not installed', claude_where)
+        changed = uninstall_copilot_hooks(COPILOT_HOOK_LINK)
+        report(changed, 'removed', 'not installed', copilot_where)
+    claude = 'on' if claude_hooks_installed() else 'off'
+    copilot = 'on' if copilot_hooks_installed() else 'off'
     print(f'claude hooks:  {claude}\ncopilot hooks: {copilot}')
     return 0
 
@@ -535,9 +561,9 @@ def build_parser() -> argparse.ArgumentParser:
         'hooks',
         help='global agent hooks, so the dashboard sees every session',
         description=(
-            'Claude: merges fleet-hook.sh into ~/.claude/settings.json '
-            '(one-time backup kept). Copilot: install/symlinks.sh links its '
-            'hook file.'
+            'Installs for each agent whose home dir exists. Claude: merges '
+            'fleet-hook.sh into ~/.claude/settings.json (one-time backup '
+            'kept). Copilot: symlinks ~/.copilot/hooks/fleet.json.'
         ),
     )
     hooks.add_argument(
