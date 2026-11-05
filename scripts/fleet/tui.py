@@ -117,6 +117,12 @@ Review pull request {url} locally. Check it out with `gh pr checkout {number}`,
 read the code around every change, and run the relevant tests.
 Do not push, comment, approve or post anything to GitHub: report your
 findings here, most important first, with file:line references.
+Give every finding a clickable GitHub link to the exact line(s), whichever
+is most relevant (include both when both help):
+- the PR diff: {url}/files#diff-<sha256 of the file path>R<line>
+- the base branch:
+  https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<start>-L<end>
+Use commit SHAs, not branch names, so links stay valid.
 """
 
 
