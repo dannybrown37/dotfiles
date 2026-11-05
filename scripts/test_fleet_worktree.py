@@ -89,8 +89,15 @@ def test_create_worktree_reuses_existing_branch(repo: Path) -> None:
     assert git(path, 'branch', '--show-current').strip() == 'existing'
 
 
-def test_create_worktree_refuses_existing_directory(repo: Path) -> None:
-    create_worktree(repo, 'fix-x', 'main')
+def test_create_worktree_reuses_existing_worktree(repo: Path) -> None:
+    first = create_worktree(repo, 'fix-x', 'main')
+    (first / 'keep.txt').write_text('work in progress')
+    assert create_worktree(repo, 'fix-x', 'main') == first
+    assert (first / 'keep.txt').exists()
+
+
+def test_create_worktree_refuses_non_worktree_directory(repo: Path) -> None:
+    worktree_path(repo, 'fix-x').mkdir(parents=True)
     with pytest.raises(FileExistsError):
         create_worktree(repo, 'fix-x', 'main')
 
