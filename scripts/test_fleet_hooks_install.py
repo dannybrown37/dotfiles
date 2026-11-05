@@ -8,8 +8,11 @@ import pytest
 from fleet.events import CLAUDE_EVENT_STATES, COPILOT_EVENT_STATES
 from fleet.hooks_install import (
     claude_hooks_installed,
+    copilot_hooks_installed,
     install_claude_hooks,
+    install_copilot_hooks,
     uninstall_claude_hooks,
+    uninstall_copilot_hooks,
 )
 
 HOOK = '/d/scripts/fleet-hook.sh'
@@ -109,6 +112,47 @@ def test_copilot_hook_file_covers_exactly_the_mapped_events() -> None:
     assert set(hooks) == set(COPILOT_EVENT_STATES)
     for event, [entry] in hooks.items():
         assert entry['bash'].endswith(f'fleet-hook.sh}}" copilot {event}')
+
+
+def test_copilot_install_links_hook_file_and_is_idempotent(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / 'fleet.json'
+    source.write_text('{}')
+    link = tmp_path / '.copilot' / 'hooks' / 'fleet.json'
+    assert not copilot_hooks_installed(link)
+    assert install_copilot_hooks(link, source) is True
+    assert link.resolve() == source
+    assert copilot_hooks_installed(link)
+    assert install_copilot_hooks(link, source) is False
+
+
+def test_copilot_install_refuses_to_overwrite_a_real_file(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / 'fleet.json'
+    source.write_text('{}')
+    link = tmp_path / 'hooks' / 'fleet.json'
+    link.parent.mkdir()
+    link.write_text('mine')
+    with pytest.raises(ValueError, match='not a symlink'):
+        install_copilot_hooks(link, source)
+    assert link.read_text() == 'mine'
+
+
+@pytest.mark.parametrize('installed', [True, False])
+def test_copilot_uninstall_only_removes_the_link(
+    tmp_path: Path,
+    installed: bool,  # noqa: FBT001
+) -> None:
+    source = tmp_path / 'fleet.json'
+    source.write_text('{}')
+    link = tmp_path / 'hooks' / 'fleet.json'
+    if installed:
+        install_copilot_hooks(link, source)
+    assert uninstall_copilot_hooks(link) is installed
+    assert not link.is_symlink()
+    assert source.exists()
 
 
 def test_installed_status(settings: Path, tmp_path: Path) -> None:

@@ -76,7 +76,13 @@ from fleet.work import (
     load_work_items,
     work_summary,
 )
-from fleet.worktree import DiffStat, diff_stat, git, is_dirty
+from fleet.worktree import (
+    DiffStat,
+    current_branch,
+    diff_stat,
+    git,
+    is_dirty,
+)
 
 AGENT_REFRESH_SECONDS = 2.0
 PREVIEW_REFRESH_SECONDS = 1.0
@@ -146,11 +152,7 @@ def format_diff(stat: DiffStat | None) -> Text:
 
 
 def open_in_browser(pr_url: str) -> None:
-    subprocess.run(  # noqa: S603
-        ['gh', 'pr', 'view', pr_url, '--web'],  # noqa: S607
-        capture_output=True,
-        check=False,
-    )
+    open_url(pr_url)
 
 
 def review_markdown(text: str) -> str:
@@ -472,6 +474,7 @@ class FleetApp(App[int]):
         self.review_cache = radar.ReviewCache(default_state_dir() / 'reviews')
         self.rows: list[DashboardRow] = []
         self.diffstats: dict[str, DiffStat | None] = {}
+        self.branches: dict[str, str | None] = {}
         self.agent_prs: dict[str, AgentPr | None] = {}
         self.prs: dict[str, list[radar.PullRequest]] = {
             tab: [] for tab in REVIEW_TABS
@@ -509,6 +512,7 @@ class FleetApp(App[int]):
             'Agent',
             'Name',
             'Where',
+            'Branch',
             'Changes',
             'PR',
             'Age',
@@ -605,6 +609,16 @@ class FleetApp(App[int]):
             return 'no state yet (hooks off? fleet hooks install)'
         return row.message
 
+    def branch_cell(self, row: DashboardRow) -> Text:
+        branch = self.branches.get(row.key) or (
+            row.record.branch if row.record else None
+        )
+        return (
+            Text(branch[:30], style='cyan')
+            if branch
+            else Text('-', style='dim')
+        )
+
     def refresh_agents(self) -> None:
         selected = self.selected_row()
         self.rows = by_urgency(
@@ -628,6 +642,7 @@ class FleetApp(App[int]):
                 row.kind,
                 Text(row.name, style='bold' if row.record else ''),
                 Text(row.where, style='dim' if not row.target else ''),
+                self.branch_cell(row),
                 format_diff(self.diffstats.get(row.key)),
                 pr_cell,
                 relative_age(now - row.started_at),
@@ -692,6 +707,7 @@ class FleetApp(App[int]):
     def refresh_slow(self) -> None:
         for row in list(self.rows):
             self.diffstats[row.key] = diff_stat(row.cwd, row.diff_base)
+            self.branches[row.key] = current_branch(row.cwd)
             if row.cwd.is_dir():
                 self.agent_prs[row.key] = agent_pr(row.cwd)
 
