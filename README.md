@@ -184,7 +184,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
 | `scripts/` | Non-sourced standalone executable scripts |
-| `talon/` | Talon voice commands (mode switching, tutti chief), copied to Windows by just talon |
+| `talon/` | Talon voice commands (mode switching, tutti chief, tmux), copied to Windows by just talon |
 | `windows/` | Windows PowerShell network-rescue verbs and the offline rescue cheat sheet |
 | `wsl/` | WSL-specific settings, functions, and komorebi config |
 
@@ -248,6 +248,8 @@ My own Talon files live in `talon/`; [talonhub/community](https://github.com/tal
 | `chief status` | Ask the chief for a one-line status per agent |
 | `chief say <words>` | Type any message into the chief |
 | `chief sleep` | Put Talon to sleep (`wake up` to resume) |
+| `mux left` / `mux right`, `mux window <n>` | Switch tmux windows (on when the window title starts with `tmux`) |
+| `pane left` / `right` / `up` / `down` | Switch tmux panes. Full list: `talon/cheatsheet.md` |
 
 `settings.talon` turns on community's mode indicator dot. Use headphones or sleep Talon while testing: it transcribes speaker audio too.
 
