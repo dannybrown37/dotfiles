@@ -36,6 +36,10 @@ $uvTools = @("ruff", "cookiecutter")
 $netRescueFiles = @("net.ps1", "net-rescue.md")
 $netRescueSource = Join-Path (Split-Path $PSScriptRoot -Parent) "windows"
 $netRescueTarget = Join-Path $HOME ".dotfiles"
+# Talon isn't on winget, so it comes from the vendor's installer
+$talonUrl = "https://talonvoice.com/dl/latest/talon-windows.exe"
+$talonExe = Join-Path $env:ProgramFiles "Talon\talon.exe"
+$talonCommunity = Join-Path $env:APPDATA "Talon\user\community"
 
 function Test-Winget($pkg) {
     if ($pkg.Cmd) {
@@ -101,10 +105,35 @@ function Install-NetRescue {
     & (Join-Path $PSScriptRoot "net-rescue.ps1")
 }
 
+function Test-Talon {
+    return (Test-Path $talonExe) -and (Test-Path $talonCommunity)
+}
+
+function Install-Talon {
+    if (Test-Path $talonExe) {
+        Write-Host "Talon already installed, skipping"
+    } else {
+        $installer = Join-Path $env:TEMP "talon-windows.exe"
+        Write-Host "Downloading $talonUrl ..."
+        Invoke-WebRequest -Uri $talonUrl -OutFile $installer
+        Start-Process -FilePath $installer -Wait
+        Remove-Item $installer
+    }
+    if (Test-Path $talonCommunity) {
+        Write-Host "talonhub/community already cloned, skipping"
+    } elseif (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        Write-Host "WARNING: git not found, skipping talonhub/community (run: just windows git)" -ForegroundColor Yellow
+    } else {
+        git clone https://github.com/talonhub/community $talonCommunity
+    }
+    Write-Host "Next, from WSL: just talon"
+}
+
 $groups = @(
     @{ Name = "npm-globals"; Desc = "npm globals: $($npmGlobals -join ', ')"; Test = ${function:Test-NpmGlobals}; Install = ${function:Install-NpmGlobals} }
     @{ Name = "uv-tools";    Desc = "uv tools: $($uvTools -join ', ')";       Test = ${function:Test-UvTools};    Install = ${function:Install-UvTools} }
     @{ Name = "net-rescue";  Desc = "Offline network verbs in the PowerShell profile (net-doctor, dns-set, rescue)"; Test = ${function:Test-NetRescue}; Install = ${function:Install-NetRescue} }
+    @{ Name = "talon";       Desc = "Talon voice control + talonhub/community (then: just talon)"; Test = ${function:Test-Talon}; Install = ${function:Install-Talon} }
 )
 
 if ($List) {

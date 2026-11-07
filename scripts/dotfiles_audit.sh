@@ -105,6 +105,22 @@ check_net_rescue() {
     done
 }
 
+check_talon() {
+    # shellcheck disable=SC2016  # $env:UserName is PowerShell's, not bash's
+    local windows_user="${WINDOWS_USERNAME:-$(powershell.exe '$env:UserName' 2>/dev/null | tr -d '\r\n')}"
+    local user_dir="/mnt/c/Users/${windows_user}/AppData/Roaming/Talon/user"
+
+    if [[ ! -x "/mnt/c/Program Files/Talon/talon.exe" ]]; then
+        warn "Talon" "not installed — run: just windows talon"
+    elif [[ ! -d "${user_dir}/community" ]]; then
+        warn "Talon" "talonhub/community missing — run: just windows talon"
+    elif [[ ! -d "${user_dir}/mine" ]]; then
+        warn "Talon" "talon/ not copied — run: just talon"
+    else
+        ok "Talon" "installed, community + talon/ in ${user_dir}"
+    fi
+}
+
 section() {
     echo ""
     echo "  $1"
@@ -168,6 +184,7 @@ if [[ -n "${ON_WINDOWS:-}" ]]; then
     check "win32yank.exe" "command -v win32yank.exe" "just windows win32yank"
     check_ahk_v2
     check_net_rescue
+    check_talon
     check "AHK autocorrect list" "test -s '${DOTFILES_DIR}/ahk/vendor/AutoCorrectHotstrings.ahk' && echo present" "ahk"
 fi
 

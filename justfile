@@ -67,7 +67,7 @@ secrets-save:
 secrets-load:
     bash -c "{{root_dir}}/scripts/secrets.sh load"
 
-## @just 41 Environment-Specific | Windows-side tools (winget, npm, uv, win32yank, net-rescue), with ✓ for installed
+## @just 41 Environment-Specific | Windows-side tools (winget, npm, uv, win32yank, net-rescue, talon), with ✓ for installed
 windows *names:
     @bash "{{root_dir}}/scripts/windows.sh" {{names}}
 

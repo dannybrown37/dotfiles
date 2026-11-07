@@ -25,7 +25,7 @@ Start Here:
 
 Environment-Specific:
   vscode          Link VS Code settings, then pick extensions (✓ = installed)
-  windows         Windows-side tools (winget, npm, uv, win32yank, net-rescue), with ✓ for installed
+  windows         Windows-side tools (winget, npm, uv, win32yank, net-rescue, talon), with ✓ for installed
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
   talon           Copy talon/ voice commands into Talon's user dir on Windows
 
@@ -238,7 +238,7 @@ The write verbs print the exact command and self-elevate through UAC. `just wind
 
 ### Talon Voice Commands
 
-My own Talon files live in `talon/`; [talonhub/community](https://github.com/talonhub/community) stays a separate clone at `%APPDATA%\Talon\user\community`. `just talon` copies `talon/` to `%APPDATA%\Talon\user\mine`. Rerun it after each edit: it is a copy, not a link, because Windows gets no file-change events from `\\wsl$`, so Talon would never reload a linked folder.
+My own Talon files live in `talon/`; [talonhub/community](https://github.com/talonhub/community) stays a separate clone at `%APPDATA%\Talon\user\community`. `just windows talon` runs the Talon installer (it isn't on winget) and clones community. `just talon` copies `talon/` to `%APPDATA%\Talon\user\mine`. Rerun it after each edit: it is a copy, not a link, because Windows gets no file-change events from `\\wsl$`, so Talon would never reload a linked folder.
 
 | Say / do | Effect |
 | --- | --- |
