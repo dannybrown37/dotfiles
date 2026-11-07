@@ -28,6 +28,9 @@ _password-store:
 gnome:
     bash -c ". {{root_dir}}/install/gnome.sh"
 
+talon:
+    bash "{{root_dir}}/install/talon.sh"
+
 _select-nerdfont:
     powershell.exe -ExecutionPolicy Bypass -File "{{root_dir}}/install/select-nerdfont.ps1"
 
