@@ -1,5 +1,6 @@
-from talon import Context, actions, scope
+from talon import Context, Module, actions, scope
 
+mod = Module()
 ctx = Context()
 ctx.matches = r"""
 mode: command
@@ -19,3 +20,18 @@ class UserActions:
             actions.user.command_mode()
         else:
             actions.user.dictation_mode()
+
+
+@mod.action_class
+class Actions:
+    def start_typing(text: str) -> None:  # noqa: N805 - Talon actions take no self
+        """Switch to dictation, then type any words said after the command."""
+        actions.user.dictation_mode()
+        if text:
+            actions.user.dictation_insert(text)
+
+    def stop_typing(text: str) -> None:  # noqa: N805 - Talon actions take no self
+        """Switch to command mode, then run any words said after it."""
+        actions.user.command_mode()
+        if text:
+            actions.mimic(text)

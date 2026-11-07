@@ -1,5 +1,8 @@
 mode: command
 mode: dictation
 -
-^start typing$: user.dictation_mode()
-^stop typing$: user.command_mode()
+# (…)+ still matches when a missed first try gets repeated before the pause.
+# Trailing words skip the pause: "start typing hello" types hello,
+# "stop typing pane left" runs pane left.
+^(start typing)+ [<user.text>]$: user.start_typing(text or "")
+^(stop typing)+ [<user.text>]$: user.stop_typing(text or "")

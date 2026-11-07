@@ -22,4 +22,7 @@ fi
 
 rm -rf "${target}"
 cp -r "${root}/talon" "${target}"
+# Generated, not tracked: re-run just talon after adding a skill.
+python3 "${root}/scripts/talon_slash_list.py" >"${target}/slash_skill.talon-list"
 echo "Copied talon/ to ${target}"
+echo "Wrote $(($(wc -l <"${target}/slash_skill.talon-list") - 2)) skills to slash_skill.talon-list"

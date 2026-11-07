@@ -2,6 +2,9 @@ app: windows_terminal
 title: /^tmux/
 -
 tag(): user.tmux
+tag(): user.unix_utilities
+
+run {user.cli_command}: insert(cli_command)
 
 # Direct tmux keys: community's split_* actions lose to Windows Terminal's
 # own pane actions, which only pop up "not possible"

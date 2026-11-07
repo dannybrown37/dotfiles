@@ -184,7 +184,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
 | `scripts/` | Non-sourced standalone executable scripts |
-| `talon/` | Talon voice commands (mode switching, tutti chief, tmux), copied to Windows by just talon |
+| `talon/` | Talon voice commands (mode switching, tutti chief, tmux, slash commands), copied to Windows by just talon |
 | `windows/` | Windows PowerShell network-rescue verbs and the offline rescue cheat sheet |
 | `wsl/` | WSL-specific settings, functions, and komorebi config |
 
@@ -250,6 +250,10 @@ My own Talon files live in `talon/`; [talonhub/community](https://github.com/tal
 | `chief sleep` | Put Talon to sleep (`wake up` to resume) |
 | `mux left` / `mux right`, `mux window <n>` | Switch tmux windows (on when the window title starts with `tmux`) |
 | `pane left` / `right` / `up` / `down` | Switch tmux panes. Full list: `talon/cheatsheet.md` |
+| `slash <name>` | Type a Claude Code / Copilot slash command or skill, e.g. `slash code review` |
+| `run <tool>` | Type a shell command in tmux, e.g. `run just` (`talon/cli_command.talon-list`) |
+
+`just talon` also writes `slash_skill.talon-list` from the skills installed under `~/.claude` and `~/.copilot` (`scripts/talon_slash_list.py`), so rerun it after adding a skill.
 
 `settings.talon` turns on community's mode indicator dot. Use headphones or sleep Talon while testing: it transcribes speaker audio too.
 
