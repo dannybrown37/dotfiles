@@ -114,10 +114,12 @@ check_talon() {
         warn "Talon" "not installed — run: just windows talon"
     elif [[ ! -d "${user_dir}/community" ]]; then
         warn "Talon" "talonhub/community missing — run: just windows talon"
+    elif [[ ! -d "${user_dir}/rango-talon" ]]; then
+        warn "Talon" "rango-talon missing — run: just windows talon"
     elif [[ ! -d "${user_dir}/mine" ]]; then
         warn "Talon" "talon/ not copied — run: just talon"
     else
-        ok "Talon" "installed, community + talon/ in ${user_dir}"
+        ok "Talon" "installed, community + rango-talon + talon/ in ${user_dir}"
     fi
 }
 

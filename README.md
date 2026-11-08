@@ -238,7 +238,7 @@ The write verbs print the exact command and self-elevate through UAC. `just wind
 
 ### Talon Voice Commands
 
-My own Talon files live in `talon/`; [talonhub/community](https://github.com/talonhub/community) stays a separate clone at `%APPDATA%\Talon\user\community`. `just windows talon` runs the Talon installer (it isn't on winget) and clones community. `just talon` copies `talon/` to `%APPDATA%\Talon\user\mine`. Rerun it after each edit: it is a copy, not a link, because Windows gets no file-change events from `\\wsl$`, so Talon would never reload a linked folder.
+My own Talon files live in `talon/`; [talonhub/community](https://github.com/talonhub/community) stays a separate clone at `%APPDATA%\Talon\user\community`. `just windows talon` runs the Talon installer (it isn't on winget) and clones community and [rango-talon](https://github.com/david-tejada/rango-talon). Rango also needs its [Chrome extension](https://chrome.google.com/webstore/detail/rango/lnemjdnjjofijemhdogofbpcedhgcpmb), a manual install. `just talon` copies `talon/` to `%APPDATA%\Talon\user\mine`. Rerun it after each edit: it is a copy, not a link, because Windows gets no file-change events from `\\wsl$`, so Talon would never reload a linked folder.
 
 | Say / do | Effect |
 | --- | --- |
@@ -249,7 +249,7 @@ My own Talon files live in `talon/`; [talonhub/community](https://github.com/tal
 | `chief say <words>` | Type any message into the chief |
 | `chief sleep` | Put Talon to sleep (`wake up` to resume) |
 | `mux left` / `mux right`, `mux window <n>` | Switch tmux windows (on when the window title starts with `tmux`) |
-| `pane left` / `right` / `up` / `down` | Switch tmux panes. Full list: `talon/cheatsheet.md` |
+| `pane left` / `right` / `up` / `down` | Switch tmux panes. Full list: `refs talon` (`talon/talon.md`) |
 | `slash <name>` | Type a Claude Code / Copilot slash command or skill, e.g. `slash code review` |
 | `run <tool>` | Type a shell command in tmux, e.g. `run just` (`talon/cli_command.talon-list`) |
 

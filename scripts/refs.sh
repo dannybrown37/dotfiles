@@ -3,7 +3,7 @@
 set -euo pipefail
 
 readonly EXIT_USAGE=2
-readonly REFS_VERSION="0.6.0"
+readonly REFS_VERSION="0.7.0"
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly DOTFILES_ROOT="$(dirname "$(dirname "${SELF}")")"
 # glamour styles do not inherit, so this is the stock dark.json (glamour v2.0.1)
@@ -45,6 +45,7 @@ ref_paths() {
     markdown_in "${DOTFILES_ROOT}/references"
     markdown_in "${DOTFILES_ROOT}/wsl"
     markdown_in "${DOTFILES_ROOT}/windows"
+    markdown_in "${DOTFILES_ROOT}/talon"
     echo "${DOTFILES_ROOT}/docs/git-workflow.md"
 }
 

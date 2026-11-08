@@ -3,6 +3,9 @@ title: /^tmux/
 -
 tag(): user.tmux
 tag(): user.unix_utilities
+# Windows' clear line selects with shift-end, which bash and Claude Code ignore.
+# tmux.py swaps readline's ctrl-k (tmux pane-up) for ctrl-u.
+tag(): user.readline
 
 run {user.cli_command}: insert(cli_command)
 

@@ -47,3 +47,7 @@ class UserActions:
 
     def terminal_escape_string(string: str) -> str:
         return string.replace(' ', r'\ ')
+
+    # readline's cut_line ends in ctrl-k, which tmux takes for pane-up
+    def cut_line():
+        actions.key('ctrl-e ctrl-u')
