@@ -83,6 +83,7 @@ def test_files_lists_every_markdown_file(refs_dir: Path) -> None:
         'home-server-setup',
         'git-workflow',
         'net-rescue',
+        'talon',
     ],
 )
 def test_default_refs_include_repo_docs(name: str) -> None:
@@ -95,6 +96,7 @@ def test_default_refs_include_repo_docs(name: str) -> None:
         ('home-server-setup', 'wsl/home-server-setup.md'),
         ('git-workflow', 'docs/git-workflow.md'),
         ('net-rescue', 'windows/net-rescue.md'),
+        ('talon', 'talon/talon.md'),
     ],
 )
 def test_default_name_resolves_outside_references(

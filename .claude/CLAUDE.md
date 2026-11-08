@@ -28,6 +28,11 @@ This repo uses the `start`/`ship`/`done` aliases in `docs/git-workflow.md`. This
 - `/code-review`, `skill-tree:two-axis-review` (and `/security-review` for auth/secrets/external input/dependency changes) are opt-in — run them yourself before pushing. Nothing prompts for them.
 - The adversarial red-team pass is `skill-tree:adversarial-review`. User-triggered only, like `/code-review ultra`. Especially useful for `password-store` operations and other auth/secrets.
 
+## Talon
+
+- When I ask how to do something with Talon, also add the answer (spoken command + effect) to `talon/talon.md`, under the matching `##` section. That file is what `refs talon` shows, so it is my one place to look things up. Check the command exists in community (`%APPDATA%\Talon\user\community`) or `talon/` first.
+- Answering is not a go-ahead for other edits; this doc update is the one exception.
+
 ## Documentation
 
 - Architectural changes should be reflected in `.claude/skills/<package>/SKILL.md` (or the package's own `CLAUDE.md`, if it has one) and in `README.md`.

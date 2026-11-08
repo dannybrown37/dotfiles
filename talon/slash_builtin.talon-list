@@ -1,0 +1,35 @@
+list: user.slash_builtin
+-
+add dir: add-dir
+agent: agent
+agents: agents
+clear: clear
+code review: code-review
+compact: compact
+config: config
+context: context
+delegate: delegate
+exit: exit
+fast: fast
+help: help
+hooks: hooks
+init: init
+login: login
+logout: logout
+loop: loop
+em see pee: mcp
+memory: memory
+model: model
+permissions: permissions
+plugin: plugin
+resume: resume
+review: review
+rewind: rewind
+schedule: schedule
+security review: security-review
+session: session
+share: share
+simplify: simplify
+skills: skills
+status: status
+usage: usage

@@ -25,8 +25,9 @@ Start Here:
 
 Environment-Specific:
   vscode          Link VS Code settings, then pick extensions (✓ = installed)
-  windows         Windows-side tools (winget, npm, uv, win32yank, net-rescue), with ✓ for installed
+  windows         Windows-side tools (winget, npm, uv, win32yank, net-rescue, talon), with ✓ for installed
   gnome           Install Gnome extensions (dash-to-dock, just-perfection)
+  talon           Copy talon/ voice commands into Talon's user dir on Windows
 
 Secrets (requires GPG keys):
   secrets-save    Save local secrets to password-store, push to private repo
@@ -183,6 +184,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
 | `scripts/` | Non-sourced standalone executable scripts |
+| `talon/` | Talon voice commands (mode switching, tutti chief, tmux, slash commands), copied to Windows by just talon |
 | `windows/` | Windows PowerShell network-rescue verbs and the offline rescue cheat sheet |
 | `wsl/` | WSL-specific settings, functions, and komorebi config |
 
@@ -233,6 +235,27 @@ The fix for a dead network can't live on the internet, so it lives here. Run `ju
 | `dns-set <ip>...` | PowerShell | Set DNS on the adapter holding the default route |
 
 The write verbs print the exact command and self-elevate through UAC. `just windows` shows `net-rescue` unticked, and `just audit` warns, when the `C:` copy is stale.
+
+### Talon Voice Commands
+
+My own Talon files live in `talon/`; [talonhub/community](https://github.com/talonhub/community) stays a separate clone at `%APPDATA%\Talon\user\community`. `just windows talon` runs the Talon installer (it isn't on winget) and clones community and [rango-talon](https://github.com/david-tejada/rango-talon). Rango also needs its [Chrome extension](https://chrome.google.com/webstore/detail/rango/lnemjdnjjofijemhdogofbpcedhgcpmb), a manual install. `just talon` copies `talon/` to `%APPDATA%\Talon\user\mine`. Rerun it after each edit: it is a copy, not a link, because Windows gets no file-change events from `\\wsl$`, so Talon would never reload a linked folder.
+
+| Say / do | Effect |
+| --- | --- |
+| pop (lip pop or tongue click) | Toggle dictation ↔ command mode. Still stops mouse drag/scroll first; ignored while asleep or in zoom mouse |
+| `start typing` / `stop typing` | Dictation mode / command mode (spoken fallback) |
+| `chief waiting` | Ask the tutti chief whether anything is waiting on me |
+| `chief status` | Ask the chief for a one-line status per agent |
+| `chief say <words>` | Type any message into the chief |
+| `chief sleep` | Put Talon to sleep (`wake up` to resume) |
+| `mux left` / `mux right`, `mux window <n>` | Switch tmux windows (on when the window title starts with `tmux`) |
+| `pane left` / `right` / `up` / `down` | Switch tmux panes. Full list: `refs talon` (`talon/talon.md`) |
+| `slash <name>` | Type a Claude Code / Copilot slash command or skill, e.g. `slash code review` |
+| `run <tool>` | Type a shell command in tmux, e.g. `run just` (`talon/cli_command.talon-list`) |
+
+`just talon` also writes `slash_skill.talon-list` from the skills installed under `~/.claude` and `~/.copilot` (`scripts/talon_slash_list.py`), so rerun it after adding a skill.
+
+`settings.talon` turns on community's mode indicator dot. Use headphones or sleep Talon while testing: it transcribes speaker audio too.
 
 ### Set Up a WSL Debian Distro
 

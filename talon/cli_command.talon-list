@@ -1,0 +1,16 @@
+list: user.cli_command
+-
+just: "just "
+git start: "git start "
+tutti: "tutti "
+tutti send chief: "tutti send chief "
+fleet: "fleet "
+pre commit: "prek run "
+you vee run: "uv run "
+you vee run tests: "uv run pytest "
+github pr: "gh pr "
+github pr checks: "gh pr checks "
+claude: "claude "
+copilot: "copilot "
+neovim: "nvim "
+lazy git: "lazygit"
