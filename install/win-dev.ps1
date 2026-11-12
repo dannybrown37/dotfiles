@@ -132,6 +132,10 @@ function Install-Talon {
         Invoke-WebRequest -Uri $talonUrl -OutFile $installer
         Start-Process -FilePath $installer -Wait
         Remove-Item $installer
+        if (-not (Test-Path $talonExe)) {
+            Write-Host "ERROR: $talonExe not found; the Talon installer did not complete" -ForegroundColor Red
+            return
+        }
     }
     Install-TalonRepo "talonhub/community" $talonCommunity
     Install-TalonRepo "david-tejada/rango-talon" $talonRango
