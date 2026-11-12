@@ -115,8 +115,11 @@ CHECKS_STYLE = {
 }
 DEEP_REVIEW_PROMPT = (
     """\
-Review pull request {url} locally. Check it out with `gh pr checkout {number}`,
-read the code around every change, and run the relevant tests.
+Review pull request {url} locally. Check it out with `gh pr checkout {number}`.
+Read the PR description first (`gh pr view {number}`) and judge the change
+against it: does the code do what it claims, and is anything claimed missing
+or anything changed that the description doesn't mention?
+Read the code around every change, and run the relevant tests.
 Do not push, comment, approve or post anything to GitHub: report your
 findings here, most important first, with file:line references.
 Give every finding a clickable GitHub link to the exact line(s), whichever
@@ -1167,6 +1170,7 @@ class FleetApp(App[int]):
         owner, repo, number = parse_pr_url(url)
         prompt = DEEP_REVIEW_PROMPT.format(url=url, number=number)
         kind = self.review_kind()
+        self.notify(f'🔍 starting {kind} review of {owner}/{repo}#{number}…')
         # Claude has no autopilot mode; it runs interactively.
         extra_args = ['--autopilot'] if kind == 'copilot' else []
         self.with_clone(
