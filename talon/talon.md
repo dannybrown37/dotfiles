@@ -117,6 +117,7 @@ End with `over` so the next words are a new command.
 
 On the work PC, Rango voice commands are off (the clipboard is blocked). Turn on
 Rango's Keyboard clicking setting; saying a hint types its letters to click it.
+`go tab <marker>` cycles tabs (ctrl-tab) until the title starts with the marker.
 
 | Say | Effect |
 | --- | --- |
