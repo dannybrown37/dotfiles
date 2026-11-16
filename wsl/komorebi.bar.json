@@ -38,6 +38,144 @@
         "enable": true,
         "format": "TwentyFourHour"
       }
+    },
+    {
+      "Applications": {
+        "enable": true,
+        "spacing": 6,
+        "items": [
+          {
+            "name": "a air",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "b bat",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "c cap",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "d drum",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "e each",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "f fine",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "g gust",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "h harp",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "i sit",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "j jury",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "k crunch",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "l look",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "m made",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "n near",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "o odd",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "p pit",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "q quench",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "r red",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "s sun",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "t trap",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "u urge",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "v vest",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "w whale",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "x plex",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "y yank",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          },
+          {
+            "name": "z zip",
+            "command": "cmd.exe /c exit",
+            "display": "Text"
+          }
+        ]
+      }
     }
   ],
   "right_widgets": [
