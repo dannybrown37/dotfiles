@@ -6,7 +6,7 @@ Commands work in command mode. The dot at the top of the screen shows the mode.
 
 | Say / do | Effect |
 | --- | --- |
-| pop | Toggle dictation ↔ command |
+| pop | Toggle dictation ↔ command (work PC: only leaves dictation) |
 | `start typing` / `stop typing` | Dictation / command (missed? say it twice) |
 | `start typing <words>` | Dictation, then type the words |
 | `stop typing <command>` | Command mode, then run the command |
@@ -114,6 +114,9 @@ End with `over` so the next words are a new command.
 | `running list` | Show the names `focus` accepts |
 
 ## Chrome
+
+On the work PC, Rango voice commands are off (the clipboard is blocked). Turn on
+Rango's Keyboard clicking setting; saying a hint types its letters to click it.
 
 | Say | Effect |
 | --- | --- |

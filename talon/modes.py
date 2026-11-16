@@ -1,4 +1,9 @@
+import os
+
 from talon import Context, Module, actions, scope
+
+# Office noise fires false pops at work; there a pop only leaves typing mode.
+POP_STARTS_TYPING = os.environ.get('USERDOMAIN', '').upper() != 'WHELEN'
 
 mod = Module()
 ctx = Context()
@@ -18,7 +23,7 @@ class UserActions:
             return
         if 'dictation' in scope.get('mode'):
             actions.user.command_mode()
-        else:
+        elif POP_STARTS_TYPING:
             actions.user.dictation_mode()
 
 
