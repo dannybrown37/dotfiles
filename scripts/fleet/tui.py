@@ -648,7 +648,12 @@ class FleetApp(App[int]):
             else Text('-', style='dim')
         )
 
+    def agents_mounted(self) -> bool:
+        return bool(self.query('#agents-table'))
+
     def refresh_agents(self) -> None:
+        if not self.agents_mounted():
+            return
         selected = self.selected_row()
         self.rows = by_urgency(
             dashboard_rows(self.store, self.tmux, self.scan_processes()),
@@ -727,7 +732,7 @@ class FleetApp(App[int]):
         self.shell_runs = runs
 
     def refresh_preview(self) -> None:
-        if self.active_tab() != 'agents':
+        if not self.agents_mounted() or self.active_tab() != 'agents':
             return
         row = self.selected_row()
         preview = self.query_one('#preview', Static)

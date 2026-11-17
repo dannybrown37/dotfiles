@@ -470,6 +470,21 @@ def test_remote_agent_clones_first_then_opens_form(
     run_with_pilot(app, scenario)
 
 
+@pytest.mark.parametrize('callback', ['refresh_preview', 'refresh_agents'])
+def test_refresh_timer_survives_teardown(
+    tmp_path: Path,
+    callback: str,
+) -> None:
+    """Timers can tick after shutdown has removed the agents table."""
+    app = make_app(tmp_path, [])
+
+    async def scenario(_pilot: Pilot[int]) -> None:
+        await app.query_one('#agents-table').remove()
+        getattr(app, callback)()
+
+    run_with_pilot(app, scenario)
+
+
 def test_deep_review_without_local_clone_clones_then_spawns(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
