@@ -2,10 +2,17 @@
 # Hidden recipe `just _komo`; run it via the `komo` alias in config/.bash_aliases.
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
-if (-not (Get-Command komorebic -ErrorAction SilentlyContinue)) {
-    Write-Host "komorebic not found, installing komorebi + whkd..."
-    winget install LGUG2Z.komorebi
-    winget install LGUG2Z.whkd
+# Pinned so the schema URLs in wsl/komorebi*.json match the installed binary.
+$komorebiVersion = "0.1.41"
+$installed = $null
+if (Get-Command komorebic -ErrorAction SilentlyContinue) {
+    $installed = ((komorebic --version) -join "`n") -replace '(?s)^komorebic (\S+).*', '$1'
+}
+if ($installed -ne $komorebiVersion) {
+    Write-Host "komorebi $installed -> $komorebiVersion, installing komorebi + whkd..."
+    komorebic stop --whkd --bar 2>$null | Out-Null
+    winget install --id LGUG2Z.komorebi --exact --version $komorebiVersion --force --accept-source-agreements --accept-package-agreements
+    winget install --id LGUG2Z.whkd --exact --accept-source-agreements --accept-package-agreements
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 }
 
