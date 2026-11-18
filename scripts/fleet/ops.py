@@ -15,6 +15,7 @@ from fleet.agents import (
     launch_command,
     validate_agent_name,
 )
+from fleet.autopilot import exclude_fleet_dir
 from fleet.hooks_install import (
     claude_hooks_installed,
     copilot_hooks_installed,
@@ -55,6 +56,7 @@ class SpawnRequest:
     auto_trust: bool = False
     # A pane id to split instead of opening a window in `session`.
     split_from: str = ''
+    autopilot: bool = False
 
 
 @dataclass(frozen=True)
@@ -166,6 +168,34 @@ def current_ref(path: Path) -> str:
     return git(path, 'rev-parse', 'HEAD').strip() if ref == 'HEAD' else ref
 
 
+ANNOUNCE_ENV = ('FLEET_SPEAK',)
+AUTOPILOT_ENV = ('FLEET_NTFY_TOPIC', 'PERSONAL_ALERT_TOPIC')
+
+
+def agent_env(
+    name: str,
+    launch_id: str,
+    hook_path: str,
+    state_dir: Path,
+    *,
+    autopilot: bool,
+    parent: Mapping[str, str] = os.environ,
+) -> dict[str, str]:
+    """tmux starts the agent with only these, so hook settings ride along."""
+    env = {
+        'FLEET_AGENT': name,
+        'FLEET_LAUNCH_ID': launch_id,
+        'FLEET_HOOK': hook_path,
+        'FLEET_STATE_DIR': str(state_dir),
+    }
+    passed: tuple[str, ...] = ANNOUNCE_ENV
+    if autopilot:
+        env['FLEET_AUTOPILOT'] = '1'
+        passed += AUTOPILOT_ENV
+    env.update({key: parent[key] for key in passed if parent.get(key)})
+    return env
+
+
 def spawn_agent(
     store: Store,
     tmux: Tmux,
@@ -190,12 +220,15 @@ def spawn_agent(
         with_hooks=not claude_hooks_installed(),
     )
     launch_id = uuid.uuid4().hex
-    env = {
-        'FLEET_AGENT': name,
-        'FLEET_LAUNCH_ID': launch_id,
-        'FLEET_HOOK': request.hook_path,
-        'FLEET_STATE_DIR': str(store.agents_dir.parent),
-    }
+    env = agent_env(
+        name,
+        launch_id,
+        request.hook_path,
+        store.agents_dir.parent,
+        autopilot=request.autopilot,
+    )
+    if request.autopilot:
+        exclude_fleet_dir(worktree)
     if request.split_from:
         window_id = tmux.split_pane(request.split_from, worktree, env, command)
     else:
@@ -217,6 +250,7 @@ def spawn_agent(
         created_at=time.time(),
         window_id=window_id,
         launch_id=launch_id,
+        autopilot=request.autopilot,
     )
     store.save(record)
     if request.auto_trust and source_is_trusted(root):

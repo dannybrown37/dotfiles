@@ -20,6 +20,8 @@ WORK_ENV = (
     'FLEET_JIRA_EMAIL',
     'FLEET_JIRA_TOKEN',
     'FLEET_JIRA_PASS_ENTRY',
+    'JIRA_URL',
+    'JIRA_API_KEY',
     'FLEET_AWS_PROFILES',
     'FLEET_AWS_LOG_GROUPS',
     'AWS_PROFILE',
@@ -326,3 +328,90 @@ def test_picked_ticket_echoes_the_replay_command(
         f'fleet new abc-7-fix-login --jira ABC-7 -a claude -C {tmp_path}'
         in out
     )
+
+
+def test_new_autopilot_wraps_the_task_and_flags_the_request(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    requests: list[SpawnRequest] = []
+
+    def fake_spawn(
+        _store: object,
+        _tmux: object,
+        request: SpawnRequest,
+    ) -> AgentRecord:
+        requests.append(request)
+        return AgentRecord(
+            name=request.name,
+            kind=request.kind,
+            repo=str(request.repo_dir),
+            worktree='/w',
+            branch=request.name,
+            base='main',
+            prompt=request.prompt,
+            created_at=1.0,
+            window_id='@1',
+        )
+
+    monkeypatch.setattr('fleet.cli.spawn_agent', fake_spawn)
+    argv = ['new', 'fix-x', '--autopilot', '-p', 'do it', '-C', str(tmp_path)]
+    assert cli.main(argv) == 0
+    assert requests[0].autopilot is True
+    assert requests[0].prompt.startswith('do it')
+    assert '.fleet/plan.md' in requests[0].prompt
+    assert 'fleet pr fix-x' in capsys.readouterr().out
+
+
+def test_new_autopilot_needs_a_task(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    argv = ['new', 'fix-x', '--autopilot', '-p', '', '-C', str(tmp_path)]
+    assert cli.main(argv) == 1
+    assert 'needs a task' in capsys.readouterr().err
+
+
+def test_pr_opens_draft_for_the_agent_worktree(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    Store(tmp_path / 'state').save(
+        AgentRecord(
+            name='fix-x',
+            kind='claude',
+            repo='/r',
+            worktree='/w',
+            branch='fix-x',
+            base='main',
+            prompt='p',
+            created_at=1.0,
+            window_id='@99',
+        ),
+    )
+    calls: list[tuple[Path, str, str]] = []
+
+    def fake_open(worktree: Path, branch: str, base: str) -> str:
+        calls.append((worktree, branch, base))
+        return 'https://github.example.test/o/r/pull/7'
+
+    monkeypatch.setattr('fleet.cli.open_draft_pr', fake_open)
+    assert cli.main(['pr', 'fix-x']) == 0
+    assert calls == [(Path('/w'), 'fix-x', 'main')]
+    assert 'pull/7' in capsys.readouterr().out
+
+
+def test_work_shows_mentions_in_text_and_json(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        'fleet.cli.load_work_items',
+        lambda *_args: (WorkItems(mentions=(TICKET,)), []),
+    )
+    assert cli.main(['work']) == 0
+    assert '💬 ABC-7' in capsys.readouterr().out
+    assert cli.main(['work', '--json']) == 0
+    assert json.loads(capsys.readouterr().out)['mentions'][0]['key'] == 'ABC-7'

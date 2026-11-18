@@ -235,3 +235,50 @@ Say the formatter, then the words: `snake hello world` = `hello_world`.
 | `chief waiting` | Anything waiting on me? |
 | `chief status` | One line per agent |
 | `chief say <words>` | Type a message into the chief |
+
+## Fleet by voice
+
+Command mode. `agent …`, `show …`, `review …` and `fleet palette` work only
+while the fleet dashboard has focus. The cheat sheet pops up by itself there
+until you say `fleet coach off` (or set `user.fleet_coach = 0` in
+`settings.talon`).
+
+How to learn it: one tier a week. Week 1, use only tier 1, and say
+`fleet help` when you forget. Move on when you stop looking.
+
+Tier 1: start here
+
+| Say | Effect |
+| --- | --- |
+| `fleet open` | Show / hide the dashboard (Alt+W) |
+| `fleet help` | Show / hide the cheat sheet |
+| `agent next` / `agent last` | Down / up one agent |
+| `agent jump` | Go into the selected agent's pane |
+| `fleet back` | From any tmux window, back to the dashboard |
+
+Tier 2: daily driving
+
+| Say | Effect |
+| --- | --- |
+| `agent top` | First row: the agent that needs you most |
+| `agent go` | Tell the selected agent "go" (autopilot gate 1) |
+| `agent send <words>` | Type a message into the selected agent |
+| `agent diff` | The selected agent's diff |
+| `agent draft` | Commit, push, open a draft PR (autopilot gate 2) |
+| `agent browser` | Open the selected agent's or review's PR |
+| `fleet status` | Pop-up: who needs you, without looking |
+
+Tier 3: power moves
+
+| Say | Effect |
+| --- | --- |
+| `agent new` | New agent form |
+| `agent stop` | Stop the agent, keep its worktree and branch |
+| `agent lazy git` | lazygit in the agent's worktree |
+| `show agents` / `show reviews` / `show mine` | Switch tab |
+| `review this` / `review deep` | Pre-review / agent review of the selected PR |
+| `fleet palette` | Ctrl+P: search every action |
+| `fleet coach on` / `fleet coach off` | Auto-show the cheat sheet, or stop |
+
+Hear agents too: `export FLEET_SPEAK=1` before starting agents, and Windows
+says "fix login your turn" when one finishes or needs you.

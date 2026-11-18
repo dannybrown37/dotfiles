@@ -55,6 +55,71 @@ def read_notification(raw_payload: str) -> tuple[str, str]:
     return message, str(payload.get('notification_type') or '')
 
 
+TURN_END_EVENTS = frozenset({'Stop', 'agentStop'})
+SPEAK_SCRIPT = (
+    'Add-Type -AssemblyName System.Speech; '
+    "(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{}')"
+)
+
+
+def announce_commands(
+    name: str,
+    state: str,
+    event: str,
+    env: dict[str, str] | os._Environ[str],
+) -> list[list[str]]:
+    """Ping your phone (autopilot) and/or speak aloud when an agent needs you.
+
+    Only the turn's end and real permission prompts count, so the repeated
+    idle reminders never ping. `name` is already a validated agent name, so
+    it is safe inside the PowerShell string.
+    """
+    if state == WAITING:
+        phrase = 'needs you'
+    elif event in TURN_END_EVENTS:
+        phrase = 'your turn'
+    else:
+        return []
+    commands = []
+    topic = env.get('FLEET_NTFY_TOPIC') or env.get('PERSONAL_ALERT_TOPIC')
+    if env.get('FLEET_AUTOPILOT') == '1' and topic:
+        commands.append(
+            [
+                'curl',
+                '-fsS',
+                '-m',
+                '10',
+                '-d',
+                f'fleet: {name} {phrase}',
+                f'https://ntfy.sh/{topic}',
+            ],
+        )
+    if env.get('FLEET_SPEAK') == '1':
+        spoken = name.replace('-', ' ').replace('_', ' ')
+        script = SPEAK_SCRIPT.format(f'{spoken} {phrase}')
+        commands.append(['powershell.exe', '-NoProfile', '-Command', script])
+    return commands
+
+
+def announce(name: str, state: str, event: str) -> None:
+    commands = announce_commands(name, state, event, os.environ)
+    if not commands:
+        return
+    import subprocess
+
+    for command in commands:
+        try:
+            subprocess.Popen(  # noqa: S603
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+        except OSError:
+            continue
+
+
 def handle(kind: str, event: str, raw_payload: str) -> None:
     state = state_name_for_event(kind, event, '')
     if state is None:
@@ -87,6 +152,7 @@ def handle(kind: str, event: str, raw_payload: str) -> None:
             f'{name}.state.json',
             f'{{{fields}, "launch_id": {launch_id}}}',
         )
+        announce(name, state, event)
 
 
 def main() -> None:

@@ -238,6 +238,18 @@ def ticket_entries(tickets: Sequence[Ticket]) -> list[PaletteEntry]:
     return entries
 
 
+def mention_entries(mentions: Sequence[Ticket]) -> list[PaletteEntry]:
+    return [
+        PaletteEntry(
+            f'💬 {ticket.key} {ticket.summary}',
+            ' · '.join(filter(None, ('mentions you', ticket.status))),
+            'open-url',
+            ticket.url,
+        )
+        for ticket in mentions
+    ]
+
+
 def log_group_entries(groups: Sequence[LogGroup]) -> list[PaletteEntry]:
     entries = []
     for group in groups:
@@ -311,6 +323,7 @@ def palette_entries(
     entries += alarm_entries(work.alarms)
     entries += agent_entries(rows)
     entries += review_entries(ranked)
+    entries += mention_entries(work.mentions)
     entries += ticket_entries(work.tickets)
     entries += [
         PaletteEntry('+ new agent', 'start an agent in a worktree', 'new'),

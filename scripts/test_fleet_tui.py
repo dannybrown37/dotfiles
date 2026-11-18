@@ -346,6 +346,7 @@ def work_fetchers(
         jira_config=lambda _env: JIRA,
         tickets=lambda _config: tickets or [],
         alarms=lambda _profiles: [],
+        mentions=lambda _config: [],
     )
 
 
@@ -369,6 +370,7 @@ def test_work_errors_are_shown_once(tmp_path: Path) -> None:
         jira_config=lambda _env: JIRA,
         tickets=jira_down,
         alarms=lambda _profiles: [],
+        mentions=lambda _config: [],
     )
     app = make_app(tmp_path, [], work_fetchers=fetchers)
 

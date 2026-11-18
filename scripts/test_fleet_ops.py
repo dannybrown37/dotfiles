@@ -18,6 +18,7 @@ import pytest
 from fleet.agents import AgentState
 from fleet import ops
 from fleet.ops import (
+    agent_env,
     DashboardRow,
     SpawnRequest,
     agent_views,
@@ -617,3 +618,41 @@ def test_review_agent_defaults_to_copilot(
     monkeypatch.delenv('FLEET_REVIEW_AGENT', raising=False)
     monkeypatch.setenv('FLEET_DEFAULT_AGENT', 'claude')
     assert ops.review_agent_kind(None) == 'copilot'
+
+
+@pytest.mark.parametrize(
+    ('autopilot', 'parent', 'extra'),
+    [
+        (False, {'FLEET_SPEAK': '1', 'OTHER': 'x'}, {'FLEET_SPEAK': '1'}),
+        (
+            True,
+            {'PERSONAL_ALERT_TOPIC': 't', 'FLEET_NTFY_TOPIC': 'u'},
+            {
+                'FLEET_AUTOPILOT': '1',
+                'PERSONAL_ALERT_TOPIC': 't',
+                'FLEET_NTFY_TOPIC': 'u',
+            },
+        ),
+        (False, {}, {}),
+    ],
+)
+def test_agent_env_passes_announce_settings(
+    autopilot: bool,  # noqa: FBT001
+    parent: dict[str, str],
+    extra: dict[str, str],
+) -> None:
+    env = agent_env(
+        'a',
+        'id',
+        '/h',
+        Path('/s'),
+        autopilot=autopilot,
+        parent=parent,
+    )
+    assert env == {
+        'FLEET_AGENT': 'a',
+        'FLEET_LAUNCH_ID': 'id',
+        'FLEET_HOOK': '/h',
+        'FLEET_STATE_DIR': '/s',
+        **extra,
+    }

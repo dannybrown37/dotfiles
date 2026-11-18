@@ -19,6 +19,7 @@ class WorkItems:
     tickets: tuple[jira.Ticket, ...] = ()
     alarms: tuple[aws.ProfileAlarms, ...] = ()
     log_groups: tuple[aws.LogGroup, ...] = ()
+    mentions: tuple[jira.Ticket, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,7 @@ class Fetchers:
     jira_config: Callable[[Mapping[str, str]], jira.JiraConfig | None]
     tickets: Callable[[jira.JiraConfig], list[jira.Ticket]]
     alarms: Callable[[Sequence[aws.AwsProfile]], list[aws.ProfileAlarms]]
+    mentions: Callable[[jira.JiraConfig], list[jira.Ticket]]
 
 
 def live_fetchers() -> Fetchers:
@@ -38,6 +40,7 @@ def live_fetchers() -> Fetchers:
         jira_config=jira.jira_config,
         tickets=jira.fetch_assigned,
         alarms=aws.fetch_alarms,
+        mentions=jira.fetch_mentions,
     )
 
 
@@ -73,7 +76,18 @@ def load_work_items(
         config = fetchers.jira_config(env)
         if config is None:
             return WorkItems(), []
-        return WorkItems(tickets=tuple(fetchers.tickets(config))), []
+        assigned = tuple(fetchers.tickets(config))
+        # A bad mentions JQL is a different fix from a dead Jira.
+        mentioned, errors = contained(
+            'jira mentions',
+            lambda: (WorkItems(mentions=tuple(fetchers.mentions(config))), []),
+        )
+        errors = [f'{e} (set FLEET_JIRA_MENTIONS_JQL)' for e in errors]
+        keys = {ticket.key for ticket in assigned}
+        return WorkItems(
+            tickets=assigned,
+            mentions=tuple(t for t in mentioned.mentions if t.key not in keys),
+        ), errors
 
     def alarms() -> Found:
         profiles = aws.configured_profiles(env)
@@ -103,6 +117,7 @@ def load_work_items(
         tickets=jr.tickets,
         alarms=aw.alarms,
         log_groups=aw.log_groups,
+        mentions=jr.mentions,
     )
     return items, gh_errors + jira_errors + aws_errors
 
@@ -125,7 +140,8 @@ def integration_status(
     pass_entry = env.get('FLEET_JIRA_PASS_ENTRY', '')
     token_source = ''
     status_env = env
-    if pass_entry and not env.get('FLEET_JIRA_TOKEN'):
+    has_env_token = env.get('FLEET_JIRA_TOKEN') or env.get('JIRA_API_KEY')
+    if pass_entry and not has_env_token:
         # Status must not decrypt a secret just to say it is configured.
         token_source = f' (token from pass {pass_entry})'
         status_env = {**env, 'FLEET_JIRA_TOKEN': 'not-read'}
@@ -137,7 +153,7 @@ def integration_status(
         lines.append(
             f'jira: {config.flavor} at {config.base_url}{token_source}'
             if config
-            else 'jira: off (set FLEET_JIRA_URL)',
+            else 'jira: off (set FLEET_JIRA_URL or JIRA_URL)',
         )
     try:
         profiles = aws.configured_profiles(env)
@@ -171,4 +187,6 @@ def work_summary(items: WorkItems) -> str:
     ]
     if items.tickets:
         parts.append(f'🎫 {plural(len(items.tickets), "ticket")}')
+    if items.mentions:
+        parts.append(f'💬 {plural(len(items.mentions), "mention")}')
     return ' · '.join(parts)

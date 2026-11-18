@@ -37,6 +37,7 @@ class AgentRecord:
     created_at: float
     window_id: str
     launch_id: str = ''
+    autopilot: bool = False
 
 
 @dataclass(frozen=True)
