@@ -423,3 +423,36 @@ def test_log_group_with_region_gets_console_link() -> None:
     assert any(
         e.action == 'open-url' and 'logsV2' in e.target for e in entries
     )
+
+
+def test_mentions_open_the_ticket_above_your_own_tickets() -> None:
+    mention = Ticket(
+        'ABC-2',
+        'ping',
+        'Open',
+        '',
+        '',
+        'https://t.test/browse/ABC-2',
+        '',
+    )
+    mine = Ticket(
+        'ABC-1',
+        'mine',
+        '',
+        '',
+        '',
+        'https://t.test/browse/ABC-1',
+        '',
+    )
+    entries = palette_entries(
+        [],
+        [],
+        [],
+        None,
+        work=WorkItems(tickets=(mine,), mentions=(mention,)),
+    )
+    labels = [e.label for e in entries]
+    assert labels.index('💬 ABC-2 ping') < labels.index('🎫 ABC-1 mine')
+    entry = entries[labels.index('💬 ABC-2 ping')]
+    assert (entry.action, entry.target) == ('open-url', mention.url)
+    assert entry.help == 'mentions you · Open'

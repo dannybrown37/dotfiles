@@ -13,6 +13,7 @@ from pathlib import Path
 
 from fleet import VERSION, aws, jira, radar
 from fleet.agents import AGENT_KINDS, validate_agent_name
+from fleet.autopilot import PLAN_FILE, autopilot_prompt, open_draft_pr
 from fleet.hooks_install import (
     CLAUDE_SETTINGS,
     COPILOT_HOOK_FILE,
@@ -117,6 +118,13 @@ def replay_command(
     return shlex.join(parts)
 
 
+def autopilot_task(prompt: str | None) -> str:
+    if not prompt:
+        msg = 'autopilot needs a task: -p TEXT, --jira KEY, or stdin'
+        raise ValueError(msg)
+    return autopilot_prompt(prompt)
+
+
 def cmd_new(args: argparse.Namespace, extra_args: list[str]) -> int:
     prompted = False
     key_picked_with_fzf = ''
@@ -139,6 +147,8 @@ def cmd_new(args: argparse.Namespace, extra_args: list[str]) -> int:
         prompt = sys.stdin.read().strip()
     elif prompt is None and prompted:
         prompt = input('Task for the agent (blank = none): ').strip()
+    if args.autopilot:
+        prompt = autopilot_task(prompt)
     repo_dir = Path(args.repo_dir).resolve()
     record = spawn_agent(
         default_store(),
@@ -154,10 +164,16 @@ def cmd_new(args: argparse.Namespace, extra_args: list[str]) -> int:
             hook_path=str(HOOK_PATH),
             session=fleet_session(),
             auto_trust=not args.no_trust,
+            autopilot=args.autopilot,
         ),
     )
     print(f'started {record.kind} agent {record.name!r} in {record.worktree}')
     print(f'  jump in: fleet attach {record.name}   dashboard: fleet')
+    if args.autopilot:
+        print(
+            f'  autopilot: read {PLAN_FILE}, tell it "go", then when it '
+            f'hands off: fleet pr {record.name}',
+        )
     if key_picked_with_fzf:
         replay = ['fleet', 'new', name, '--jira', key_picked_with_fzf]
         replay += ['-a', args.agent, '-C', str(repo_dir)]
@@ -289,6 +305,13 @@ def cmd_rm(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pr(args: argparse.Namespace) -> int:
+    record = find_record(args.name)
+    url = open_draft_pr(Path(record.worktree), record.branch, record.base)
+    print(f'draft PR: {url}')
+    return 0
+
+
 def cmd_cockpit(_args: argparse.Namespace) -> int:
     tmux = default_tmux()
     window_id = ensure_dashboard(
@@ -381,6 +404,15 @@ def work_json(items: WorkItems, errors: list[str]) -> str:
                 }
                 for t in items.tickets
             ],
+            'mentions': [
+                {
+                    'key': t.key,
+                    'summary': t.summary,
+                    'status': t.status,
+                    'url': t.url,
+                }
+                for t in items.mentions
+            ],
             'alarms': [
                 {
                     'profile': result.profile.label,
@@ -416,6 +448,8 @@ def print_work(items: WorkItems) -> None:
             print(f'✓ {result.profile.label}: no alarms firing')
     for ticket in items.tickets:
         print(f'🎫 {ticket.key:<12} {ticket.status:<14} {ticket.summary[:60]}')
+    for ticket in items.mentions:
+        print(f'💬 {ticket.key:<12} {ticket.status:<14} {ticket.summary[:60]}')
     if items.org_repos:
         print(f'🌐 {len(items.org_repos)} repos in the configured GitHub orgs')
     for group in items.log_groups:
@@ -532,6 +566,14 @@ def build_parser() -> argparse.ArgumentParser:
         help='base ref (default: the current branch)',
     )
     new.add_argument(
+        '--autopilot',
+        action='store_true',
+        help=(
+            'plan, stop for your go, build and self-review, stop again; '
+            'pings ntfy when it needs you. Ship with `fleet pr NAME`'
+        ),
+    )
+    new.add_argument(
         '--no-trust',
         action='store_true',
         help=(
@@ -549,6 +591,18 @@ def build_parser() -> argparse.ArgumentParser:
     send = sub.add_parser('send', help='type a message into an agent')
     send.add_argument('name', nargs='?', metavar='NAME')
     send.add_argument('text', nargs='*', metavar='TEXT')
+
+    pr = sub.add_parser(
+        'pr',
+        help="commit an autopilot agent's work, push it, open a draft PR",
+        description=(
+            'Commits with the title and body from .fleet/pr.md (AI '
+            'attribution lines removed), pushes the branch and runs '
+            '`gh pr create --draft`. Refuses if any commit on the branch '
+            'carries a Claude/Copilot co-author line.'
+        ),
+    )
+    pr.add_argument('name', nargs='?', metavar='NAME')
 
     rm = sub.add_parser('rm', help='stop an agent')
     rm.add_argument('name', nargs='?', metavar='NAME')
@@ -640,6 +694,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         'ls': cmd_ls,
         'attach': cmd_attach,
         'send': cmd_send,
+        'pr': cmd_pr,
         'rm': cmd_rm,
         'radar': cmd_radar,
         'work': cmd_work,

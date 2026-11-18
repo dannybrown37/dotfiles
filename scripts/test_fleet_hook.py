@@ -202,3 +202,89 @@ def test_hook_rejects_agent_name_with_path_traversal(tmp_path: Path) -> None:
     )
     assert not (tmp_path / 'escape.state.json').exists()
     assert not (tmp_path / 'agents').exists()
+
+
+NTFY_ENV = {'FLEET_AUTOPILOT': '1', 'FLEET_NTFY_TOPIC': 'topic-x'}
+
+
+@pytest.mark.parametrize(
+    ('state', 'event', 'phrase'),
+    [
+        ('idle', 'Stop', 'your turn'),
+        ('idle', 'agentStop', 'your turn'),
+        ('waiting', 'Notification', 'needs you'),
+        ('waiting', 'permissionRequest', 'needs you'),
+    ],
+)
+def test_autopilot_agent_pings_ntfy_when_it_needs_you(
+    state: str,
+    event: str,
+    phrase: str,
+) -> None:
+    [command] = hook.announce_commands('abc-1-fix', state, event, NTFY_ENV)
+    assert command[0] == 'curl'
+    assert command[-1] == 'https://ntfy.sh/topic-x'
+    assert f'fleet: abc-1-fix {phrase}' in command
+
+
+@pytest.mark.parametrize(
+    ('state', 'event'),
+    [
+        ('working', 'PostToolUse'),
+        ('idle', 'Notification'),
+        ('idle', 'SessionStart'),
+    ],
+)
+def test_no_ping_while_working_or_on_repeat_idle(
+    state: str,
+    event: str,
+) -> None:
+    assert hook.announce_commands('a', state, event, NTFY_ENV) == []
+
+
+def test_personal_alert_topic_is_the_fallback() -> None:
+    env = {'FLEET_AUTOPILOT': '1', 'PERSONAL_ALERT_TOPIC': 'mine'}
+    [command] = hook.announce_commands('a', 'idle', 'Stop', env)
+    assert command[-1] == 'https://ntfy.sh/mine'
+
+
+@pytest.mark.parametrize(
+    'env',
+    [{'FLEET_NTFY_TOPIC': 'topic-x'}, {'FLEET_AUTOPILOT': '1'}],
+)
+def test_ntfy_needs_autopilot_and_a_topic(env: dict[str, str]) -> None:
+    assert hook.announce_commands('a', 'idle', 'Stop', env) == []
+
+
+def test_speak_says_the_name_with_spaces() -> None:
+    [command] = hook.announce_commands(
+        'abc-1_fix',
+        'idle',
+        'Stop',
+        {'FLEET_SPEAK': '1'},
+    )
+    assert command[0] == 'powershell.exe'
+    assert "Speak('abc 1 fix your turn')" in command[-1]
+
+
+def test_speak_and_ntfy_together() -> None:
+    env = {**NTFY_ENV, 'FLEET_SPEAK': '1'}
+    commands = hook.announce_commands('a', 'idle', 'Stop', env)
+    assert [c[0] for c in commands] == ['curl', 'powershell.exe']
+
+
+def test_hook_still_exits_zero_when_announce_binary_is_missing(
+    tmp_path: Path,
+) -> None:
+    result = run_hook(
+        ['claude', 'Stop'],
+        '{}',
+        {
+            'FLEET_AGENT': 'a',
+            'FLEET_STATE_DIR': str(tmp_path),
+            'FLEET_SPEAK': '1',
+            'PATH': '/nonexistent:/usr/bin:/bin',
+        },
+    )
+    assert result.returncode == 0
+    assert read_state(tmp_path, 'a')['state'] == 'idle'

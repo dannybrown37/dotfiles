@@ -41,6 +41,7 @@ def fetchers(**overrides: object) -> Fetchers:
         'org_repos': lambda _orgs, _cache: ([REPO], []),
         'jira_config': lambda _env: CONFIG,
         'tickets': lambda _config: [TICKET],
+        'mentions': lambda _config: [],
         'alarms': lambda profiles: [
             ProfileAlarms(p, (), needs_login=False, error='') for p in profiles
         ],
@@ -156,7 +157,7 @@ def test_status_when_nothing_set() -> None:
     lines = integration_status({}, read_jira_config=lambda _env: None)
     assert lines == [
         'github: off (set FLEET_GITHUB_ORGS)',
-        'jira: off (set FLEET_JIRA_URL)',
+        'jira: off (set FLEET_JIRA_URL or JIRA_URL)',
         'aws: off (set FLEET_AWS_PROFILES)',
     ]
 
@@ -278,3 +279,46 @@ def test_status_never_decrypts_the_pass_entry(
         'jira: dc at https://t.example.test (token from pass work/jira)'
         in lines
     )
+
+
+MENTION = Ticket(
+    'ABC-2',
+    'ping',
+    '',
+    '',
+    '',
+    'https://t.example.test/browse/ABC-2',
+    '',
+)
+
+
+def test_mentions_skip_tickets_already_assigned(tmp_path: Path) -> None:
+    items, errors = load_work_items(
+        FULL_ENV,
+        tmp_path,
+        fetchers(mentions=lambda _c: [TICKET, MENTION]),
+    )
+    assert items.tickets == (TICKET,)
+    assert items.mentions == (MENTION,)
+    assert errors == []
+
+
+def test_failing_mentions_keep_assigned_tickets(tmp_path: Path) -> None:
+    def bad_jql(_config: JiraConfig) -> list[Ticket]:
+        msg = 'Jira 400 Bad Request'
+        raise ValueError(msg)
+
+    items, errors = load_work_items(
+        FULL_ENV,
+        tmp_path,
+        fetchers(mentions=bad_jql),
+    )
+    assert items.tickets == (TICKET,)
+    assert errors == [
+        'jira mentions: Jira 400 Bad Request (set FLEET_JIRA_MENTIONS_JQL)',
+    ]
+
+
+def test_summary_counts_mentions() -> None:
+    items = WorkItems(mentions=(MENTION,))
+    assert work_summary(items) == '💬 1 mention'

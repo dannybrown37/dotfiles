@@ -14,6 +14,7 @@ import pytest
 from fleet.agents import is_valid_agent_name
 from fleet.jira import (
     DEFAULT_JQL,
+    DEFAULT_MENTIONS_JQL,
     JiraConfig,
     Ticket,
     adf_to_text,
@@ -482,3 +483,55 @@ def test_truncated_response_is_a_value_error(fake_jira: str) -> None:
     config = cloud(base_url=fake_jira, flavor='dc', email='')
     with pytest.raises(ValueError, match='connection failed: IncompleteRead'):
         fetch_ticket(config, 'ABC-9')
+
+
+# ---- shared env names and mentions -----------------------------------------
+
+
+def test_plain_jira_env_names_are_the_fallback() -> None:
+    config = jira_config(
+        {'JIRA_URL': BASE, 'JIRA_API_KEY': 'shared'},
+        read_pass=lambda _e: 'unused',
+    )
+    assert config is not None
+    assert config.base_url == BASE
+    assert config.token == 'shared'  # noqa: S105  fake
+
+
+def test_fleet_env_names_win_over_plain_ones() -> None:
+    config = jira_config(
+        {
+            'JIRA_URL': 'https://other.example.test',
+            'JIRA_API_KEY': 'shared',
+            'FLEET_JIRA_URL': BASE,
+            'FLEET_JIRA_TOKEN': 'mine',
+        },
+        read_pass=lambda _e: 'unused',
+    )
+    assert config is not None
+    assert (config.base_url, config.token) == (BASE, 'mine')
+
+
+def test_atlassian_cloud_without_email_names_the_fix() -> None:
+    with pytest.raises(ValueError, match='FLEET_JIRA_EMAIL'):
+        jira_config(
+            {'JIRA_URL': 'https://acme.atlassian.net', 'JIRA_API_KEY': 'k'},
+            read_pass=lambda _e: '',
+        )
+
+
+def test_mentions_jql_default_and_override() -> None:
+    env = {'FLEET_JIRA_URL': BASE, 'FLEET_JIRA_TOKEN': 't'}
+    config = jira_config(env, read_pass=lambda _e: '')
+    assert config is not None
+    assert config.mentions_jql == DEFAULT_MENTIONS_JQL
+    assert 'currentUser()' in DEFAULT_MENTIONS_JQL
+    custom = {**env, 'FLEET_JIRA_MENTIONS_JQL': 'comment ~ "me"'}
+    config = jira_config(custom, read_pass=lambda _e: '')
+    assert config is not None
+    assert config.mentions_jql == 'comment ~ "me"'
+
+
+def test_search_url_takes_another_jql() -> None:
+    url = urlsplit(search_request_url(cloud(), jql='comment ~ currentUser()'))
+    assert parse_qs(url.query)['jql'] == ['comment ~ currentUser()']

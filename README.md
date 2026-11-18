@@ -88,7 +88,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `fastfetch` | System info summary (neofetch successor) | fastfetch | `bin/stubs.sh` |
 | `fd` | Fast find that respects .gitignore | fd <pattern> | `bin/stubs.sh` |
 | `fleet` | Alt+W - show/hide the always-warm fleet cockpit (agents, review radar, Ctrl+P palette) | `ahk/fleet.ahk` |
-| `fleet` | Parallel Claude/Copilot agents in worktrees + review radar (bare: dashboard) | fleet new NAME -p "task", fleet new --jira KEY, fleet radar --review, fleet work, fleet cockpit | `config/.bash_aliases` |
+| `fleet` | Parallel Claude/Copilot agents in worktrees + review radar (bare: dashboard) | fleet new NAME -p "task", fleet new --jira KEY [--autopilot], fleet pr NAME, fleet radar --review, fleet work, fleet cockpit | `config/.bash_aliases` |
 | `fzf` | Interactive fuzzy finder for any list | `bin/stubs.sh` |
 | `gb` | Fuzzy-find and checkout a git branch | `config/.bash_aliases` |
 | `gem` | Ask Gemini questions from the terminal (lazy-loaded on first use) | `bin/gem.sh` |

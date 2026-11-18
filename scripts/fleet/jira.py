@@ -22,6 +22,12 @@ from urllib.parse import quote, urlencode
 DEFAULT_JQL = (
     'assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC'
 )
+# Mentions are stored as the user's id in the text, which `~ currentUser()`
+# matches. Unverified on every Jira flavor: FLEET_JIRA_MENTIONS_JQL overrides.
+DEFAULT_MENTIONS_JQL = (
+    '(comment ~ currentUser() OR description ~ currentUser()) '
+    'AND updated >= -14d ORDER BY updated DESC'
+)
 FIELDS = 'summary,status,issuetype,priority,description'
 FLAVORS = frozenset({'cloud', 'dc'})
 TICKET_KEY = re.compile(r'[A-Z][A-Z0-9_]*-\d+')
@@ -43,6 +49,7 @@ class JiraConfig:
     email: str
     token: str = field(repr=False)
     jql: str
+    mentions_jql: str = DEFAULT_MENTIONS_JQL
 
 
 @dataclass(frozen=True)
@@ -96,20 +103,30 @@ def jira_config(
     env: Mapping[str, str] = os.environ,
     read_pass: Callable[[str], str] = read_pass_entry,
 ) -> JiraConfig | None:
-    base_url = env.get('FLEET_JIRA_URL', '').strip().rstrip('/')
+    base_url = (
+        (env.get('FLEET_JIRA_URL') or env.get('JIRA_URL', ''))
+        .strip()
+        .rstrip('/')
+    )
     if not base_url:
         return None
     if not base_url.startswith('https://'):
-        msg = 'FLEET_JIRA_URL must start with https://'
+        msg = 'FLEET_JIRA_URL (or JIRA_URL) must start with https://'
         raise ValueError(msg)
     email = env.get('FLEET_JIRA_EMAIL', '').strip()
-    flavor = env.get('FLEET_JIRA_FLAVOR', '').strip() or (
-        'cloud' if email else 'dc'
-    )
+    explicit_flavor = env.get('FLEET_JIRA_FLAVOR', '').strip()
+    flavor = explicit_flavor or ('cloud' if email else 'dc')
     if flavor not in FLAVORS:
         msg = f'FLEET_JIRA_FLAVOR must be cloud or dc, not {flavor!r}'
         raise ValueError(msg)
-    token = env.get('FLEET_JIRA_TOKEN', '').strip()
+    if not explicit_flavor and not email and '.atlassian.net' in base_url:
+        msg = (
+            'Jira Cloud API tokens need your login email: set FLEET_JIRA_EMAIL'
+        )
+        raise ValueError(msg)
+    token = (
+        env.get('FLEET_JIRA_TOKEN') or env.get('JIRA_API_KEY', '')
+    ).strip()
     if not token and env.get('FLEET_JIRA_PASS_ENTRY'):
         token = read_pass(env['FLEET_JIRA_PASS_ENTRY'])
     if not token:
@@ -123,6 +140,8 @@ def jira_config(
         email=email,
         token=token,
         jql=env.get('FLEET_JIRA_JQL', '').strip() or DEFAULT_JQL,
+        mentions_jql=env.get('FLEET_JIRA_MENTIONS_JQL', '').strip()
+        or DEFAULT_MENTIONS_JQL,
     )
 
 
@@ -138,11 +157,19 @@ def api_root(config: JiraConfig) -> str:
     return f'{config.base_url}/rest/api/{version}'
 
 
-def search_request_url(config: JiraConfig, limit: int = SEARCH_LIMIT) -> str:
+def search_request_url(
+    config: JiraConfig,
+    limit: int = SEARCH_LIMIT,
+    jql: str = '',
+) -> str:
     # Cloud retired /search in 2025; /search/jql takes the same parameters.
     path = '/search/jql' if config.flavor == 'cloud' else '/search'
     query = urlencode(
-        {'jql': config.jql, 'fields': FIELDS, 'maxResults': str(limit)},
+        {
+            'jql': jql or config.jql,
+            'fields': FIELDS,
+            'maxResults': str(limit),
+        },
     )
     return f'{api_root(config)}{path}?{query}'
 
@@ -276,6 +303,11 @@ def fetch_assigned(config: JiraConfig) -> list[Ticket]:
         get_json(config, search_request_url(config)),
         config.base_url,
     )
+
+
+def fetch_mentions(config: JiraConfig) -> list[Ticket]:
+    url = search_request_url(config, jql=config.mentions_jql)
+    return parse_search(get_json(config, url), config.base_url)
 
 
 def fetch_ticket(config: JiraConfig, key: str) -> Ticket:

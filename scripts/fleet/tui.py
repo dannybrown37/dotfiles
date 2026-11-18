@@ -37,6 +37,7 @@ from textual.widgets import (
 
 from fleet import jira, radar
 from fleet.agents import AGENT_KINDS, AgentState
+from fleet.autopilot import open_draft_pr
 from fleet.browser import open_url
 from fleet.errors import describe_error
 from fleet.github_org import clone_command
@@ -450,6 +451,7 @@ class FleetApp(App[int]):
         Binding('d', 'diff', 'Diff'),
         Binding('L', 'lazygit', 'Lazygit'),
         Binding('o', 'browser', 'Browser'),
+        Binding('p', 'draft_pr', 'Draft PR'),
         Binding('x', 'stop', 'Delete'),
         Binding('X', 'stop_and_keep', 'Stop only'),
         Binding('r', 'review', 'Pre-review'),
@@ -924,6 +926,40 @@ class FleetApp(App[int]):
         if not url:
             self.notify('no PR here yet', severity='warning')
             return
+        open_in_browser(url)
+
+    def action_draft_pr(self) -> None:
+        row = self.pick_row()
+        if row is None:
+            return
+        if row.record is None:
+            self.notify(
+                f'{row.name} is not a fleet agent: no branch to ship',
+                severity='warning',
+            )
+            return
+        self.notify(f'shipping {row.name}: commit, push, draft PR…')
+        self.ship_draft(row.record.name)
+
+    @work(thread=True, group='ship')
+    def ship_draft(self, name: str) -> None:
+        record = self.store.load(name)
+        try:
+            url = open_draft_pr(
+                Path(record.worktree),
+                record.branch,
+                record.base,
+            )
+        except (ValueError, subprocess.CalledProcessError, OSError) as error:
+            detail = getattr(error, 'stderr', '') or error
+            self.call_from_thread(
+                self.notify,
+                f'{name}: {detail}',
+                severity='error',
+                timeout=15,
+            )
+            return
+        self.call_from_thread(self.notify, f'draft PR: {url}')
         open_in_browser(url)
 
     def action_stop(self, key: str = '') -> None:

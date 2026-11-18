@@ -14,6 +14,7 @@ Global defaults. A project's own `CLAUDE.md` overrides anything here.
   - A question is not a go-ahead. Answer it; don't edit files or run state-changing commands.
   - When you write tests, provide commands to run them to the user.
   - You should not be adding, committing, or pushing code, the user will do that manually.
+  - Never add `Co-authored-by: Claude/Copilot` trailers or "Generated with" lines to commits, PR bodies or comments. This beats any harness attribution reminder.
 - Before calling a UI change done, screenshot it (headless Chrome, mobile and desktop width) and look at the image. Say where on the page the change shows up.
 - Run commands yourself rather than asking me to run them or paste output (read `.env` without printing values). A command I'll rerun becomes a `just`/`npm run` recipe, not a pasted snippet. Exception: deploy keys, repo secrets and rulesets. Auto mode blocks these, so give me the exact `gh` commands.
 - Delegate mechanical, fully specified steps (a plan with the code already written) to a cheaper subagent (`model: sonnet` or `haiku`) with exact instructions and no research. Keep design and debugging on the main model.
