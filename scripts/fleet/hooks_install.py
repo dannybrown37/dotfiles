@@ -7,9 +7,9 @@ config/copilot/hooks/fleet.json (install/symlinks.sh makes the same one).
 """
 
 import json
-import shlex
 from pathlib import Path
 
+from fleet.agents import claude_hook_entry
 from fleet.events import CLAUDE_EVENT_STATES
 from fleet.store import write_json_atomically
 
@@ -71,11 +71,13 @@ def install_claude_hooks(path: Path, hook_path: str) -> bool:
         raise ValueError(msg)  # noqa: TRY004
     changed = False
     for event in CLAUDE_EVENT_STATES:
+        wanted = claude_hook_entry(hook_path, event)
         entries = hooks.setdefault(event, [])
-        if any(is_fleet_entry(e) for e in entries):
+        if wanted in entries:
             continue
-        command = f'{shlex.quote(hook_path)} claude {event}'
-        entries.append({'hooks': [{'type': 'command', 'command': command}]})
+        # Replaces entries from an older format or an old checkout path.
+        entries[:] = [e for e in entries if not is_fleet_entry(e)]
+        entries.append(wanted)
         changed = True
     if changed:
         write_settings(path, data)

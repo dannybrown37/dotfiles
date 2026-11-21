@@ -415,3 +415,63 @@ def test_work_shows_mentions_in_text_and_json(
     assert '💬 ABC-7' in capsys.readouterr().out
     assert cli.main(['work', '--json']) == 0
     assert json.loads(capsys.readouterr().out)['mentions'][0]['key'] == 'ABC-7'
+
+
+@pytest.fixture
+def hook_homes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    home = tmp_path / 'home'
+    source = tmp_path / 'fleet.json'
+    source.write_text('{}')
+    monkeypatch.setattr(
+        'fleet.cli.CLAUDE_SETTINGS',
+        home / '.claude' / 'settings.json',
+    )
+    monkeypatch.setattr(
+        'fleet.cli.COPILOT_HOOK_LINK',
+        home / '.copilot' / 'hooks' / 'fleet.json',
+    )
+    monkeypatch.setattr('fleet.cli.COPILOT_HOOK_FILE', source)
+    monkeypatch.setattr('fleet.cli.HOOK_PATH', tmp_path / 'fleet-hook.sh')
+    return home
+
+
+def run_hooks(action: str, capsys: pytest.CaptureFixture[str]) -> list[str]:
+    """Per-agent verbs, then the status lines, of one `fleet hooks` run."""
+    assert cli.main(['hooks', action]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    return [line.split(':')[0] for line in lines[:2]] + lines[2:]
+
+
+def test_hooks_install_then_uninstall(
+    hook_homes: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (hook_homes / '.claude').mkdir(parents=True)
+    (hook_homes / '.copilot').mkdir()
+
+    assert run_hooks('install', capsys) == [
+        'installed',
+        'installed',
+        'claude hooks:  on',
+        'copilot hooks: on',
+    ]
+    assert run_hooks('install', capsys)[:2] == ['already installed'] * 2
+    assert run_hooks('uninstall', capsys) == [
+        'removed',
+        'removed',
+        'claude hooks:  off',
+        'copilot hooks: off',
+    ]
+
+
+def test_hooks_install_skips_agents_that_are_not_set_up(
+    hook_homes: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert run_hooks('install', capsys) == [
+        'skipped',
+        'skipped',
+        'claude hooks:  off',
+        'copilot hooks: off',
+    ]
+    assert not hook_homes.exists()

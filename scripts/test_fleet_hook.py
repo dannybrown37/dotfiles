@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -104,6 +105,31 @@ def test_hook_is_silent_on_stdout(tmp_path: Path) -> None:
     )
     assert result.stdout == ''
     assert result.stderr == ''
+
+
+def test_hook_is_silent_without_python(tmp_path: Path) -> None:
+    bin_dir = tmp_path / 'bin'
+    bin_dir.mkdir()
+    (bin_dir / 'bash').symlink_to(shutil.which('bash') or '/bin/bash')
+    result = run_hook(
+        ['claude', 'Stop'],
+        '{}',
+        {
+            'FLEET_AGENT': 'a',
+            'FLEET_STATE_DIR': str(tmp_path),
+            'PATH': str(bin_dir),
+        },
+    )
+    assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
+
+
+@pytest.mark.parametrize('args', [[], ['claude'], ['claude', 'Stop', 'extra']])
+def test_hook_is_silent_on_wrong_arguments(
+    tmp_path: Path,
+    args: list[str],
+) -> None:
+    result = run_hook(args, '{}', {'FLEET_STATE_DIR': str(tmp_path)})
+    assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
 
 
 def test_hook_exits_zero_when_state_dir_unwritable(tmp_path: Path) -> None:

@@ -88,13 +88,16 @@ def parse_porcelain(payload: str) -> list[str]:
 
 
 def find_repo_root(start: Path) -> Path | None:
-    result = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'],  # noqa: S607
-        cwd=start,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            ['git', 'rev-parse', '--show-toplevel'],  # noqa: S607
+            cwd=start,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:  # git missing, or the session's cwd was deleted
+        return None
     if result.returncode != 0:
         return None
     return Path(result.stdout.strip())
@@ -184,4 +187,4 @@ def main(raw_payload: str) -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.stdin.read()))
+    sys.exit(main(sys.stdin.buffer.read().decode('utf-8', 'replace')))

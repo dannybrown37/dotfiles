@@ -1,10 +1,13 @@
 """Tests for fleet.hooks_install: global Claude hooks for session discovery."""
 
 import json
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from fleet.agents import HOOK_TIMEOUT_S
 from fleet.events import CLAUDE_EVENT_STATES, COPILOT_EVENT_STATES
 from fleet.hooks_install import (
     claude_hooks_installed,
@@ -38,15 +41,38 @@ def settings(tmp_path: Path) -> Path:
     return path
 
 
-def fleet_commands(data: dict[str, object]) -> list[str]:
-    hooks = data.get('hooks') or {}
+def fleet_entries(
+    data: dict[str, object],
+    event: str,
+) -> list[dict[str, object]]:
     return [
-        hook['command']
-        for entries in hooks.values()  # type: ignore[attr-defined]
-        for entry in entries
+        hook
+        for entry in data['hooks'][event]  # type: ignore[index]
         for hook in entry['hooks']
         if 'fleet-hook.sh' in hook['command']
     ]
+
+
+def fake_hook(tmp_path: Path) -> tuple[Path, Path]:
+    """An executable that records its argv, standing in for fleet-hook.sh."""
+    log = tmp_path / 'argv.log'
+    hook = tmp_path / 'fleet-hook.sh'
+    hook.write_text(f'#!/bin/sh\necho "$@" >> {log}\n')
+    hook.chmod(0o755)
+    return hook, log
+
+
+def run_shell(
+    command: str,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        ['bash', '-c', command],  # noqa: S607
+        env={**os.environ, **(env or {})},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
 
 def test_install_adds_every_event_and_keeps_other_settings(
@@ -57,9 +83,56 @@ def test_install_adds_every_event_and_keeps_other_settings(
     assert data['model'] == 'opus'
     assert data['permissions'] == {'allow': ['Bash(ls)']}
     assert ATUIN in data['hooks']['PostToolUse']
-    assert sorted(fleet_commands(data)) == sorted(
-        f'{HOOK} claude {event}' for event in CLAUDE_EVENT_STATES
+    for event in CLAUDE_EVENT_STATES:
+        [hook] = fleet_entries(data, event)
+        assert hook['timeout'] == HOOK_TIMEOUT_S
+
+
+def test_installed_command_runs_the_hook(tmp_path: Path) -> None:
+    hook, log = fake_hook(tmp_path)
+    settings = tmp_path / 'settings.json'
+    install_claude_hooks(settings, str(hook))
+    data = json.loads(settings.read_text())
+    for event in CLAUDE_EVENT_STATES:
+        [entry] = fleet_entries(data, event)
+        assert run_shell(str(entry['command'])).returncode == 0
+    assert sorted(log.read_text().splitlines()) == sorted(
+        f'claude {event}' for event in CLAUDE_EVENT_STATES
     )
+
+
+def test_installed_command_is_silent_when_hook_is_gone(tmp_path: Path) -> None:
+    settings = tmp_path / 'settings.json'
+    install_claude_hooks(settings, str(tmp_path / 'moved' / 'fleet-hook.sh'))
+    data = json.loads(settings.read_text())
+    for event in CLAUDE_EVENT_STATES:
+        [entry] = fleet_entries(data, event)
+        result = run_shell(str(entry['command']))
+        assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
+
+
+@pytest.mark.parametrize(
+    'old_command',
+    [
+        pytest.param(f'{HOOK} claude Stop', id='unguarded'),
+        pytest.param('/old/place/fleet-hook.sh claude Stop', id='stale-path'),
+    ],
+)
+def test_install_replaces_outdated_fleet_entries(
+    settings: Path,
+    old_command: str,
+) -> None:
+    install_claude_hooks(settings, HOOK)
+    data = json.loads(settings.read_text())
+    data['hooks']['Stop'] = [
+        {'hooks': [{'type': 'command', 'command': old_command}]},
+    ]
+    settings.write_text(json.dumps(data))
+
+    assert install_claude_hooks(settings, HOOK) is True
+    [hook] = fleet_entries(json.loads(settings.read_text()), 'Stop')
+    assert hook['command'] != old_command
+    assert HOOK in str(hook['command'])
 
 
 def test_install_is_idempotent(settings: Path) -> None:
@@ -110,8 +183,30 @@ def test_copilot_hook_file_covers_exactly_the_mapped_events() -> None:
     )
     hooks = json.loads(path.read_text())['hooks']
     assert set(hooks) == set(COPILOT_EVENT_STATES)
-    for event, [entry] in hooks.items():
-        assert entry['bash'].endswith(f'fleet-hook.sh}}" copilot {event}')
+
+
+def copilot_hook_commands() -> dict[str, str]:
+    path = Path(__file__).parent.parent / 'config/copilot/hooks/fleet.json'
+    hooks = json.loads(path.read_text())['hooks']
+    return {event: entry['bash'] for event, [entry] in hooks.items()}
+
+
+def test_copilot_hook_commands_run_the_hook(tmp_path: Path) -> None:
+    hook, log = fake_hook(tmp_path)
+    for command in copilot_hook_commands().values():
+        assert run_shell(command, {'FLEET_HOOK': str(hook)}).returncode == 0
+    assert sorted(log.read_text().splitlines()) == sorted(
+        f'copilot {event}' for event in COPILOT_EVENT_STATES
+    )
+
+
+def test_copilot_hook_commands_are_silent_when_hook_is_gone(
+    tmp_path: Path,
+) -> None:
+    missing = {'FLEET_HOOK': str(tmp_path / 'gone.sh')}
+    for command in copilot_hook_commands().values():
+        result = run_shell(command, missing)
+        assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
 
 
 def test_copilot_install_links_hook_file_and_is_idempotent(

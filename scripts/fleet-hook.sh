@@ -5,7 +5,11 @@
 # stdout to the model, and a failing hook must never get in an agent's way.
 # python3 -S skips site-packages, which halves startup on every agent event.
 set -uo pipefail
+exec >/dev/null 2>&1
 
-scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHONPATH="${scripts_dir}" python3 -S -m fleet.hook "$@" >/dev/null 2>&1
+# Parameter expansion, not dirname: no fork, and no dependency on coreutils.
+source_path="${BASH_SOURCE[0]}"
+[[ "${source_path}" == */* ]] || source_path="./${source_path}"
+scripts_dir="$(cd "${source_path%/*}" && pwd)"
+PYTHONPATH="${scripts_dir}" python3 -S -m fleet.hook "$@"
 exit 0

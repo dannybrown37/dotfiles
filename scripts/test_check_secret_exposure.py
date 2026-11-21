@@ -1,16 +1,50 @@
 """Tests for the PreToolUse secret-exposure guard."""
 
 import json
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
 from check_secret_exposure import (
     BLOCK_EXIT_CODE,
+    SKIP_ENV_VAR,
     detect_bash_risk,
     is_secret_file,
     main,
     read_payload,
 )
+
+SCRIPT = Path(__file__).parent / 'check_secret_exposure.py'
+
+
+@pytest.mark.parametrize(
+    ('stdin', 'expected_code'),
+    [
+        pytest.param(b'\xff\xfe', 0, id='undecodable'),
+        pytest.param(b'', 0, id='empty'),
+        pytest.param(
+            b'{"tool_name": "Bash", "tool_input": {"command": "printenv"}}',
+            BLOCK_EXIT_CODE,
+            id='still-blocks',
+        ),
+    ],
+)
+def test_script_exit_codes(stdin: bytes, expected_code: int) -> None:
+    env = {k: v for k, v in os.environ.items() if k != SKIP_ENV_VAR}
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, str(SCRIPT)],
+        input=stdin,
+        env=env,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == expected_code
+    assert result.stdout == b''
+    if expected_code == 0:
+        assert result.stderr == b''
 
 
 @pytest.mark.parametrize(

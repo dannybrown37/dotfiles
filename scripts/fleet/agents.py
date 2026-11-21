@@ -45,23 +45,31 @@ def validate_agent_name(name: str) -> str:
     return name
 
 
-type HookSettings = dict[str, dict[str, list[dict[str, list[dict[str, str]]]]]]
+HOOK_TIMEOUT_S = 5
+
+type HookEntry = dict[str, list[dict[str, str | int]]]
+type HookSettings = dict[str, dict[str, list[HookEntry]]]
+
+
+def claude_hook_entry(hook_path: str, event: str) -> HookEntry:
+    """One settings.json hook entry that runs fleet-hook.sh for `event`.
+
+    The -x guard keeps a moved or deleted dotfiles checkout from turning
+    every Claude event into a "No such file" hook error.
+    """
+    hook = shlex.quote(hook_path)
+    command = f'[ -x {hook} ] && exec {hook} claude {event} || true'
+    return {
+        'hooks': [
+            {'type': 'command', 'command': command, 'timeout': HOOK_TIMEOUT_S},
+        ],
+    }
 
 
 def claude_hook_settings(hook_path: str) -> HookSettings:
-    quoted_hook = shlex.quote(hook_path)
     return {
         'hooks': {
-            event: [
-                {
-                    'hooks': [
-                        {
-                            'type': 'command',
-                            'command': f'{quoted_hook} claude {event}',
-                        },
-                    ],
-                },
-            ]
+            event: [claude_hook_entry(hook_path, event)]
             for event in CLAUDE_EVENT_STATES
         },
     }

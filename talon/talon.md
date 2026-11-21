@@ -14,7 +14,7 @@ Commands work in command mode. The dot at the top of the screen shows the mode.
 | `mixed mode` | Commands and dictation both on (`command mode` to leave) |
 | `command history` | Show what Talon heard (say again to hide) |
 | `wake up` | Wake from sleep |
-| `chief sleep` | Sleep |
+| `go to sleep` | Sleep (community) |
 
 ## tmux windows
 
@@ -227,14 +227,6 @@ Say the formatter, then the words: `snake hello world` = `hello_world`.
 | `string` | `'hello world'` | `dub string` | `"hello world"` |
 | `say` | `hello world` | `sentence` / `title` | `Hello world` / `Hello World` |
 | `word <w>` | one word | `<formatter> that` | Reformat the selection |
-
-## Chief
-
-| Say | Effect |
-| --- | --- |
-| `chief waiting` | Anything waiting on me? |
-| `chief status` | One line per agent |
-| `chief say <words>` | Type a message into the chief |
 
 ## Fleet by voice
 

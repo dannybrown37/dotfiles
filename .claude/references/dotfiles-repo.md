@@ -16,6 +16,7 @@ This repo contains Debian-focused dotfiles for WSL2 (also works on native Linux)
 ├── nvim/           Neovim config (lazy.nvim, Lua)
 ├── references/     Personal reference material (mental models, media, vim notes)
 ├── scripts/        **Non-sourced** scripts — standalone executables, use shebang + set -euo pipefail
+├── talon/          Talon voice commands, copied to Windows by `just talon`
 ├── windows/        PowerShell network-rescue verbs + offline cheat sheet, copied to C: by `just windows net-rescue`
 ├── wsl/            WSL-specific scripts and config
 ├── .vscode/        VS Code settings and extension list

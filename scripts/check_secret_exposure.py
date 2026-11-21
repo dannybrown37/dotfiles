@@ -284,4 +284,4 @@ def main(raw_payload: str) -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.stdin.read()))
+    sys.exit(main(sys.stdin.buffer.read().decode('utf-8', 'replace')))

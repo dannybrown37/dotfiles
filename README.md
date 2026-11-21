@@ -184,7 +184,7 @@ Commands are auto-documented with a # @doc comment on the same line as the comma
 | `nvim/` | Neovim configuration (lazy.nvim, Lua) |
 | `references/` | Reference documentation — mental models, LLM rules, and other persistent reference material |
 | `scripts/` | Non-sourced standalone executable scripts |
-| `talon/` | Talon voice commands (mode switching, tutti chief, tmux, slash commands), copied to Windows by just talon |
+| `talon/` | Talon voice commands (mode switching, fleet, tmux, slash commands), copied to Windows by just talon |
 | `windows/` | Windows PowerShell network-rescue verbs and the offline rescue cheat sheet |
 | `wsl/` | WSL-specific settings, functions, and komorebi config |
 
@@ -244,10 +244,7 @@ My own Talon files live in `talon/`; [talonhub/community](https://github.com/tal
 | --- | --- |
 | pop (lip pop or tongue click) | Toggle dictation ↔ command mode. Still stops mouse drag/scroll first; ignored while asleep or in zoom mouse |
 | `start typing` / `stop typing` | Dictation mode / command mode (spoken fallback) |
-| `chief waiting` | Ask the tutti chief whether anything is waiting on me |
-| `chief status` | Ask the chief for a one-line status per agent |
-| `chief say <words>` | Type any message into the chief |
-| `chief sleep` | Put Talon to sleep (`wake up` to resume) |
+| `go to sleep` | Put Talon to sleep (`wake up` to resume; from community) |
 | `mux left` / `mux right`, `mux window <n>` | Switch tmux windows (on when the window title starts with `tmux`) |
 | `pane left` / `right` / `up` / `down` | Switch tmux panes. Full list: `refs talon` (`talon/talon.md`) |
 | `slash <name>` | Type a Claude Code / Copilot slash command or skill, e.g. `slash code review` |

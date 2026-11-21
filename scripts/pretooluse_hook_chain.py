@@ -8,9 +8,14 @@ in practice cartoon's rewrite was silently dropped. Running them in a
 fixed sequence and only ever emitting cartoon's JSON removes that
 ambiguity: atuin is a side-effect-only history logger, cartoon is the
 one hook whose stdout matters.
+
+It runs before every Bash call, so whatever goes wrong (a tool missing,
+crashing, hanging or printing garbage) it exits 0 and prints only valid
+JSON: a traceback here would surface as a hook error on every command.
 """
 
 import contextlib
+import json
 import shutil
 import subprocess
 import sys
@@ -27,7 +32,8 @@ def run_atuin(raw_payload: str) -> None:
         subprocess.run(  # noqa: S603
             [atuin, 'hook', 'claude-code'],
             input=raw_payload,
-            capture_output=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             timeout=ATUIN_TIMEOUT_S,
             text=True,
             check=False,
@@ -47,9 +53,14 @@ def run_cartoon(raw_payload: str) -> str | None:
             text=True,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired):
+        if result.returncode != 0 or not isinstance(
+            json.loads(result.stdout),
+            dict,
+        ):
+            return None
+    except (OSError, subprocess.TimeoutExpired, ValueError):
         return None
-    return result.stdout if result.returncode == 0 else None
+    return result.stdout
 
 
 def main(raw_payload: str) -> int:
@@ -61,4 +72,4 @@ def main(raw_payload: str) -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.stdin.read()))
+    sys.exit(main(sys.stdin.buffer.read().decode('utf-8', 'replace')))
