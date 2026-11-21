@@ -1,6 +1,8 @@
 """Tests for fleet.agents: launch commands and hook-event state mapping."""
 
 import json
+import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -158,7 +160,25 @@ def test_launch_command_rejects_unknown_kind() -> None:
         )
 
 
-def test_claude_hook_settings_quotes_hook_path_with_spaces() -> None:
-    settings = claude_hook_settings('/my dir/fleet-hook.sh')
-    command = settings['hooks']['Stop'][0]['hooks'][0]['command']
-    assert command == "'/my dir/fleet-hook.sh' claude Stop"
+@pytest.mark.parametrize('exists', [True, False])
+def test_claude_hook_command_handles_spaces_and_a_missing_hook(
+    tmp_path: Path,
+    exists: bool,  # noqa: FBT001
+) -> None:
+    hook_dir = tmp_path / 'my dir'
+    hook_dir.mkdir()
+    hook = hook_dir / 'fleet-hook.sh'
+    log = tmp_path / 'argv.log'
+    if exists:
+        hook.write_text(f'#!/bin/sh\necho "$@" > "{log}"\n')
+        hook.chmod(0o755)
+    [entry] = claude_hook_settings(str(hook))['hooks']['Stop']
+    result = subprocess.run(  # noqa: S603
+        ['bash', '-c', str(entry['hooks'][0]['command'])],  # noqa: S607
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
+    ran_with = log.read_text() if log.exists() else None
+    assert ran_with == ('claude Stop\n' if exists else None)

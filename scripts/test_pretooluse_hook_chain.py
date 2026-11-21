@@ -1,12 +1,114 @@
 """Tests for the combined atuin+cartoon PreToolUse hook."""
 
+import os
 import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
 from pretooluse_hook_chain import main, run_atuin, run_cartoon
 
 RAW_PAYLOAD = '{"tool_name": "Bash", "tool_input": {"command": "echo hi"}}'
+SCRIPT = Path(__file__).parent / 'pretooluse_hook_chain.py'
+
+
+def run_script(
+    bin_dir: Path,
+    stdin: bytes = RAW_PAYLOAD.encode(),
+) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(  # noqa: S603
+        [sys.executable, str(SCRIPT)],
+        input=stdin,
+        env={**os.environ, 'PATH': str(bin_dir)},
+        capture_output=True,
+        check=False,
+    )
+
+
+def fake_tool(bin_dir: Path, name: str, body: str) -> None:
+    tool = bin_dir / name
+    tool.write_text(f'#!/bin/sh\n{body}\n')
+    tool.chmod(0o755)
+
+
+def test_script_is_silent_when_neither_tool_is_installed(
+    tmp_path: Path,
+) -> None:
+    result = run_script(tmp_path)
+
+    assert (result.returncode, result.stdout, result.stderr) == (0, b'', b'')
+
+
+@pytest.mark.parametrize(
+    'cartoon_body',
+    [
+        pytest.param("printf '\\377\\376'", id='undecodable-output'),
+        pytest.param('echo not json', id='non-json-output'),
+        pytest.param('echo oops >&2; exit 3', id='crash'),
+    ],
+)
+def test_script_is_silent_when_cartoon_misbehaves(
+    tmp_path: Path,
+    cartoon_body: str,
+) -> None:
+    fake_tool(tmp_path, 'cartoon', cartoon_body)
+    fake_tool(tmp_path, 'atuin', "printf '\\377'; exit 1")
+
+    result = run_script(tmp_path)
+
+    assert (result.returncode, result.stdout, result.stderr) == (0, b'', b'')
+
+
+def test_script_is_silent_on_undecodable_stdin(tmp_path: Path) -> None:
+    result = run_script(tmp_path, stdin=b'\xff\xfe')
+
+    assert (result.returncode, result.stdout, result.stderr) == (0, b'', b'')
+
+
+def test_script_passes_cartoons_json_through(tmp_path: Path) -> None:
+    rewrite = '{"hookSpecificOutput": {"hookEventName": "PreToolUse"}}'
+    fake_tool(tmp_path, 'cartoon', f"echo '{rewrite}'")
+
+    result = run_script(tmp_path)
+
+    assert result.returncode == 0
+    assert result.stdout.decode().strip() == rewrite
+
+
+def test_run_cartoon_returns_none_on_undecodable_output(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        'pretooluse_hook_chain.shutil.which',
+        lambda name: f'/usr/bin/{name}',
+    )
+
+    error = UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')
+
+    def _raise(*_args: object, **_kwargs: object) -> None:
+        raise error
+
+    monkeypatch.setattr('pretooluse_hook_chain.subprocess.run', _raise)
+
+    assert run_cartoon(RAW_PAYLOAD) is None
+
+
+@pytest.mark.parametrize('stdout', ['not json', '[1, 2]', ''])
+def test_run_cartoon_returns_none_unless_output_is_a_json_object(
+    monkeypatch: pytest.MonkeyPatch,
+    stdout: str,
+) -> None:
+    monkeypatch.setattr(
+        'pretooluse_hook_chain.shutil.which',
+        lambda name: f'/usr/bin/{name}',
+    )
+    monkeypatch.setattr(
+        'pretooluse_hook_chain.subprocess.run',
+        lambda *_a, **_k: _completed(0, stdout),
+    )
+
+    assert run_cartoon(RAW_PAYLOAD) is None
 
 
 def _completed(

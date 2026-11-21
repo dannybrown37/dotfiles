@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -270,6 +271,31 @@ def test_main_does_not_block_when_prek_is_missing(
     monkeypatch.setattr('verify_changes.run_prek', raise_missing)
 
     assert main(json.dumps({'cwd': str(repo)})) == 0
+
+
+def test_main_does_not_block_when_git_is_missing(
+    repo: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv('PATH', str(tmp_path / 'empty'))
+
+    assert main(json.dumps({'cwd': str(repo)})) == 0
+
+
+def test_main_does_not_block_when_cwd_was_deleted(tmp_path: Path) -> None:
+    assert main(json.dumps({'cwd': str(tmp_path / 'removed-worktree')})) == 0
+
+
+def test_script_is_silent_on_undecodable_stdin(tmp_path: Path) -> None:
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, str(Path(__file__).parent / 'verify_changes.py')],
+        input=b'\xff\xfe',
+        cwd=tmp_path,
+        capture_output=True,
+        check=False,
+    )
+    assert (result.returncode, result.stdout, result.stderr) == (0, b'', b'')
 
 
 def _fail_if_called(

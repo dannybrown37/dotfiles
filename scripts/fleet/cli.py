@@ -264,8 +264,8 @@ def cmd_hooks(args: argparse.Namespace) -> int:
         report(changed, 'removed', 'not installed', claude_where)
         changed = uninstall_copilot_hooks(COPILOT_HOOK_LINK)
         report(changed, 'removed', 'not installed', copilot_where)
-    claude = 'on' if claude_hooks_installed() else 'off'
-    copilot = 'on' if copilot_hooks_installed() else 'off'
+    claude = 'on' if claude_hooks_installed(CLAUDE_SETTINGS) else 'off'
+    copilot = 'on' if copilot_hooks_installed(COPILOT_HOOK_LINK) else 'off'
     print(f'claude hooks:  {claude}\ncopilot hooks: {copilot}')
     return 0
 

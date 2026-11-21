@@ -85,9 +85,15 @@ counts them: `Agents (2/8)` means 2 of 8 are waiting on you.
 | Agent | Where | Installed by |
 |---|---|---|
 | Claude Code | `~/.claude/settings.json` (merged in, other hooks kept, one-time `.pre-fleet.bak`) | `fleet hooks install` (`fleet hooks uninstall` reverses it) |
-| Copilot CLI | `~/.copilot/hooks/fleet.json` → `config/copilot/hooks/fleet.json` | `install/symlinks.sh` (`just bootstrap`) |
+| Copilot CLI | `~/.copilot/hooks/fleet.json` → `config/copilot/hooks/fleet.json` | `fleet hooks install` or `install/symlinks.sh` (`just bootstrap`) |
 
 `fleet hooks` prints the status of both.
+
+Each hook command checks that `fleet-hook.sh` is still executable before
+running it, and Claude's has a 5s timeout. If the checkout moves or is deleted,
+agents keep working with no hook errors; the dashboard just stops seeing
+them. Rerun `fleet hooks install` from the new checkout: it replaces fleet
+entries that point at an old path or use an older format.
 
 ## Launching agents
 
@@ -248,6 +254,6 @@ dotfiles venv without changing directory. Tests: `uv run pytest scripts/test_fle
 | `radar.py` | Review ranking and local pre-reviews |
 | `autopilot.py` | Autopilot prompt, `fleet pr` (commit, AI-trailer guard, push, draft PR) |
 | `palette.py`, `tui.py`, `cli.py` | Palette model, dashboard, CLI |
-| `github_org.py`, `jira.py`, `aws.py`, `work.py` | Work integrations and their loader |
+| `github_org.py`, `jira.py`, `aws.py`, `work.py`, `errors.py` | Work integrations, their loader, and one-line fetch errors |
 | `browser.py` | Open a URL (`$BROWSER`, `explorer.exe` on WSL, `xdg-open`) |
 | `hooks_install.py` | `fleet hooks install/uninstall` |
