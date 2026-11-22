@@ -1,10 +1,11 @@
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
 default_stages: [pre-commit]
 
 repos:
   # ruff and pytest live in git-a-grip so every repo shares one copy, rather
   # than each keeping its own `bash -c '... && git add "$@"'` wrapper.
   - repo: https://github.com/dannybrown37/git-a-grip
-    rev: v0.15.1
+    rev: v0.16.2
     hooks:
       # git-a-grip only floors commitizen (>=4.0); match the commit-msg hook's rev.
       - id: commitizen-early
@@ -34,6 +35,7 @@ repos:
         args: [--config=.zizmor.yml]
         additional_dependencies: [zizmor==1.29.0]
       - id: block-private-terms
+      - id: protect-branch
 
   # commitizen-early only sees `-m`/`-F` messages; this catches the rest
   # (editor, merge, rebase). Runs from githooks/commit-msg.
