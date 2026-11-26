@@ -14,6 +14,7 @@ from fleet.agents import (
     AgentState,
     launch_command,
     validate_agent_name,
+    with_step_brief,
 )
 from fleet.autopilot import exclude_fleet_dir
 from fleet.hooks_install import (
@@ -21,7 +22,13 @@ from fleet.hooks_install import (
     copilot_hooks_installed,
 )
 from fleet.procs import AgentProcess, process_started_at
-from fleet.store import AgentRecord, LiveState, Store, default_state_dir
+from fleet.store import (
+    AgentRecord,
+    LiveState,
+    Steps,
+    Store,
+    default_state_dir,
+)
 from fleet.tmux import PaneInfo, Tmux
 from fleet.trust import answer_trust_dialog, source_is_trusted
 from fleet.worktree import (
@@ -65,6 +72,7 @@ class AgentView:
     state: AgentState
     live: LiveState | None
     pane: PaneInfo | None
+    steps: Steps | None = None
 
 
 @dataclass(frozen=True)
@@ -84,6 +92,7 @@ class DashboardRow:
     record: AgentRecord | None
     shell: str = ''
     shell_target: str = ''
+    steps: Steps | None = None
 
 
 IDLE_SHELLS = frozenset({'bash', 'zsh', 'fish', 'sh', 'dash'})
@@ -213,7 +222,7 @@ def spawn_agent(
     command = launch_command(
         request.kind,
         name=name,
-        prompt=request.prompt,
+        prompt=with_step_brief(request.prompt, str(LAUNCHER_PATH)),
         hook_path=request.hook_path,
         extra_args=request.extra_args,
         binary=request.binary,
@@ -270,7 +279,8 @@ def agent_views(store: Store, tmux: Tmux) -> list[AgentView]:
         live = store.read_state(record.name, record.launch_id)
         pane = panes.get(record.window_id)
         state = resolve_state(live, pane, now - record.created_at)
-        views.append(AgentView(record, state, live, pane))
+        steps = store.read_steps(record.name, record.launch_id)
+        views.append(AgentView(record, state, live, pane, steps))
     return views
 
 
@@ -288,6 +298,7 @@ def agent_row(view: AgentView) -> DashboardRow:
         started_at=record.created_at,
         where='fleet',
         record=record,
+        steps=view.steps,
     )
 
 

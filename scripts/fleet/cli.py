@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Sequence
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -43,7 +44,7 @@ from fleet.ops import (
 )
 from fleet.palette import by_urgency
 from fleet.procs import scan_agent_processes
-from fleet.store import AgentRecord, default_state_dir
+from fleet.store import AgentRecord, default_state_dir, make_steps
 from fleet.work import (
     WorkItems,
     integration_status,
@@ -211,6 +212,7 @@ def cmd_ls(args: argparse.Namespace) -> int:
                         'shell': row.shell,
                         'cwd': str(row.cwd),
                         'message': row.message,
+                        'steps': asdict(row.steps) if row.steps else None,
                     }
                     for row in rows
                 ],
@@ -231,6 +233,27 @@ def cmd_ls(args: argparse.Namespace) -> int:
             '\nstates show "unknown" until hooks are on: fleet hooks install',
             file=sys.stderr,
         )
+    return 0
+
+
+def cmd_step(args: argparse.Namespace) -> int:
+    name = args.name or os.environ.get('FLEET_AGENT', '')
+    if not name:
+        msg = 'not a fleet agent (FLEET_AGENT is unset); pass --name NAME'
+        raise ValueError(msg)
+    if args.done < 0:
+        msg = 'DONE must be 0 or more'
+        raise ValueError(msg)
+    steps = make_steps(args.done, args.total, ' '.join(args.note))
+    if steps is None:
+        msg = 'TOTAL must be at least 1'
+        raise ValueError(msg)
+    record = find_record(name)
+    # An agent's own env names its launch: steps from a stale shell are
+    # then ignored instead of showing on a newer agent of the same name.
+    env_launch = '' if args.name else os.environ.get('FLEET_LAUNCH_ID', '')
+    default_store().write_steps(name, steps, env_launch or record.launch_id)
+    print(f'{name}: step {steps.done}/{steps.total}')
     return 0
 
 
@@ -585,6 +608,19 @@ def build_parser() -> argparse.ArgumentParser:
     ls = sub.add_parser('ls', help='list agents and their state')
     ls.add_argument('--json', action='store_true')
 
+    step = sub.add_parser(
+        'step',
+        help='report progress on your own task (run by agents)',
+        description=(
+            'Shown as a step bar in `fleet ls --json` and the fleet-crew '
+            'panel. Inside a fleet agent the name comes from FLEET_AGENT.'
+        ),
+    )
+    step.add_argument('done', type=int, metavar='DONE')
+    step.add_argument('total', type=int, metavar='TOTAL')
+    step.add_argument('note', nargs='*', metavar='NOTE')
+    step.add_argument('--name', help='agent name (default: $FLEET_AGENT)')
+
     attach = sub.add_parser('attach', help="jump to an agent's tmux window")
     attach.add_argument('name', nargs='?', metavar='NAME')
 
@@ -692,6 +728,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     handlers = {
         'ls': cmd_ls,
+        'step': cmd_step,
         'attach': cmd_attach,
         'send': cmd_send,
         'pr': cmd_pr,

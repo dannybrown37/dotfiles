@@ -8,8 +8,10 @@ import pytest
 from fleet.agents import AgentState
 from fleet.store import (
     AgentRecord,
+    Steps,
     Store,
     default_state_dir,
+    parse_steps,
 )
 
 
@@ -143,3 +145,59 @@ def test_prune_sessions_keeps_only_live_processes(tmp_path: Path) -> None:
 def test_load_missing_raises_key_error(tmp_path: Path) -> None:
     with pytest.raises(KeyError, match='nobody'):
         Store(tmp_path).load('nobody')
+
+
+@pytest.mark.parametrize(
+    ('data', 'expected'),
+    [
+        ({'done': 2, 'total': 5, 'note': 'tests'}, Steps(2, 5, 'tests')),
+        ({'done': 0, 'total': 3}, Steps(0, 3, '')),
+        ({'done': 9, 'total': 4, 'note': ''}, Steps(4, 4, '')),
+        ({'done': -1, 'total': 4}, Steps(0, 4, '')),
+        ({'done': 1, 'total': 2, 'note': '  wire  '}, Steps(1, 2, 'wire')),
+        ({'done': 1, 'total': 2, 'note': 'x' * 200}, Steps(1, 2, 'x' * 80)),
+        ({'done': 1, 'total': 0}, None),
+        ({'done': 1}, None),
+        ({'done': 'two', 'total': 4}, None),
+        ({'done': True, 'total': 4}, None),
+        ({'done': 1.5, 'total': 4}, None),
+        ({'done': 1, 'total': 4, 'note': 7}, Steps(1, 4, '7')),
+    ],
+)
+def test_parse_steps(data: dict[str, object], expected: Steps | None) -> None:
+    assert parse_steps(data) == expected
+
+
+def test_write_steps_then_read_steps(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.write_steps('fix-x', Steps(1, 3, 'parse'), launch_id='L1')
+    assert store.read_steps('fix-x', 'L1') == Steps(1, 3, 'parse')
+
+
+def test_read_steps_from_an_earlier_launch_is_none(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.write_steps('fix-x', Steps(1, 3, ''), launch_id='old')
+    assert store.read_steps('fix-x', 'new') is None
+
+
+def test_read_steps_missing_or_corrupt_is_none(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    assert store.read_steps('nobody') is None
+    store.steps_path('bad').parent.mkdir(parents=True, exist_ok=True)
+    store.steps_path('bad').write_text('{nope')
+    assert store.read_steps('bad') is None
+
+
+def test_list_records_ignores_steps_files(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save(make_record())
+    store.write_steps('fix-x', Steps(1, 2, ''), launch_id='')
+    assert [r.name for r in store.list_records()] == ['fix-x']
+
+
+def test_delete_removes_steps(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save(make_record())
+    store.write_steps('fix-x', Steps(1, 2, ''), launch_id='')
+    store.delete('fix-x')
+    assert store.read_steps('fix-x') is None
