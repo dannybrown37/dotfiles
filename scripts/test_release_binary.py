@@ -18,17 +18,18 @@ HELPER = Path(__file__).parent.parent / 'install' / 'release_binary.sh'
 URL = 'https://example.com/tool.tar.gz'
 GH_URL = 'https://github.com/o/r/releases/download/v2.0.0/tool.tar.gz'
 CURL_STUB = """#!/usr/bin/env bash
-if [[ "$*" == *api.github.com/repos/o/r/releases/tags/v2.0.0* ]]; then
-    echo "${RELEASE_JSON}"
-    exit 0
-fi
-echo "curl $*" >> "${CALL_LOG}"
-out=''
+args="$*"
+out=/dev/stdout
 while [[ $# -gt 0 ]]; do
     [[ "$1" == -*o ]] && { out="$2"; shift; }
     shift
 done
-if [[ -n "${out}" ]]; then cp "${TARBALL}" "${out}"; else cat "${TARBALL}"; fi
+if [[ "${args}" == *api.github.com/repos/o/r/releases/tags/v2.0.0* ]]; then
+    echo "${RELEASE_JSON}" > "${out}"
+    exit 0
+fi
+echo "curl ${args}" >> "${CALL_LOG}"
+cp "${TARBALL}" "${out}"
 """
 SUDO_STUB = '#!/usr/bin/env bash\n"$@"\n'
 

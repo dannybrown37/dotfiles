@@ -14,6 +14,8 @@ set -euo pipefail
 ##
 
 script_dir="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=install/curl_retry.sh
+source "${script_dir}/curl_retry.sh"
 
 ##
 ## The .bashrc/.inputrc/.tmux.conf symlinks -- a bash profile with no .bashrc is
@@ -26,7 +28,7 @@ bash "${script_dir}/symlinks.sh"
 ## git-completion, sourced by .bashrc:372
 ##
 
-curl -o ~/.git-completion.bash \
+curl "${CURL_RETRY[@]}" -o ~/.git-completion.bash \
     https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
 
 ##
@@ -35,8 +37,8 @@ curl -o ~/.git-completion.bash \
 ## does not, it would only dump the init blob to stdout here.
 ##
 
-curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh -s -- --non-interactive
-curl https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh \
+curl_buffered --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh -s -- --non-interactive
+curl "${CURL_RETRY[@]}" https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh \
     -o ~/.bash-preexec.sh
 
 ##

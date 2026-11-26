@@ -56,7 +56,7 @@ install_release_binary fzf \
 
 if ! command -v delta &>/dev/null; then
     tmp_deb=$(mktemp --suffix=.deb)
-    curl -sLo "${tmp_deb}" \
+    curl "${CURL_RETRY[@]}" -sLo "${tmp_deb}" \
         "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/git-delta_${DELTA_VERSION}_amd64.deb"
     sudo dpkg -i "${tmp_deb}"
     rm "${tmp_deb}"

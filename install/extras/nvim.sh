@@ -4,6 +4,8 @@ set -euo pipefail
 
 # shellcheck source=install/versions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
 
 ##
 ## make and gcc build telescope-fzf-native and LuaSnip's jsregexp; without them
@@ -25,7 +27,7 @@ else
     echo "Installing Neovim ${current_version:-none} → v${NVIM_VERSION}"
     tmp_dir=$(mktemp -d)
     trap 'rm -rf "${tmp_dir}"' EXIT
-    curl -fsSLo "${tmp_dir}/nvim.tar.gz" \
+    curl "${CURL_RETRY[@]}" -fsSLo "${tmp_dir}/nvim.tar.gz" \
         "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
     sudo rm -rf /opt/nvim /squashfs-root
     if [[ "$(readlink /usr/bin/nvim || true)" == /squashfs-root/* ]]; then

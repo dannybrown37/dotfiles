@@ -2,11 +2,14 @@
 ## @extra claude | Claude Code, Anthropic's coding agent CLI
 set -euo pipefail
 
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
+
 ## Native installer: lands in ~/.local/bin and auto-updates itself.
 ## https://code.claude.com/docs/en/setup
 
 if command -v claude &>/dev/null; then
     echo "claude is already installed: $(claude --version)"
 else
-    curl -fsSL https://claude.ai/install.sh | bash
+    curl_buffered -fsSL https://claude.ai/install.sh | bash
 fi

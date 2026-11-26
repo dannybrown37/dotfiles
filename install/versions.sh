@@ -34,6 +34,8 @@ ZOXIDE_VERSION=0.10.0
 # renovate: datasource=github-releases depName=equalsraf/win32yank
 WIN32YANK_VERSION=0.1.1
 TOKEI_VERSION=12.1.2
+# renovate: datasource=github-releases depName=schollz/croc
+CROC_VERSION=11.6.6
 # renovate: datasource=github-releases depName=sharkdp/hyperfine
 HYPERFINE_VERSION=1.20.0
 # renovate: datasource=github-releases depName=charmbracelet/glow

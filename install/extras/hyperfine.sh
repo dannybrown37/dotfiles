@@ -4,10 +4,12 @@ set -euo pipefail
 
 # shellcheck source=install/versions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
 
 if ! command -v hyperfine &>/dev/null; then
     tmp_deb=$(mktemp --suffix=.deb)
-    curl -sLo "${tmp_deb}" \
+    curl "${CURL_RETRY[@]}" -sLo "${tmp_deb}" \
         "https://github.com/sharkdp/hyperfine/releases/download/v${HYPERFINE_VERSION}/hyperfine_${HYPERFINE_VERSION}_amd64.deb"
     sudo dpkg -i "${tmp_deb}"
     rm "${tmp_deb}"

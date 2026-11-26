@@ -10,6 +10,8 @@ fi
 
 # shellcheck source=install/versions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/versions.sh"
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/curl_retry.sh"
 readonly VERSION="${WIN32YANK_VERSION}"
 
 current_version=$(win32yank.exe --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "none")
@@ -24,7 +26,7 @@ echo "Installing win32yank ${current_version} → ${VERSION}"
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "${tmp_dir}"' EXIT
 
-curl -sLo "${tmp_dir}/win32yank.zip" \
+curl "${CURL_RETRY[@]}" -sLo "${tmp_dir}/win32yank.zip" \
     "https://github.com/equalsraf/win32yank/releases/download/v${VERSION}/win32yank-x64.zip"
 
 unzip -q "${tmp_dir}/win32yank.zip" -d "${tmp_dir}"

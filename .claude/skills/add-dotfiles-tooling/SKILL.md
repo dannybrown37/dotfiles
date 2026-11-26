@@ -132,6 +132,12 @@ mytool() { command mytool "$@"; }  # @doc Brief description | mytool <usage>
 - `scripts/check-tool-wiring.sh` — mechanical verification of every wiring step above.
   Run it before declaring a tool done.
 
+Every download sources `install/curl_retry.sh`: `curl "${CURL_RETRY[@]}" ... -o file`
+for a file, `curl_buffered ... | sh` wherever curl feeds a pipe (a retry straight
+into a pipe can repeat bytes). Prefer `install_release_binary` with a pin in
+`versions.sh` over a vendor `curl | bash` that asks api.github.com for the latest
+tag unauthenticated -- shared CI runner IPs get 403'd (croc did).
+
 There is deliberately no install-script template. `install/` ranges from 3 lines
 (`install/extras/deno.sh`, a `curl | sh`) to 252 (`cli-tools.sh`), and the install method differs per tool —
 apt, cargo, GitHub release, language version manager. Copy whichever existing script
