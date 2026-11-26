@@ -51,7 +51,7 @@ Managed via `.pre-commit-config.yaml` (prek reads this natively). Active hooks:
 
 - `.github/workflows/ci.yml` runs `lint`, `test` and `bootstrap`, all required checks on `main`.
 - `bootstrap` also fails if `scripts/bench-shell.sh` measures a median shell startup over `SHELL_BUDGET_MS` (250ms).
-- `extras.yml` installs every non-cargo extra in a `debian:bookworm` container, weekly and on PRs touching `install/extras/`, `release_binary.sh` or `versions.sh`. Not a required check.
+- `extras.yml` installs every non-cargo extra in a `debian:bookworm` container, weekly and on PRs touching `install/extras/`, `release_binary.sh`, `curl_retry.sh` or `versions.sh`. Not a required check.
 - `bootstrap` (~5 min cold) runs only when `scripts/ci_needs_bootstrap.sh` sees a bootstrap path change (`install/`, `ci.yml`, or a file added/removed/renamed under `config/` -- edits there cannot break a symlink), plus a weekly cold run and on `workflow_dispatch`. Otherwise it is skipped, which counts as passing. The `justfile` is left out on purpose: lint's `embed-command` hook already runs `just`, and the weekly run catches a broken `_ci` recipe. Add a path there if a new file changes what `just _ci` does.
 
 ## Shell Startup Performance

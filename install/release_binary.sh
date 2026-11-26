@@ -16,6 +16,9 @@
 ## crates.io: `cargo install` of just, eza and git-absorb took most of a cold run.
 ##
 
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/curl_retry.sh"
+
 # Prints the asset's "sha256:<hex>", or nothing when GitHub has none.
 github_asset_digest() {
     local url="$1" re='^https://github\.com/([^/]+/[^/]+)/releases/download/([^/]+)/([^/]+)$'
@@ -23,7 +26,7 @@ github_asset_digest() {
     local repo="${BASH_REMATCH[1]}" tag="${BASH_REMATCH[2]}" asset="${BASH_REMATCH[3]}"
     local auth=()
     [[ -z "${GH_TOKEN:-}" ]] || auth=(-H "Authorization: Bearer ${GH_TOKEN}")
-    curl -fsSL "${auth[@]}" "https://api.github.com/repos/${repo}/releases/tags/${tag}" |
+    curl_buffered -fsSL "${auth[@]}" "https://api.github.com/repos/${repo}/releases/tags/${tag}" |
         jq -r --arg asset "${asset}" '.assets[] | select(.name == $asset) | .digest // empty'
 }
 
@@ -61,7 +64,7 @@ install_release_binary() {
 
     local tmp_dir
     tmp_dir=$(mktemp -d)
-    curl -fsSLo "${tmp_dir}/release.tar.gz" "${url}"
+    curl "${CURL_RETRY[@]}" -fsSLo "${tmp_dir}/release.tar.gz" "${url}"
     if ! verify_download "${url}" "${tmp_dir}/release.tar.gz"; then
         rm -rf "${tmp_dir}"
         return 1

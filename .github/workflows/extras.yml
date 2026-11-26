@@ -9,6 +9,7 @@ on:
     paths:
       - install/extras/**
       - install/release_binary.sh
+      - install/curl_retry.sh
       - install/versions.sh
       - .github/workflows/extras.yml
   workflow_dispatch:

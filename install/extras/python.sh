@@ -5,12 +5,14 @@ set -euo pipefail
 
 # shellcheck source=install/versions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
 
 ##
 ## Install uv
 ##
 
-curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+curl_buffered -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
 
 ##
 ## Install the pinned Python and make it this machine's python3

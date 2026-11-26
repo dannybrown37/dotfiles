@@ -11,9 +11,11 @@ readonly node_major=22
 
 # shellcheck source=install/versions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
 
 if ! command -v n &>/dev/null; then
-    curl -fsSL "https://raw.githubusercontent.com/tj/n/v${N_VERSION}/bin/n" | sudo bash -s "${node_major}"
+    curl_buffered -fsSL "https://raw.githubusercontent.com/tj/n/v${N_VERSION}/bin/n" | sudo bash -s "${node_major}"
     sudo npm install --global "n@${N_VERSION}"
 fi
 

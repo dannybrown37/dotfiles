@@ -7,10 +7,12 @@ set -euo pipefail
 
 # shellcheck source=install/versions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../versions.sh"
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
 
 if ! command -v fastfetch &>/dev/null; then
     tmp_deb=$(mktemp --suffix=.deb)
-    curl -sLo "${tmp_deb}" \
+    curl "${CURL_RETRY[@]}" -sLo "${tmp_deb}" \
         "https://github.com/fastfetch-cli/fastfetch/releases/download/${FASTFETCH_VERSION}/fastfetch-linux-amd64.deb"
     sudo dpkg -i "${tmp_deb}"
     rm "${tmp_deb}"

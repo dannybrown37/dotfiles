@@ -7,9 +7,12 @@
 
 set -euo pipefail
 
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
+
 sudo apt-get install -y -qq jq unzip
 
-latest_version=$(curl -s https://api.releases.hashicorp.com/v1/releases/terraform/latest | jq -r '.version')
+latest_version=$(curl_buffered -s https://api.releases.hashicorp.com/v1/releases/terraform/latest | jq -r '.version')
 current_version=$(terraform version -json 2>/dev/null | jq -r '.terraform_version' || echo "none")
 
 if [[ "${current_version}" == "${latest_version}" ]]; then
@@ -24,7 +27,7 @@ arch=$(dpkg --print-architecture)
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "${tmp_dir}"' EXIT
 
-curl -sLo "${tmp_dir}/terraform.zip" \
+curl "${CURL_RETRY[@]}" -sLo "${tmp_dir}/terraform.zip" \
     "https://releases.hashicorp.com/terraform/${latest_version}/terraform_${latest_version}_linux_${arch}.zip"
 
 unzip -q "${tmp_dir}/terraform.zip" terraform -d "${tmp_dir}"

@@ -17,6 +17,9 @@
 
 set -euo pipefail
 
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
+
 readonly CRATE="spotify_player"
 readonly FEATURES="image,fzf"
 readonly USER_AGENT="dotfiles-install-script (https://github.com/dannybrown37/dotfiles)"
@@ -30,7 +33,7 @@ for dep in curl jq; do
     command -v "${dep}" &>/dev/null || sudo apt-get install -y -qq "${dep}"
 done
 
-latest_version=$(curl -sS -H "User-Agent: ${USER_AGENT}" "https://crates.io/api/v1/crates/${CRATE}" |
+latest_version=$(curl_buffered -sS -H "User-Agent: ${USER_AGENT}" "https://crates.io/api/v1/crates/${CRATE}" |
     jq -r '.crate.max_stable_version')
 current_version=$(spotify_player --version 2>/dev/null | awk '{print $2}' || echo "none")
 

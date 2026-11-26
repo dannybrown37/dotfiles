@@ -7,9 +7,12 @@
 
 set -euo pipefail
 
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
+
 # Follow the releases/latest redirect instead of api.github.com: the API's
 # unauthenticated rate limit is shared across CI runner IPs and returns no tag.
-latest_url=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+latest_url=$(curl "${CURL_RETRY[@]}" -fsSLI -o /dev/null -w '%{url_effective}' \
     https://github.com/jesseduffield/lazygit/releases/latest)
 latest_version=${latest_url##*/v}
 
@@ -30,7 +33,7 @@ echo "Installing lazygit ${current_version} → ${latest_version}"
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "${tmp_dir}"' EXIT
 
-curl -fsSLo "${tmp_dir}/lazygit.tar.gz" \
+curl "${CURL_RETRY[@]}" -fsSLo "${tmp_dir}/lazygit.tar.gz" \
     "https://github.com/jesseduffield/lazygit/releases/download/v${latest_version}/lazygit_${latest_version}_Linux_x86_64.tar.gz"
 
 tar -xf "${tmp_dir}/lazygit.tar.gz" -C "${tmp_dir}" lazygit

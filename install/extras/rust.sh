@@ -8,7 +8,10 @@ set -euo pipefail
 ## prebuilt releases. The cargo extras in install/extras/ need this first.
 ##
 
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../curl_retry.sh"
+
+curl_buffered --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 # Only for the rest of *this* script -- PATH does not survive into the next Make
 # target, which is why the cargo extras source this too.

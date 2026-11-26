@@ -8,6 +8,10 @@
 
 set -euo pipefail
 
+# Not dirname: test_docker_extras.py runs this with a PATH of stubs only.
+# shellcheck source=install/curl_retry.sh
+source "${BASH_SOURCE[0]%/*}/../curl_retry.sh"
+
 readonly keyring=/etc/apt/keyrings/docker.asc
 readonly packages=(docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin)
 
@@ -28,7 +32,7 @@ else
     sudo apt update
     sudo apt install -y ca-certificates curl
     sudo install -m 0755 -d /etc/apt/keyrings
-    sudo curl -fsSL "https://download.docker.com/linux/${distro_id}/gpg" -o "${keyring}"
+    sudo curl "${CURL_RETRY[@]}" -fsSL "https://download.docker.com/linux/${distro_id}/gpg" -o "${keyring}"
     sudo chmod a+r "${keyring}"
     sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
 Types: deb

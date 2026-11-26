@@ -4,9 +4,12 @@
 
 set -euo pipefail
 
+# shellcheck source=install/curl_retry.sh
+source "$(dirname "${BASH_SOURCE[0]}")/curl_retry.sh"
+
 # Install Starship prompt (https://starship.rs)
 if ! command -v starship &>/dev/null; then
-    curl -sS https://starship.rs/install.sh | sh -s -- --yes
+    curl_buffered -sS https://starship.rs/install.sh | sh -s -- --yes
 else
     echo "Starship already installed, skipping..."
 fi
