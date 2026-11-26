@@ -1,8 +1,9 @@
 """On-disk agent records and live state.
 
 The fleet CLI writes `<name>.json` once at launch. Hooks write
-`<name>.state.json` on every event. Two files, so the two writers never
-race on the same file.
+`<name>.state.json` on every event. The agent itself writes
+`<name>.steps.json` through `fleet step`. One file per writer, so no two
+writers race on the same file.
 """
 
 import json
@@ -15,6 +16,8 @@ from pathlib import Path
 from fleet.agents import AgentState
 
 STATE_SUFFIX = '.state.json'
+STEPS_SUFFIX = '.steps.json'
+MAX_STEP_NOTE = 80
 
 
 def default_state_dir(env: Mapping[str, str] = os.environ) -> Path:
@@ -47,6 +50,32 @@ class LiveState:
     message: str
     updated_at: float
     launch_id: str = ''
+
+
+@dataclass(frozen=True)
+class Steps:
+    """Progress an agent reports on its own task."""
+
+    done: int
+    total: int
+    note: str
+
+
+def make_steps(done: int, total: int, note: str) -> Steps | None:
+    if total < 1:
+        return None
+    return Steps(
+        done=min(total, max(0, done)),
+        total=total,
+        note=note.strip()[:MAX_STEP_NOTE],
+    )
+
+
+def parse_steps(data: dict[str, object]) -> Steps | None:
+    done, total = data.get('done'), data.get('total')
+    if type(done) is not int or type(total) is not int:
+        return None
+    return make_steps(done, total, str(data.get('note') or ''))
 
 
 def write_json_atomically(
@@ -109,7 +138,7 @@ class Store:
             return []
         records = []
         for path in self.agents_dir.glob('*.json'):
-            if path.name.endswith(STATE_SUFFIX):
+            if path.name.endswith((STATE_SUFFIX, STEPS_SUFFIX)):
                 continue
             data = read_json(path)
             if data is None:
@@ -123,6 +152,23 @@ class Store:
     def delete(self, name: str) -> None:
         self.record_path(name).unlink(missing_ok=True)
         self.state_path(name).unlink(missing_ok=True)
+        self.steps_path(name).unlink(missing_ok=True)
+
+    def steps_path(self, name: str) -> Path:
+        return self.agents_dir / f'{name}{STEPS_SUFFIX}'
+
+    def write_steps(self, name: str, steps: Steps, launch_id: str) -> None:
+        write_json_atomically(
+            self.steps_path(name),
+            {**asdict(steps), 'launch_id': launch_id},
+        )
+
+    def read_steps(self, name: str, launch_id: str = '') -> Steps | None:
+        """With `launch_id`, steps from an earlier launch are ignored."""
+        data = read_json(self.steps_path(name))
+        if data is None or (launch_id and data.get('launch_id') != launch_id):
+            return None
+        return parse_steps(data)
 
     def write_state(  # noqa: PLR0917  mirrors the hook's on-disk fields
         self,

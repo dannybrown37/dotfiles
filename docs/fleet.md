@@ -112,6 +112,15 @@ entries that point at an old path or use an older format.
 - **Extra CLI args** go after `--`: `fleet new x -p "go" -- --permission-mode acceptEdits`.
 - An agent that crashes on start keeps its window (`remain-on-exit`), so the
   error stays readable.
+- **Step progress**: every non-empty brief gets one line appended asking the
+  agent to run `fleet step <done> <total> "<note>"` as it works, spelled with
+  `fleet.sh`'s full path since agents' shells lack the `fleet` alias (the stored
+  brief, shown in `fleet ls`, stays as you wrote it). Inside an agent the name
+  comes from `FLEET_AGENT`; elsewhere pass `--name`. It writes
+  `<name>.steps.json` beside the agent's state, tagged with its launch so a
+  relaunched agent starts clean, and `fleet ls --json` shows it as
+  `"steps": {"done", "total", "note"}` (`null` until the first call). The
+  `fleet-crew` mod in skill-tree draws it as a step bar.
 
 ## Autopilot (ticket → draft PR, two human gates)
 

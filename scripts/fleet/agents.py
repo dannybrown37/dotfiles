@@ -25,6 +25,31 @@ class AgentState(StrEnum):
 AGENT_KINDS = ('claude', 'copilot')
 
 
+def step_brief(launcher: str) -> str:
+    """One brief line asking the agent to report steps.
+
+    Mirrors savvy-progress's worker brief: agents skip a tool that is merely
+    available, but follow the same request written into the brief. Names the
+    launcher by path: `fleet` is a shell alias, which an agent's own shell
+    may not have.
+    """
+    step = f'{shlex.quote(launcher)} step'
+    return (
+        f'Progress reporting: right after reading this, run `{step} 0 '
+        '<total> "<first step>"` with your plan in 3-8 steps, then '
+        f'`{step} <done> <total> "<next step>"` as each step finishes. '
+        'It only draws a progress bar in the fleet panel.'
+    )
+
+
+def with_step_brief(prompt: str, launcher: str) -> str:
+    """An empty prompt stays empty: a brief would start the agent working."""
+    brief = step_brief(launcher)
+    if not prompt or prompt.endswith(brief):
+        return prompt
+    return f'{prompt}\n\n{brief}'
+
+
 def state_for_event(
     kind: str,
     event: str,

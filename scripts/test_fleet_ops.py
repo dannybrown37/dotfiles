@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from fleet.agents import AgentState
+from fleet.agents import AgentState, step_brief
 from fleet import ops
 from fleet.ops import (
     agent_env,
@@ -179,12 +179,14 @@ def test_spawn_agent_end_to_end(
 
     assert record.base == 'main'
     assert record.worktree == str(repo.parent / 'proj-worktrees' / 'fix-x')
+    assert record.prompt == 'fix the thing'
     assert store.load('fix-x') == record
 
     args_file = fake_agent.with_suffix('.args')
     wait_for(args_file.exists)
     args = args_file.read_text().splitlines()
-    assert args[-2:] == ['--', 'fix the thing']
+    brief = step_brief(str(ops.LAUNCHER_PATH))
+    assert args[-4:] == ['--', 'fix the thing', '', brief]
     assert (
         fake_agent.with_suffix('.cwd').read_text().strip() == record.worktree
     )

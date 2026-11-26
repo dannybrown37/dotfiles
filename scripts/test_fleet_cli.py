@@ -121,6 +121,104 @@ def test_ls_json_lists_records(
     assert rows[0]['managed'] is True
 
 
+def save_agent(
+    tmp_path: Path,
+    name: str = 'fix-x',
+    launch_id: str = 'L1',
+) -> None:
+    Store(tmp_path / 'state').save(
+        AgentRecord(
+            name=name,
+            kind='claude',
+            repo='/r',
+            worktree='/w',
+            branch=name,
+            base='main',
+            prompt='p',
+            created_at=1.0,
+            window_id='@99',
+            launch_id=launch_id,
+        ),
+    )
+
+
+def test_ls_json_without_steps_has_null_steps(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    save_agent(tmp_path)
+    assert cli.main(['ls', '--json']) == 0
+    assert json.loads(capsys.readouterr().out)[0]['steps'] is None
+
+
+@pytest.mark.parametrize(
+    ('argv', 'expected'),
+    [
+        (
+            ['2', '5', 'writing', 'tests'],
+            {'done': 2, 'total': 5, 'note': 'writing tests'},
+        ),
+        (['0', '4'], {'done': 0, 'total': 4, 'note': ''}),
+        (['7', '4', 'over'], {'done': 4, 'total': 4, 'note': 'over'}),
+    ],
+)
+def test_step_from_agent_env_shows_in_ls_json(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
+    expected: dict[str, object],
+) -> None:
+    save_agent(tmp_path)
+    monkeypatch.setenv('FLEET_AGENT', 'fix-x')
+    monkeypatch.setenv('FLEET_LAUNCH_ID', 'L1')
+    assert cli.main(['step', *argv]) == 0
+    capsys.readouterr()
+    assert cli.main(['ls', '--json']) == 0
+    assert json.loads(capsys.readouterr().out)[0]['steps'] == expected
+
+
+def test_step_with_name_uses_the_records_launch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    save_agent(tmp_path, launch_id='L9')
+    monkeypatch.delenv('FLEET_AGENT', raising=False)
+    monkeypatch.delenv('FLEET_LAUNCH_ID', raising=False)
+    assert cli.main(['step', '1', '3', '--name', 'fix-x']) == 0
+    capsys.readouterr()
+    assert cli.main(['ls', '--json']) == 0
+    steps = json.loads(capsys.readouterr().out)[0]['steps']
+    assert steps == {'done': 1, 'total': 3, 'note': ''}
+
+
+@pytest.mark.parametrize(
+    ('argv', 'env', 'message'),
+    [
+        (['1', '3'], {}, 'not a fleet agent'),
+        (['1', '0'], {'FLEET_AGENT': 'fix-x'}, 'TOTAL must be at least 1'),
+        (['-1', '3'], {'FLEET_AGENT': 'fix-x'}, 'DONE must be 0 or more'),
+        (['1', '3'], {'FLEET_AGENT': 'nobody'}, "no agent named 'nobody'"),
+    ],
+)
+def test_step_errors_are_clean(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    *,
+    argv: list[str],
+    env: dict[str, str],
+    message: str,
+) -> None:
+    save_agent(tmp_path)
+    monkeypatch.delenv('FLEET_AGENT', raising=False)
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    assert cli.main(['step', *argv]) == 1
+    assert message in capsys.readouterr().err
+
+
 def test_unknown_agent_name_is_a_clean_error(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

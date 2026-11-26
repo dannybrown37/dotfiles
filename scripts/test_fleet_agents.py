@@ -11,7 +11,9 @@ from fleet.agents import (
     claude_hook_settings,
     launch_command,
     state_for_event,
+    step_brief,
     validate_agent_name,
+    with_step_brief,
 )
 
 
@@ -79,6 +81,41 @@ def test_validate_agent_name_accepts(name: str) -> None:
 def test_validate_agent_name_rejects(name: str) -> None:
     with pytest.raises(ValueError, match='agent name'):
         validate_agent_name(name)
+
+
+LAUNCHER = '/d/scripts/fleet.sh'
+
+
+@pytest.mark.parametrize(
+    ('prompt', 'expected'),
+    [
+        ('fix it', f'fix it\n\n{step_brief(LAUNCHER)}'),
+        ('', ''),
+        (
+            f'fix it\n\n{step_brief(LAUNCHER)}',
+            f'fix it\n\n{step_brief(LAUNCHER)}',
+        ),
+    ],
+)
+def test_with_step_brief(prompt: str, expected: str) -> None:
+    assert with_step_brief(prompt, LAUNCHER) == expected
+
+
+@pytest.mark.parametrize(
+    ('launcher', 'command'),
+    [
+        ('/d/scripts/fleet.sh', '/d/scripts/fleet.sh step'),
+        ('/my dots/fleet.sh', "'/my dots/fleet.sh' step"),
+    ],
+)
+def test_step_brief_is_one_line_naming_the_launcher_by_path(
+    launcher: str,
+    command: str,
+) -> None:
+    """`fleet` is a shell alias; an agent's own shell may not have it."""
+    brief = step_brief(launcher)
+    assert '\n' not in brief
+    assert f'`{command} 0 <total>' in brief
 
 
 def test_claude_launch_command_passes_hooks_name_and_prompt_last() -> None:
